@@ -31,16 +31,28 @@ Then open the address it prints (usually http://localhost:5173).
 | `npm run build` | Build the site into `dist/` |
 | `npm run preview` | Serve the built site locally |
 
-## Controls (Milestone 1)
+## Controls (Milestone 2)
 
 | Key | Action |
 |---|---|
+| Step 1: press left mouse, pull back, release | Plan the shot like a slingshot: the ball goes the opposite way to the pull. The dotted line previews the path (yellow dots = in the air). The pull's power is a preview only. |
+| Step 2: hold left mouse, release | Charge: the meter goes up, down, up, down. Release to shoot; the meter alone sets the real power. The white mark on the meter is your planned power. If you never release, the ball launches on its own at 10% ("TOO SLOW!"). |
+| Release at the very top | Release in the red zone at the top of the meter for a PERFECT shot (extra power) |
+| Right-click or Esc | Drop the plan and pull again |
+| P | Testing only: quick shot. The pull fires straight away at the pulled power, with no meter. |
+| T | Ground shot or lofted shot |
+| X / Z | More topspin / more backspin |
+| E / Q | Curve right / curve left |
+| Space | Bounce boost: press just before the ball lands |
+| R | Put the ball back at the start |
+| U | Tuning panel (debug): sliders for every physics number. Changes are remembered in your browser; "Reset all" undoes them. |
+| H | Show or hide the help lines |
 | Arrow keys / WASD, or drag with the right mouse button | Pan the camera |
 | C | Centre the camera on the ball |
 | 1, 2, N | Switch test course |
 | G | Cycle the debug overlay: coordinates, heights, surfaces, off. Hover a tile for its details. |
 
-You can also open a course directly: `?course=flat-walls` or `?course=slopes-surfaces`, and add `&debug=heights` (or `coords`, `surfaces`).
+You can also open a course directly: `?course=flat-walls` or `?course=slopes-surfaces`, and add `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
 
 ## Folder layout
 

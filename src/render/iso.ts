@@ -39,12 +39,12 @@ export interface Placement {
   y: number;
   depth: number;
   /** What this is, for tests and debugging. */
-  kind: 'face' | 'top' | 'arrow' | 'exit' | 'shadow' | 'ball';
+  kind: 'face' | 'top' | 'arrow' | 'exit' | 'shadow' | 'ball' | 'overlay';
   tile: { x: number; y: number };
 }
 
 /** Depth slots inside one tile. Each diagonal gets DEPTH_PER_DIAGONAL units. */
-const LAYER = { face: 0, top: 1, arrow: 2, exit: 3, shadow: 4, ball: 5 } as const;
+const LAYER = { face: 0, top: 1, arrow: 2, exit: 3, shadow: 4, ball: 5, overlay: 6 } as const;
 export const DEPTH_PER_DIAGONAL = 10;
 
 export function tileDepth(x: number, y: number, layer: keyof typeof LAYER): number {
@@ -112,6 +112,8 @@ export function buildDrawList(course: Course, opts: DrawOptions = {}): Placement
       const centre = project(x + 0.5, y + 0.5, t.base);
       out.push({ sprite: def.tileSprite, frame: t.shape, ...centre, depth: tileDepth(x, y, 'top'), kind: 'top', tile });
       if (t.dir) out.push({ sprite: ARROW_SPRITE, frame: t.dir, ...centre, depth: tileDepth(x, y, 'arrow'), kind: 'arrow', tile });
+      // A see-through layer over the ball, so a ball in water shows through it.
+      if (def.overlaySprite) out.push({ sprite: def.overlaySprite, frame: t.shape, ...centre, depth: tileDepth(x, y, 'overlay'), kind: 'overlay', tile });
     }
   }
 

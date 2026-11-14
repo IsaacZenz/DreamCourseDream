@@ -49,16 +49,18 @@ docs/
 
 ## Milestone 2 — The shot **(Gate)**
 
-- [ ] Ball physics as in DESIGN.md section 5: rolling, slopes, friction per surface, walls, airborne flight, bouncing, rest detection
-- [ ] Water and out-of-bounds return the ball to its last resting spot
-- [ ] Aim direction, ground and lofted shots, power meter, topspin, backspin, side curve
-- [ ] Aim guide line computed by running the real simulation ahead, so it always matches
-- [ ] Bounce boost on landing
-- [ ] All tuning numbers in one file, plus an on-screen tuning panel (debug only) to change them live
-- [ ] Unit tests: ball rests on flat ground, rolls down a slope, bounces off a wall at the mirrored angle, same inputs give the same final position every time
-- [ ] Alternative power input (drag distance) behind a toggle so the owner can compare
+- [x] Ball physics as in DESIGN.md section 5: rolling, slopes, friction per surface, walls, airborne flight, bouncing, rest detection
+- [x] Water and out-of-bounds return the ball to its last resting spot
+- [x] Aim direction, ground and lofted shots, power meter, topspin, backspin, side curve
+- [x] Aim guide line computed by running the real simulation ahead, so it always matches
+- [x] Bounce boost on landing
+- [x] All tuning numbers in one file, plus an on-screen tuning panel (debug only) to change them live
+- [x] Unit tests: ball rests on flat ground, rolls down a slope, bounces off a wall at the mirrored angle, same inputs give the same final position every time
+- [x] Alternative power input (drag distance) behind a toggle so the owner can compare
 
 **Done when:** the owner has played both test courses and says the shot feels good. Expect several rounds of tuning. Record the chosen tuning values and the power-input choice in DESIGN.md.
+
+- [x] **Gate signed off by the owner (2026-11-14).** Final values are the defaults in `src/content/tuning.ts`; power input is the two-phase shot (DESIGN.md section 5).
 
 ## Milestone 3 — Course rules
 
@@ -170,3 +172,11 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Milestone 0 done: merged to `main`, CI green, owner confirmed the live link shows the blank canvas.
 - 2026-11-14 — Milestone 1 built on branch `milestone-1-course-display`: course file format with a schema check (`src/sim/course.ts`), tile geometry limited to 13 shapes (`src/sim/tileShape.ts`), surface definitions (`src/content/surfaces.ts`), placeholder art script (`npm run art`) writing 26 sprites and `assets/manifest.json`, isometric renderer with faces and back-to-front draw order (`src/render/iso.ts`), camera pan, debug overlay (G key) with hover info, and two test courses. Both courses screenshotted and checked for draw-order mistakes. Waiting for the owner to look at both courses.
 - 2026-11-14 — Milestone 1 done: merged to `main` (pull request 2), CI and deploy green, owner checked both courses on the live link and said they look good.
+- 2026-11-14 — Milestone 2 built on branch `milestone-2-the-shot`: ball physics in `src/sim/ball.ts` (fixed 1/120 s step; rolling, slopes, per-surface friction, walls that mirror the ball's speed, flight, bouncing, rest detection, water and out of bounds), ground and lofted shots with power meter, topspin/backspin and side curve, aim guide drawn from the real simulation, bounce boost (Space), every tuning number in `src/content/tuning.ts` with a live tuning panel (U key) that remembers changes in the browser, and drag-power mode behind the P key. 21 new tests. Both courses played in a browser and screenshots checked. **Gate:** waiting for the owner to play both courses, say whether the shot feels good, and pick meter or drag power. Chosen tuning values then go into DESIGN.md.
+- 2026-11-14 — Owner tuning round 1: shot speed across the whole bar raised 20%; new perfect shot (release in the top 3% of the meter) launches 35% faster than the old top. Owner chose the meter for the real game; drag mode stays as a testing aid with the same rules. Recorded in DESIGN.md section 5.
+- 2026-11-14 — Owner tuning round 2 (values from the tuning panel): perfect window narrowed to the top 2%, meter sweep sped up to 1.5 s, bumper bounce raised to 1. Recorded in DESIGN.md section 5.
+- 2026-11-14 — Owner tuning round 3: bounce raised 10% on every surface except bumper (kept at 1 so bounces cannot grow forever). Gravity unchanged.
+- 2026-11-14 — Two-phase shot (owner design): pull back to plan direction and a preview path, then hold to charge a meter that goes up, down, up, down; release to shoot, or the ball launches on its own at 5% when the meter runs out. Drag-to-fire kept as a testing-only "quick shot" (P). Recorded in DESIGN.md section 5.
+- 2026-11-14 — Owner tuning round 4: automatic launch when the meter runs out raised from 5% to 10% power.
+- 2026-11-14 — Water reworked (owner design): see-through, slows the ball hard, and only resets the ball if it stops in it; the ball can roll or bounce out. Water may be sloped. New water bed and see-through surface placeholder sprites. 4 new tests.
+- 2026-11-14 — Milestone 2 done: owner played both courses through four tuning rounds, the two-phase shot and the water rework, and signed off the gate. Merged to `main` (pull request 3).

@@ -59,7 +59,7 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 | Rough | High friction |
 | Sand | Very high friction, kills bounce |
 | Ice | Very low friction |
-| Water | Ball sinks: lose health, return to last resting spot |
+| Water | See-through; slows the ball a lot. The ball can roll or bounce out. Only if it **stops** in water does it sink: lose health, return to last resting spot. Water tiles may be sloped. |
 | Void / out of bounds | Same as water |
 | Bumper | Wall that bounces the ball back with extra speed |
 | Booster | Pushes the ball in a fixed direction |
@@ -88,6 +88,24 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 - In the air: gravity only. On landing: bounce scaled by the surface, with spin applied.
 - The ball is "at rest" when its speed stays under a threshold on a tile it will not roll off.
 - Every tuning number (gravity, friction per surface, bounce, power range, spin strength) lives in one tuning file so it can be changed without touching logic.
+
+### As built in Milestone 2 (signed off by the owner, 2026-11-14)
+
+The final tuning values are the defaults in `src/content/tuning.ts` as merged with Milestone 2. The owner's decisions are marked below.
+
+- Physics units are tiles. One height step is half a tile high (`STEP_HEIGHT` in `src/content/tuning.ts`), matching the art's 8-pixel step on a 32×16 tile. A one-step slope across one tile is therefore about 27 degrees.
+- Walls are always along grid lines, so a wall hit mirrors the ball's x or y speed, scaled by the wall surface's `wallBounce`. A wall is any step up at a tile edge that the ball is too low to clear.
+- Topspin and backspin: on a lofted shot they add or remove speed on the first landing; on a ground shot they push forward or back for a short time after the shot. Side curve turns the ball's path and fades over time. Each has five levels (−2 to +2).
+- Bounce boost: press Space while the ball is in the air. It counts only if the ball lands within a short window after the press (0.15 s to start); one press per flight, so mashing does not work.
+- The aim guide runs the real simulation. It previews the planned shot from the pull, and keeps showing that plan while the meter charges. It stops after 4 tiles of travel (the "Guide length" stat will scale this from Milestone 3).
+- The last resting spot is only updated when the ball rests on a surface that can hold it (not water, boosters and other pads).
+- Until Milestone 3, hazard surfaces (booster, conveyor, spring, spikes, warp) behave like grass. Bumpers already bounce the ball back faster, because that is just their wall-bounce number.
+- ~~Decided (owner, 2026-11-14): the real game uses the sweeping power meter only.~~ Replaced by the two-phase shot below.
+- **Decided (owner, 2026-11-14): the two-phase shot.** (1) **Plan:** pull back like a slingshot to set the direction and a planned power; the aim guide previews that path. The planned power is a preview only. (2) **Charge:** hold to charge the meter, which goes up, down, up, down (`meterCycles` 2). Release to shoot; the meter alone sets the real power, and the perfect shot still comes from the top of the meter. The meter shows the planned power as a white mark. If the player has not released when the second down sweep reaches the bottom, the ball launches on its own at 10% power (`autoLaunchPower` 0.1; was 5%, raised in owner tuning round 4). Right-click or Esc drops the plan. Default (not chosen by the owner, easy to change): the charge is press-and-hold, release to shoot. Quick shot (P key, the pull fires straight away) stays as a testing aid only.
+- **Decided (owner, 2026-11-14):** shot speed across the whole bar is 20% above the first tuning (ground top 13.2, lofted top 12 tiles per second). A **perfect shot**, released in the top 2% of the bar (`perfectWindow` 0.02, owner round 2), launches 35% faster than the first tuning's top, which is 12.5% above the new top (`perfectBonus` 1.125). The meter shows the perfect zone at its top and the game says "PERFECT!".
+- **Decided (owner, 2026-11-14, tuning round 2):** meter sweep takes 1.5 s (`meterPeriod`); bumpers keep all their falling speed on a bounce (`surfaces.bumper.bounce` 1).
+- **Decided (owner, 2026-11-14, tuning round 3):** the ball is 10% bouncier on every surface (gravity unchanged): grass 0.495, rough 0.33, sand 0.055, ice 0.55. Bumper bounce stays at 1, because above 1 the ball would gain height on every bounce.
+- **Decided (owner, 2026-11-14): water.** The ball only resets if it comes to rest (or the shot times out) in water. Passing through, it is slowed hard (`surfaces.water`: friction 0.4, drag 2.5 per second, bounce 0.2, landing grip 0.5; Default values, tune with the panel). With enough speed or bounce it can escape: rolling across, up a slope in the water, or bouncing off it. Water is drawn see-through, with the ball visible inside it. Water tiles may now be sloped (it was flat-only).
 
 ## 6. Shots and health
 
@@ -237,7 +255,7 @@ Opus: use the default and say that you did. The owner can change any of these at
 | 1 | Boss countdown length, and whether it varies by region | 5, same for every region, stored as a tuning number |
 | 2 | Reward for fighting the boss early | +1 blue star per countdown step remaining |
 | 3 | Does recovering refill all shots or only some? | All |
-| 4 | Power input: sweeping meter, or drag distance? | Sweeping meter; try both in Milestone 2 and let the owner pick |
+| 4 | ~~Power input: sweeping meter, or drag distance?~~ | Answered 2026-11-14: sweeping meter (see section 5) |
 | 5 | How many uses does an ability have? | Unlimited uses, one per shot, until replaced |
 | 6 | Can gear be sold? | No. Swapping is covered in FEATURES.md section 8 |
 | 7 | Is there healing outside shops and caches? | Bosses heal fully; nothing else |
