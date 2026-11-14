@@ -60,6 +60,8 @@ docs/
 
 **Done when:** the owner has played both test courses and says the shot feels good. Expect several rounds of tuning. Record the chosen tuning values and the power-input choice in DESIGN.md.
 
+- [x] **Gate signed off by the owner (2026-11-14).** Final values are the defaults in `src/content/tuning.ts`; power input is the two-phase shot (DESIGN.md section 5).
+
 ## Milestone 3 — Course rules
 
 - [ ] Stat sheet and modifier system (FEATURES.md section 1), with tests
@@ -177,3 +179,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Two-phase shot (owner design): pull back to plan direction and a preview path, then hold to charge a meter that goes up, down, up, down; release to shoot, or the ball launches on its own at 5% when the meter runs out. Drag-to-fire kept as a testing-only "quick shot" (P). Recorded in DESIGN.md section 5.
 - 2026-11-14 — Owner tuning round 4: automatic launch when the meter runs out raised from 5% to 10% power.
 - 2026-11-14 — Water reworked (owner design): see-through, slows the ball hard, and only resets the ball if it stops in it; the ball can roll or bounce out. Water may be sloped. New water bed and see-through surface placeholder sprites. 4 new tests.
+- 2026-11-14 — Milestone 2 done: owner played both courses through four tuning rounds, the two-phase shot and the water rework, and signed off the gate. Merged to `main` (pull request 3).

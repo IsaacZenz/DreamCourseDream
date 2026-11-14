@@ -89,7 +89,9 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 - The ball is "at rest" when its speed stays under a threshold on a tile it will not roll off.
 - Every tuning number (gravity, friction per surface, bounce, power range, spin strength) lives in one tuning file so it can be changed without touching logic.
 
-### As built in Milestone 2 (Default, pending the owner's tuning)
+### As built in Milestone 2 (signed off by the owner, 2026-11-14)
+
+The final tuning values are the defaults in `src/content/tuning.ts` as merged with Milestone 2. The owner's decisions are marked below.
 
 - Physics units are tiles. One height step is half a tile high (`STEP_HEIGHT` in `src/content/tuning.ts`), matching the art's 8-pixel step on a 32×16 tile. A one-step slope across one tile is therefore about 27 degrees.
 - Walls are always along grid lines, so a wall hit mirrors the ball's x or y speed, scaled by the wall surface's `wallBounce`. A wall is any step up at a tile edge that the ball is too low to clear.
