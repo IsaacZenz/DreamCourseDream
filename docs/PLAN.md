@@ -64,16 +64,16 @@ docs/
 
 ## Milestone 3 — Course rules
 
-- [ ] Stat sheet and modifier system (FEATURES.md section 1), with tests
-- [ ] Playable character as a data entry (FEATURES.md section 3)
-- [ ] Shots pool and health pool, with the recover turn at zero shots
-- [ ] Pickups: yellow star, heart, shot orb (FEATURES.md section 13)
-- [ ] Static blockers (FEATURES.md section 6)
-- [ ] Simple stationary enemy that is defeated when hit and drops yellow stars
-- [ ] Star quota meter; exit opens when full; entering the exit completes the course
-- [ ] Hazards from the surface table: spikes, bumper, booster, conveyor, spring, warp pair
-- [ ] HUD: shots, health, star meter, yellow star total, seed
-- [ ] Course complete and run over screens; restart
+- [x] Stat sheet and modifier system (FEATURES.md section 1), with tests
+- [x] Playable character as a data entry (FEATURES.md section 3)
+- [x] Shots pool and health pool, with the recover turn at zero shots
+- [x] Pickups: yellow star, heart, shot orb (FEATURES.md section 13)
+- [x] Static blockers (FEATURES.md section 6)
+- [x] Simple stationary enemy that is defeated when hit and drops yellow stars
+- [x] Star quota meter; exit opens when full; entering the exit completes the course
+- [x] Hazards from the surface table: spikes, bumper, booster, conveyor, spring, warp pair
+- [x] HUD: shots, health, star meter, yellow star total, seed
+- [x] Course complete and run over screens; restart
 
 **Done when:** a test course can be won and lost, and the owner has done both.
 
@@ -180,3 +180,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Owner tuning round 4: automatic launch when the meter runs out raised from 5% to 10% power.
 - 2026-11-14 — Water reworked (owner design): see-through, slows the ball hard, and only resets the ball if it stops in it; the ball can roll or bounce out. Water may be sloped. New water bed and see-through surface placeholder sprites. 4 new tests.
 - 2026-11-14 — Milestone 2 done: owner played both courses through four tuning rounds, the two-phase shot and the water rework, and signed off the gate. Merged to `main` (pull request 3).
+- 2026-11-14 — Milestone 3 built on branch `milestone-3-course-rules`: stat sheet and modifier system (`src/sim/stats.ts`, stat limits in `src/content/stats.ts`); the playable character Rollo as data (`src/content/characters.ts`); shots and health pools with a recover turn; pickups, static blockers (rock, post, low wall) and the Mossback enemy as content entries (`src/content/objects.ts`) placed through a new optional `objects` list in course files; hazard tiles in the ball physics (booster, conveyor, spring, spikes, warp; bumper already worked); star quota meter, opening exit and course completion; course rules in `src/sim/play.ts`; HUD with health, shots, star meter, stars held and seed; course complete and run over screens with restart. New test course "course rules" (key 1). 33 new tests (140 in total). In a browser: won the test course in 3 shots and lost it by sinking 5 times; screenshots checked. Defaults chosen are listed in DESIGN.md section 7, "As built in Milestone 3". **Waiting for the owner** to win and lose the test course.

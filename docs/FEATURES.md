@@ -76,7 +76,7 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 
 **Template (Default):** id, name, sprite id, starting stat sheet, starting ability (may be none), one passive trait, unlock cost in blue stars.
 
-**Starter set:** one balanced character with the stats in section 1, no starting ability, no trait. Build in Milestone 3.
+**Starter set:** one balanced character with the stats in section 1, no starting ability, no trait. Build in Milestone 3. Built as **Rollo** (working name) in `src/content/characters.ts`.
 
 **Later examples, Milestone 8:** a heavy ball (more damage, less bounce, shorter shots); a light ball (more bounce, an extra shot, less health).
 

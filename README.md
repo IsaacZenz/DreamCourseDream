@@ -31,7 +31,7 @@ Then open the address it prints (usually http://localhost:5173).
 | `npm run build` | Build the site into `dist/` |
 | `npm run preview` | Serve the built site locally |
 
-## Controls (Milestone 2)
+## Controls (Milestone 3)
 
 | Key | Action |
 |---|---|
@@ -44,15 +44,20 @@ Then open the address it prints (usually http://localhost:5173).
 | X / Z | More topspin / more backspin |
 | E / Q | Curve right / curve left |
 | Space | Bounce boost: press just before the ball lands |
-| R | Put the ball back at the start |
+| R | Restart the course from the beginning (same seed) |
+| Enter | On the end screen: next course after a win, restart after a loss |
 | U | Tuning panel (debug): sliders for every physics number. Changes are remembered in your browser; "Reset all" undoes them. |
 | H | Show or hide the help lines |
 | Arrow keys / WASD, or drag with the right mouse button | Pan the camera |
 | C | Centre the camera on the ball |
-| 1, 2, N | Switch test course |
+| 1, 2, 3, N | Switch test course (1 is the course rules test course) |
 | G | Cycle the debug overlay: coordinates, heights, surfaces, off. Hover a tile for its details. |
 
-You can also open a course directly: `?course=flat-walls` or `?course=slopes-surfaces`, and add `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
+### The HUD
+
+Top left: health (hearts), shots left (blue orbs), the star meter (stars collected towards the course's quota; it turns green and says OPEN when the exit opens), yellow stars held, and the seed (`#ABC123`). Each shot uses one orb. When they run out you get a recover turn and they refill.
+
+You can also open a course directly: `?course=course-rules`, `?course=flat-walls` or `?course=slopes-surfaces`, and add `&seed=ABC123` to replay a seed, `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
 
 ## Folder layout
 
