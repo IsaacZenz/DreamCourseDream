@@ -203,8 +203,9 @@ Full detail for gear, run upgrades, damage, enemy tiers, statuses, shops and per
 | Static | Damaging field around the ball for a short time |
 | Gyre | The ball can be steered left and right for a few seconds |
 | Drift | Brief free flight in any direction |
+| Tornado | The ball becomes a fast, weaving whirlwind for a moment; cannot fall while active; 1 damage to enemies it spirals into (owner, 2026-11-14) |
 
-Milestone 4 builds three of these. The rest come in Milestone 8.
+Milestone 4 builds four of these: Anchor, Burner, Hop and Tornado (owner added Tornado, 2026-11-14). The rest come in Milestone 8.
 
 Gear examples are in `docs/FEATURES.md` section 8.
 

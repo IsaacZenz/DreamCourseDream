@@ -254,7 +254,9 @@ id, name, icon id, what activates it, effect, duration, element (or none), modif
 
 The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is ice, Static is shock. The rest have none.
 
-**Starter set, Milestone 4:** Anchor, Burner, Hop.
+**Starter set, Milestone 4:** Anchor, Burner, Hop, and Tornado (added by the owner, 2026-11-14).
+
+**Owner, 2026-11-14:** Hop lifts the ball 1.1 tiles. **Tornado:** the ball becomes a small whirlwind for a brief time: fast and chaotic, hard to control. While it is active the ball cannot fall off an edge but can go out over one; if it runs out over a drop, the ball falls. Spiralling into an enemy deals 1 damage. Numbers in `docs/plans/milestone-4.md` section 4.
 
 ---
 

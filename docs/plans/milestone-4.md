@@ -173,6 +173,8 @@ How it plays: a trap you can see. Roll over the hill on purpose to make it come 
 
 ### 2.4 Ability carriers — sentinel, tier 1
 
+**Owner, 2026-11-14:** Tornado is added as a fourth ability, so a fourth carrier is added.
+
 Mossback copies with a coloured shell and the ability's icon on their back.
 
 | Working name | Grants | Health / stars / cost |
@@ -180,6 +182,7 @@ Mossback copies with a coloured shell and the ability's icon on their back.
 | Anchorback | Anchor | 1 / 1 / 2 |
 | Emberback | Burner | 1 / 1 / 2 |
 | Hopback | Hop | 1 / 1 / 2 |
+| Whirlback | Tornado | 1 / 1 / 2 |
 
 Never act; all triggers none. On defeat the ability goes straight into your slot (replacing what you held) and can be used in the same shot if you have not used one this shot.
 
@@ -257,7 +260,7 @@ The Milestone 3 **post** is renamed **tree stump** and gets a new placeholder sp
 | Health, stars, flag pole | None — cannot be beaten |
 | Cost | Stationary 2, drifting 3 |
 
-Why 0.5: a bounce boost from a normal landing reaches about 0.6 tiles, so it just clears; a rolling ball never does. Hop clears it easily (section 4).
+Why 0.5: a bounce boost from a normal landing reaches about 0.6 tiles, so it just clears; a rolling ball never does. Hop clears it easily (section 4). A Tornado hovering at ground height is under it and gets zapped.
 
 ---
 
@@ -265,14 +268,17 @@ Why 0.5: a bounce boost from a normal landing reaches about 0.6 tiles, so it jus
 
 All: one slot; **press F during a shot** (question 6), **once per shot**, unlimited shots until replaced (DESIGN.md open question 5 default). Shown as an icon in the HUD; greyed out after use until the next shot. The aim guide does not predict ability use.
 
-| | Anchor | Burner | Hop |
-|---|---|---|---|
-| Element | None | Fire | None |
-| Works when | Ball in the air or rolling | Ball in the air or rolling | Ball in the air or rolling |
-| Effect | All sideways speed is removed and the ball drops straight down at 12 tiles/s. On landing it does not bounce and stops dead, even on a slope or ice. Normal rules after that (water still sinks it; pads still act) | Sideways speed becomes at least 14 tiles/s in the current direction, for 0.6 s. No curve during the burst. Gravity still applies | Upward speed becomes 6 tiles/s (about 0.9 tiles high); sideways speed kept |
-| Extra rule | Breaks a cracked tile it stops on. **Ground pound:** enemies within 1 tile of where it stops are Stunned (question 2) | During the burst, passes through tier 1 enemies it defeats with no bounce and no speed loss; hits on others are normal hits with the fire element. Pushes past flag poles with no speed loss | Clears thunder clouds, low walls, sliding blocks and rocks (all 0.5 tall or less). Not a closed gate (1.0) or a tree stump (1.5) |
-| Modifiers while active | None | None | None |
-| Duration | Until it lands | 0.6 s | Instant |
+| | Anchor | Burner | Hop | Tornado |
+|---|---|---|---|---|
+| Element | None | Fire | None | None |
+| Works when | Ball in the air or rolling | Ball in the air or rolling | Ball in the air or rolling | Ball in the air or rolling |
+| Effect | All sideways speed is removed and the ball drops straight down at 12 tiles/s. On landing it does not bounce and stops dead, even on a slope or ice. Normal rules after that (water still sinks it; pads still act) | Sideways speed becomes at least 14 tiles/s in the current direction, for 0.6 s. No curve during the burst. Gravity still applies | Upward speed becomes 6.7 tiles/s, which lifts the bottom of the ball **1.1 tiles** from the ground (owner, 2026-11-14); sideways speed kept | The ball becomes a small whirlwind (owner, 2026-11-14). It whirls along at 10 tiles/s for **1.5 s**, starting in its current direction. Every 0.1 s its direction swings by a random amount up to 40° either way (from the seed), so it weaves and is hard to control |
+| Extra rule | Breaks a cracked tile it stops on. **Ground pound:** enemies within 1 tile of where it stops are Stunned (question 2) | During the burst, passes through tier 1 enemies it defeats with no bounce and no speed loss; hits on others are normal hits with the fire element. Pushes past flag poles with no speed loss | Clears thunder clouds, low walls, sliding blocks, rocks and a closed gate (1.0). Not a tree stump (1.5) | **Edges:** while active it cannot fall: going over an edge, it stays at the height it was at and carries on over the drop (also over water, void and out of bounds). Rising faces and obstacles still bounce it off. **Ends over a drop:** it falls from there under normal physics, so it can land below, in water or out of bounds. **Enemies:** spiralling into one deals **1 damage** (through the damage steps, whatever the ball's hit damage), bounces off and keeps whirling; the 0.5 s hit cooldown stops one enemy being hit many times in one touch. While hovering it ignores surfaces and hazard tiles under it |
+| When it ends | Lands | Normal rolling | — | Normal physics from there, keeping half its speed |
+| Modifiers while active | None | None | None | None |
+| Duration | Until it lands | 0.6 s | Instant | 1.5 s |
+
+The ball can still be hurt during a Tornado by enemies, clouds and seeds, with the usual 0.5 s immunity. Steering is question 13.
 
 ---
 
@@ -283,7 +289,7 @@ All: one slot; **press F during a shot** (question 6), **once per shot**, unlimi
 - Activated sentinels show a small "!" above them for the rest of the course.
 - HUD gains the ability icon and status icons.
 
-New placeholder sprites (via `npm run art` and the manifest only): trundler, spitter, lunger, mole, molehill, anchorback, emberback, hopback, lob seed, target ring, sliding block, gate open, gate closed, crate, cracked tile, flag pole, hovering star marker, secured crate (whole and cracked), tree stump (replaces post), thunder cloud, zap spark, three ability icons, stun icon, "!" mark.
+New placeholder sprites (via `npm run art` and the manifest only): trundler, spitter, lunger, mole, molehill, anchorback, emberback, hopback, whirlback, tornado ball (spinning frames), lob seed, target ring, sliding block, gate open, gate closed, crate, cracked tile, flag pole, hovering star marker, secured crate (whole and cracked), tree stump (replaces post), thunder cloud, zap spark, four ability icons, stun icon, "!" mark.
 
 ---
 
@@ -293,7 +299,7 @@ One hand-built course with three areas, so each trigger can be tried on purpose:
 
 1. **Patrol yard:** a Trundler on a straight path, a sliding block, and a gate between you and an Emberback.
 2. **Sentinel field:** a Spitter and a Lunger on open grass with room to try rest, pass-by and hit on each, next to a ledge, a pond and a spike strip so you can watch the Lunger bounce back and get hurt; two molehills; a Trundler path that runs over a spot where you can defeat an enemy, so you can watch its flag drop and raise it again; an Anchorback nearby; a crate and a secured crate.
-3. **Sky lane:** a stationary cloud and a drifting cloud across a narrow strip, a Hopback before it, and a cracked tile on a ledge you can only break with Anchor.
+3. **Sky lane:** a stationary cloud and a drifting cloud across a narrow strip, a Hopback before it, a Whirlback by a cliff edge over a lower area so you can whirl out over the drop, and a cracked tile on a ledge you can only break with Anchor.
 
 Quota set so you must clear at least two of the three areas. Exact layout drawn when building.
 
@@ -314,7 +320,7 @@ Quota set so you must clear at least two of the three areas. Exact layout drawn 
 - Thunder cloud throws a Lunger or Mole in a seeded random direction with no damage, once per cloud per launch.
 - Flag pole: bounce below threshold, push-past above, lofted ball passes over, pole appears only once the ball is clear.
 - Thunder cloud: rolling zapped, high ball safe, once per cloud per shot, same seed same throw direction, no second damage after spikes.
-- Each ability's effect, once per shot, replaced on pickup.
+- Each ability's effect, once per shot, replaced on pickup. Hop clears 1.1. Tornado: same seed gives the same weave; never falls while active, falls if it ends over a drop; 1 damage per enemy touched, with cooldown; ends after 1.5 s at half speed.
 - Gate never closes on a ball; crate breaks in 1 hit, secured crate in 2 (with cooldown) and bounces the ball on the first; crate and cracked tile drops.
 - Old course files using `post` are rejected with a message saying it is now `stump` (test courses updated).
 - A fourth enemy defined only in a test data file plays correctly (proves "no logic changes").
@@ -329,7 +335,7 @@ Traits, elements on enemies, weak spots and guarded sides on real enemies, squad
 
 ## 9. Questions for the owner
 
-Questions 2, 4, 5, 6, 7 and 12 each have a default that this sheet already uses. Answer only the ones you want to change.
+Questions 2, 4, 5, 6, 7, 12 and 13 each have a default that this sheet already uses. Answer only the ones you want to change.
 
 1. ~~Spitter's projectile~~ — answered, see below.
 2. **What causes Stunned now?** Default: Anchor's ground pound stuns enemies within 1 tile. Alternatives: the thunder cloud zap also stuns the ball (you lose a shot), or nothing causes it yet (built and tested only).
@@ -339,6 +345,7 @@ Questions 2, 4, 5, 6, 7 and 12 each have a default that this sheet already uses.
 6. **Ability key.** Default F (E, Q, Space and others are already used).
 7. **Burner and flag poles.** Default: a Burner burst pushes past poles with no speed loss. Alternative: poles slow it like any fast ball.
 12. **Tree stump size.** Default: same size as the old post (thin, 1.5 tall), so only the look changes. Alternative: a squat, wide stump (radius 0.35, height 0.4) that a lofted shot or Hop can clear, more like a real stump but plays differently from the post you tested.
+13. **Tornado steering.** Default: none, it weaves at random. Alternative: the player can nudge it a little left or right with two keys, so it is hard to control but not hopeless.
 Answered by the owner, 2026-11-14 (now written into the sheet above):
 
 1. The Spitter's seed is a lobbed ball that lands on your old spot next turn and keeps bouncing with full physics (section 2.2).

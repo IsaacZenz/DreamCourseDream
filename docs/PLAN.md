@@ -93,7 +93,7 @@ docs/
 - [ ] Sentinel family: outer and inner radius, three triggers, immediate or activated response per trigger. Build two types: one ranged, one that chases.
 - [ ] Radii visible in the debug overlay; a subtle in-game cue when the ball is about to pass through one
 - [ ] Ability slot, pickup from ability-carrying enemies, activation key
-- [ ] Three abilities: Anchor, Burner, Hop
+- [ ] Four abilities: Anchor, Burner, Hop, Tornado (Tornado added by the owner, 2026-11-14)
 - [ ] Enemy and ability definitions fully in `src/content/`; adding a fourth enemy must need no logic changes
 - [ ] Tests for each trigger and each response mode
 
