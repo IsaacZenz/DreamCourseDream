@@ -192,9 +192,9 @@ id, name, sprite id, size in tiles, whether it blocks the ball, contact effect, 
 
 | Kind | Starter examples | Milestone |
 |---|---|---|
-| Static blockers | Rock, post, low wall | 3 |
+| Static blockers | Rock, tree stump (was the post; renamed by the owner 2026-11-14, built in Milestone 4), low wall | 3 |
 | Moving obstacles (not enemies; cannot be defeated) | Sliding block on a path, gate that opens and closes on a timer | 4 |
-| Destructibles | Crate that drops a pickup, cracked tile that breaks under the Anchor ability | 4 |
+| Destructibles | Crate that drops a pickup; secured crate that takes 2 hits (owner, 2026-11-14); cracked tile that breaks under the Anchor ability | 4 |
 | Linked objects | Switch that lowers a gate or raises a bridge | 8 |
 
 Moving obstacles run in real time like patrollers, including while the player aims.
@@ -214,7 +214,7 @@ Moving obstacles run in real time like patrollers, including while the player ai
 - The pole stays for the rest of the course and is still standing after a ball pushes past it.
 - The speed threshold and the speed kept after pushing past are tuning numbers, so they can be set with the tuning panel. Starting values: push past at 8 tiles per second or more, keep 25% of the speed.
 - A lofted ball flying higher than the pole passes over it.
-- The pole is a thin round obstacle about as tall as the post, with its own placeholder sprite.
+- The pole is a thin round obstacle about as tall as the tree stump, with its own placeholder sprite.
 - It replaces the current rule where the ball carries on through a defeated enemy with a small loss of speed. Contact with the enemy itself is unchanged: the hit that defeats it still counts, and the pole goes up once the ball has moved clear, so it never traps the ball.
 
 Build in Milestone 4, alongside the other contact rules and obstacles.

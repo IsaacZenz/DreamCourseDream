@@ -200,13 +200,20 @@ Never act; all triggers none. On defeat the ability goes straight into your slot
 
 ### 3.2 Destructibles
 
-| | Crate | Cracked tile |
-|---|---|---|
-| Looks like | Wooden box, 0.8 × 0.8, height 0.5 | Cracked floor drawn on the tile; flat, nothing to bump |
-| Broken by | Any hit from the ball (health 1, goes through the damage steps) | Only the Anchor: the ball stopping on it after using Anchor |
-| On breaking | Ball carries on at 85% speed (`defeatSpeedKeep`); drops its `drops` on the ground to be collected. Default drop: 1 yellow star | Releases its `drops` (default: 2 yellow stars) and becomes plain ground (question 5) |
-| Flag pole | No | No |
-| Cost | 1 | 1 |
+**Owner, 2026-11-14:** two kinds of crate: a plain crate and a secured crate that takes 2 hits.
+
+| | Crate | Secured crate | Cracked tile |
+|---|---|---|---|
+| Looks like | Wooden box, 0.8 × 0.8, height 0.5 | Same box with metal bands; shows cracks after the first hit | Cracked floor drawn on the tile; flat, nothing to bump |
+| Broken by | Any hit from the ball (health 1, goes through the damage steps) | **2 hits** (health 2). The same 0.5 s hit cooldown as enemies, so one bounce cannot count twice | Only the Anchor: the ball stopping on it after using Anchor |
+| Hit that does not break it | — | The ball bounces off (bounce 0.6) | — |
+| On breaking | Ball carries on at 85% speed (`defeatSpeedKeep`); drops its `drops` on the ground to be collected. Default drop: 1 yellow star | Same as the crate. Default drop: 2 yellow stars | Releases its `drops` (default: 2 yellow stars) and becomes plain ground (question 5) |
+| Flag pole | No | No | No |
+| Cost | 1 | 2 | 1 |
+
+### 3.2a Post becomes a tree stump (owner, 2026-11-14)
+
+The Milestone 3 **post** is renamed **tree stump** and gets a new placeholder sprite (a cut stump with rings on top). Default: only its name and look change; its size and behaviour stay the same as the post (round, radius 0.14, height 1.5, bounce 0.75), so nothing you already tested plays differently. Its id becomes `stump` and the test courses are updated to match. (Question 12 offers a squatter stump instead.)
 
 ### 3.3 Flag pole (Decided by owner; defaults restated)
 
@@ -228,8 +235,8 @@ Never act; all triggers none. On defeat the ability goes straight into your slot
 **Raised pole (defaults restated):**
 
 - Goes up where a defeated enemy stood, once the ball has moved clear (0.1 tiles past touching), so it never traps the ball. Stays for the rest of the course; the ball never knocks it down.
-- Thin pole, radius 0.08, height 1.5 (as tall as the post). A lofted ball higher than 1.5 passes over.
-- Hit below **8 tiles/s**: bounces off (bounce 0.75, like the post).
+- Thin pole, radius 0.08, height 1.5 (as tall as the tree stump). A lofted ball higher than 1.5 passes over.
+- Hit below **8 tiles/s**: bounces off (bounce 0.75, like the tree stump).
 - Hit at 8 or more: pushes past, keeps **25%** of its speed.
 - Replaces the old "carry on through a defeated enemy at 85%" rule for enemies. The defeating hit still counts.
 - A Burner burst pushes past poles **without** losing speed (question 7).
@@ -276,7 +283,7 @@ All: one slot; **press F during a shot** (question 6), **once per shot**, unlimi
 - Activated sentinels show a small "!" above them for the rest of the course.
 - HUD gains the ability icon and status icons.
 
-New placeholder sprites (via `npm run art` and the manifest only): trundler, spitter, lunger, mole, molehill, anchorback, emberback, hopback, lob seed, target ring, sliding block, gate open, gate closed, crate, cracked tile, flag pole, hovering star marker, thunder cloud, zap spark, three ability icons, stun icon, "!" mark.
+New placeholder sprites (via `npm run art` and the manifest only): trundler, spitter, lunger, mole, molehill, anchorback, emberback, hopback, lob seed, target ring, sliding block, gate open, gate closed, crate, cracked tile, flag pole, hovering star marker, secured crate (whole and cracked), tree stump (replaces post), thunder cloud, zap spark, three ability icons, stun icon, "!" mark.
 
 ---
 
@@ -285,7 +292,7 @@ New placeholder sprites (via `npm run art` and the manifest only): trundler, spi
 One hand-built course with three areas, so each trigger can be tried on purpose:
 
 1. **Patrol yard:** a Trundler on a straight path, a sliding block, and a gate between you and an Emberback.
-2. **Sentinel field:** a Spitter and a Lunger on open grass with room to try rest, pass-by and hit on each, next to a ledge, a pond and a spike strip so you can watch the Lunger bounce back and get hurt; two molehills; a Trundler path that runs over a spot where you can defeat an enemy, so you can watch its flag drop and raise it again; an Anchorback nearby; a crate.
+2. **Sentinel field:** a Spitter and a Lunger on open grass with room to try rest, pass-by and hit on each, next to a ledge, a pond and a spike strip so you can watch the Lunger bounce back and get hurt; two molehills; a Trundler path that runs over a spot where you can defeat an enemy, so you can watch its flag drop and raise it again; an Anchorback nearby; a crate and a secured crate.
 3. **Sky lane:** a stationary cloud and a drifting cloud across a narrow strip, a Hopback before it, and a cracked tile on a ledge you can only break with Anchor.
 
 Quota set so you must clear at least two of the three areas. Exact layout drawn when building.
@@ -308,7 +315,8 @@ Quota set so you must clear at least two of the three areas. Exact layout drawn 
 - Flag pole: bounce below threshold, push-past above, lofted ball passes over, pole appears only once the ball is clear.
 - Thunder cloud: rolling zapped, high ball safe, once per cloud per shot, same seed same throw direction, no second damage after spikes.
 - Each ability's effect, once per shot, replaced on pickup.
-- Gate never closes on a ball; crate and cracked tile drops.
+- Gate never closes on a ball; crate breaks in 1 hit, secured crate in 2 (with cooldown) and bounces the ball on the first; crate and cracked tile drops.
+- Old course files using `post` are rejected with a message saying it is now `stump` (test courses updated).
 - A fourth enemy defined only in a test data file plays correctly (proves "no logic changes").
 
 ---
@@ -321,7 +329,7 @@ Traits, elements on enemies, weak spots and guarded sides on real enemies, squad
 
 ## 9. Questions for the owner
 
-Questions 2, 4, 5, 6 and 7 each have a default that this sheet already uses. Answer only the ones you want to change.
+Questions 2, 4, 5, 6, 7 and 12 each have a default that this sheet already uses. Answer only the ones you want to change.
 
 1. ~~Spitter's projectile~~ — answered, see below.
 2. **What causes Stunned now?** Default: Anchor's ground pound stuns enemies within 1 tile. Alternatives: the thunder cloud zap also stuns the ball (you lose a shot), or nothing causes it yet (built and tested only).
@@ -330,6 +338,7 @@ Questions 2, 4, 5, 6 and 7 each have a default that this sheet already uses. Ans
 5. **Cracked tile.** Default: breaking it releases hidden stars and it becomes normal ground. Alternative: it becomes a hole one step deeper (a new route or a trap). Harder to build.
 6. **Ability key.** Default F (E, Q, Space and others are already used).
 7. **Burner and flag poles.** Default: a Burner burst pushes past poles with no speed loss. Alternative: poles slow it like any fast ball.
+12. **Tree stump size.** Default: same size as the old post (thin, 1.5 tall), so only the look changes. Alternative: a squat, wide stump (radius 0.35, height 0.4) that a lofted shot or Hop can clear, more like a real stump but plays differently from the post you tested.
 Answered by the owner, 2026-11-14 (now written into the sheet above):
 
 1. The Spitter's seed is a lobbed ball that lands on your old spot next turn and keeps bouncing with full physics (section 2.2).
