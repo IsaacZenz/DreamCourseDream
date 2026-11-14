@@ -213,6 +213,26 @@ Moving obstacles run in real time like patrollers, including while the player ai
 
 Build in Milestone 4, alongside the other contact rules and obstacles.
 
+### Thunder cloud
+
+**Decided (owner, 2026-11-14):**
+
+- A thunder cloud floats above the course.
+- A ball that rolls under it is electrocuted: it takes damage and is thrown in a random direction.
+- A ball that hops over it is not damaged or affected.
+
+**Default (owner may change):**
+
+- It floats over one tile and covers that tile. A ball is "over" it only when the bottom of the ball is higher than the top of the cloud. Anything lower, rolling or bouncing, counts as under and is zapped.
+- The zap deals 1 damage. The usual rule applies: the ball takes damage at most once per shot.
+- The ball is thrown along the ground in a random direction at a set speed, with a small hop (tuning numbers; starting at 6 tiles per second). The direction comes from the seeded random number generator, so the same seed and the same shots give the same zap.
+- Each cloud zaps at most once per shot, so the ball cannot be caught in a loop under it.
+- The aim guide stops at the cloud and marks it, because the direction after a zap is meant to be a surprise.
+- It stays still, cannot be defeated, drops no stars, and leaves no flag pole: it is an obstacle, not an enemy.
+- Ways over it: a lofted shot, a spring, a bounce boost, and later the Hop ability.
+
+Build in Milestone 4.
+
 ---
 
 ## 7. Abilities (powerups)
