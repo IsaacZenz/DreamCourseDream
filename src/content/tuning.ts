@@ -111,9 +111,9 @@ export const DEFAULT_TUNING: Tuning = {
   loftAngle: 50,
   minPower: 0.05,
   meterPeriod: 1.5,
-  // Owner, 2026-11-14: up, down, up, down, then an automatic 5% launch.
+  // Owner, 2026-11-14: up, down, up, down, then an automatic launch (5% at first, 10% from tuning round 4).
   meterCycles: 2,
-  autoLaunchPower: 0.05,
+  autoLaunchPower: 0.1,
   dragFullPx: 80,
 
   spinLandingSpeed: 4,

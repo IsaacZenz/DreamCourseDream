@@ -58,8 +58,8 @@ describe('aiming', () => {
     expect(at(10).expired).toBe(true);
   });
 
-  it('owner defaults: two sweeps, then an automatic 5% launch', () => {
+  it('owner defaults: two sweeps, then an automatic 10% launch', () => {
     expect(DEFAULT_TUNING.meterCycles).toBe(2);
-    expect(DEFAULT_TUNING.autoLaunchPower).toBe(0.05);
+    expect(DEFAULT_TUNING.autoLaunchPower).toBe(0.1);
   });
 });

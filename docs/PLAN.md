@@ -175,3 +175,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Owner tuning round 2 (values from the tuning panel): perfect window narrowed to the top 2%, meter sweep sped up to 1.5 s, bumper bounce raised to 1. Recorded in DESIGN.md section 5.
 - 2026-11-14 — Owner tuning round 3: bounce raised 10% on every surface except bumper (kept at 1 so bounces cannot grow forever). Gravity unchanged.
 - 2026-11-14 — Two-phase shot (owner design): pull back to plan direction and a preview path, then hold to charge a meter that goes up, down, up, down; release to shoot, or the ball launches on its own at 5% when the meter runs out. Drag-to-fire kept as a testing-only "quick shot" (P). Recorded in DESIGN.md section 5.
+- 2026-11-14 — Owner tuning round 4: automatic launch when the meter runs out raised from 5% to 10% power.
