@@ -160,7 +160,9 @@ export class CourseScene extends Phaser.Scene {
 
   init(data: CourseSceneData): void {
     const params = new URLSearchParams(window.location.search);
-    const fromUrl = TEST_COURSES.findIndex((c) => c.id === params.get('course'));
+    // ?course=<id>, or #<id> (used where the address cannot carry a query, such as the shared test build).
+    const wanted = params.get('course') ?? window.location.hash.slice(1);
+    const fromUrl = TEST_COURSES.findIndex((c) => c.id === wanted);
     this.courseIndex = data.courseIndex ?? (fromUrl >= 0 ? fromUrl : 0);
     this.seed = data.seed ?? params.get('seed') ?? newSeed();
     const urlDebug = params.get('debug');
