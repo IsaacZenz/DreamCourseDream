@@ -25,13 +25,13 @@ docs/
 
 ## Milestone 0 — Project setup
 
-- [ ] Vite + TypeScript project, strict mode
-- [ ] Phaser installed at its latest stable version, pinned exactly
-- [ ] Vitest and one passing test; type check and lint scripts
-- [ ] A lint rule or test that fails if anything in `src/sim/` or `src/gen/` imports from Phaser, `src/render/`, `src/ui/`, or uses `Math.random`
-- [ ] Seeded random number generator in `src/sim/rng.ts` with tests
-- [ ] GitHub Actions: run tests on every push; deploy `main` to GitHub Pages
-- [ ] `README.md` with how to run locally and the link to the live game
+- [x] Vite + TypeScript project, strict mode
+- [x] Phaser installed at its latest stable version, pinned exactly
+- [x] Vitest and one passing test; type check and lint scripts
+- [x] A lint rule or test that fails if anything in `src/sim/` or `src/gen/` imports from Phaser, `src/render/`, `src/ui/`, or uses `Math.random`
+- [x] Seeded random number generator in `src/sim/rng.ts` with tests
+- [x] GitHub Actions: run tests on every push; deploy `main` to GitHub Pages
+- [x] `README.md` with how to run locally and the link to the live game
 
 **Done when:** the live link shows a blank game canvas at 384×216 scaled up with sharp pixels, and CI is green.
 
@@ -166,3 +166,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 
 - 2026-11-14 — Design and plan written. No code yet.
 - 2026-11-14 — Features file added; plan checklists updated to reference it.
+- 2026-11-14 — Milestone 0 built on branch `milestone-0-project-setup`: Vite 8 + TypeScript (strict), Phaser 4.2.1 pinned, Vitest, ESLint purity rules for `src/sim/` and `src/gen/` (with tests proving they fire), seeded RNG (SFC32) in `src/sim/rng.ts`, CI and Pages deploy workflows, README. TypeScript is pinned to 6.0.3, not 7.x, because the lint tooling (typescript-eslint) does not support 7 yet. Live link and green CI not yet confirmed: needs the branch merged to `main` and Pages source set to GitHub Actions.
