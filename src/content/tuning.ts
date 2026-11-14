@@ -128,12 +128,14 @@ export const DEFAULT_TUNING: Tuning = {
   outOfBoundsDepth: 2,
   maxShotTime: 30,
 
+  // Owner tuning round 3 (2026-11-14): every surface bounce +10%, except bumper,
+  // which stays at 1 (above 1 a ball would bounce higher every time and never settle).
   surfaces: {
-    default: { friction: 0.15, bounce: 0.45, landingGrip: 0.15, wallBounce: 0.7 },
-    grass: { friction: 0.15, bounce: 0.45, landingGrip: 0.15, wallBounce: 0.7 },
-    rough: { friction: 0.45, bounce: 0.3, landingGrip: 0.35, wallBounce: 0.6 },
-    sand: { friction: 1.0, bounce: 0.05, landingGrip: 0.7, wallBounce: 0.4 },
-    ice: { friction: 0.03, bounce: 0.5, landingGrip: 0.03, wallBounce: 0.8 },
+    default: { friction: 0.15, bounce: 0.495, landingGrip: 0.15, wallBounce: 0.7 },
+    grass: { friction: 0.15, bounce: 0.495, landingGrip: 0.15, wallBounce: 0.7 },
+    rough: { friction: 0.45, bounce: 0.33, landingGrip: 0.35, wallBounce: 0.6 },
+    sand: { friction: 1.0, bounce: 0.055, landingGrip: 0.7, wallBounce: 0.4 },
+    ice: { friction: 0.03, bounce: 0.55, landingGrip: 0.03, wallBounce: 0.8 },
     bumper: { friction: 0.15, bounce: 1, landingGrip: 0.1, wallBounce: 1.25 },
   },
 };

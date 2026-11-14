@@ -5,7 +5,7 @@
 import { DEFAULT_TUNING, TUNING_CONTROLS, cloneTuning, getTuningValue, setTuningValue, type Tuning } from '../content/tuning';
 
 const KEY = 'dreamcoursedream.tuning';
-const VERSION = 2; // 2: speeds raised 20% and perfect shot added; older saved values are dropped.
+const VERSION = 3; // 3: bounce +10% (round 3); older saved values are dropped so the new defaults show.
 
 export function loadTuning(): Tuning {
   const t = cloneTuning(DEFAULT_TUNING);

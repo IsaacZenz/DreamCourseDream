@@ -101,6 +101,7 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 - **Decided (owner, 2026-11-14):** the real game uses the sweeping power meter only. Drag-power (pull back like a slingshot, P key) stays in the test build as a testing aid and follows the same power rules, including the perfect shot. Remove or hide it before release.
 - **Decided (owner, 2026-11-14):** shot speed across the whole bar is 20% above the first tuning (ground top 13.2, lofted top 12 tiles per second). A **perfect shot**, released in the top 2% of the bar (`perfectWindow` 0.02, owner round 2), launches 35% faster than the first tuning's top, which is 12.5% above the new top (`perfectBonus` 1.125). The meter shows the perfect zone at its top and the game says "PERFECT!".
 - **Decided (owner, 2026-11-14, tuning round 2):** meter sweep takes 1.5 s (`meterPeriod`); bumpers keep all their falling speed on a bounce (`surfaces.bumper.bounce` 1).
+- **Decided (owner, 2026-11-14, tuning round 3):** the ball is 10% bouncier on every surface (gravity unchanged): grass 0.495, rough 0.33, sand 0.055, ice 0.55. Bumper bounce stays at 1, because above 1 the ball would gain height on every bounce.
 
 ## 6. Shots and health
 
