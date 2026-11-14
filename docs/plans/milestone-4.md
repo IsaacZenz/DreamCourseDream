@@ -27,7 +27,14 @@ Patrollers, moving obstacles and drifting clouds keep moving while you aim (DESI
 4. **Enemy turn.** Every activated sentinel takes one action (a Lunger's launch is simulated until it stops), in the order they are listed in the course file. Stunned ones skip (section 4). The display shows each action for about 0.4 s; input is locked until it finishes.
 5. If shots are 0: recover turn (step 4 runs again), then shots refill. Otherwise back to step 1.
 
-**Ball damage during enemy turns:** the "once per shot" rule covers the shot only. In an enemy turn, each enemy that attacks can hurt the ball once. Two Lungers next to you can each hit you.
+**Damage immunity (owner, 2026-11-14):** after taking any damage, the ball cannot be damaged again for **0.5 seconds** of game time (`damageImmunity` in `src/content/rules.ts`). The ball blinks while it is immune. This **replaces** the Milestone 3 rule "damaged at most once per shot": a ball knocked about can now take several hits, and spikes followed by sinking can cost 2 health if more than 0.5 s apart. Enemy-turn actions are played one after another, so each can hurt.
+
+### 1.2a Moving things hitting the ball (owner, 2026-11-14)
+
+- **Free-rolling things** (Lunger, Mole, Spitter seed) and the ball deflect off each other like two balls colliding: both bounce away.
+- **Things on a fixed route** (Trundler, sliding block) keep going on their route and knock the ball out of the way. The ball is pushed off at the mover's speed plus a knock of 5 tiles/s away from it.
+- This can happen to a resting ball, even while you are aiming. The ball then rolls under normal physics until it rests: it can be bounced into more enemies, hazards or water and take several hits on the way (with the 0.5 s immunity between hits). This does **not** use up a shot. Your aim and any meter charge are cancelled; you aim again once the ball rests.
+- A gate still never closes on the ball: it stays open until the ball has left its tile.
 
 ### 1.3 Damage calculation (FEATURES.md section 2, in this order)
 
@@ -95,10 +102,10 @@ All have `element: none`, no weak/resistant elements, no weak spots or guarded s
 |---|---|
 | Health / stars / cost | 2 / 1 / 3 |
 | Movement | Follows its `path` at 1.5 tiles/s, there and back, all the time (also while you aim) |
-| Contact effect | When the ball hits it **and it survives**: the ball takes 1 damage (attack damage 1) and is knocked back — bounced away from the Trundler at at least 5 tiles/s |
+| Contact effect | When the ball hits it **and it survives**: the ball takes 1 damage (attack damage 1) and is knocked away (section 1.2a) |
 | Defeated by the hit | No contact effect; the ball carries on; flag pole goes up (section 3.3) |
 | Triggers | None (patrollers do not use sentinel triggers) |
-| Running into a resting ball | Turns round, as if it hit the end of its path (question 3). Never hurts a resting ball |
+| Running into the ball | Keeps going on its path and knocks the ball out of the way (section 1.2a). The ball takes 1 damage, whether it was moving or resting |
 | Stunned | Freezes in place until after the next enemy turn |
 
 How it plays: the first hit costs you 1 health unless you finish it in one (two damage needs gear later, or two shots). Timing your shot to meet it head-on vs. from behind does not matter yet.
@@ -112,10 +119,13 @@ How it plays: the first hit costs you 1 health unless you finish it in one (two 
 | Hit | Activated |
 | Rest (ball stops inside 3.5) | Activated |
 | Pass-by (ball goes through 1.5) | Activated |
-| Action each enemy turn | **Lob:** spits a seed at the spot where the ball is now. A target ring appears there. On the **next** enemy turn the seed lands: if the ball is within 0.75 tiles of the ring, 1 damage. Then it spits again. Range 8 tiles; if the ball is further away it waits. |
+| Action each enemy turn | **Lob (owner, 2026-11-14):** marks the spot where the ball is now with a target ring. On the **next** enemy turn it lobs a seed at that ring, then marks a new ring at the ball's new spot. Range 8 tiles; if the ball is further away it waits. |
+| The seed | Has ball physics. It is launched as a lofted shot (50°) aimed so its first landing is on the ring, then carries on bouncing and rolling along that same line. It is affected by all terrain: slopes, surfaces, hazard tiles; it can fall off edges; water slows or stops it as it does the ball. It disappears once it stops, falls out of bounds or stops in water |
+| Seed touches the ball | 1 damage while the seed is moving (flying, bouncing or rolling); the seed and the ball deflect off each other (section 1.2a) |
+| Seed and other things | Bounces off blockers, enemies and moving obstacles. Does not hurt enemies, does not lower flags, is not zapped by clouds |
 | Once activated | Stays activated for the rest of the course |
 
-How it plays: once woken it is a slow, readable threat — you always get one shot to move off the ring. See question 1 for the alternative (a seed that travels along the ground in real time).
+How it plays: once woken it is a slow, readable threat. You get one shot to move off the ring, but the seed keeps bouncing after it lands, so standing just past the ring in its line is still risky.
 
 ### 2.3 Lunger — sentinel, tier 2 (the one that chases)
 
@@ -137,7 +147,7 @@ How it plays: once woken it is a slow, readable threat — you always get one sh
 | Spikes | 1 damage to it, at most once per launch. If that defeats it, you still get its star and a flag pole |
 | Obstacles | Bounces off blockers, crates, moving obstacles and other enemies. Passes through raised flag poles and lowers them (section 3.3) |
 | Thunder cloud | Rolling under one zaps it: thrown in a random direction at 6 tiles/s (from the seed), **no damage**. Once per cloud per launch (owner, 2026-11-14) |
-| Touching the ball while it is moving | The ball takes 1 damage (once-per-shot rule applies during a shot) and the Lunger bounces off. A resting ball is not moved |
+| Touching the ball while it is moving | The ball takes 1 damage, and the two deflect off each other (section 1.2a), even if the ball was resting |
 | When it has stopped | Harmless: touching it does not hurt you. It is a normal target |
 | Ball hits it while both are moving | Your hit counts against it **and** you take 1 damage |
 
@@ -153,7 +163,7 @@ How it plays: like a second golf ball aimed at you. You can use walls, slopes an
 | Underground | Only the molehill shows: a low mound (height 0.15) the ball rolls over without bouncing. The Mole cannot be hit while underground |
 | Trigger | The ball **rolling** over the molehill: touching the ground within 0.35 tiles of its centre. A ball flying over it does not count. Response: immediate. Fires again each time it is underground and you roll over it |
 | Launch | Out of the hill in a random direction (from the seed, so the same seed and shots give the same direction) at 8 tiles/s, then rolls with the same rules as the Lunger: terrain, edges and water bounce it back, spikes hurt it |
-| Moving | Touching the ball costs the ball 1 damage (once-per-shot rule). Your ball bounces off it and cannot hurt it while it moves (owner, 2026-11-14) |
+| Moving | Touching the ball costs the ball 1 damage, and the two deflect off each other (section 1.2a). Your ball and cannot hurt it while it moves (owner, 2026-11-14) |
 | Thunder cloud | Same as the Lunger: thrown in a random direction, no damage |
 | Stopped | Harmless and can be hit. One hit defeats it: star secured, flag pole where it stood |
 | Burrowing | It stays up for the whole of your **next** shot. On the enemy turn after that shot it burrows where it stopped, and a new molehill appears there (owner, 2026-11-14) |
@@ -185,7 +195,7 @@ Never act; all triggers none. On defeat the ability goes straight into your slot
 | Height | 0.5 | 1.0 when closed, 0 when open |
 | Movement | Along its `path` at 1 tile/s, there and back | Open 2 s, closed 2 s, repeating; `phase` offsets it |
 | Ball hits it | Bounces off as off a moving wall (its speed is taken into account), bounce 0.6 | Closed: bounces off, bounce 0.6. Open: nothing |
-| Meets a resting ball | Turns round (question 3) | Stays open until the ball has left the tile |
+| Meets the ball | Keeps going and knocks the ball out of the way, no damage (section 1.2a) | Stays open until the ball has left the tile |
 | Cost | 2 | 2 |
 
 ### 3.2 Destructibles
@@ -231,7 +241,7 @@ Never act; all triggers none. On defeat the ability goes straight into your slot
 |---|---|
 | Covers | One tile (square, 1 × 1), floating over it |
 | Danger zone | From the ground up to **0.5 tiles** (one step) above the ground. The ball is safe only if its bottom is above that |
-| Zap | 1 damage (skipped if the ball was already hurt this shot) and the ball is thrown along the ground in a random direction from the seed at 6 tiles/s with a small hop (2 tiles/s up) |
+| Zap | 1 damage (skipped if the ball is still immune from damage in the last 0.5 s) and the ball is thrown along the ground in a random direction from the seed at 6 tiles/s with a small hop (2 tiles/s up) |
 | Repeat | Each cloud zaps at most once per shot |
 | Stationary or drifting | Set per placement: no `path` = stationary; with a `path` it drifts there and back at 1 tile/s, also while you aim |
 | Aim guide | Stops at a stationary cloud and marks it. For a drifting cloud, the guide shows the cloud's lane (its whole path) faintly, because the guide cannot know where the cloud will be |
@@ -287,9 +297,11 @@ Quota set so you must clear at least two of the three areas. Exact layout drawn 
 - World clock: same clock step gives the same positions; a replayed run gives the same final state.
 - Damage order: each step separately (element ×2 and half-down, from-above, from-behind, guarded side blocks, shield blocks the first hit only), using test-only enemy entries.
 - Each trigger × each response: hit/rest/pass-by × none/immediate/activated.
-- Spitter lob lands for damage, and misses when the ball moved away; Lunger launches at the ball, bounces back from edges and water, takes spike damage once per launch, hurts only while moving; its immediate launch fires once per shot. Mole: rolling over the hill triggers it, flying over does not; same seed same direction; hurts only while moving; cannot be hit while moving or underground; burrows after one shot and leaves a new hill.
+- Damage immunity: a second hit within 0.5 s does nothing, after 0.5 s it counts.
+- Knocked while resting: Trundler and sliding block keep their route and push the ball; Lunger, Mole and seed deflect with the ball; no shot is used; aim is cancelled.
+- Spitter: ring marked, seed lobbed next turn lands on the ring on flat ground, then keeps bouncing along its line; slowed by water, falls off edges, disappears when stopped; hurts only while moving; Lunger launches at the ball, bounces back from edges and water, takes spike damage once per launch, hurts only while moving; its immediate launch fires once per shot. Mole: rolling over the hill triggers it, flying over does not; same seed same direction; hurts only while moving; cannot be hit while moving or underground; burrows after one shot and leaves a new hill.
 - Stunned: enemy skips one action; ball loses one shot; reapplying is ignored.
-- Trundler contact effect only when it survives; turns round at a resting ball.
+- Trundler: contact effect when it survives your hit; hits a resting ball for 1 damage and keeps to its path.
 - Defeating an enemy adds its star to the meter and wallet at once; a star marker sits above its pole.
 - An enemy entering a raised flag's tile lowers it and takes 1 star from the meter and wallet; the ball touching a lowered flag raises it and gives the star back; repeatable; an open exit stays open when the meter drops; a closed exit opens only when the meter is full again.
 - Thunder cloud throws a Lunger or Mole in a seeded random direction with no damage, once per cloud per launch.
@@ -309,17 +321,19 @@ Traits, elements on enemies, weak spots and guarded sides on real enemies, squad
 
 ## 9. Questions for the owner
 
-Questions 1–7 each have a default that this sheet already uses. Answer only the ones you want to change.
+Questions 2, 4, 5, 6 and 7 each have a default that this sheet already uses. Answer only the ones you want to change.
 
-1. **Spitter's projectile.** Default: a lobbed seed that lands on next enemy turn where you were (a ring shows where). Alternative: a seed that rolls along the ground in real time and hits you if you are in its way — more action, but it can hit you while you aim.
+1. ~~Spitter's projectile~~ — answered, see below.
 2. **What causes Stunned now?** Default: Anchor's ground pound stuns enemies within 1 tile. Alternatives: the thunder cloud zap also stuns the ball (you lose a shot), or nothing causes it yet (built and tested only).
-3. **Moving things meeting a resting ball.** Default: they turn round, so nothing pushes or hurts you while you aim. Alternative: they shove the ball (and a Trundler hurts it).
+3. ~~Moving things meeting a resting ball~~ — answered, see below.
 4. **Trundler.** Default: health 2, hitting it without defeating it costs you 1 health. Alternative: health 1, and it only hurts you when it runs into the moving ball.
 5. **Cracked tile.** Default: breaking it releases hidden stars and it becomes normal ground. Alternative: it becomes a hole one step deeper (a new route or a trap). Harder to build.
 6. **Ability key.** Default F (E, Q, Space and others are already used).
 7. **Burner and flag poles.** Default: a Burner burst pushes past poles with no speed loss. Alternative: poles slow it like any fast ball.
 Answered by the owner, 2026-11-14 (now written into the sheet above):
 
+1. The Spitter's seed is a lobbed ball that lands on your old spot next turn and keeps bouncing with full physics (section 2.2).
+3. Moving things and the ball deflect off each other; fixed-route things keep going and knock the ball away. New: 0.5 s damage immunity after any hit, replacing once-per-shot (sections 1.2 and 1.2a).
 8. The Mole burrows where it stops.
 9. A moving Mole cannot be hit: the ball bounces off and takes the damage.
 10. Thunder clouds zap the Lunger and the Mole, throwing them in a random direction with no damage.

@@ -66,7 +66,8 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 - **Positions:** "from above" means the ball was airborne just before contact. "From behind" uses the direction the enemy is facing. A weak spot doubles damage; a guarded side blocks the hit.
 - **Order of calculation:** hit damage after modifiers → element → position → shield or block → subtract from enemy health.
 - **Contact:** if the enemy survives, the ball bounces off it. If the enemy is defeated, the ball carries on with a small loss of speed. The same enemy cannot be hit again within half a second.
-- **Damage to the ball:** enemy attacks and hazards remove health. After taking damage the ball cannot be damaged again for the rest of that shot.
+- **Damage to the ball:** enemy attacks and hazards remove health. ~~After taking damage the ball cannot be damaged again for the rest of that shot.~~ **Owner, 2026-11-14:** after taking any damage the ball is immune for 0.5 seconds, then can be hurt again. A ball knocked around can take several hits.
+- **Owner, 2026-11-14 — moving things and the ball:** free-rolling things (Lunger, Mole, Spitter seed) and the ball deflect off each other. Things on a fixed route (Trundler, sliding block) keep going and knock the ball out of the way, even a resting ball. Details in `docs/plans/milestone-4.md` section 1.2a.
 
 ---
 
@@ -143,8 +144,8 @@ Early courses use mostly tiers 1 and 2. Later regions shift the mix upward (sect
 | Working name | Family | Tier | Behaviour | Milestone |
 |---|---|---|---|---|
 | Mossback | Sentinel | 1 | Never acts. A plain target. | 3 |
-| Trundler | Patroller | 2 | Rolls along its path. Contact: 1 damage and knock-back. | 4 |
-| Spitter | Sentinel | 2 | When activated, fires a slow projectile at the ball each turn. | 4 |
+| Trundler | Patroller | 2 | Rolls along its path. Contact: 1 damage and knock-back. Keeps to its path when it runs into the ball, even a resting one (owner, 2026-11-14). | 4 |
+| Spitter | Sentinel | 2 | When activated, marks the ball's spot each turn and lobs a seed at it the next turn. The seed has ball physics and keeps bouncing along its line after landing (owner, 2026-11-14). | 4 |
 | Lunger | Sentinel | 2 | Rest trigger activates it; pass-by trigger makes it launch at once. Each enemy turn it launches itself at the ball and rolls like the golf ball (owner, 2026-11-14): terrain affects it, it bounces back from edges and water, spikes hurt it, it hurts the ball only while moving. | 4 |
 | Mole | Sentinel | 2 | Owner, 2026-11-14. Hidden under a molehill. Rolling directly over the hill makes it shoot out in a random direction and roll to a stop. Hurts the ball only while moving. Stays up for one player turn, then burrows. | 4 |
 | Ability carriers | Sentinel | 1 | One Mossback variant per starter ability; grants it on defeat. | 4 |
@@ -231,7 +232,7 @@ Build in Milestone 4, alongside the other contact rules and obstacles.
 **Default (owner may change):**
 
 - It floats over one tile and covers that tile. A ball is "over" it only when the bottom of the ball is higher than the top of the cloud. Anything lower, rolling or bouncing, counts as under and is zapped.
-- The zap deals 1 damage. The usual rule applies: the ball takes damage at most once per shot.
+- The zap deals 1 damage, unless the ball is still immune from a hit in the last 0.5 s (owner, 2026-11-14).
 - The ball is thrown along the ground in a random direction at a set speed, with a small hop (tuning numbers; starting at 6 tiles per second). The direction comes from the seeded random number generator, so the same seed and the same shots give the same zap.
 - Each cloud zaps at most once per shot, so the ball cannot be caught in a loop under it.
 - The aim guide stops at the cloud and marks it, because the direction after a zap is meant to be a surprise.
