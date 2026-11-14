@@ -220,6 +220,8 @@ Build in Milestone 4, alongside the other contact rules and obstacles.
 - A thunder cloud floats above the course.
 - A ball that rolls under it is electrocuted: it takes damage and is thrown in a random direction.
 - A ball that hops over it is not damaged or affected.
+- It cannot be beaten. It is an obstacle, not an enemy: no health, no stars, no flag pole.
+- A cloud can be stationary or drift. Each placement on a course chooses which.
 
 **Default (owner may change):**
 
@@ -228,7 +230,7 @@ Build in Milestone 4, alongside the other contact rules and obstacles.
 - The ball is thrown along the ground in a random direction at a set speed, with a small hop (tuning numbers; starting at 6 tiles per second). The direction comes from the seeded random number generator, so the same seed and the same shots give the same zap.
 - Each cloud zaps at most once per shot, so the ball cannot be caught in a loop under it.
 - The aim guide stops at the cloud and marks it, because the direction after a zap is meant to be a surprise.
-- It stays still, cannot be defeated, drops no stars, and leaves no flag pole: it is an obstacle, not an enemy.
+- A drifting cloud follows a path set in the course file, back and forth, in real time like a patroller (it keeps moving while the player aims). Its speed is a tuning number, starting at 1 tile per second. The course generator (Milestone 5) decides which clouds drift.
 - Ways over it: a lofted shot, a spring, a bounce boost, and later the Hop ability.
 
 Build in Milestone 4.
