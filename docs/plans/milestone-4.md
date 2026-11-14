@@ -280,7 +280,7 @@ All: one slot; **press F during a shot** (question 6), **once per shot**, unlimi
 
 The ball can still be hurt during a Tornado by enemies, clouds and seeds, with the usual 0.5 s immunity.
 
-**Tornado steering (owner, 2026-11-14):** while the Tornado is active, Left/Right arrows or A/D nudge it, turning it up to 120° per second on top of the random weave. Camera panning is off while the ball is moving, so these keys are free then.
+**Tornado steering (owner, 2026-11-14):** while the Tornado is active, Left/Right arrows or A/D nudge it, turning it up to 120° per second on top of the random weave. These keys pan the camera today; while a Tornado is active they steer instead and the camera follows the ball (mouse-drag panning still works).
 
 ### 4a. Getting abilities, and the Wild (owner, 2026-11-14)
 
