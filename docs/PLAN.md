@@ -162,6 +162,7 @@ docs/
 - [ ] Theme, character and title chosen with the owner
 - [ ] Final pixel art replaces placeholders through the manifest only
 - [ ] Sound effects and music, original or correctly licensed
+- [ ] An animation and a sound for most actions (owner, 2026-11-14), including a slot-machine wheel for the Wild pickup
 - [ ] Title screen, settings, a short tutorial course, controls help
 - [ ] Playtest with a few friends; fix what confuses them
 

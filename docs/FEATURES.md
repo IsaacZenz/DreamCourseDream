@@ -254,6 +254,8 @@ id, name, icon id, what activates it, effect, duration, element (or none), modif
 
 The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is ice, Static is shock. The rest have none.
 
+**Owner, 2026-11-14:** abilities normally come **only** from defeating their carrier enemy. The one exception is the Wild pickup (section 13), a small chance from secured crates. The Tornado can be nudged left and right.
+
 **Starter set, Milestone 4:** Anchor, Burner, Hop, and Tornado (added by the owner, 2026-11-14).
 
 **Owner, 2026-11-14:** Hop lifts the ball 1.1 tiles. **Tornado:** the ball becomes a small whirlwind for a brief time: fast and chaotic, hard to control. While it is active the ball cannot fall off an edge but can go out over one; if it runs out over a drop, the ball falls. Spiralling into an enemy deals 1 damage. Numbers in `docs/plans/milestone-4.md` section 4.
@@ -386,6 +388,7 @@ For the ball, one turn is one shot. Build the system and Stunned in Milestone 4;
 | Blue star | +1 permanent currency | Elites, bosses, hidden spots |
 | Heart | +1 health | Crates, rare enemy drop |
 | Shot orb | +1 shot, up to the maximum | Crates, placed on courses |
+| Wild | A random ability (not the one held), replacing the current one | Small chance from secured crates, 10% times drop luck (owner, 2026-11-14) |
 
 Build in Milestone 3.
 
