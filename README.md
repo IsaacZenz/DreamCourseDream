@@ -27,8 +27,20 @@ Then open the address it prints (usually http://localhost:5173).
 | `npm run typecheck` | Check TypeScript types |
 | `npm run lint` | Check code rules, including that `src/sim/` and `src/gen/` stay free of Phaser, the browser, the clock and `Math.random` |
 | `npm run check` | Type check, lint and test in one go |
+| `npm run art` | Regenerate the placeholder sprites and `assets/manifest.json` |
 | `npm run build` | Build the site into `dist/` |
 | `npm run preview` | Serve the built site locally |
+
+## Controls (Milestone 1)
+
+| Key | Action |
+|---|---|
+| Arrow keys / WASD, or drag with the right mouse button | Pan the camera |
+| C | Centre the camera on the ball |
+| 1, 2, N | Switch test course |
+| G | Cycle the debug overlay: coordinates, heights, surfaces, off. Hover a tile for its details. |
+
+You can also open a course directly: `?course=flat-walls` or `?course=slopes-surfaces`, and add `&debug=heights` (or `coords`, `surfaces`).
 
 ## Folder layout
 

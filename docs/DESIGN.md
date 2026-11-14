@@ -46,6 +46,8 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
   - four corner heights in whole steps (this one rule gives flat tiles, straight slopes and corner slopes),
   - a surface type (see below),
   - an optional object (enemy, hazard, pickup, exit).
+- **Default:** within one tile, corners differ by at most one step and opposite corners cannot both be raised. That leaves 13 tile shapes: flat, 4 straight slopes, 4 raised corners, 4 lowered corners. Steeper ground is built from several tiles or a ledge. Non-flat tiles are split into two flat triangles along the diagonal that avoids the odd corner; the art and the physics use the same split.
+- **Default:** course files are JSON with one text row per grid row (format described at the top of `src/sim/course.ts`). Empty spots (`.`) are out of bounds.
 - Where two neighbouring tile edges differ in height, there is a vertical face. A ball rolling into a higher face bounces off it; a ball rolling off a lower edge becomes airborne.
 - The camera follows the ball. The player can pan to look around while aiming.
 
