@@ -81,7 +81,7 @@ docs/
 
 ## Milestone 4 — Enemies and abilities
 
-- [ ] **Plan gate:** design sheet for the enemies (Trundler, Spitter, Lunger, ability carriers), the three abilities, the Stunned status, the moving obstacles and destructibles, the flag pole and the thunder cloud. Owner signs it off before any of them is built.
+- [x] **Plan gate:** design sheet for the enemies (Trundler, Spitter, Lunger, ability carriers), the three abilities, the Stunned status, the moving obstacles and destructibles, the flag pole and the thunder cloud. Owner signs it off before any of them is built.
 - [ ] Turn order from DESIGN.md section 8
 - [ ] Damage calculation in the order given in FEATURES.md section 2, including element, position and shield steps even though the starter enemies do not use them yet
 - [ ] Full enemy template from FEATURES.md section 4 (tier, traits, element, gear fields present, mostly unused)
@@ -200,3 +200,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Milestone 3 done: owner won and lost the test course (on the artifact test build) and signed it off.
 - 2026-11-14 — Owner decision: plan before building. Content milestones (4 to 8) now start with a design sheet the owner signs off; see the note at the top of this file.
 - 2026-11-14 — Milestone 4 design sheet written on branch `milestone-4-enemies-abilities`: `docs/plans/milestone-4.md`. Seven questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-14 — Milestone 4 design sheet signed off by the owner (`docs/plans/milestone-4.md`). Owner additions during review: Mole enemy, Tornado ability and Whirlback, secured crate and Wild pickup, tree stump replacing the post, lowered flags, 0.5 s damage immunity, knock-backs, keyboard-only controls; themes per boss recorded for later.

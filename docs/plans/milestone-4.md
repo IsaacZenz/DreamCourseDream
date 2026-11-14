@@ -1,6 +1,6 @@
 # Milestone 4 design sheet — Enemies and abilities
 
-**Status: waiting for the owner's sign-off.** Nothing on this sheet is built until the owner signs it off (CLAUDE.md, "Plan before building").
+**Status: signed off by the owner, 2026-11-14.** Built on branch `milestone-4-enemies-abilities`.
 
 How to review: read each item, change any number or behaviour you want, and answer the numbered questions in [section 9](#9-questions-for-the-owner). Every number here is a starting value and goes into `src/content/` so it can be tuned later. Items marked **Decided** come from you already and are only restated.
 
@@ -386,4 +386,4 @@ Answered by the owner, 2026-11-14 (now written into the sheet above):
 
 ## Sign-off
 
-- [ ] Owner sign-off (date, and any changes made)
+- [x] Owner sign-off, 2026-11-14. Changes the owner made during review are marked "owner, 2026-11-14" throughout this sheet and recorded in FEATURES.md and DESIGN.md.
