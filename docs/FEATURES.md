@@ -195,6 +195,24 @@ id, name, sprite id, size in tiles, whether it blocks the ball, contact effect, 
 
 Moving obstacles run in real time like patrollers, including while the player aims.
 
+### Flag pole left by a defeated enemy
+
+**Decided (owner, 2026-11-14):**
+
+- When an enemy is defeated, a golf flag pole goes up where it died. The enemy still drops its yellow stars as before.
+- The pole is an obstacle. A ball hitting it below a speed threshold bounces off.
+- A ball at or above the threshold pushes past the pole and loses most of its speed doing it.
+
+**Default (owner may change):**
+
+- The pole stays for the rest of the course and is still standing after a ball pushes past it.
+- The speed threshold and the speed kept after pushing past are tuning numbers, so they can be set with the tuning panel. Starting values: push past at 8 tiles per second or more, keep 25% of the speed.
+- A lofted ball flying higher than the pole passes over it.
+- The pole is a thin round obstacle about as tall as the post, with its own placeholder sprite.
+- It replaces the current rule where the ball carries on through a defeated enemy with a small loss of speed. Contact with the enemy itself is unchanged: the hit that defeats it still counts, and the pole goes up once the ball has moved clear, so it never traps the ball.
+
+Build in Milestone 4, alongside the other contact rules and obstacles.
+
 ---
 
 ## 7. Abilities (powerups)
