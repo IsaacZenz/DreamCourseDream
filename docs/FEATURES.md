@@ -202,8 +202,9 @@ Moving obstacles run in real time like patrollers, including while the player ai
 
 **Decided (owner, 2026-11-14):**
 
-- When an enemy is defeated, a golf flag pole goes up where it died. The enemy still drops its yellow stars as before.
-- **Owner, 2026-11-14:** a star hovers above the flag pole, showing the star secured by defeating that enemy. (Default until the owner says otherwise: the star counts at once, with no dropped star to collect. See `docs/plans/milestone-4.md` question 11.)
+- When an enemy is defeated, a golf flag pole goes up where it died. ~~The enemy still drops its yellow stars as before.~~ Replaced below.
+- **Owner, 2026-11-14:** a star hovers above the flag pole, showing the star secured by defeating that enemy. The star counts towards the meter and the wallet the moment the enemy dies; there is no dropped star to fetch.
+- **Owner, 2026-11-14:** if any enemy passes over a raised flag, the flag slides down into its hole and its star disappears: that star is taken off the meter and the wallet. The ball running into the lowered flag raises it again and gives the star back. Once the exit has opened it stays open even if stars are lost, but a lost star is not carried out of the course to be spent. Details in `docs/plans/milestone-4.md` section 3.3.
 - The pole is an obstacle. A ball hitting it below a speed threshold bounces off.
 - A ball at or above the threshold pushes past the pole and loses most of its speed doing it.
 
@@ -236,6 +237,7 @@ Build in Milestone 4, alongside the other contact rules and obstacles.
 - The aim guide stops at the cloud and marks it, because the direction after a zap is meant to be a surprise.
 - A drifting cloud follows a path set in the course file, back and forth, in real time like a patroller (it keeps moving while the player aims). Its speed is a tuning number, starting at 1 tile per second. The course generator (Milestone 5) decides which clouds drift.
 - Ways over it: a lofted shot, a spring, a bounce boost, and later the Hop ability.
+- **Owner, 2026-11-14:** the cloud also zaps rolling enemies (Lunger, Mole): it throws them in a random direction and does **not** damage them.
 
 Build in Milestone 4.
 

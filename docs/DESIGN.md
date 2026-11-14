@@ -139,7 +139,7 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
   - Warp: the ball comes out of the paired warp at the same spot in the tile, with the same speed. It must leave that tile before a warp can fire again.
 - **Damage once per shot** (FEATURES.md section 2) also covers sinking: if spikes already hurt the ball this shot, stopping in water does not cost a second health.
 - **Blockers** (rock, post, low wall) stand on their tile. The ball bounces off their sides. A ball that comes down on top is thrown back up and off the side: nothing can rest on a blocker. A lofted shot that is higher than the blocker passes over it (the low wall is a quarter of a tile high).
-- **Stars from enemies** land a short way off (1.1 to 1.9 tiles, at a random angle from the seed) on ground that can hold the ball, so the player sometimes has to go and fetch them. With the starting star reach of 1 tile, a ball rolling through often picks them up anyway.
+- ~~**Stars from enemies** land a short way off (1.1 to 1.9 tiles, at a random angle from the seed) on ground that can hold the ball, so the player sometimes has to go and fetch them. With the starting star reach of 1 tile, a ball rolling through often picks them up anyway.~~ Replaced from Milestone 4 (owner, 2026-11-14): an enemy's star counts the moment it is defeated and is shown above its flag pole; see FEATURES.md section 6.
 - **Hearts and shot orbs** are left on the ground when health or shots are already full, so they are not wasted.
 - **Restart (R)** replays the same course with the same seed. A new seed is picked when the page loads, or set it with `?seed=` in the address.
 

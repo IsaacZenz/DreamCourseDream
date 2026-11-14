@@ -135,7 +135,8 @@ How it plays: once woken it is a slow, readable threat — you always get one sh
 | Edges | Any drop to lower ground, or the edge of the course, works as a wall for it: it bounces back (bounce 0.6). Rising faces work as for the ball |
 | Water | The edge of water works as a wall for it: it bounces off and never stops in water |
 | Spikes | 1 damage to it, at most once per launch. If that defeats it, you still get its star and a flag pole |
-| Obstacles | Bounces off blockers, flag poles, crates, moving obstacles and other enemies. Thunder clouds do not affect enemies (question 10) |
+| Obstacles | Bounces off blockers, crates, moving obstacles and other enemies. Passes through raised flag poles and lowers them (section 3.3) |
+| Thunder cloud | Rolling under one zaps it: thrown in a random direction at 6 tiles/s (from the seed), **no damage**. Once per cloud per launch (owner, 2026-11-14) |
 | Touching the ball while it is moving | The ball takes 1 damage (once-per-shot rule applies during a shot) and the Lunger bounces off. A resting ball is not moved |
 | When it has stopped | Harmless: touching it does not hurt you. It is a normal target |
 | Ball hits it while both are moving | Your hit counts against it **and** you take 1 damage |
@@ -152,9 +153,10 @@ How it plays: like a second golf ball aimed at you. You can use walls, slopes an
 | Underground | Only the molehill shows: a low mound (height 0.15) the ball rolls over without bouncing. The Mole cannot be hit while underground |
 | Trigger | The ball **rolling** over the molehill: touching the ground within 0.35 tiles of its centre. A ball flying over it does not count. Response: immediate. Fires again each time it is underground and you roll over it |
 | Launch | Out of the hill in a random direction (from the seed, so the same seed and shots give the same direction) at 8 tiles/s, then rolls with the same rules as the Lunger: terrain, edges and water bounce it back, spikes hurt it |
-| Moving | Touching the ball costs the ball 1 damage (once-per-shot rule). Your ball bounces off it and cannot hurt it while it moves (question 9) |
+| Moving | Touching the ball costs the ball 1 damage (once-per-shot rule). Your ball bounces off it and cannot hurt it while it moves (owner, 2026-11-14) |
+| Thunder cloud | Same as the Lunger: thrown in a random direction, no damage |
 | Stopped | Harmless and can be hit. One hit defeats it: star secured, flag pole where it stood |
-| Burrowing | It stays up for the whole of your **next** shot. On the enemy turn after that shot it burrows and a new molehill appears where it stopped (question 8) |
+| Burrowing | It stays up for the whole of your **next** shot. On the enemy turn after that shot it burrows where it stopped, and a new molehill appears there (owner, 2026-11-14) |
 | Stunned | Stays up one turn longer before burrowing |
 
 How it plays: a trap you can see. Roll over the hill on purpose to make it come up, dodge it, then hit it on your next shot before it goes back down.
@@ -198,8 +200,24 @@ Never act; all triggers none. On defeat the ability goes straight into your slot
 
 ### 3.3 Flag pole (Decided by owner; defaults restated)
 
-- **Owner, 2026-11-14:** a star hovers above every flag pole, showing the star you secured by defeating that enemy. The star counts towards the meter and your wallet the moment the enemy is defeated; you no longer have to roll over a dropped star to collect it (question 11). The hovering star is only a marker and cannot be picked up.
-- Goes up where a defeated enemy stood, once the ball has moved clear (0.1 tiles past touching), so it never traps the ball. Stays for the rest of the course and is never knocked down.
+**Owner, 2026-11-14 — secured stars and lowered flags:**
+
+- A star hovers above every raised flag pole, showing the star you secured by defeating that enemy. The star counts towards the meter **and** your wallet the moment the enemy is defeated. Enemies no longer drop a star to fetch. The hovering star is a marker and cannot be picked up.
+- If any enemy passes over the tile of a raised flag, the flag slides down into its hole and the star above it disappears. The flag is **deactivated**: you lose that star from the meter and from your wallet.
+- To reactivate it, the ball runs into the lowered flag. The flag goes back up, the star reappears, and you get the star back in the meter and the wallet.
+- Once the exit has opened, it stays open even if stars are lost afterwards. But a star lost after that is still lost from your wallet, so you leave the course with fewer stars to spend.
+
+**Default details (owner may change):**
+
+- "Passes over" means the enemy's body enters the flag's tile. This covers the Trundler on its path, a rolling Lunger, a Mole rolling or stopping on it, and a Mole surfacing under it. A Spitter's seed does not count. Enemies are not blocked by raised poles; the flag drops as they arrive.
+- A lowered flag is flat in its hole, so the ball rolls over it without bouncing. The ball reactivates it by touching the ground within 0.4 tiles of the hole (the same reach as a heart). A ball flying over does not count.
+- A flag can be lowered and raised any number of times. An enemy passing over a lowered flag does nothing.
+- The meter can drop below the quota. A closed exit opens again only when the meter is full again.
+- The star marker and the lowered flag each get a placeholder sprite; the HUD meter shows the change at once.
+
+**Raised pole (defaults restated):**
+
+- Goes up where a defeated enemy stood, once the ball has moved clear (0.1 tiles past touching), so it never traps the ball. Stays for the rest of the course; the ball never knocks it down.
 - Thin pole, radius 0.08, height 1.5 (as tall as the post). A lofted ball higher than 1.5 passes over.
 - Hit below **8 tiles/s**: bounces off (bounce 0.75, like the post).
 - Hit at 8 or more: pushes past, keeps **25%** of its speed.
@@ -218,6 +236,7 @@ Never act; all triggers none. On defeat the ability goes straight into your slot
 | Stationary or drifting | Set per placement: no `path` = stationary; with a `path` it drifts there and back at 1 tile/s, also while you aim |
 | Aim guide | Stops at a stationary cloud and marks it. For a drifting cloud, the guide shows the cloud's lane (its whole path) faintly, because the guide cannot know where the cloud will be |
 | Ways over | Lofted shot, spring, bounce boost, Hop |
+| Enemies | **Owner, 2026-11-14:** a Lunger or Mole rolling under it is zapped: thrown in a random direction at 6 tiles/s, no damage. Once per cloud per launch. The Trundler is on a fixed path and is not affected |
 | Health, stars, flag pole | None — cannot be beaten |
 | Cost | Stationary 2, drifting 3 |
 
@@ -256,7 +275,7 @@ New placeholder sprites (via `npm run art` and the manifest only): trundler, spi
 One hand-built course with three areas, so each trigger can be tried on purpose:
 
 1. **Patrol yard:** a Trundler on a straight path, a sliding block, and a gate between you and an Emberback.
-2. **Sentinel field:** a Spitter and a Lunger on open grass with room to try rest, pass-by and hit on each, next to a ledge, a pond and a spike strip so you can watch the Lunger bounce back and get hurt; two molehills; an Anchorback nearby; a crate.
+2. **Sentinel field:** a Spitter and a Lunger on open grass with room to try rest, pass-by and hit on each, next to a ledge, a pond and a spike strip so you can watch the Lunger bounce back and get hurt; two molehills; a Trundler path that runs over a spot where you can defeat an enemy, so you can watch its flag drop and raise it again; an Anchorback nearby; a crate.
 3. **Sky lane:** a stationary cloud and a drifting cloud across a narrow strip, a Hopback before it, and a cracked tile on a ledge you can only break with Anchor.
 
 Quota set so you must clear at least two of the three areas. Exact layout drawn when building.
@@ -272,6 +291,8 @@ Quota set so you must clear at least two of the three areas. Exact layout drawn 
 - Stunned: enemy skips one action; ball loses one shot; reapplying is ignored.
 - Trundler contact effect only when it survives; turns round at a resting ball.
 - Defeating an enemy adds its star to the meter and wallet at once; a star marker sits above its pole.
+- An enemy entering a raised flag's tile lowers it and takes 1 star from the meter and wallet; the ball touching a lowered flag raises it and gives the star back; repeatable; an open exit stays open when the meter drops; a closed exit opens only when the meter is full again.
+- Thunder cloud throws a Lunger or Mole in a seeded random direction with no damage, once per cloud per launch.
 - Flag pole: bounce below threshold, push-past above, lofted ball passes over, pole appears only once the ball is clear.
 - Thunder cloud: rolling zapped, high ball safe, once per cloud per shot, same seed same throw direction, no second damage after spikes.
 - Each ability's effect, once per shot, replaced on pickup.
@@ -288,7 +309,7 @@ Traits, elements on enemies, weak spots and guarded sides on real enemies, squad
 
 ## 9. Questions for the owner
 
-Each has a default that this sheet already uses. Answer only the ones you want to change.
+Questions 1–7 each have a default that this sheet already uses. Answer only the ones you want to change.
 
 1. **Spitter's projectile.** Default: a lobbed seed that lands on next enemy turn where you were (a ring shows where). Alternative: a seed that rolls along the ground in real time and hits you if you are in its way — more action, but it can hit you while you aim.
 2. **What causes Stunned now?** Default: Anchor's ground pound stuns enemies within 1 tile. Alternatives: the thunder cloud zap also stuns the ball (you lose a shot), or nothing causes it yet (built and tested only).
@@ -297,10 +318,12 @@ Each has a default that this sheet already uses. Answer only the ones you want t
 5. **Cracked tile.** Default: breaking it releases hidden stars and it becomes normal ground. Alternative: it becomes a hole one step deeper (a new route or a trap). Harder to build.
 6. **Ability key.** Default F (E, Q, Space and others are already used).
 7. **Burner and flag poles.** Default: a Burner burst pushes past poles with no speed loss. Alternative: poles slow it like any fast ball.
-8. **Where does the Mole burrow?** Default: where it stopped, leaving a new molehill there (the trap moves around the course). Alternative: it goes back to its original hill.
-9. **Can you hit a moving Mole?** Default: no, the ball bounces off it and takes the damage; you must wait until it stops. Alternative: your hit counts and you still take 1 damage, as with a moving Lunger.
-10. **Do thunder clouds zap enemies** (Lunger, Mole)? Default: no, clouds only affect the ball.
-11. **Star collection.** Default: the star counts the moment the enemy is defeated, and the star over the pole is only a marker. Alternative: the star still drops nearby and you roll over it to collect it, as in Milestone 3, and the pole just has a decorative star.
+Answered by the owner, 2026-11-14 (now written into the sheet above):
+
+8. The Mole burrows where it stops.
+9. A moving Mole cannot be hit: the ball bounces off and takes the damage.
+10. Thunder clouds zap the Lunger and the Mole, throwing them in a random direction with no damage.
+11. The star counts the moment the enemy dies. New rule added: enemies passing over a flag lower it and take the star away until the ball raises it again (section 3.3).
 
 ---
 
