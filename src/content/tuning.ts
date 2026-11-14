@@ -42,7 +42,11 @@ export interface Tuning {
   minPower: number;
   /** Seconds for the meter to sweep from empty to full and back. */
   meterPeriod: number;
-  /** Drag-power mode: screen pixels of drag for a full-power shot. */
+  /** Up-and-down sweeps the meter makes before the shot launches on its own. */
+  meterCycles: number;
+  /** Power of the automatic launch when the meter runs out, 0 to 1. */
+  autoLaunchPower: number;
+  /** Planning pull: screen pixels of pull for a full-power preview. */
   dragFullPx: number;
 
   // Spin
@@ -107,6 +111,9 @@ export const DEFAULT_TUNING: Tuning = {
   loftAngle: 50,
   minPower: 0.05,
   meterPeriod: 1.5,
+  // Owner, 2026-11-14: up, down, up, down, then an automatic 5% launch.
+  meterCycles: 2,
+  autoLaunchPower: 0.05,
   dragFullPx: 80,
 
   spinLandingSpeed: 4,
@@ -170,6 +177,8 @@ export const TUNING_CONTROLS: readonly TuningControl[] = [
   top('Shot', 'perfectBonus', 1, 2, 0.005),
   top('Shot', 'minPower', 0, 0.5, 0.01),
   top('Shot', 'meterPeriod', 0.4, 4, 0.05),
+  top('Shot', 'meterCycles', 1, 5, 1),
+  top('Shot', 'autoLaunchPower', 0, 0.5, 0.01),
   top('Shot', 'dragFullPx', 20, 200, 1),
   top('Spin', 'spinLandingSpeed', 0, 12, 0.1),
   top('Spin', 'spinRollAccel', 0, 12, 0.1),

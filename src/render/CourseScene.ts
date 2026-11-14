@@ -4,7 +4,7 @@ import { SURFACES } from '../content/surfaces';
 import { parseCourse, type Course } from '../sim/course';
 import { STEP_HEIGHT, type Tuning } from '../content/tuning';
 import { DT, ballAtTile, groundAt, predictPath, startShot, stepShot, type BallState, type ShotState, type ShotType } from '../sim/ball';
-import { SPIN_LEVELS, aimAngle, dragShot, meterPower, spinValue } from '../input/aim';
+import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
 import { loadTuning } from '../save/tuningStore';
 import { TuningPanel } from '../ui/tuningPanel';
 import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
@@ -33,15 +33,25 @@ const GUIDE_AIR = 0xf8e048;
 const METER_BG = 0x202038;
 const METER_FILL = 0xf8b048;
 const METER_FULL = 0xff6040;
+const METER_PLAN = 0xffffff;
 
 /** Shared by every course and kept across restarts, so live tuning sticks. */
 let tuning: Tuning | null = null;
 let panel: TuningPanel | null = null;
 
 /** Shot settings the player has chosen. Kept across course switches. */
-const settings = { type: 'ground' as ShotType, top: 0, side: 0, powerMode: 'meter' as 'meter' | 'drag', help: true };
+const settings = { type: 'ground' as ShotType, top: 0, side: 0, quickShot: false, help: true };
 
-type Phase = 'aim' | 'charge' | 'drag' | 'flight';
+/**
+ * The two-phase shot (owner, 2026-11-14):
+ * - plan:   waiting; press the left button to start pulling.
+ * - pull:   pulling back like a slingshot sets the direction and a planned power; the guide previews it.
+ * - set:    plan locked; hold the left button to charge.
+ * - charge: the meter sweeps up, down, up, down; release to shoot. If it runs out, the ball launches at low power.
+ * - flight: the ball is moving.
+ * Quick-shot mode (P, testing only) fires straight from the pull.
+ */
+type Phase = 'plan' | 'pull' | 'set' | 'charge' | 'flight';
 
 export interface CourseSceneData {
   courseIndex?: number;
@@ -66,7 +76,7 @@ export class CourseScene extends Phaser.Scene {
   private ballScreen = { x: 0, y: 0 };
 
   // The shot
-  private phase: Phase = 'aim';
+  private phase: Phase = 'plan';
   private ball!: BallState;
   /** Where the ball last came to rest; water and out of bounds return it here. */
   private restSpot!: BallState;
@@ -78,6 +88,8 @@ export class CourseScene extends Phaser.Scene {
   private dragFrom = { x: 0, y: 0 };
   private aim = 0;
   private power = 0;
+  /** Power chosen while planning. A preview only: the meter alone sets the real power. */
+  private planPower = 0;
   private shotsTaken = 0;
   private message: Phaser.GameObjects.Container | null = null;
   private messageUntil = 0;
@@ -136,7 +148,7 @@ export class CourseScene extends Phaser.Scene {
 
     this.ball = ballAtTile(course, course.start.x, course.start.y);
     this.restSpot = { ...this.ball };
-    this.phase = 'aim';
+    this.phase = 'plan';
     this.shot = null;
     this.shotsTaken = 0;
     this.shadowImg = this.makeSprite('ball-shadow');
@@ -206,7 +218,7 @@ export class CourseScene extends Phaser.Scene {
     // Drag with the right or middle mouse button to pan. The left button is for shots.
     this.input.mouse?.disableContextMenu();
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if ((p.rightButtonDown() || p.middleButtonDown()) && this.phase !== 'charge' && this.phase !== 'drag') {
+      if ((p.rightButtonDown() || p.middleButtonDown()) && this.phase !== 'charge' && this.phase !== 'pull') {
         const zoom = this.cameras.main.zoom;
         this.panBy(-(p.x - p.prevPosition.x) / zoom, -(p.y - p.prevPosition.y) / zoom);
       }
@@ -283,8 +295,8 @@ export class CourseScene extends Phaser.Scene {
     onKey('E', spin('side', 1));
     onKey('Q', spin('side', -1));
     onKey('P', () => {
-      settings.powerMode = settings.powerMode === 'meter' ? 'drag' : 'meter';
-      if (this.phase === 'charge' || this.phase === 'drag') this.phase = 'aim';
+      settings.quickShot = !settings.quickShot;
+      this.cancelCharge();
       this.drawShotHud();
     });
     onKey('R', () => {
@@ -292,7 +304,9 @@ export class CourseScene extends Phaser.Scene {
       this.ball = ballAtTile(this.course, this.course.start.x, this.course.start.y);
       this.restSpot = { ...this.ball };
       this.shot = null;
-      this.phase = 'aim';
+      this.phase = 'plan';
+      this.power = 0;
+      this.planPower = 0;
       this.drawBall(this.ball);
       this.centreOnBall();
     });
@@ -308,37 +322,45 @@ export class CourseScene extends Phaser.Scene {
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (!this.course) return;
-      if (p.rightButtonDown() && (this.phase === 'charge' || this.phase === 'drag')) {
+      if (p.rightButtonDown() && this.phase !== 'plan' && this.phase !== 'flight') {
         this.cancelCharge();
         return;
       }
-      if (!p.leftButtonDown() || this.phase !== 'aim') return;
-      if (settings.powerMode === 'meter') {
+      if (!p.leftButtonDown()) return;
+      if (this.phase === 'plan') {
+        this.phase = 'pull';
+        this.dragFrom = { x: p.x, y: p.y };
+        this.planPower = 0;
+      } else if (this.phase === 'set') {
         this.phase = 'charge';
         this.chargeStart = this.time.now;
-      } else {
-        this.phase = 'drag';
-        this.dragFrom = { x: p.x, y: p.y };
+        this.power = 0;
       }
+      this.drawShotHud();
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
       if (!p.leftButtonReleased()) return;
-      if (this.phase === 'charge') this.shoot();
-      else if (this.phase === 'drag') {
-        if (this.power < 0.02) this.cancelCharge();
-        else this.shoot();
+      if (this.phase === 'charge') this.shoot(this.power);
+      else if (this.phase === 'pull') {
+        if (this.planPower < 0.02) this.cancelCharge(); // a click, not a pull
+        else if (settings.quickShot) this.shoot(this.planPower);
+        else this.phase = 'set';
       }
+      if (this.phase !== 'flight') this.drawShotHud();
     });
   }
 
+  /** Right-click or Esc: drop the plan and start again. */
   private cancelCharge(): void {
-    if (this.phase === 'charge' || this.phase === 'drag') this.phase = 'aim';
+    if (this.phase !== 'flight') this.phase = 'plan';
     this.power = 0;
+    this.planPower = 0;
+    this.drawShotHud();
   }
 
   /**
-   * A release in the top `perfectWindow` of the bar. Drag mode (a testing aid
-   * only; the real game is meter-only) uses the same rule.
+   * A release in the top `perfectWindow` of the bar. Quick-shot mode (testing
+   * only) uses the same rule on the pull.
    */
   private isPerfect(power: number): boolean {
     return power >= 1 - tuning!.perfectWindow;
@@ -355,8 +377,9 @@ export class CourseScene extends Phaser.Scene {
     };
   }
 
-  private shoot(): void {
-    this.shot = startShot(tuning!, this.ball, this.command(this.power));
+  private shoot(power: number): void {
+    this.power = power;
+    this.shot = startShot(tuning!, this.ball, this.command(power));
     this.prevBall = { ...this.shot.ball };
     this.accumulator = 0;
     this.boostQueued = false;
@@ -369,13 +392,18 @@ export class CourseScene extends Phaser.Scene {
 
   private updateShot(course: Course, t: Tuning, dt: number): void {
     const pointer = this.input.activePointer;
-    const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
     const ballH = this.ball.z / STEP_HEIGHT;
 
-    if (this.phase === 'aim' || this.phase === 'charge') {
-      this.aim = aimAngle({ x: this.ball.x, y: this.ball.y, hSteps: ballH }, world);
-      this.power = this.phase === 'charge' ? meterPower((this.time.now - this.chargeStart) / 1000, t.meterPeriod) : 0;
-    } else if (this.phase === 'drag') {
+    if (this.phase === 'charge') {
+      const m = chargeMeter((this.time.now - this.chargeStart) / 1000, t.meterPeriod, t.meterCycles);
+      if (m.expired) {
+        // Held too long: the meter ran out, so the ball goes anyway, weakly.
+        this.shoot(t.autoLaunchPower);
+        this.showMessage('TOO SLOW!', 0xa0a8c0);
+        return;
+      }
+      this.power = m.power;
+    } else if (this.phase === 'pull') {
       const zoom = this.cameras.main.zoom;
       const d = dragShot(
         { x: this.dragFrom.x / zoom, y: this.dragFrom.y / zoom },
@@ -384,13 +412,13 @@ export class CourseScene extends Phaser.Scene {
         t.dragFullPx,
       );
       if (d.power > 0) this.aim = d.angle;
-      this.power = d.power;
+      this.planPower = d.power;
     }
 
     if (this.phase !== 'flight') {
-      // The guide shows the path at the power being charged, or at full power while just aiming.
-      const preview = this.phase === 'aim' ? 1 : Math.max(t.minPower, this.power);
-      this.drawGuide(predictPath(course, t, this.ball, this.command(preview)));
+      // The guide previews the planned shot. It does not follow the meter.
+      if (this.phase === 'plan' || this.planPower <= 0) this.guide.clear();
+      else this.drawGuide(predictPath(course, t, this.ball, this.command(Math.max(t.minPower, this.planPower))));
       this.drawMeter();
       return;
     }
@@ -438,8 +466,9 @@ export class CourseScene extends Phaser.Scene {
     }
     this.shot = null;
     this.prevBall = null;
-    this.phase = 'aim';
+    this.phase = 'plan';
     this.power = 0;
+    this.planPower = 0;
     this.drawBall(this.ball);
     if (outcome === 'sunk' || outcome === 'out') this.centreOnBall();
     this.drawShotHud();
@@ -468,7 +497,7 @@ export class CourseScene extends Phaser.Scene {
     const h = 60;
     m.fillStyle(METER_BG, 0.9);
     m.fillRect(x - 1, y - 1, 8, h + 2);
-    const showing = this.phase === 'charge' || this.phase === 'drag' ? this.power : this.shot ? this.shot.cmd.power : 0;
+    const showing = this.phase === 'charge' ? this.power : this.shot ? this.shot.cmd.power : settings.quickShot && this.phase === 'pull' ? this.planPower : 0;
     const fill = Math.round(showing * h);
     m.fillStyle(this.isPerfect(showing) ? METER_FULL : METER_FILL, 1);
     m.fillRect(x, y + h - fill, 6, fill);
@@ -478,6 +507,17 @@ export class CourseScene extends Phaser.Scene {
     // Quarter marks.
     m.fillStyle(UI_DIM, 1);
     for (let q = 1; q < 4; q++) m.fillRect(x - 2, y + Math.round((h * q) / 4), 2, 1);
+    // The planned power, as a hint for where to release.
+    if (!settings.quickShot && (this.phase === 'pull' || this.phase === 'set' || this.phase === 'charge') && this.planPower > 0) {
+      m.fillStyle(METER_PLAN, 1);
+      m.fillRect(x - 3, y + h - Math.round(this.planPower * h), 10, 1);
+    }
+    // Sweeps left before the meter runs out.
+    if (this.phase === 'charge') {
+      const left = Math.max(0, tuning!.meterCycles - Math.floor((this.time.now - this.chargeStart) / 1000 / tuning!.meterPeriod));
+      m.fillStyle(METER_FILL, 1);
+      for (let i = 0; i < left; i++) m.fillRect(x + 1 + i * 3, y + h + 3, 2, 2);
+    }
   }
 
   private drawShotHud(): void {
@@ -487,10 +527,15 @@ export class CourseScene extends Phaser.Scene {
       `SHOT: ${settings.type === 'ground' ? 'GROUND' : 'LOFTED'}`,
       `SPIN: ${settings.top === 0 ? 'NONE' : settings.top > 0 ? 'TOP' : 'BACK'} ${sign(settings.top)}`,
       `CURVE: ${settings.side === 0 ? 'NONE' : settings.side > 0 ? 'RIGHT' : 'LEFT'} ${sign(settings.side)}`,
-      `POWER: ${settings.powerMode === 'meter' ? 'METER' : 'DRAG'}`,
+      `STEP: ${this.stepLabel()}`,
       `SHOTS: ${this.shotsTaken}`,
     ].join('\n');
     this.shotHud = pixelText(this, manifest, 2, 10, text, { color: UI_TEXT, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
+  }
+
+  private stepLabel(): string {
+    if (settings.quickShot) return 'QUICK SHOT (TEST)';
+    return { plan: '1 PULL TO PLAN', pull: '1 PULL TO PLAN', set: '2 HOLD TO CHARGE', charge: '2 RELEASE!', flight: '-' }[this.phase];
   }
 
   private showMessage(text: string, color: number): void {
@@ -510,8 +555,8 @@ export class CourseScene extends Phaser.Scene {
       .setDepth(HUD_DEPTH)
       .setName(`hud-${id}`);
     const lines = [
-      'MOUSE: AIM  HOLD LEFT: POWER  T: GROUND/LOFT  Z/X: BACK/TOP SPIN  Q/E: CURVE',
-      'SPACE: BOOST ON LANDING  P: POWER MODE  R: RESET  U: TUNING  H: HELP',
+      'LEFT: PULL BACK TO PLAN, THEN HOLD TO CHARGE  RIGHT/ESC: RE-PLAN  T: GROUND/LOFT',
+      'Z/X: SPIN  Q/E: CURVE  SPACE: BOOST  P: QUICK SHOT (TEST)  R: RESET  U: TUNING  H: HELP',
       'WASD/ARROWS OR RIGHT-DRAG: PAN  C: CENTRE  1/2/N: COURSE  G: DEBUG',
     ];
     this.helpHud = lines.map((l, i) =>

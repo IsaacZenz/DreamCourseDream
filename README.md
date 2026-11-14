@@ -35,10 +35,11 @@ Then open the address it prints (usually http://localhost:5173).
 
 | Key | Action |
 |---|---|
-| Move the mouse | Aim. The dotted line is the predicted path (yellow dots = in the air). |
-| Hold left mouse button, release | Power meter sweeps up and down; release to shoot. Right-click or Esc cancels. |
-| Hold left mouse button at the top | Release in the red zone at the top of the meter for a PERFECT shot (extra power) |
-| P | Testing only: switch to drag power (press, pull back like a slingshot, release). Same power rules as the meter. The real game is meter-only. |
+| Step 1: press left mouse, pull back, release | Plan the shot like a slingshot: the ball goes the opposite way to the pull. The dotted line previews the path (yellow dots = in the air). The pull's power is a preview only. |
+| Step 2: hold left mouse, release | Charge: the meter goes up, down, up, down. Release to shoot; the meter alone sets the real power. The white mark on the meter is your planned power. If you never release, the ball launches on its own at 5% ("TOO SLOW!"). |
+| Release at the very top | Release in the red zone at the top of the meter for a PERFECT shot (extra power) |
+| Right-click or Esc | Drop the plan and pull again |
+| P | Testing only: quick shot. The pull fires straight away at the pulled power, with no meter. |
 | T | Ground shot or lofted shot |
 | X / Z | More topspin / more backspin |
 | E / Q | Curve right / curve left |

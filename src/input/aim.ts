@@ -28,8 +28,18 @@ export function meterPower(heldSeconds: number, period: number): number {
 }
 
 /**
- * Drag-power mode (a slingshot): press anywhere, pull back, release. The shot
- * goes the opposite way to the pull. Power grows with the pull distance on
+ * The charge meter for one shot: it sweeps up and down `cycles` times, then the
+ * charge runs out. `expired` is true once the last down sweep reaches the bottom;
+ * the game then launches the ball on its own at a low power.
+ */
+export function chargeMeter(heldSeconds: number, period: number, cycles: number): { power: number; expired: boolean } {
+  if (heldSeconds >= period * cycles) return { power: 0, expired: true };
+  return { power: meterPower(heldSeconds, period), expired: false };
+}
+
+/**
+ * The slingshot pull used to plan a shot: press anywhere, pull back, release.
+ * The shot goes the opposite way to the pull. Power grows with the pull distance on
  * screen, up to full at `fullPx`.
  */
 export function dragShot(
