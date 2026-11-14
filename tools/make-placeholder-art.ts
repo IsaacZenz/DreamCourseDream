@@ -88,6 +88,8 @@ interface SurfaceLook {
   base: string;
   /** Optional per-pixel tweak: returns a shade offset or a colour. */
   pattern?: (x: number, y: number, shade: number) => number | RGBA;
+  /** 0 to 255; below 255 the tile is see-through. */
+  alpha?: number;
 }
 
 const LOOKS: Record<string, SurfaceLook> = {
@@ -95,7 +97,9 @@ const LOOKS: Record<string, SurfaceLook> = {
   rough: { base: '#2f7a35', pattern: (x, y) => (hash(x, y, 1) < 0.22 ? -1 : hash(x, y, 2) < 0.06 ? 1 : 0) },
   sand: { base: '#e3c47a', pattern: (x, y) => (hash(x, y, 3) < 0.12 ? -1 : 0) },
   ice: { base: '#a8dcf0', pattern: (x, y) => ((x + y * 2) % 11 === 0 ? 1 : 0) },
-  water: { base: '#2e6fd0', pattern: (x, y) => ((y % 4 === 0 && (x + Math.floor(y / 4) * 3) % 8 < 3) ? 1 : 0) },
+  // Water is two sprites: an opaque bed under the ball and a see-through surface over it.
+  water: { base: '#1d4a86', pattern: (x, y) => (hash(x, y, 4) < 0.1 ? -1 : 0) },
+  'water-surface': { base: '#3c86e0', alpha: 150, pattern: (x, y) => ((y % 4 === 0 && (x + Math.floor(y / 4) * 3) % 8 < 3) ? 1 : 0) },
   bumper: { base: '#d83c3c', pattern: (x, y) => (Math.floor((x + y * 2) / 4) % 2 === 0 ? 0 : hex2('#f0e8e0')) },
   booster: { base: '#7a7f8c', pattern: (x, y) => ((x + y) % 4 === 0 ? -1 : 0) },
   conveyor: { base: '#5a5560', pattern: (x, y) => ((x - y * 2) % 4 === 0 ? -1 : 0) },
@@ -183,8 +187,8 @@ function drawTile(surface: string, shape: ShapeId): Image {
       // Darken the lower rim so the grid reads at a glance.
       if (!insidePoly(x + BIAS_X, y + 1 + BIAS_Y, outline)) shade -= 1;
       const p = look.pattern?.(x, y, shade) ?? 0;
-      if (typeof p === 'number') img.set(x, y, shades[Math.max(0, Math.min(4, shade + p))]!);
-      else img.set(x, y, p);
+      const px = typeof p === 'number' ? shades[Math.max(0, Math.min(4, shade + p))]! : p;
+      img.set(x, y, look.alpha === undefined ? px : [px[0], px[1], px[2], look.alpha]);
     }
   }
   if (surface === 'spring' && shape === '0000') drawSpringPad(img);
@@ -451,6 +455,10 @@ function emit(id: string, img: Image, frameWidth: number, frameHeight: number, f
 const faceIds = new Set<string>();
 for (const def of SURFACES.values()) {
   emit(def.tileSprite, sheet(SHAPES.map((s) => drawTile(def.id, s))), TILE_W, TILE_H, [...SHAPES], TILE_ANCHOR);
+  if (def.overlaySprite) {
+    const look = def.overlaySprite.replace(/^tile-/, '');
+    emit(def.overlaySprite, sheet(SHAPES.map((s) => drawTile(look, s))), TILE_W, TILE_H, [...SHAPES], TILE_ANCHOR);
+  }
   faceIds.add(def.faceSprite);
 }
 for (const id of faceIds) {

@@ -59,7 +59,7 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 | Rough | High friction |
 | Sand | Very high friction, kills bounce |
 | Ice | Very low friction |
-| Water | Ball sinks: lose health, return to last resting spot |
+| Water | See-through; slows the ball a lot. The ball can roll or bounce out. Only if it **stops** in water does it sink: lose health, return to last resting spot. Water tiles may be sloped. |
 | Void / out of bounds | Same as water |
 | Bumper | Wall that bounces the ball back with extra speed |
 | Booster | Pushes the ball in a fixed direction |
@@ -103,6 +103,7 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 - **Decided (owner, 2026-11-14):** shot speed across the whole bar is 20% above the first tuning (ground top 13.2, lofted top 12 tiles per second). A **perfect shot**, released in the top 2% of the bar (`perfectWindow` 0.02, owner round 2), launches 35% faster than the first tuning's top, which is 12.5% above the new top (`perfectBonus` 1.125). The meter shows the perfect zone at its top and the game says "PERFECT!".
 - **Decided (owner, 2026-11-14, tuning round 2):** meter sweep takes 1.5 s (`meterPeriod`); bumpers keep all their falling speed on a bounce (`surfaces.bumper.bounce` 1).
 - **Decided (owner, 2026-11-14, tuning round 3):** the ball is 10% bouncier on every surface (gravity unchanged): grass 0.495, rough 0.33, sand 0.055, ice 0.55. Bumper bounce stays at 1, because above 1 the ball would gain height on every bounce.
+- **Decided (owner, 2026-11-14): water.** The ball only resets if it comes to rest (or the shot times out) in water. Passing through, it is slowed hard (`surfaces.water`: friction 0.4, drag 2.5 per second, bounce 0.2, landing grip 0.5; Default values, tune with the panel). With enough speed or bounce it can escape: rolling across, up a slope in the water, or bouncing off it. Water is drawn see-through, with the ball visible inside it. Water tiles may now be sloped (it was flat-only).
 
 ## 6. Shots and health
 

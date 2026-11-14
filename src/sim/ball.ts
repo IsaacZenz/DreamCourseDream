@@ -208,9 +208,10 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
         b.vx += s.dirX * s.cmd.topSpin * tuning.spinRollAccel * DT;
         b.vy += s.dirY * s.cmd.topSpin * tuning.spinRollAccel * DT;
       }
-      // Friction and drag.
-      b.vx *= drag;
-      b.vy *= drag;
+      // Friction and drag, plus the surface's own drag (water).
+      const surfaceDrag = Math.max(0, 1 - phys.drag * DT);
+      b.vx *= drag * surfaceDrag;
+      b.vy *= drag * surfaceDrag;
       const speed = Math.hypot(b.vx, b.vy);
       const loss = (phys.friction * tuning.gravity * DT) / Math.sqrt(k);
       if (speed <= loss) {
@@ -253,12 +254,8 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     if (g && b.z <= g.h) land(tuning, s, g);
   }
 
-  // Water and out of bounds.
+  // Out of bounds. (Water only counts if the ball stops in it; see below.)
   const now = groundAt(course, b.x, b.y);
-  if (now && b.z <= now.h + 1e-9 && SURFACES.get(now.tile.surface)?.sinks) {
-    finish(s, 'sunk');
-    return;
-  }
   if (b.z < -tuning.outOfBoundsDepth) {
     finish(s, 'out');
     return;
@@ -274,12 +271,14 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     if (s.restSteps >= Math.max(1, Math.round(tuning.restTime * STEPS_PER_SECOND))) {
       b.vx = 0;
       b.vy = 0;
-      finish(s, 'rest');
+      finish(s, SURFACES.get(now.tile.surface)?.sinks ? 'sunk' : 'rest');
       return;
     }
   }
 
-  if (s.step >= tuning.maxShotTime * STEPS_PER_SECOND) finish(s, 'timeout');
+  if (s.step >= tuning.maxShotTime * STEPS_PER_SECOND) {
+    finish(s, now && b.grounded && SURFACES.get(now.tile.surface)?.sinks ? 'sunk' : 'timeout');
+  }
 }
 
 function finish(s: ShotState, outcome: ShotOutcome): void {

@@ -121,6 +121,30 @@
         16
       ]
     },
+    "tile-water-surface": {
+      "file": "sprites/tile-water-surface.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
     "tile-bumper": {
       "file": "sprites/tile-bumper.png",
       "frameWidth": 32,

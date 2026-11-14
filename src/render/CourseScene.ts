@@ -268,9 +268,13 @@ export class CourseScene extends Phaser.Scene {
     const tx = Math.floor(b.x);
     const ty = Math.floor(b.y);
     const p = project(b.x, b.y, b.z / STEP_HEIGHT);
-    this.ballImg.setPosition(Math.round(p.x), Math.round(p.y)).setDepth(tileDepth(tx, ty, 'ball'));
     const g = groundAt(course, b.x, b.y);
-    if (g && g.h <= b.z + 0.01) {
+    // In water the ball is drawn under the see-through surface; flying over it, on top.
+    const inWater = !!g && !!SURFACES.get(g.tile.surface)?.sinks && b.z <= g.h + 0.05;
+    const overWater = !!g && !!SURFACES.get(g.tile.surface)?.overlaySprite && !inWater;
+    const depth = overWater ? tileDepth(tx, ty, 'overlay') + 0.5 : tileDepth(tx, ty, 'ball');
+    this.ballImg.setPosition(Math.round(p.x), Math.round(p.y)).setDepth(depth);
+    if (g && g.h <= b.z + 0.01 && !inWater) {
       const sp = project(b.x, b.y, g.h / STEP_HEIGHT);
       this.shadowImg.setVisible(true).setPosition(Math.round(sp.x), Math.round(sp.y)).setDepth(tileDepth(tx, ty, 'shadow'));
     } else {
@@ -454,7 +458,7 @@ export class CourseScene extends Phaser.Scene {
   private endShot(course: Course, shot: ShotState): void {
     const outcome = shot.outcome;
     if (outcome === 'sunk' || outcome === 'out') {
-      this.showMessage(outcome === 'sunk' ? 'SPLASH! BACK TO LAST SPOT' : 'OUT OF BOUNDS! BACK TO LAST SPOT', 0x80c8ff);
+      this.showMessage(outcome === 'sunk' ? 'SANK! BACK TO LAST SPOT' : 'OUT OF BOUNDS! BACK TO LAST SPOT', 0x80c8ff);
       this.ball = { ...this.restSpot };
     } else {
       const b = shot.ball;

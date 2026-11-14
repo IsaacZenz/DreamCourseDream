@@ -21,8 +21,13 @@ export interface SurfaceDef {
   readonly needsLink?: boolean;
   /** The ball can be placed here at the start, and the exit can sit here. */
   readonly canHoldBall: boolean;
-  /** The ball sinks here and goes back to its last resting spot (water). */
+  /**
+   * Water: the ball can pass through, but if it comes to rest here it sinks and
+   * goes back to its last resting spot.
+   */
   readonly sinks?: boolean;
+  /** Sprite ID drawn over the tile, above the ball (see-through water surface). One frame per tile shape. */
+  readonly overlaySprite?: string;
 }
 
 /** Directions along the grid axes, named by where they point on screen. */
@@ -34,7 +39,7 @@ const defs: readonly SurfaceDef[] = [
   { id: 'rough', name: 'Rough', tileSprite: 'tile-rough', faceSprite: 'face-earth', canHoldBall: true },
   { id: 'sand', name: 'Sand', tileSprite: 'tile-sand', faceSprite: 'face-sand', canHoldBall: true },
   { id: 'ice', name: 'Ice', tileSprite: 'tile-ice', faceSprite: 'face-ice', canHoldBall: true },
-  { id: 'water', name: 'Water', tileSprite: 'tile-water', faceSprite: 'face-earth', canHoldBall: false, flatOnly: true, sinks: true },
+  { id: 'water', name: 'Water', tileSprite: 'tile-water', faceSprite: 'face-earth', canHoldBall: false, sinks: true, overlaySprite: 'tile-water-surface' },
   { id: 'bumper', name: 'Bumper', tileSprite: 'tile-bumper', faceSprite: 'face-bumper', canHoldBall: false },
   { id: 'booster', name: 'Booster', tileSprite: 'tile-booster', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsDir: true },
   { id: 'conveyor', name: 'Conveyor', tileSprite: 'tile-conveyor', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsDir: true },

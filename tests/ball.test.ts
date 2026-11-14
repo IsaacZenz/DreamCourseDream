@@ -144,6 +144,53 @@ describe('ball physics', () => {
     expect(s.outcome).toBe('sunk');
   });
 
+  it('a fast ball crosses water and stops on the far side', () => {
+    const c = course(['g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1', 'g1 g0 g0 ~0 ~0 g0 g0 g0 g0 g0 g1', 'g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1']);
+    const s = simulateShot(c, T, ballAtTile(c, 1, 1), shot({ power: 1 }));
+    expect(s.outcome).toBe('rest');
+    expect(s.ball.x).toBeGreaterThan(5);
+  });
+
+  it('water slows the ball much more than grass', () => {
+    const grass = box(12);
+    // Like box(12, '~0'), but the first column is grass so the ball can start there.
+    const wall = Array(14).fill('g1').join(' ');
+    const water = course([wall, ...Array(12).fill(['g1', 'g0', ...Array(11).fill('~0'), 'g1'].join(' ')), wall], { exit: [1, 2] });
+    const go = (c: Course) => simulateShot(c, T, ballAtTile(c, 1, 6), shot({ power: 0.6 })).ball.x;
+    expect(go(water)).toBeLessThan(go(grass) - 2);
+    expect(simulateShot(water, T, ballAtTile(water, 1, 6), shot({ power: 0.6 })).outcome).toBe('sunk');
+  });
+
+  it('with enough speed the ball rolls up a slope in the water and out', () => {
+    // Grass, one tile of water, a water slope rising one step, then grass on top.
+    const c = course(['g2 g2 g2 g2 g2 g2 g2 g2 g2', 'g2 g0 g0 ~0 ~0110 g1 g1 g1 g2', 'g2 g2 g2 g2 g2 g2 g2 g2 g2'], { exit: [6, 1] });
+    const strong = simulateShot(c, T, ballAtTile(c, 1, 1), shot({ power: 1 }));
+    expect(strong.outcome).toBe('rest');
+    expect(strong.ball.x).toBeGreaterThan(5);
+    // Too weak: it stops in the water (or rolls back into it) and sinks.
+    const weak = simulateShot(c, T, ballAtTile(c, 1, 1), shot({ power: 0.35 }));
+    expect(weak.outcome).toBe('sunk');
+  });
+
+  it('a lofted ball can bounce off water and stop on dry ground', () => {
+    // Find where the first bounce lands on plain grass, then put water there.
+    const plain = box(30);
+    const cmd = shot({ type: 'lofted', power: 1 });
+    const first = simulateShot(plain, T, ballAtTile(plain, 1, 10), cmd);
+    const bounceStep = first.events.find((e) => e.kind === 'bounce')!.step;
+    const s0 = startShot(T, ballAtTile(plain, 1, 10), cmd);
+    while (s0.step < bounceStep) stepShot(plain, T, s0);
+    const wx = Math.floor(s0.ball.x);
+    const wall = Array(32).fill('g1').join(' ');
+    const row = (y: number) => ['g1', ...Array.from({ length: 30 }, (_, i) => (i + 1 === wx && y === 10 ? '~0' : 'g0')), 'g1'].join(' ');
+    const c = course([wall, ...Array.from({ length: 30 }, (_, i) => row(i + 1)), wall]);
+    const s = simulateShot(c, T, ballAtTile(c, 1, 10), cmd);
+    const b = s.events.find((e) => e.kind === 'bounce');
+    expect(b).toBeDefined();
+    expect(s.outcome).toBe('rest');
+    expect(s.ball.x).toBeGreaterThan(wx + 1);
+  });
+
   it('falling off the course ends the shot as out', () => {
     const c = course(['g0 g0 g0 . .', 'g0 g0 g0 . .', 'g0 g0 g0 . .'], { start: [0, 1], exit: [1, 1] });
     const s = simulateShot(c, T, ballAtTile(c, 0, 1), shot({ power: 0.8 }));

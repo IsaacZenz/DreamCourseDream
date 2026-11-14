@@ -19,6 +19,8 @@ export interface SurfacePhysics {
   landingGrip: number;
   /** Fraction of speed kept when the ball hits a wall made of this surface. Above 1 adds speed. */
   wallBounce: number;
+  /** Extra slowing while rolling through this surface, per second, in proportion to speed (water). */
+  drag: number;
 }
 
 export interface Tuning {
@@ -138,12 +140,14 @@ export const DEFAULT_TUNING: Tuning = {
   // Owner tuning round 3 (2026-11-14): every surface bounce +10%, except bumper,
   // which stays at 1 (above 1 a ball would bounce higher every time and never settle).
   surfaces: {
-    default: { friction: 0.15, bounce: 0.495, landingGrip: 0.15, wallBounce: 0.7 },
-    grass: { friction: 0.15, bounce: 0.495, landingGrip: 0.15, wallBounce: 0.7 },
-    rough: { friction: 0.45, bounce: 0.33, landingGrip: 0.35, wallBounce: 0.6 },
-    sand: { friction: 1.0, bounce: 0.055, landingGrip: 0.7, wallBounce: 0.4 },
-    ice: { friction: 0.03, bounce: 0.55, landingGrip: 0.03, wallBounce: 0.8 },
-    bumper: { friction: 0.15, bounce: 1, landingGrip: 0.1, wallBounce: 1.25 },
+    default: { friction: 0.15, bounce: 0.495, landingGrip: 0.15, wallBounce: 0.7, drag: 0 },
+    grass: { friction: 0.15, bounce: 0.495, landingGrip: 0.15, wallBounce: 0.7, drag: 0 },
+    rough: { friction: 0.45, bounce: 0.33, landingGrip: 0.35, wallBounce: 0.6, drag: 0 },
+    sand: { friction: 1.0, bounce: 0.055, landingGrip: 0.7, wallBounce: 0.4, drag: 0 },
+    ice: { friction: 0.03, bounce: 0.55, landingGrip: 0.03, wallBounce: 0.8, drag: 0 },
+    bumper: { friction: 0.15, bounce: 1, landingGrip: 0.1, wallBounce: 1.25, drag: 0 },
+    // Owner, 2026-11-14: water slows the ball but only resets it if it stops there.
+    water: { friction: 0.4, bounce: 0.2, landingGrip: 0.5, wallBounce: 0.3, drag: 2.5 },
   },
 };
 
@@ -192,11 +196,12 @@ export const TUNING_CONTROLS: readonly TuningControl[] = [
   top('Boost', 'boostMultiplier', 1, 3, 0.05),
   top('Boost', 'boostMinSpeed', 0, 15, 0.25),
   top('Guide', 'guideLength', 0.5, 20, 0.5),
-  ...['grass', 'rough', 'sand', 'ice', 'bumper'].flatMap((s) => [
+  ...['grass', 'rough', 'sand', 'ice', 'bumper', 'water'].flatMap((s) => [
     { key: `surfaces.${s}.friction`, min: 0, max: 2, step: 0.01, group: `Surface: ${s}` },
     { key: `surfaces.${s}.bounce`, min: 0, max: 1, step: 0.01, group: `Surface: ${s}` },
     { key: `surfaces.${s}.landingGrip`, min: 0, max: 1, step: 0.01, group: `Surface: ${s}` },
     { key: `surfaces.${s}.wallBounce`, min: 0, max: 2, step: 0.01, group: `Surface: ${s}` },
+    { key: `surfaces.${s}.drag`, min: 0, max: 10, step: 0.1, group: `Surface: ${s}` },
   ]),
 ];
 
