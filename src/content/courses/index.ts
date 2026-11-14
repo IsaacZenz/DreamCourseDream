@@ -5,6 +5,7 @@
 import flatWalls from './flat-walls.json';
 import slopesSurfaces from './slopes-surfaces.json';
 import courseRules from './course-rules.json';
+import enemiesAbilities from './enemies-abilities.json';
 
 export interface CourseFile {
   readonly id: string;
@@ -15,4 +16,5 @@ export const TEST_COURSES: readonly CourseFile[] = [
   { id: 'course-rules', data: courseRules },
   { id: 'flat-walls', data: flatWalls },
   { id: 'slopes-surfaces', data: slopesSurfaces },
+  { id: 'enemies-abilities', data: enemiesAbilities },
 ];

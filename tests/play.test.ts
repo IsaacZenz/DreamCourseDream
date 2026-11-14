@@ -149,14 +149,20 @@ describe('course rules: blockers, enemies, stars and the exit', () => {
     expect(p.ball.x).toBeGreaterThan(4);
   });
 
-  it('hitting a Mossback defeats it; it drops its star; the ball carries on', () => {
+  it('hitting a Mossback defeats it; its star counts at once; a flag goes up; the ball carries on', () => {
     const c = corridor(Array(14).fill('g0'), { objects: [{ id: 'mossback', at: [4, 1] }], exit: [14, 1], quota: 1 });
     const p = play(c);
     const log = fire(p, shot({ power: 0.6 }));
     expect(log.some((e) => e.kind === 'defeat')).toBe(true);
     expect(p.enemies[0]!.defeated).toBe(true);
     expect(p.ball.x).toBeGreaterThan(5);
-    expect(p.pickups.filter((x) => x.def.effect === 'yellowStar')).toHaveLength(1);
+    // Owner, 2026-11-14: no dropped star to fetch; the star is secured and shown above the flag.
+    expect(p.pickups).toHaveLength(0);
+    expect(p.meter).toBe(1);
+    expect(p.wallet).toBe(1);
+    expect(p.exitOpen).toBe(true);
+    expect(p.flags).toHaveLength(1);
+    expect(p.flags[0]!.raised).toBe(true);
   });
 
   it('collecting stars fills the meter and opens the exit at the quota', () => {
@@ -252,7 +258,7 @@ describe('the test courses', () => {
     const r = parseCourse(f.data);
     if (!r.ok) throw new Error(r.errors.join('\n'));
     const ids = new Set(r.course.objects.map((o) => o.id));
-    for (const id of ['mossback', 'yellow-star', 'heart', 'shot-orb', 'rock', 'post', 'low-wall']) expect(ids).toContain(id);
+    for (const id of ['mossback', 'yellow-star', 'heart', 'shot-orb', 'rock', 'stump', 'low-wall']) expect(ids).toContain(id);
     expect(r.course.quota).toBeGreaterThan(0);
   });
 
@@ -263,7 +269,9 @@ describe('the test courses', () => {
       return r.ok ? [] : r.errors;
     };
     expect(bad({ objects: [{ id: 'dragon', at: [1, 0] }] }).join()).toMatch(/unknown object/);
-    expect(bad({ objects: [{ id: 'rock', at: [1, 0] }, { id: 'post', at: [1, 0] }] }).join()).toMatch(/already has an object/);
+    expect(bad({ objects: [{ id: 'rock', at: [1, 0] }, { id: 'stump', at: [1, 0] }] }).join()).toMatch(/already has an object/);
+    // Owner, 2026-11-14: the post is now the tree stump.
+    expect(bad({ objects: [{ id: 'post', at: [1, 0] }] }).join()).toMatch(/"post" was renamed; use "stump"/);
     expect(bad({ objects: [{ id: 'rock', at: [0, 0] }] }).join()).toMatch(/start tile/);
     expect(bad({ quota: 2, objects: [{ id: 'mossback', at: [1, 0] }] }).join()).toMatch(/only offers 1/);
   });

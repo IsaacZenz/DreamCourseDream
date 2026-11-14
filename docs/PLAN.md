@@ -82,21 +82,21 @@ docs/
 ## Milestone 4 — Enemies and abilities
 
 - [x] **Plan gate:** design sheet for the enemies (Trundler, Spitter, Lunger, ability carriers), the three abilities, the Stunned status, the moving obstacles and destructibles, the flag pole and the thunder cloud. Owner signs it off before any of them is built.
-- [ ] Turn order from DESIGN.md section 8
-- [ ] Damage calculation in the order given in FEATURES.md section 2, including element, position and shield steps even though the starter enemies do not use them yet
-- [ ] Full enemy template from FEATURES.md section 4 (tier, traits, element, gear fields present, mostly unused)
-- [ ] Status effect system and the Stunned status
-- [ ] Moving obstacles and destructibles (FEATURES.md section 6)
-- [ ] Flag pole left by a defeated enemy: bounce off when slow, push past and lose most speed when fast (FEATURES.md section 6, owner decision 2026-11-14)
-- [ ] Thunder cloud obstacle, stationary or drifting, cannot be beaten: rolling under it zaps the ball (damage, thrown in a random direction); hopping over is safe (FEATURES.md section 6, owner decision 2026-11-14)
-- [ ] Patroller family: path following in real time, contact effect. Build one type.
-- [ ] Sentinel family: outer and inner radius, three triggers, immediate or activated response per trigger. Build two types: one ranged, one that chases.
-- [ ] Radii visible in the debug overlay; a subtle in-game cue when the ball is about to pass through one
-- [ ] Ability slot, pickup from ability-carrying enemies, activation key
-- [ ] Four abilities: Anchor, Burner, Hop, Tornado (Tornado added by the owner, 2026-11-14)
-- [ ] Keyboard-only controls for every mechanic; mouse optional (owner, 2026-11-14)
-- [ ] Enemy and ability definitions fully in `src/content/`; adding a fourth enemy must need no logic changes
-- [ ] Tests for each trigger and each response mode
+- [x] Turn order from DESIGN.md section 8
+- [x] Damage calculation in the order given in FEATURES.md section 2, including element, position and shield steps even though the starter enemies do not use them yet
+- [x] Full enemy template from FEATURES.md section 4 (tier, traits, element, gear fields present, mostly unused)
+- [x] Status effect system and the Stunned status
+- [x] Moving obstacles and destructibles (FEATURES.md section 6)
+- [x] Flag pole left by a defeated enemy: bounce off when slow, push past and lose most speed when fast (FEATURES.md section 6, owner decision 2026-11-14)
+- [x] Thunder cloud obstacle, stationary or drifting, cannot be beaten: rolling under it zaps the ball (damage, thrown in a random direction); hopping over is safe (FEATURES.md section 6, owner decision 2026-11-14)
+- [x] Patroller family: path following in real time, contact effect. Build one type.
+- [x] Sentinel family: outer and inner radius, three triggers, immediate or activated response per trigger. Build two types: one ranged, one that chases.
+- [x] Radii visible in the debug overlay; a subtle in-game cue when the ball is about to pass through one
+- [x] Ability slot, pickup from ability-carrying enemies, activation key
+- [x] Four abilities: Anchor, Burner, Hop, Tornado (Tornado added by the owner, 2026-11-14)
+- [x] Keyboard-only controls for every mechanic; mouse optional (owner, 2026-11-14)
+- [x] Enemy and ability definitions fully in `src/content/`; adding a fourth enemy must need no logic changes
+- [x] Tests for each trigger and each response mode
 
 **Done when:** a hand-built course with all three enemy types and all three abilities plays correctly, and the owner has tried each trigger on purpose.
 
@@ -201,3 +201,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Owner decision: plan before building. Content milestones (4 to 8) now start with a design sheet the owner signs off; see the note at the top of this file.
 - 2026-11-14 — Milestone 4 design sheet written on branch `milestone-4-enemies-abilities`: `docs/plans/milestone-4.md`. Seven questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
 - 2026-11-14 — Milestone 4 design sheet signed off by the owner (`docs/plans/milestone-4.md`). Owner additions during review: Mole enemy, Tornado ability and Whirlback, secured crate and Wild pickup, tree stump replacing the post, lowered flags, 0.5 s damage immunity, knock-backs, keyboard-only controls; themes per boss recorded for later.
+- 2026-11-14 — Milestone 4 built on branch `milestone-4-enemies-abilities`. World clock: `tick` in `src/sim/play.ts` runs the whole course in fixed 1/120 s steps, also while aiming. Turn order with enemy turns run as timed actions; damage steps in `src/sim/damage.ts`; full enemy template; status system with Stunned (`src/content/statuses.ts`); abilities Anchor, Burner, Hop, Tornado (`src/content/abilities.ts`); enemies Trundler, Spitter, Lunger, Mole and four carriers; sliding block, gate, crate, secured crate with Wild, cracked tile, tree stump, flag poles with secured stars that enemies can knock down, thunder clouds; 0.5 s damage immunity; knock-backs; course format 2 (`path`, `facing`, `phase`, `orient`, `drops`). Ball physics extended for rolling enemies, seeds and ability modes. Keyboard-only controls; camera pan moved to IJKL. New placeholder sprites. Test course 4 "Enemies and abilities". 63 new tests (203 in total). Played with the keyboard in a browser and screenshots checked. One number differs from the sheet: Hop launches at 7 tiles/s (not 6.7) so it really reaches 1.1 tiles with air drag. **Waiting for the owner** to play the test course and try each trigger on purpose.
