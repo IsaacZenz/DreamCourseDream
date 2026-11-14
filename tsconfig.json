@@ -13,6 +13,9 @@
     "noUnusedParameters": true,
     "exactOptionalPropertyTypes": true,
     "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "resolveJsonModule": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true

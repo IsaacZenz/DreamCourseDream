@@ -37,13 +37,13 @@ docs/
 
 ## Milestone 1 — Course format and isometric display
 
-- [ ] Course data format (see DESIGN.md section 4 and 11) with a schema check that rejects bad files
-- [ ] Tile and surface definitions in `src/content/`
-- [ ] Placeholder art script that outputs tiles (flat, four slopes, corner slopes, faces) and a ball
-- [ ] Asset manifest; all sprites looked up by ID
-- [ ] Isometric renderer: correct draw order with height, vertical faces, camera pan
-- [ ] Two hand-written test courses: one flat with walls, one with slopes, ledges and each surface type
-- [ ] Debug overlay toggle: grid coordinates, tile heights, surface names
+- [x] Course data format (see DESIGN.md section 4 and 11) with a schema check that rejects bad files
+- [x] Tile and surface definitions in `src/content/`
+- [x] Placeholder art script that outputs tiles (flat, four slopes, corner slopes, faces) and a ball
+- [x] Asset manifest; all sprites looked up by ID
+- [x] Isometric renderer: correct draw order with height, vertical faces, camera pan
+- [x] Two hand-written test courses: one flat with walls, one with slopes, ledges and each surface type
+- [x] Debug overlay toggle: grid coordinates, tile heights, surface names
 
 **Done when:** both test courses display correctly from data files, and a screenshot of each has been checked for draw-order mistakes.
 
@@ -168,3 +168,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Features file added; plan checklists updated to reference it.
 - 2026-11-14 — Milestone 0 built on branch `milestone-0-project-setup`: Vite 8 + TypeScript (strict), Phaser 4.2.1 pinned, Vitest, ESLint purity rules for `src/sim/` and `src/gen/` (with tests proving they fire), seeded RNG (SFC32) in `src/sim/rng.ts`, CI and Pages deploy workflows, README. TypeScript is pinned to 6.0.3, not 7.x, because the lint tooling (typescript-eslint) does not support 7 yet. Live link and green CI not yet confirmed: needs the branch merged to `main` and Pages source set to GitHub Actions.
 - 2026-11-14 — Milestone 0 done: merged to `main`, CI green, owner confirmed the live link shows the blank canvas.
+- 2026-11-14 — Milestone 1 built on branch `milestone-1-course-display`: course file format with a schema check (`src/sim/course.ts`), tile geometry limited to 13 shapes (`src/sim/tileShape.ts`), surface definitions (`src/content/surfaces.ts`), placeholder art script (`npm run art`) writing 26 sprites and `assets/manifest.json`, isometric renderer with faces and back-to-front draw order (`src/render/iso.ts`), camera pan, debug overlay (G key) with hover info, and two test courses. Both courses screenshotted and checked for draw-order mistakes. Waiting for the owner to look at both courses.

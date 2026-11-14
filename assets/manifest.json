@@ -1,0 +1,524 @@
+{
+  "version": 1,
+  "sprites": {
+    "tile-grass": {
+      "file": "sprites/tile-grass.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-rough": {
+      "file": "sprites/tile-rough.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-sand": {
+      "file": "sprites/tile-sand.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-ice": {
+      "file": "sprites/tile-ice.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water": {
+      "file": "sprites/tile-water.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bumper": {
+      "file": "sprites/tile-bumper.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-booster": {
+      "file": "sprites/tile-booster.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-conveyor": {
+      "file": "sprites/tile-conveyor.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spring": {
+      "file": "sprites/tile-spring.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spikes": {
+      "file": "sprites/tile-spikes.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-warp": {
+      "file": "sprites/tile-warp.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "face-earth-left": {
+      "file": "sprites/face-earth-left.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-earth-right": {
+      "file": "sprites/face-earth-right.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-sand-left": {
+      "file": "sprites/face-sand-left.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-sand-right": {
+      "file": "sprites/face-sand-right.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-ice-left": {
+      "file": "sprites/face-ice-left.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-ice-right": {
+      "file": "sprites/face-ice-right.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-bumper-left": {
+      "file": "sprites/face-bumper-left.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-bumper-right": {
+      "file": "sprites/face-bumper-right.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-metal-left": {
+      "file": "sprites/face-metal-left.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-metal-right": {
+      "file": "sprites/face-metal-right.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "arrow": {
+      "file": "sprites/arrow.png",
+      "frameWidth": 32,
+      "frameHeight": 16,
+      "frames": [
+        "ne",
+        "se",
+        "sw",
+        "nw"
+      ],
+      "anchor": [
+        16,
+        8
+      ]
+    },
+    "ball": {
+      "file": "sprites/ball.png",
+      "frameWidth": 8,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        7
+      ]
+    },
+    "ball-shadow": {
+      "file": "sprites/ball-shadow.png",
+      "frameWidth": 8,
+      "frameHeight": 4,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        2
+      ]
+    },
+    "exit": {
+      "file": "sprites/exit.png",
+      "frameWidth": 16,
+      "frameHeight": 10,
+      "frames": [
+        "closed",
+        "open"
+      ],
+      "anchor": [
+        8,
+        5
+      ]
+    },
+    "font": {
+      "file": "sprites/font.png",
+      "frameWidth": 4,
+      "frameHeight": 6,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z",
+        " ",
+        ".",
+        ",",
+        ":",
+        "-",
+        "+",
+        "/",
+        "(",
+        ")",
+        "#",
+        "=",
+        "?",
+        "!",
+        "'",
+        ">",
+        "<"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    }
+  }
+}

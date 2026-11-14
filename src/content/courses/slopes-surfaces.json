@@ -1,0 +1,36 @@
+{
+  "format": 1,
+  "name": "Test: slopes, ledges and surfaces",
+  "legend": {
+    "g": "grass",
+    "r": "rough",
+    "s": "sand",
+    "i": "ice",
+    "~": "water",
+    "b": "bumper",
+    ">": {"surface": "booster", "dir": "sw"},
+    "c": {"surface": "conveyor", "dir": "se"},
+    "^": "spring",
+    "x": "spikes",
+    "w": {"surface": "warp", "link": "a"}
+  },
+  "start": [2, 2],
+  "exit": [1, 12],
+  "quota": 0,
+  "tiles": [
+    "g3    g3    g3    g3    g3    g3    g1    g1    i1    i1    i1    i1    i1    i1    i1    i1",
+    "g3    g3    g3    g3    g3    g3    g3223 g2112 g1    g1    g1121 g1122 g1112 g1    g1    g1",
+    "g3    g3    g3    g3    g3    g3    g3223 g2112 g1    g1    g1221 g2    g2112 g1    g1    g1",
+    "g3    g3    g3    g3    g3    g3    g3223 g2112 g1    >1    g1211 g2211 g2111 g1    g1    g1",
+    "g3    g3    g3    g3    g3    g3    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1",
+    "g0    ~0    ~0    g0    g0    g0    g0    g0    g1    g1    g1    g1    r1    r1    r1    g1",
+    "g0    ~0    ~0    g0    g0    g0    g0    g0    g1    s1    s1    g1    r1    r1    r1    g1",
+    "g0    c0    c0    c0    c0    g0    g0    g0    g1    s1    s1    g1    r1    r1    r1    g1",
+    "g0    g0    g0    g0    b1    g0    g0    g0    g1    g1    g1    g1    g1    g1    g1    x1",
+    "g0    g0    g0    g0    g0    g0    g0    g0    g1    g1    g1    g1101 g1100 g1110 g1    g1",
+    "g0    g0    ^0    g0    g0    .     g0    g0    g1    g1    g1    g1001 ~0    g0110 g1    g1",
+    "g0    g0    g0    g0    g0    .     g0    g0    g1    g1    g1    g1011 g0011 g0111 g1    g1",
+    "g0    g0    g0    g0    g0    g0    w0    g0    g0110 g1    g1    g1    g1    g1    w1    g1",
+    "g0    g0    g0    g0    g0    g0    g0    g0    g0110 g1    g1    g1    g1    g1    g1    g1"
+  ]
+}
