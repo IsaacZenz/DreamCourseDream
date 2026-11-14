@@ -1,0 +1,192 @@
+/**
+ * Every tuning number for the shot and the ball physics, in one place
+ * (DESIGN.md section 5). Change values here, or live in the game with the
+ * tuning panel (press ` in the game). The panel's "Copy" button gives you JSON
+ * you can paste back into this file.
+ *
+ * Units: distances in tiles (one tile = one grid square), time in seconds,
+ * speeds in tiles per second. Heights in the course files are in steps;
+ * STEP_HEIGHT below converts them.
+ */
+
+/** Per-surface physics. Surfaces not listed use `default`. */
+export interface SurfacePhysics {
+  /** Rolling friction, as a fraction of gravity. Higher stops the ball sooner. */
+  friction: number;
+  /** Fraction of the falling speed kept when the ball bounces on this surface. */
+  bounce: number;
+  /** Fraction of the forward speed lost on each landing. */
+  landingGrip: number;
+  /** Fraction of speed kept when the ball hits a wall made of this surface. Above 1 adds speed. */
+  wallBounce: number;
+}
+
+export interface Tuning {
+  // World
+  gravity: number;
+  /** Ball radius, used for walls. */
+  ballRadius: number;
+  /** Speed lost per second in proportion to speed (air and ground). */
+  drag: number;
+
+  // Shot
+  groundMaxSpeed: number;
+  loftMaxSpeed: number;
+  /** Launch angle of a lofted shot, in degrees above the ground. */
+  loftAngle: number;
+  /** Lowest power the meter can give, 0 to 1. */
+  minPower: number;
+  /** Seconds for the meter to sweep from empty to full and back. */
+  meterPeriod: number;
+  /** Drag-power mode: screen pixels of drag for a full-power shot. */
+  dragFullPx: number;
+
+  // Spin
+  /** Lofted shots: speed added (topspin) or removed (backspin) on the first landing, at full spin. */
+  spinLandingSpeed: number;
+  /** Ground shots: push along the shot direction at full spin, while the spin lasts. */
+  spinRollAccel: number;
+  /** Ground shots: how long the spin push lasts. */
+  spinRollTime: number;
+  /** Side curve: turn rate in degrees per second at full side spin. */
+  curveRate: number;
+  /** How fast side curve fades, per second. */
+  curveFade: number;
+
+  // Bounce and rest
+  /** Below this falling speed the ball stops bouncing and rolls. */
+  minBounceSpeed: number;
+  /** Below this speed the ball can come to rest. */
+  restSpeed: number;
+  /** Seconds the ball must stay slow before it counts as resting. */
+  restTime: number;
+
+  // Bounce boost
+  /** How long before landing a boost press still counts, in seconds. */
+  boostWindow: number;
+  /** Multiplier on the bounce when boosted. */
+  boostMultiplier: number;
+  /** A boosted bounce leaves the ground at least this fast. */
+  boostMinSpeed: number;
+
+  // Aim guide
+  /** How far along the path the guide is drawn, in tiles. */
+  guideLength: number;
+
+  // Safety
+  /** Falling this far below height 0 counts as out of bounds, in tiles. */
+  outOfBoundsDepth: number;
+  /** A shot is stopped after this many seconds, whatever happens. */
+  maxShotTime: number;
+
+  surfaces: Record<string, SurfacePhysics>;
+}
+
+/** Height of one course step in tiles. Fixed by the art (8 px step, 32x16 tile), not a tuning number. */
+export const STEP_HEIGHT = 0.5;
+
+/** Simulation steps per second. Fixed timestep (DESIGN.md section 5). */
+export const STEPS_PER_SECOND = 120;
+
+export const DEFAULT_TUNING: Tuning = {
+  gravity: 20,
+  ballRadius: 0.15,
+  drag: 0.25,
+
+  groundMaxSpeed: 11,
+  loftMaxSpeed: 10,
+  loftAngle: 50,
+  minPower: 0.05,
+  meterPeriod: 1.6,
+  dragFullPx: 80,
+
+  spinLandingSpeed: 4,
+  spinRollAccel: 3,
+  spinRollTime: 0.8,
+  curveRate: 70,
+  curveFade: 0.6,
+
+  minBounceSpeed: 1.2,
+  restSpeed: 0.2,
+  restTime: 0.15,
+
+  boostWindow: 0.15,
+  boostMultiplier: 1.6,
+  boostMinSpeed: 5,
+
+  guideLength: 4,
+
+  outOfBoundsDepth: 2,
+  maxShotTime: 30,
+
+  surfaces: {
+    default: { friction: 0.15, bounce: 0.45, landingGrip: 0.15, wallBounce: 0.7 },
+    grass: { friction: 0.15, bounce: 0.45, landingGrip: 0.15, wallBounce: 0.7 },
+    rough: { friction: 0.45, bounce: 0.3, landingGrip: 0.35, wallBounce: 0.6 },
+    sand: { friction: 1.0, bounce: 0.05, landingGrip: 0.7, wallBounce: 0.4 },
+    ice: { friction: 0.03, bounce: 0.5, landingGrip: 0.03, wallBounce: 0.8 },
+    bumper: { friction: 0.15, bounce: 0.9, landingGrip: 0.1, wallBounce: 1.25 },
+  },
+};
+
+export function surfacePhysics(t: Tuning, surface: string): SurfacePhysics {
+  return t.surfaces[surface] ?? t.surfaces.default!;
+}
+
+export function cloneTuning(t: Tuning): Tuning {
+  return JSON.parse(JSON.stringify(t)) as Tuning;
+}
+
+/** Slider ranges for the tuning panel. Keys are paths into Tuning, e.g. "surfaces.grass.friction". */
+export interface TuningControl {
+  key: string;
+  min: number;
+  max: number;
+  step: number;
+  group: string;
+}
+
+const top = (group: string, key: keyof Tuning, min: number, max: number, step: number): TuningControl => ({ key, min, max, step, group });
+
+export const TUNING_CONTROLS: readonly TuningControl[] = [
+  top('World', 'gravity', 5, 60, 0.5),
+  top('World', 'ballRadius', 0.05, 0.4, 0.01),
+  top('World', 'drag', 0, 2, 0.01),
+  top('Shot', 'groundMaxSpeed', 2, 30, 0.5),
+  top('Shot', 'loftMaxSpeed', 2, 30, 0.5),
+  top('Shot', 'loftAngle', 10, 80, 1),
+  top('Shot', 'minPower', 0, 0.5, 0.01),
+  top('Shot', 'meterPeriod', 0.4, 4, 0.05),
+  top('Shot', 'dragFullPx', 20, 200, 1),
+  top('Spin', 'spinLandingSpeed', 0, 12, 0.1),
+  top('Spin', 'spinRollAccel', 0, 12, 0.1),
+  top('Spin', 'spinRollTime', 0, 3, 0.05),
+  top('Spin', 'curveRate', 0, 200, 1),
+  top('Spin', 'curveFade', 0, 3, 0.05),
+  top('Bounce', 'minBounceSpeed', 0, 5, 0.05),
+  top('Bounce', 'restSpeed', 0.01, 1, 0.01),
+  top('Bounce', 'restTime', 0, 1, 0.01),
+  top('Boost', 'boostWindow', 0.02, 0.5, 0.01),
+  top('Boost', 'boostMultiplier', 1, 3, 0.05),
+  top('Boost', 'boostMinSpeed', 0, 15, 0.25),
+  top('Guide', 'guideLength', 0.5, 20, 0.5),
+  ...['grass', 'rough', 'sand', 'ice', 'bumper'].flatMap((s) => [
+    { key: `surfaces.${s}.friction`, min: 0, max: 2, step: 0.01, group: `Surface: ${s}` },
+    { key: `surfaces.${s}.bounce`, min: 0, max: 1, step: 0.01, group: `Surface: ${s}` },
+    { key: `surfaces.${s}.landingGrip`, min: 0, max: 1, step: 0.01, group: `Surface: ${s}` },
+    { key: `surfaces.${s}.wallBounce`, min: 0, max: 2, step: 0.01, group: `Surface: ${s}` },
+  ]),
+];
+
+export function getTuningValue(t: Tuning, key: string): number {
+  let o: unknown = t;
+  for (const part of key.split('.')) o = (o as Record<string, unknown>)[part];
+  return o as number;
+}
+
+export function setTuningValue(t: Tuning, key: string, value: number): void {
+  const parts = key.split('.');
+  let o = t as unknown as Record<string, unknown>;
+  for (const part of parts.slice(0, -1)) o = o[part] as Record<string, unknown>;
+  o[parts[parts.length - 1]!] = value;
+}

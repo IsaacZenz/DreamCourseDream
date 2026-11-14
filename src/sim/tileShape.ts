@@ -88,23 +88,50 @@ const CORNER_UV: readonly (readonly [number, number])[] = [
   [0, 1],
 ];
 
-/**
- * Ground height at a point inside a tile, using the same two triangles the art
- * is drawn with. u and v run from 0 to 1 across the tile (u along grid x, v
- * along grid y).
- */
-export function heightAt(c: Corners, shape: ShapeId, u: number, v: number): number {
-  for (const tri of triangles(shape)) {
-    const [a, b, d] = tri.map((i) => CORNER_UV[i]!) as [readonly [number, number], readonly [number, number], readonly [number, number]];
-    const det = (b[1] - d[1]) * (a[0] - d[0]) + (d[0] - b[0]) * (a[1] - d[1]);
-    const wa = ((b[1] - d[1]) * (u - d[0]) + (d[0] - b[0]) * (v - d[1])) / det;
-    const wb = ((d[1] - a[1]) * (u - d[0]) + (a[0] - d[0]) * (v - d[1])) / det;
-    const wd = 1 - wa - wb;
-    const eps = 1e-9;
-    if (wa >= -eps && wb >= -eps && wd >= -eps) {
-      return wa * c[tri[0]]! + wb * c[tri[1]]! + wd * c[tri[2]]!;
+/** The flat plane of one triangle: height = h0 + dhdu * u + dhdv * v. */
+export interface Plane {
+  readonly h0: number;
+  readonly dhdu: number;
+  readonly dhdv: number;
+}
+
+function planeOf(c: Corners, tri: readonly [number, number, number]): Plane {
+  // Every triangle has a right angle at one corner, so the plane can be read off directly.
+  const pts = tri.map((i) => ({ uv: CORNER_UV[i]!, h: c[i]! }));
+  // Find the right-angle corner: the one sharing u with one point and v with the other.
+  for (const p of pts) {
+    const others = pts.filter((q) => q !== p);
+    const du = others.find((q) => q.uv[1] === p.uv[1]);
+    const dv = others.find((q) => q.uv[0] === p.uv[0]);
+    if (du && dv) {
+      const dhdu = (du.h - p.h) / (du.uv[0] - p.uv[0]);
+      const dhdv = (dv.h - p.h) / (dv.uv[1] - p.uv[1]);
+      return { h0: p.h - dhdu * p.uv[0] - dhdv * p.uv[1], dhdu, dhdv };
     }
   }
-  // Outside the tile: clamp into it.
-  return heightAt(c, shape, Math.min(1, Math.max(0, u)), Math.min(1, Math.max(0, v)));
+  throw new Error('triangle has no right angle');
+}
+
+/**
+ * The plane of the ground at a point inside a tile, using the same two
+ * triangles the art is drawn with. u and v run from 0 to 1 across the tile
+ * (u along grid x, v along grid y); points outside are clamped into the tile.
+ * Heights and slopes are in steps (per tile).
+ */
+export function planeAt(c: Corners, shape: ShapeId, u: number, v: number): Plane {
+  u = Math.min(1, Math.max(0, u));
+  v = Math.min(1, Math.max(0, v));
+  const [a, b] = triangles(shape);
+  // The split diagonal is either nw–se (u = v) or ne–sw (u + v = 1).
+  const splitNwSe = a.includes(0) && a.includes(2);
+  const inFirst = splitNwSe ? u >= v : u + v <= 1;
+  return planeOf(c, inFirst ? a : b);
+}
+
+/** Ground height at a point inside a tile, in steps. See planeAt. */
+export function heightAt(c: Corners, shape: ShapeId, u: number, v: number): number {
+  const p = planeAt(c, shape, u, v);
+  u = Math.min(1, Math.max(0, u));
+  v = Math.min(1, Math.max(0, v));
+  return p.h0 + p.dhdu * u + p.dhdv * v;
 }
