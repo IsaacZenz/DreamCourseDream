@@ -439,7 +439,7 @@ describe('Mole', () => {
       if (e.body) topZ = Math.max(topZ, e.body.ball.z - 0.5);
     }
     expect(rumbleAt).toBeGreaterThan(0);
-    expect(surfaceAt - rumbleAt).toBe(60); // 0.5 s at 120 steps per second
+    expect(surfaceAt - rumbleAt).toBe(36); // 0.3 s at 120 steps per second
     expect(topZ).toBeGreaterThan(0.9);
   });
 
@@ -454,7 +454,7 @@ describe('Mole', () => {
       tick(p);
       for (const ev of drainLog(p)) {
         if (ev.kind === 'surface') surfaced = p.clock;
-        if (ev.kind === 'damage' && surfaced >= 0 && p.clock - surfaced < 36) hurtEarly = true;
+        if (ev.kind === 'damage' && surfaced >= 0 && p.clock - surfaced < 18) hurtEarly = true;
       }
     }
     expect(surfaced).toBeGreaterThan(0);

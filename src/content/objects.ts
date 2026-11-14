@@ -393,7 +393,7 @@ const defs: readonly ObjectDef[] = [
     passByGroundOnly: true,
     ...ROUND_ENEMY,
     triggers: { hit: 'none', rest: 'none', passBy: 'immediate' },
-    behaviour: { kind: 'burrow', launchSpeed: 4, launchUp: 7, delay: 0.5, grace: 0.3, upShots: 1, hitWhileMoving: false },
+    behaviour: { kind: 'burrow', launchSpeed: 6, launchUp: 10, delay: 0.3, grace: 0.15, upShots: 1, hitWhileMoving: false },
     contact: 'moving',
     grantsAbility: null,
     cost: 3,
