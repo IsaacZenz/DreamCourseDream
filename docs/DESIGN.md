@@ -19,6 +19,8 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 | 5 | A single-player dungeon crawler, not a versus game. | Decided |
 | 6 | Function first. Placeholder art until the game plays well; the final look is applied later as a skin. | Decided |
 
+**Decided (owner, 2026-11-14): keep it easy to fine-tune and to extend.** As the game grows, small number changes (speeds, delays, damage, radii) must stay a one-line data edit, and new enemies, obstacles and abilities must be addable as data entries plus a placeholder sprite, with no rewrites. In practice: every number lives in `src/content/` (physics feel in `tuning.ts`, also live in the U panel); enemies, obstacles and pickups in `objects.ts`; abilities in `abilities.ts`; statuses in `statuses.ts`. A new thing that reuses an existing behaviour needs no logic changes (tested by a test-only enemy in `tests/enemies.test.ts`); a truly new kind of behaviour needs code once. The test bench (course 5) tries any of them alone.
+
 ## 3. Platform and technology
 
 | Item | Choice | Status |
