@@ -474,21 +474,6 @@ function drawRock(): Image {
   return img;
 }
 
-function drawPost(): Image {
-  // 1.5 tiles tall = 3 steps = 24 px, plus a cap.
-  const img = new Image(8, 28);
-  const sh = ramp('#a07040');
-  const edge = hex2('#302010');
-  for (let y = 2; y < 27; y++) {
-    for (let x = 1; x < 7; x++) {
-      const e = x === 1 || x === 6 || y === 26;
-      img.set(x, y, e ? edge : sh[x < 3 ? 4 : x < 5 ? 3 : 2]!);
-    }
-  }
-  blob(img, 4, 3, 3.5, 2.5, '#c89060', '#302010');
-  return img;
-}
-
 function drawLowWall(): Image {
   // A full-tile block half a step high (4 px): a raised diamond top and two front sides.
   const img = new Image(32, 20);
@@ -528,6 +513,293 @@ function drawMossback(): Image {
   const eye = hex2('#101010');
   img.set(4, 10, eye);
   img.set(6, 10, eye);
+  return img;
+}
+
+// ---------------------------------------------------------------------------
+// Milestone 4: enemies, obstacles, flags, clouds, abilities.
+
+/** Draw a list of row strings: digits are shades of `base`, 'o' the outline, letters from `extra`. */
+function rows(img: Image, ox: number, oy: number, lines: readonly string[], base: string, extra: Record<string, string> = {}, outline = '#202030'): void {
+  const sh = ramp(base);
+  const edge = hex2(outline);
+  lines.forEach((r, y) =>
+    [...r].forEach((ch, x) => {
+      if (ch === '.') return;
+      if (ch === 'o') img.set(ox + x, oy + y, edge);
+      else if (extra[ch]) img.set(ox + x, oy + y, hex2(extra[ch]!));
+      else img.set(ox + x, oy + y, sh[Number(ch)]!);
+    }),
+  );
+}
+
+function eyes(img: Image, pts: readonly P[], color = '#101010'): void {
+  for (const [x, y] of pts) img.set(x, y, hex2(color));
+}
+
+/** A shelled sentinel like the Mossback, in another colour, with an icon on its back. */
+function drawCarrier(shell: string, mark: (img: Image) => void): Image {
+  const img = new Image(18, 16);
+  const foot = hex2('#5a4020');
+  for (const [x, y] of [[3, 13], [4, 13], [13, 13], [14, 13], [3, 14], [14, 14]] as const) img.set(x, y, foot);
+  blob(img, 9, 9, 8, 6, shell, '#18180c');
+  blob(img, 5, 11, 3.5, 3, '#c8a868', '#3a2a10');
+  eyes(img, [[4, 10], [6, 10]]);
+  mark(img);
+  return img;
+}
+
+function drawTrundler(): Image {
+  // A rolling armoured barrel with a face: it trundles along its path.
+  const img = new Image(18, 16);
+  blob(img, 9, 8.5, 8, 7, '#a05a2c', '#2a1408');
+  const band = hex2('#5a3014');
+  for (let y = 2; y < 15; y++) for (const x of [6, 12]) if (img.get(x, y)[3] > 0) img.set(x, y, band);
+  blob(img, 6, 10, 3, 2.5, '#e8c890', '#3a2010');
+  eyes(img, [[5, 9], [7, 9]]);
+  img.set(6, 11, hex2('#601010'));
+  return img;
+}
+
+function drawSpitter(): Image {
+  // A squat plant pod with a wide mouth that spits seeds.
+  const img = new Image(18, 18);
+  const leaf = hex2('#2c7020');
+  for (const [x, y] of [[1, 15], [2, 14], [3, 14], [14, 14], [15, 14], [16, 15], [2, 15], [15, 15]] as const) img.set(x, y, leaf);
+  blob(img, 9, 10, 7, 7, '#b04080', '#300818');
+  blob(img, 7, 9, 3.2, 2.6, '#401020', '#200008');
+  for (const [x, y] of [[11, 5], [12, 6], [5, 13], [13, 12]] as const) img.set(x, y, hex2('#f0a0d0'));
+  eyes(img, [[10, 6], [12, 8]], '#f8f8f8');
+  return img;
+}
+
+function drawLunger(): Image {
+  // A round, spiky ball-creature that launches itself.
+  const img = new Image(18, 16);
+  blob(img, 9, 8.5, 7.5, 6.5, '#c83c30', '#300808');
+  const spike = hex2('#f0e0c0');
+  for (const [x, y] of [[9, 1], [3, 3], [15, 3], [1, 8], [17, 8], [4, 14], [14, 14]] as const) img.set(x, y, spike);
+  blob(img, 6, 9, 3, 2.5, '#f8e0b0', '#400808');
+  eyes(img, [[5, 8], [7, 8]]);
+  for (let x = 4; x <= 8; x++) img.set(x, 11, hex2('#200000'));
+  return img;
+}
+
+function drawMole(): Image {
+  const img = new Image(16, 14);
+  blob(img, 8, 8, 7, 5.5, '#6a4a38', '#1a100a');
+  blob(img, 4.5, 9, 2.5, 2, '#f0a0a0', '#401818');
+  eyes(img, [[6, 6], [9, 6]]);
+  for (const [x, y] of [[2, 12], [3, 13], [12, 12], [13, 13]] as const) img.set(x, y, hex2('#e8d0b0'));
+  return img;
+}
+
+function drawMolehill(): Image {
+  const img = new Image(16, 8);
+  blob(img, 8, 5.5, 7.5, 3.5, '#7a5230', '#2a1808');
+  for (const [x, y] of [[5, 3], [9, 4], [11, 5], [6, 5]] as const) img.set(x, y, hex2('#a07850'));
+  return img;
+}
+
+function drawSeed(): Image {
+  const img = new Image(6, 6);
+  blob(img, 3, 3, 2.6, 2.6, '#e0c040', '#402a00');
+  return img;
+}
+
+function drawTargetRing(): Image {
+  // A flat ring on the ground: where the next seed will land (0.75 tiles across).
+  const img = new Image(26, 14);
+  const c = c15(hex('#f84040'), 220);
+  for (let y = 0; y < 14; y++) {
+    for (let x = 0; x < 26; x++) {
+      const r = Math.hypot((x + 0.5 - 13) / 12, (y + 0.5 - 7) / 6);
+      if (r < 1 && r > 0.72) img.set(x, y, c);
+      if (r < 0.2) img.set(x, y, c);
+    }
+  }
+  return img;
+}
+
+function drawBlockSprite(w: number, topH: number, sideH: number, base: string, pattern?: (x: number, y: number) => boolean): Image {
+  // An isometric block w px wide: diamond top topH tall, sides sideH tall.
+  const h = topH + sideH;
+  const img = new Image(w, h);
+  const top = ramp(base);
+  const half = w / 2;
+  const topPoly: P[] = [[half, 0], [w, topH / 2], [half, topH], [0, topH / 2]];
+  const leftPoly: P[] = [[0, topH / 2], [half, topH], [half, h], [0, h - topH / 2]];
+  const rightPoly: P[] = [[half, topH], [w, topH / 2], [w, h - topH / 2], [half, h]];
+  const edge = hex2('#202028');
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = x + BIAS_X;
+      const py = y + BIAS_Y;
+      let c: RGBA | null = null;
+      if (insidePoly(px, py, topPoly)) c = top[4]!;
+      else if (insidePoly(px, py, leftPoly)) c = top[3]!;
+      else if (insidePoly(px, py, rightPoly)) c = top[1]!;
+      if (!c) continue;
+      if (pattern && pattern(x, y)) c = edge;
+      img.set(x, y, c);
+    }
+  }
+  return img;
+}
+
+function drawSlidingBlock(): Image {
+  return drawBlockSprite(28, 14, 8, '#7880a0', (x, y) => (x + y) % 9 === 0 && y > 2);
+}
+
+function drawGate(open: boolean): Image {
+  // Bars across the tile; open, they sink to a low rail.
+  const img = new Image(32, 26);
+  const bar = ramp('#c0a040');
+  const edge = hex2('#302808');
+  const barH = open ? 2 : 14;
+  for (let i = 0; i < 5; i++) {
+    const bx = 4 + i * 6;
+    const by = 6 + i * 3;
+    for (let y = by + 12 - barH; y < by + 12; y++) {
+      img.set(bx, y, edge);
+      img.set(bx + 1, y, bar[4]!);
+      img.set(bx + 2, y, bar[2]!);
+      img.set(bx + 3, y, edge);
+    }
+  }
+  // Rail along the bottom.
+  for (let x = 2; x < 30; x++) img.set(x, Math.round(18 + (x - 2) * 0.5) - (open ? 0 : 0), edge);
+  if (!open) for (let x = 2; x < 30; x++) img.set(x, Math.round(5 + (x - 2) * 0.5), bar[3]!);
+  return img;
+}
+
+function drawCrate(secured: boolean, cracked: boolean): Image {
+  const img = drawBlockSprite(26, 13, 9, '#b07838', (x, y) => (x % 7 === 0 && y > 6) || y === 13);
+  if (secured) {
+    const metal = hex2('#8890a0');
+    for (let y = 0; y < img.height; y++) for (const x of [5, 20]) if (img.get(x, y)[3] > 0) img.set(x, y, metal);
+    for (let x = 0; x < img.width; x++) {
+      const y = Math.round(16 - Math.abs(x - 13) * 0.5);
+      if (img.get(x, y)[3] > 0) img.set(x, y, metal);
+    }
+  }
+  if (cracked) {
+    const crack = hex2('#1a1008');
+    for (const [x, y] of [[9, 8], [10, 9], [10, 10], [11, 11], [12, 12], [16, 10], [17, 11], [17, 12], [18, 13]] as const) img.set(x, y, crack);
+  }
+  return img;
+}
+
+function drawCrackedTile(): Image {
+  // Cracks drawn on top of the tile it sits on (32x16 diamond).
+  const img = new Image(32, 16);
+  const crack = hex2('#2a2018');
+  const pts: P[] = [[8, 8], [10, 7], [12, 8], [14, 7], [16, 8], [18, 9], [20, 8], [22, 9], [24, 8], [15, 5], [16, 6], [17, 11], [16, 12], [13, 10], [19, 6]];
+  for (const [x, y] of pts) img.set(x, y, crack);
+  return img;
+}
+
+function drawFlag(raised: boolean): Image {
+  // 1.5 tiles tall = 24 px of pole, with a pennant; lowered, it is sunk into its hole.
+  const img = new Image(14, 30);
+  const pole = hex2('#e8e8e8');
+  const poleDark = hex2('#9898a0');
+  const cloth = ramp('#e83030');
+  const hole = hex2('#101018');
+  for (let x = 2; x < 8; x++) img.set(x, 28, hole);
+  for (let x = 3; x < 7; x++) img.set(x, 29, hole);
+  if (raised) {
+    for (let y = 3; y < 28; y++) {
+      img.set(4, y, pole);
+      img.set(5, y, poleDark);
+    }
+    for (let y = 3; y < 10; y++) for (let x = 6; x < 6 + Math.round((10 - y) * 1.1) + 1 && x < 14; x++) img.set(x, y, cloth[y < 6 ? 4 : 3]!);
+  } else {
+    for (let y = 22; y < 28; y++) {
+      img.set(4, y, pole);
+      img.set(5, y, poleDark);
+    }
+    for (let y = 22; y < 26; y++) for (let x = 6; x < 10; x++) img.set(x, y, cloth[1]!);
+  }
+  return img;
+}
+
+function drawCloud(flash: boolean): Image {
+  const img = new Image(30, 22);
+  const base = flash ? '#d8d8f0' : '#707488';
+  blob(img, 10, 8, 8, 6, base, '#202030');
+  blob(img, 19, 7, 9, 7, base, '#202030');
+  blob(img, 15, 11, 10, 5, base, '#202030');
+  const bolt = hex2('#f8f040');
+  for (const [x, y] of [[14, 15], [13, 16], [14, 17], [15, 17], [14, 18], [13, 19], [13, 20], [18, 16], [17, 17], [18, 18], [17, 19]] as const) img.set(x, y, bolt);
+  return img;
+}
+
+function drawSpark(): Image {
+  const img = new Image(12, 12);
+  const c = hex2('#f8f060');
+  const w = hex2('#ffffff');
+  for (let i = 0; i < 12; i++) {
+    img.set(i, 6, c);
+    img.set(6, i, c);
+    img.set(i, i, c);
+    img.set(11 - i, i, c);
+  }
+  for (const [x, y] of [[5, 5], [6, 5], [5, 6], [6, 6]] as const) img.set(x, y, w);
+  return img;
+}
+
+function drawStump(): Image {
+  // Same size as the old post: thin, 1.5 tiles tall, with rings on top and bark.
+  const img = new Image(10, 28);
+  const bark = ramp('#7a4a24');
+  const edge = hex2('#2a1608');
+  for (let y = 3; y < 27; y++) {
+    for (let x = 1; x < 9; x++) {
+      const e = x === 1 || x === 8 || y === 26;
+      img.set(x, y, e ? edge : bark[(x + Math.floor(y / 3)) % 3 === 0 ? 1 : x < 4 ? 4 : 3]!);
+    }
+  }
+  blob(img, 5, 3, 4.5, 2.6, '#d8b070', '#2a1608');
+  img.set(5, 3, hex2('#8a6030'));
+  img.set(4, 3, hex2('#a87840'));
+  img.set(6, 3, hex2('#a87840'));
+  return img;
+}
+
+function drawIcon(kind: string): Image {
+  const img = new Image(10, 10);
+  blob(img, 5, 5, 5, 5, { anchor: '#4060a0', burner: '#c04020', hop: '#40a040', tornado: '#7a7ab0', stunned: '#a09030', wild: '#b040c0' }[kind] ?? '#808080', '#101018');
+  const w = hex2('#f8f8f8');
+  const marks: Record<string, P[]> = {
+    anchor: [[5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [4, 3], [6, 3], [3, 6], [7, 6], [4, 7], [6, 7]],
+    burner: [[5, 2], [4, 3], [6, 4], [4, 5], [5, 5], [6, 5], [3, 6], [4, 6], [5, 6], [6, 6], [7, 6], [4, 7], [5, 7], [6, 7]],
+    hop: [[5, 2], [4, 3], [6, 3], [3, 4], [7, 4], [5, 4], [5, 5], [5, 6], [5, 7]],
+    tornado: [[2, 3], [3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [3, 4], [4, 4], [5, 4], [6, 4], [4, 5], [5, 5], [6, 5], [4, 6], [5, 6], [5, 7]],
+    stunned: [[3, 3], [7, 3], [5, 2], [2, 5], [8, 5], [5, 5], [3, 7], [7, 7]],
+    wild: [[4, 2], [5, 2], [6, 2], [6, 3], [6, 4], [5, 5], [5, 6], [5, 8]],
+  };
+  for (const [x, y] of marks[kind] ?? []) img.set(x, y, w);
+  return img;
+}
+
+function drawAlert(): Image {
+  const img = new Image(5, 9);
+  rows(img, 0, 0, ['.ooo.', 'o44o.', '.o4o.', '.o4o.', '.o4o.', '..o..', '.ooo.', '.o4o.', '.ooo.'], '#f8d030', {}, '#401000');
+  return img;
+}
+
+function drawTornadoBall(frame: number): Image {
+  // The ball as a small whirlwind: a funnel of grey streaks around it.
+  const img = new Image(12, 14);
+  const streak = ramp('#c0c8e0');
+  for (let y = 0; y < 14; y++) {
+    const w = 1 + (14 - y) * 0.38;
+    for (let k = -1; k <= 1; k += 2) {
+      const x = Math.round(6 + k * w * Math.cos((y + frame * 3) * 0.9));
+      img.set(x, y, streak[y % 3 === 0 ? 4 : 2]!);
+    }
+  }
   return img;
 }
 
@@ -604,9 +876,35 @@ emit('star-yellow', drawStar('#f8d030'), 11, 11, ['idle'], [5, 10]);
 emit('heart', drawHeart(), 9, 8, ['idle'], [4, 7]);
 emit('shot-orb', drawShotOrb(), 9, 9, ['idle'], [4, 8]);
 emit('rock', drawRock(), 20, 14, ['idle'], [10, 10]);
-emit('post', drawPost(), 8, 28, ['idle'], [4, 25]);
+emit('stump', drawStump(), 10, 28, ['idle'], [5, 25]);
 emit('low-wall', drawLowWall(), 32, 20, ['idle'], [16, 12]);
 emit('mossback', drawMossback(), 18, 16, ['idle'], [9, 14]);
+// Milestone 4
+emit('trundler', drawTrundler(), 18, 16, ['idle'], [9, 14]);
+emit('spitter', drawSpitter(), 18, 18, ['idle'], [9, 16]);
+emit('lunger', drawLunger(), 18, 16, ['idle'], [9, 14]);
+emit('mole', drawMole(), 16, 14, ['idle'], [8, 12]);
+emit('molehill', drawMolehill(), 16, 8, ['idle'], [8, 6]);
+const mark = (color: string, pts: P[]) => (img: Image) => pts.forEach(([x, y]) => img.set(x, y, hex2(color)));
+emit('anchorback', drawCarrier('#4870b0', mark('#f8f8f8', [[11, 5], [11, 6], [11, 7], [11, 8], [10, 6], [12, 6], [9, 8], [13, 8]])), 18, 16, ['idle'], [9, 14]);
+emit('emberback', drawCarrier('#c85020', mark('#f8e040', [[11, 4], [10, 5], [12, 6], [10, 7], [11, 7], [12, 7], [11, 8]])), 18, 16, ['idle'], [9, 14]);
+emit('hopback', drawCarrier('#40a040', mark('#f8f8f8', [[11, 4], [10, 5], [12, 5], [11, 6], [11, 7], [11, 8]])), 18, 16, ['idle'], [9, 14]);
+emit('whirlback', drawCarrier('#7878b8', mark('#f8f8f8', [[9, 4], [10, 4], [11, 4], [12, 4], [13, 4], [10, 5], [11, 5], [12, 5], [11, 6], [11, 7]])), 18, 16, ['idle'], [9, 14]);
+emit('seed', drawSeed(), 6, 6, ['idle'], [3, 5]);
+emit('target-ring', drawTargetRing(), 26, 14, ['idle'], [13, 7]);
+emit('sliding-block', drawSlidingBlock(), 28, 22, ['idle'], [14, 14]);
+emit('gate', sheet([drawGate(true), drawGate(false)]), 32, 26, ['open', 'closed'], [16, 18]);
+emit('crate', drawCrate(false, false), 26, 22, ['idle'], [13, 15]);
+emit('secured-crate', sheet([drawCrate(true, false), drawCrate(true, true)]), 26, 22, ['whole', 'cracked'], [13, 15]);
+emit('cracked-tile', drawCrackedTile(), 32, 16, ['idle'], [16, 8]);
+emit('flag-pole', sheet([drawFlag(true), drawFlag(false)]), 14, 30, ['raised', 'lowered'], [5, 28]);
+emit('star-marker', drawStar('#f8d030'), 11, 11, ['idle'], [5, 10]);
+emit('thunder-cloud', sheet([drawCloud(false), drawCloud(true)]), 30, 22, ['idle', 'flash'], [15, 21]);
+emit('zap-spark', drawSpark(), 12, 12, ['idle'], [6, 6]);
+emit('wild', drawIcon('wild'), 10, 10, ['idle'], [5, 9]);
+for (const k of ['anchor', 'burner', 'hop', 'tornado', 'stunned']) emit(`icon-${k}`, drawIcon(k), 10, 10, ['idle'], [5, 5]);
+emit('alert', drawAlert(), 5, 9, ['idle'], [2, 9]);
+emit('ball-tornado', sheet([0, 1, 2, 3].map(drawTornadoBall)), 12, 14, ['0', '1', '2', '3'], [6, 13]);
 const font = drawFont();
 emit('font', font.img, 4, 6, font.frames, [0, 0]);
 

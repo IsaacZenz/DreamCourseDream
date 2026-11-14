@@ -66,7 +66,9 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 - **Positions:** "from above" means the ball was airborne just before contact. "From behind" uses the direction the enemy is facing. A weak spot doubles damage; a guarded side blocks the hit.
 - **Order of calculation:** hit damage after modifiers → element → position → shield or block → subtract from enemy health.
 - **Contact:** if the enemy survives, the ball bounces off it. If the enemy is defeated, the ball carries on with a small loss of speed. The same enemy cannot be hit again within half a second.
-- **Damage to the ball:** enemy attacks and hazards remove health. After taking damage the ball cannot be damaged again for the rest of that shot.
+- **Damage to the ball:** enemy attacks and hazards remove health. ~~After taking damage the ball cannot be damaged again for the rest of that shot.~~ **Owner, 2026-11-14:** after taking any damage the ball is immune for 0.5 seconds, then can be hurt again. A ball knocked around can take several hits.
+- **Owner, 2026-11-14 — only your own action deals damage:** the ball damages an enemy only while it is moving from the player's shot (including abilities used during it). A ball that was standing still and got run into or knocked (by a Trundler, a sliding block, a Lunger, a cloud) does no damage to any enemy it touches and sets off no hit trigger; the enemy's contact effect still applies to the ball. Crates are not enemies, so a knocked ball can still break them.
+- **Owner, 2026-11-14 — moving things and the ball:** free-rolling things (Lunger, Mole, Spitter seed) and the ball deflect off each other. Things on a fixed route (Trundler, sliding block) keep going and knock the ball out of the way, even a resting ball. Details in `docs/plans/milestone-4.md` section 1.2a.
 
 ---
 
@@ -143,10 +145,13 @@ Early courses use mostly tiers 1 and 2. Later regions shift the mix upward (sect
 | Working name | Family | Tier | Behaviour | Milestone |
 |---|---|---|---|---|
 | Mossback | Sentinel | 1 | Never acts. A plain target. | 3 |
-| Trundler | Patroller | 2 | Rolls along its path. Contact: 1 damage and knock-back. | 4 |
-| Spitter | Sentinel | 2 | When activated, fires a slow projectile at the ball each turn. | 4 |
-| Lunger | Sentinel | 2 | Rest trigger activates it; pass-by trigger makes it strike at once. Moves toward the ball each turn. | 4 |
+| Trundler | Patroller | 2 | Rolls along its path. Contact: 1 damage and knock-back. Keeps to its path when it runs into the ball, even a resting one (owner, 2026-11-14). | 4 |
+| Spitter | Sentinel | 2 | When activated, marks the ball's spot each turn and lobs a seed at it the next turn. The seed has ball physics and keeps bouncing along its line after landing (owner, 2026-11-14). | 4 |
+| Lunger | Sentinel | 2 | Rest trigger activates it; pass-by trigger makes it launch at once. Each enemy turn it launches itself at the ball and rolls like the golf ball (owner, 2026-11-14): terrain affects it, it bounces back from edges and water, spikes hurt it, it hurts the ball only while moving. | 4 |
+| Mole | Sentinel | 2 | Owner, 2026-11-14. Hidden under a molehill. Rolling directly over the hill sets it off: the hill rumbles for a moment (0.3 s), then it shoots up into the air, fast, in a random direction and rolls to a stop. The wait means rolling over it never guarantees a hit; for 0.15 s after popping out it cannot touch the ball. Hurts the ball only while moving. Stays up for one player turn, then burrows. | 4 |
 | Ability carriers | Sentinel | 1 | One Mossback variant per starter ability; grants it on defeat. | 4 |
+
+**Owner, 2026-11-14:** for now every enemy is worth 1 star, whatever its tier (overrides the Stars column of the tier table until the Milestone 8 balance pass).
 
 Tiers 3 and 4, traits, elements, squads and enemy gear are Milestone 8, but the template fields must exist from Milestone 4.
 
@@ -188,9 +193,9 @@ id, name, sprite id, size in tiles, whether it blocks the ball, contact effect, 
 
 | Kind | Starter examples | Milestone |
 |---|---|---|
-| Static blockers | Rock, post, low wall | 3 |
+| Static blockers | Rock, tree stump (was the post; renamed by the owner 2026-11-14, built in Milestone 4), low wall | 3 |
 | Moving obstacles (not enemies; cannot be defeated) | Sliding block on a path, gate that opens and closes on a timer | 4 |
-| Destructibles | Crate that drops a pickup, cracked tile that breaks under the Anchor ability | 4 |
+| Destructibles | Crate that drops a pickup; secured crate that takes 2 hits (owner, 2026-11-14); cracked tile that breaks under the Anchor ability | 4 |
 | Linked objects | Switch that lowers a gate or raises a bridge | 8 |
 
 Moving obstacles run in real time like patrollers, including while the player aims.
@@ -199,7 +204,9 @@ Moving obstacles run in real time like patrollers, including while the player ai
 
 **Decided (owner, 2026-11-14):**
 
-- When an enemy is defeated, a golf flag pole goes up where it died. The enemy still drops its yellow stars as before.
+- When an enemy is defeated, a golf flag pole goes up where it died. ~~The enemy still drops its yellow stars as before.~~ Replaced below.
+- **Owner, 2026-11-14:** a star hovers above the flag pole, showing the star secured by defeating that enemy. The star counts towards the meter and the wallet the moment the enemy dies; there is no dropped star to fetch.
+- **Owner, 2026-11-14:** if any enemy passes over a raised flag, the flag slides down into its hole and its star disappears: that star is taken off the meter and the wallet. The ball running into the lowered flag raises it again and gives the star back. Once the exit has opened it stays open even if stars are lost, but a lost star is not carried out of the course to be spent. Details in `docs/plans/milestone-4.md` section 3.3.
 - The pole is an obstacle. A ball hitting it below a speed threshold bounces off.
 - A ball at or above the threshold pushes past the pole and loses most of its speed doing it.
 
@@ -208,7 +215,7 @@ Moving obstacles run in real time like patrollers, including while the player ai
 - The pole stays for the rest of the course and is still standing after a ball pushes past it.
 - The speed threshold and the speed kept after pushing past are tuning numbers, so they can be set with the tuning panel. Starting values: push past at 8 tiles per second or more, keep 25% of the speed.
 - A lofted ball flying higher than the pole passes over it.
-- The pole is a thin round obstacle about as tall as the post, with its own placeholder sprite.
+- The pole is a thin round obstacle about as tall as the tree stump, with its own placeholder sprite.
 - It replaces the current rule where the ball carries on through a defeated enemy with a small loss of speed. Contact with the enemy itself is unchanged: the hit that defeats it still counts, and the pole goes up once the ball has moved clear, so it never traps the ball.
 
 Build in Milestone 4, alongside the other contact rules and obstacles.
@@ -226,12 +233,13 @@ Build in Milestone 4, alongside the other contact rules and obstacles.
 **Default (owner may change):**
 
 - It floats over one tile and covers that tile. A ball is "over" it only when the bottom of the ball is higher than the top of the cloud. Anything lower, rolling or bouncing, counts as under and is zapped.
-- The zap deals 1 damage. The usual rule applies: the ball takes damage at most once per shot.
+- The zap deals 1 damage, unless the ball is still immune from a hit in the last 0.5 s (owner, 2026-11-14).
 - The ball is thrown along the ground in a random direction at a set speed, with a small hop (tuning numbers; starting at 6 tiles per second). The direction comes from the seeded random number generator, so the same seed and the same shots give the same zap.
 - Each cloud zaps at most once per shot, so the ball cannot be caught in a loop under it.
 - The aim guide stops at the cloud and marks it, because the direction after a zap is meant to be a surprise.
 - A drifting cloud follows a path set in the course file, back and forth, in real time like a patroller (it keeps moving while the player aims). Its speed is a tuning number, starting at 1 tile per second. The course generator (Milestone 5) decides which clouds drift.
 - Ways over it: a lofted shot, a spring, a bounce boost, and later the Hop ability.
+- **Owner, 2026-11-14:** the cloud also zaps rolling enemies (Lunger, Mole): it throws them in a random direction and does **not** damage them.
 
 Build in Milestone 4.
 
@@ -247,7 +255,11 @@ id, name, icon id, what activates it, effect, duration, element (or none), modif
 
 The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is ice, Static is shock. The rest have none.
 
-**Starter set, Milestone 4:** Anchor, Burner, Hop.
+**Owner, 2026-11-14:** abilities normally come **only** from defeating their carrier enemy. The one exception is the Wild pickup (section 13), a small chance from secured crates. The Tornado can be nudged left and right.
+
+**Starter set, Milestone 4:** Anchor, Burner, Hop, and Tornado (added by the owner, 2026-11-14).
+
+**Owner, 2026-11-14:** Hop lifts the ball 1.1 tiles. **Tornado:** the ball becomes a small whirlwind for a brief time: fast and chaotic, hard to control. While it is active the ball cannot fall off an edge but can go out over one; if it runs out over a drop, the ball falls. Spiralling into an enemy deals 1 damage. Numbers in `docs/plans/milestone-4.md` section 4.
 
 ---
 
@@ -377,6 +389,7 @@ For the ball, one turn is one shot. Build the system and Stunned in Milestone 4;
 | Blue star | +1 permanent currency | Elites, bosses, hidden spots |
 | Heart | +1 health | Crates, rare enemy drop |
 | Shot orb | +1 shot, up to the maximum | Crates, placed on courses |
+| Wild | A random ability (not the one held), replacing the current one | Small chance from secured crates, 10% times drop luck (owner, 2026-11-14) |
 
 Build in Milestone 3.
 

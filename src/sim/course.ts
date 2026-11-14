@@ -25,18 +25,29 @@
  * se, sw; see tileShape.ts). A single "." is an empty spot: out of bounds.
  *
  * "objects" is optional: things placed on tiles, by id from
- * src/content/objects.ts (pickups, blockers, enemies). At most one per tile,
- * never on the start or the exit. The stars on offer (enemy star values plus
- * placed yellow stars) must be at least the quota.
+ * src/content/objects.ts (pickups, blockers, moving obstacles, breakables,
+ * clouds, enemies). At most one per tile (a thunder cloud floats, so it may share
+ * a tile), never on the start or the exit. The stars on offer (enemy star
+ * values, placed yellow stars and stars inside breakables) must be at least the
+ * quota.
+ *
+ * Format 2 (Milestone 4) adds optional fields on an object; format 1 files still load:
+ *   "path":   [[x, y], ...] tile centres, walked there and back (patrollers,
+ *             sliding blocks, drifting clouds). The object's own tile is the start.
+ *   "facing": "ne" | "se" | "sw" | "nw" (enemies; default "se").
+ *   "phase":  0 to 1, how far round its cycle it starts (moving things, gates).
+ *   "orient": "x" | "y", which way a gate's bars run (default "x").
+ *   "drops":  pickup ids a breakable drops instead of its default.
  *
  * `parseCourse` checks everything and returns a list of readable errors
  * instead of a course if anything is wrong.
  */
-import { OBJECTS } from '../content/objects.ts';
+import { OBJECTS, RENAMED_OBJECTS } from '../content/objects.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { minCorner, shapeOf, type Corners, type ShapeId } from './tileShape.ts';
 
-export const COURSE_FORMAT_VERSION = 1;
+export const COURSE_FORMAT_VERSION = 2;
+const FORMATS_READ = [1, 2];
 /** Highest corner height allowed, in steps. Keeps courses on screen. */
 export const MAX_HEIGHT = 9;
 
@@ -62,6 +73,13 @@ export interface CourseObject {
   readonly id: string;
   readonly x: number;
   readonly y: number;
+  /** Tile centres to walk there and back, starting with the object's own tile. Empty: it does not move. */
+  readonly path: readonly GridPoint[];
+  readonly facing: Direction;
+  readonly phase: number;
+  readonly orient: 'x' | 'y';
+  /** Pickup ids, or null for the definition's default. */
+  readonly drops: readonly string[] | null;
 }
 
 export interface Course {
@@ -149,7 +167,7 @@ export function parseCourse(raw: unknown): ParseResult {
 
   const unknown = Object.keys(raw).filter((k) => !TOP_LEVEL_KEYS.includes(k));
   if (unknown.length) errors.push(`Unknown field(s): ${unknown.join(', ')}.`);
-  if (raw.format !== COURSE_FORMAT_VERSION) errors.push(`"format" must be ${COURSE_FORMAT_VERSION}.`);
+  if (!FORMATS_READ.includes(raw.format as number)) errors.push(`"format" must be one of ${FORMATS_READ.join(', ')}.`);
   if (typeof raw.name !== 'string' || raw.name.trim() === '') errors.push('"name" must be a non-empty string.');
   if (!Number.isInteger(raw.quota) || (raw.quota as number) < 0) errors.push('"quota" must be a whole number, 0 or more.');
 
@@ -237,22 +255,62 @@ export function parseCourse(raw: unknown): ParseResult {
   const quota = course.quota;
   if (Number.isInteger(quota)) {
     const onOffer = starsOnOffer(objects);
-    if (onOffer < quota) errors.push(`"quota" is ${quota}, but the course only offers ${onOffer} star(s) (enemies plus placed yellow stars).`);
+    if (onOffer < quota) errors.push(`"quota" is ${quota}, but the course only offers ${onOffer} star(s) (enemies, placed yellow stars and stars in breakables).`);
   }
 
   if (errors.length || !start || !exit) return { ok: false, errors };
   return { ok: true, course: { ...course, start, exit, objects } };
 }
 
-/** Yellow stars a course can give: enemy star values plus placed yellow stars. */
+/** Yellow stars a course can give: enemy star values, placed yellow stars and stars inside breakables. */
 export function starsOnOffer(objects: readonly CourseObject[]): number {
   let n = 0;
   for (const o of objects) {
     const def = OBJECTS.get(o.id);
     if (def?.kind === 'enemy') n += def.starValue;
     else if (def?.kind === 'pickup' && def.effect === 'yellowStar') n += 1;
+    else if (def?.kind === 'breakable') n += (o.drops ?? def.drops).filter((d) => d === 'yellow-star').length;
   }
   return n;
+}
+
+const OBJECT_KEYS = ['id', 'at', 'path', 'facing', 'phase', 'orient', 'drops'];
+
+/** Does this kind of object follow a path? */
+function takesPath(id: string): boolean {
+  const def = OBJECTS.get(id);
+  if (!def) return false;
+  if (def.kind === 'enemy') return def.behaviour.kind === 'patrol';
+  if (def.kind === 'mover') return def.motion.kind === 'path';
+  return def.kind === 'cloud';
+}
+
+/**
+ * A path may not leave the course, cross an empty spot, or cross a rise or drop
+ * of more than one step. Checked by walking each leg in small steps.
+ */
+function checkPath(course: Omit<Course, 'start' | 'exit'>, pts: readonly GridPoint[], where: string, errors: string[]): void {
+  const c = { ...course, start: pts[0]!, exit: pts[0]! };
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1]!;
+    const b = pts[i]!;
+    const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) * 10));
+    let prev: Tile | null = tileAt(c, a.x, a.y);
+    for (let k = 1; k <= n; k++) {
+      const x = a.x + 0.5 + ((b.x - a.x) * k) / n;
+      const y = a.y + 0.5 + ((b.y - a.y) * k) / n;
+      const t = tileAt(c, Math.floor(x), Math.floor(y));
+      if (!t) {
+        errors.push(`${where}: the path from (${a.x}, ${a.y}) to (${b.x}, ${b.y}) leaves the course.`);
+        return;
+      }
+      if (prev && t !== prev && Math.abs(t.base - prev.base) > 1) {
+        errors.push(`${where}: the path from (${a.x}, ${a.y}) to (${b.x}, ${b.y}) crosses a rise or drop of more than one step.`);
+        return;
+      }
+      prev = t;
+    }
+  }
 }
 
 function parseObjects(raw: unknown, course: Omit<Course, 'start' | 'exit'>, errors: string[]): CourseObject[] {
@@ -263,28 +321,90 @@ function parseObjects(raw: unknown, course: Omit<Course, 'start' | 'exit'>, erro
   }
   const out: CourseObject[] = [];
   const used = new Set<string>();
+  const onCourse = (p: GridPoint) => !!tileAt({ ...course, start: p, exit: p }, p.x, p.y);
   raw.forEach((entry: unknown, i) => {
     const where = `objects[${i}]`;
     if (!isRecord(entry) || typeof entry.id !== 'string') {
       errors.push(`${where}: must be { "id": ..., "at": [x, y] }.`);
       return;
     }
-    const extra = Object.keys(entry).filter((k) => !['id', 'at'].includes(k));
+    const extra = Object.keys(entry).filter((k) => !OBJECT_KEYS.includes(k));
     if (extra.length) errors.push(`${where}: unknown field(s) ${extra.join(', ')}.`);
-    if (!OBJECTS.has(entry.id)) {
-      errors.push(`${where}: unknown object "${entry.id}". Known: ${[...OBJECTS.keys()].join(', ')}.`);
+    const renamed = RENAMED_OBJECTS.get(entry.id);
+    if (renamed) {
+      errors.push(`${where}: "${entry.id}" was renamed; use "${renamed}".`);
+      return;
+    }
+    const def = OBJECTS.get(entry.id);
+    if (!def || def.kind === 'flag') {
+      errors.push(`${where}: unknown object "${entry.id}". Known: ${[...OBJECTS.values()].filter((d) => d.kind !== 'flag').map((d) => d.id).join(', ')}.`);
       return;
     }
     const p = parsePoint(entry.at, `${where}.at`, errors);
     if (!p) return;
-    if (!tileAt({ ...course, start: p, exit: p }, p.x, p.y)) {
+    if (!onCourse(p)) {
       errors.push(`${where}: "${entry.id}" at (${p.x}, ${p.y}) is not on a tile.`);
       return;
     }
-    const key = `${p.x},${p.y}`;
-    if (used.has(key)) errors.push(`${where}: tile (${p.x}, ${p.y}) already has an object. One per tile.`);
-    used.add(key);
-    out.push({ id: entry.id, x: p.x, y: p.y });
+    if (def.kind !== 'cloud') {
+      const key = `${p.x},${p.y}`;
+      if (used.has(key)) errors.push(`${where}: tile (${p.x}, ${p.y}) already has an object. One per tile.`);
+      used.add(key);
+    }
+
+    // Path
+    let path: GridPoint[] = [];
+    if (entry.path !== undefined) {
+      if (!takesPath(entry.id)) errors.push(`${where}: "${entry.id}" does not move along a path.`);
+      else if (!Array.isArray(entry.path) || entry.path.length < 1) errors.push(`${where}.path: must be a list of [x, y] points.`);
+      else {
+        const pts = entry.path.map((q: unknown, k: number) => parsePoint(q, `${where}.path[${k}]`, errors));
+        if (pts.every((q): q is GridPoint => q !== null)) {
+          path = [p, ...pts];
+          for (const q of pts) if (!onCourse(q)) errors.push(`${where}.path: (${q.x}, ${q.y}) is not on a tile.`);
+          if (path.every((q) => onCourse(q))) checkPath(course, path, `${where}.path`, errors);
+        }
+      }
+    } else if (def.kind === 'enemy' && def.behaviour.kind === 'patrol') errors.push(`${where}: "${entry.id}" is a patroller and needs a "path".`);
+    else if (def.kind === 'mover' && def.motion.kind === 'path') errors.push(`${where}: "${entry.id}" needs a "path".`);
+
+    // Facing
+    let facing: Direction = 'se';
+    if (entry.facing !== undefined) {
+      if (def.kind !== 'enemy') errors.push(`${where}: only enemies take "facing".`);
+      else if (!DIRECTIONS.includes(entry.facing as Direction)) errors.push(`${where}.facing: must be one of ${DIRECTIONS.join(', ')}.`);
+      else facing = entry.facing as Direction;
+    }
+
+    // Phase
+    let phase = 0;
+    if (entry.phase !== undefined) {
+      const moves = def.kind === 'mover' || def.kind === 'cloud' || (def.kind === 'enemy' && def.behaviour.kind === 'patrol');
+      if (!moves) errors.push(`${where}: only moving things take "phase".`);
+      else if (typeof entry.phase !== 'number' || entry.phase < 0 || entry.phase > 1) errors.push(`${where}.phase: must be a number from 0 to 1.`);
+      else phase = entry.phase;
+    }
+
+    // Orient
+    let orient: 'x' | 'y' = 'x';
+    if (entry.orient !== undefined) {
+      if (!(def.kind === 'mover' && def.motion.kind === 'gate')) errors.push(`${where}: only gates take "orient".`);
+      else if (entry.orient !== 'x' && entry.orient !== 'y') errors.push(`${where}.orient: must be "x" or "y".`);
+      else orient = entry.orient;
+    }
+
+    // Drops
+    let drops: string[] | null = null;
+    if (entry.drops !== undefined) {
+      if (def.kind !== 'breakable') errors.push(`${where}: only breakables (crates, cracked tiles) take "drops".`);
+      else if (!Array.isArray(entry.drops) || !entry.drops.every((d) => typeof d === 'string')) errors.push(`${where}.drops: must be a list of pickup ids.`);
+      else {
+        drops = entry.drops as string[];
+        for (const d of drops) if (OBJECTS.get(d)?.kind !== 'pickup') errors.push(`${where}.drops: "${d}" is not a pickup.`);
+      }
+    }
+
+    out.push({ id: entry.id, x: p.x, y: p.y, path, facing, phase, orient, drops });
   });
   return out;
 }

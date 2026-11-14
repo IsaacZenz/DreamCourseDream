@@ -81,21 +81,22 @@ docs/
 
 ## Milestone 4 — Enemies and abilities
 
-- [ ] **Plan gate:** design sheet for the enemies (Trundler, Spitter, Lunger, ability carriers), the three abilities, the Stunned status, the moving obstacles and destructibles, the flag pole and the thunder cloud. Owner signs it off before any of them is built.
-- [ ] Turn order from DESIGN.md section 8
-- [ ] Damage calculation in the order given in FEATURES.md section 2, including element, position and shield steps even though the starter enemies do not use them yet
-- [ ] Full enemy template from FEATURES.md section 4 (tier, traits, element, gear fields present, mostly unused)
-- [ ] Status effect system and the Stunned status
-- [ ] Moving obstacles and destructibles (FEATURES.md section 6)
-- [ ] Flag pole left by a defeated enemy: bounce off when slow, push past and lose most speed when fast (FEATURES.md section 6, owner decision 2026-11-14)
-- [ ] Thunder cloud obstacle, stationary or drifting, cannot be beaten: rolling under it zaps the ball (damage, thrown in a random direction); hopping over is safe (FEATURES.md section 6, owner decision 2026-11-14)
-- [ ] Patroller family: path following in real time, contact effect. Build one type.
-- [ ] Sentinel family: outer and inner radius, three triggers, immediate or activated response per trigger. Build two types: one ranged, one that chases.
-- [ ] Radii visible in the debug overlay; a subtle in-game cue when the ball is about to pass through one
-- [ ] Ability slot, pickup from ability-carrying enemies, activation key
-- [ ] Three abilities: Anchor, Burner, Hop
-- [ ] Enemy and ability definitions fully in `src/content/`; adding a fourth enemy must need no logic changes
-- [ ] Tests for each trigger and each response mode
+- [x] **Plan gate:** design sheet for the enemies (Trundler, Spitter, Lunger, ability carriers), the three abilities, the Stunned status, the moving obstacles and destructibles, the flag pole and the thunder cloud. Owner signs it off before any of them is built.
+- [x] Turn order from DESIGN.md section 8
+- [x] Damage calculation in the order given in FEATURES.md section 2, including element, position and shield steps even though the starter enemies do not use them yet
+- [x] Full enemy template from FEATURES.md section 4 (tier, traits, element, gear fields present, mostly unused)
+- [x] Status effect system and the Stunned status
+- [x] Moving obstacles and destructibles (FEATURES.md section 6)
+- [x] Flag pole left by a defeated enemy: bounce off when slow, push past and lose most speed when fast (FEATURES.md section 6, owner decision 2026-11-14)
+- [x] Thunder cloud obstacle, stationary or drifting, cannot be beaten: rolling under it zaps the ball (damage, thrown in a random direction); hopping over is safe (FEATURES.md section 6, owner decision 2026-11-14)
+- [x] Patroller family: path following in real time, contact effect. Build one type.
+- [x] Sentinel family: outer and inner radius, three triggers, immediate or activated response per trigger. Build two types: one ranged, one that chases.
+- [x] Radii visible in the debug overlay; a subtle in-game cue when the ball is about to pass through one
+- [x] Ability slot, pickup from ability-carrying enemies, activation key
+- [x] Four abilities: Anchor, Burner, Hop, Tornado (Tornado added by the owner, 2026-11-14)
+- [x] Keyboard-only controls for every mechanic; mouse optional (owner, 2026-11-14)
+- [x] Enemy and ability definitions fully in `src/content/`; adding a fourth enemy must need no logic changes
+- [x] Tests for each trigger and each response mode
 
 **Done when:** a hand-built course with all three enemy types and all three abilities plays correctly, and the owner has tried each trigger on purpose.
 
@@ -151,6 +152,7 @@ docs/
 - [ ] Linked objects (switches, gates, bridges); optional course modifiers
 - [ ] Second gear slot unlocks; extra characters
 - [ ] Three biomes with their own chunk sets
+- [ ] Theme switch after each boss (day, night, jungle, underground, spooky): same objects, different art set through the manifest (owner, 2026-11-14)
 - [ ] More gear and shop variety
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
 - [ ] Resolve the remaining open questions with the owner
@@ -161,7 +163,9 @@ docs/
 
 - [ ] Theme, character and title chosen with the owner
 - [ ] Final pixel art replaces placeholders through the manifest only
+- [ ] Several art variants per theme for each larger advancement (owner, 2026-11-14)
 - [ ] Sound effects and music, original or correctly licensed
+- [ ] An animation and a sound for most actions (owner, 2026-11-14), including a slot-machine wheel for the Wild pickup
 - [ ] Title screen, settings, a short tutorial course, controls help
 - [ ] Playtest with a few friends; fix what confuses them
 
@@ -195,3 +199,10 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Owner decision: the thunder cloud cannot be beaten (an obstacle, not an enemy), and a cloud can be stationary or drift.
 - 2026-11-14 — Milestone 3 done: owner won and lost the test course (on the artifact test build) and signed it off.
 - 2026-11-14 — Owner decision: plan before building. Content milestones (4 to 8) now start with a design sheet the owner signs off; see the note at the top of this file.
+- 2026-11-14 — Milestone 4 design sheet written on branch `milestone-4-enemies-abilities`: `docs/plans/milestone-4.md`. Seven questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-14 — Milestone 4 design sheet signed off by the owner (`docs/plans/milestone-4.md`). Owner additions during review: Mole enemy, Tornado ability and Whirlback, secured crate and Wild pickup, tree stump replacing the post, lowered flags, 0.5 s damage immunity, knock-backs, keyboard-only controls; themes per boss recorded for later.
+- 2026-11-14 — Milestone 4 built on branch `milestone-4-enemies-abilities`. World clock: `tick` in `src/sim/play.ts` runs the whole course in fixed 1/120 s steps, also while aiming. Turn order with enemy turns run as timed actions; damage steps in `src/sim/damage.ts`; full enemy template; status system with Stunned (`src/content/statuses.ts`); abilities Anchor, Burner, Hop, Tornado (`src/content/abilities.ts`); enemies Trundler, Spitter, Lunger, Mole and four carriers; sliding block, gate, crate, secured crate with Wild, cracked tile, tree stump, flag poles with secured stars that enemies can knock down, thunder clouds; 0.5 s damage immunity; knock-backs; course format 2 (`path`, `facing`, `phase`, `orient`, `drops`). Ball physics extended for rolling enemies, seeds and ability modes. Keyboard-only controls; camera pan moved to IJKL. New placeholder sprites. Test course 4 "Enemies and abilities". 63 new tests (203 in total). Played with the keyboard in a browser and screenshots checked. Test build published as a private artifact (opens on course 4; the address may also pick a course with `#<course id>`). One number differs from the sheet: Hop launches at 7 tiles/s (not 6.7) so it really reaches 1.1 tiles with air drag. **Waiting for the owner** to play the test course and try each trigger on purpose.
+- 2026-11-14 — Owner feedback on the first test build: the Mole hurt the ball the moment it was rolled over. Now the hill rumbles for 0.5 s, then the Mole shoots up into the air (7 up, 4 sideways), and it cannot touch the ball for its first 0.3 s. Recorded in FEATURES.md and the design sheet. Owner request: a test bench (course 5, key 5): a blank course with one thing at the centre, chosen in the U panel along with a starting ability, so each enemy, obstacle and ability can be tried alone (`src/content/courses/testBench.ts`). 6 new tests (209 in total).
+- 2026-11-14 — Owner decision: the ball damages enemies only during the player's own shot. A Trundler running into a standing ball hurts the ball but takes no damage; a knocked ball does no damage to anything it rolls into. 1 new test (210 in total).
+- 2026-11-14 — Owner tuning: the Mole jumps faster (10 up, 6 sideways) after a shorter rumble (0.3 s); grace 0.15 s, so rolling over it still does not guarantee a hit.
+- 2026-11-14 — Milestone 4 done: owner played the test build and the test bench, tuned the Mole, and approved. Owner decision recorded in DESIGN.md: keep fine-tuning and adding content easy. Merged to `main`.

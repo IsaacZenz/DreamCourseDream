@@ -23,7 +23,7 @@
     { "id": "heart", "at": [1, 5] },
     { "id": "shot-orb", "at": [8, 7] },
     { "id": "rock", "at": [8, 4] },
-    { "id": "post", "at": [5, 9] },
+    { "id": "stump", "at": [5, 9] },
     { "id": "low-wall", "at": [13, 4] },
     { "id": "low-wall", "at": [14, 4] }
   ],

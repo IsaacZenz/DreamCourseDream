@@ -101,6 +101,12 @@ export interface Tuning {
   /** Fraction of speed the ball keeps when it defeats an enemy and carries on. */
   defeatSpeedKeep: number;
 
+  // Flag poles (owner, 2026-11-14)
+  /** A ball hitting a flag pole at this speed or more pushes past it... */
+  poleThroughSpeed: number;
+  /** ...keeping this fraction of its speed. Slower, it bounces off. */
+  polePassKeep: number;
+
   // Safety
   /** Falling this far below height 0 counts as out of bounds, in tiles. */
   outOfBoundsDepth: number;
@@ -161,6 +167,8 @@ export const DEFAULT_TUNING: Tuning = {
   exitRadius: 0.4,
   exitMaxSpeed: 7,
   defeatSpeedKeep: 0.85,
+  poleThroughSpeed: 8,
+  polePassKeep: 0.25,
 
   outOfBoundsDepth: 2,
   maxShotTime: 30,
@@ -232,6 +240,8 @@ export const TUNING_CONTROLS: readonly TuningControl[] = [
   top('Hazards', 'exitRadius', 0.1, 0.5, 0.01),
   top('Hazards', 'exitMaxSpeed', 0, 20, 0.25),
   top('Hazards', 'defeatSpeedKeep', 0, 1, 0.01),
+  top('Flag pole', 'poleThroughSpeed', 0, 20, 0.25),
+  top('Flag pole', 'polePassKeep', 0, 1, 0.01),
   ...['grass', 'rough', 'sand', 'ice', 'bumper', 'water'].flatMap((s) => [
     { key: `surfaces.${s}.friction`, min: 0, max: 2, step: 0.01, group: `Surface: ${s}` },
     { key: `surfaces.${s}.bounce`, min: 0, max: 1, step: 0.01, group: `Surface: ${s}` },

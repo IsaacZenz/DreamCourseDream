@@ -31,33 +31,38 @@ Then open the address it prints (usually http://localhost:5173).
 | `npm run build` | Build the site into `dist/` |
 | `npm run preview` | Serve the built site locally |
 
-## Controls (Milestone 3)
+## Controls (Milestone 4)
+
+Every mechanic works from the keyboard alone; the mouse is optional (owner decision).
 
 | Key | Action |
 |---|---|
-| Step 1: press left mouse, pull back, release | Plan the shot like a slingshot: the ball goes the opposite way to the pull. The dotted line previews the path (yellow dots = in the air). The pull's power is a preview only. |
-| Step 2: hold left mouse, release | Charge: the meter goes up, down, up, down. Release to shoot; the meter alone sets the real power. The white mark on the meter is your planned power. If you never release, the ball launches on its own at 10% ("TOO SLOW!"). |
-| Release at the very top | Release in the red zone at the top of the meter for a PERFECT shot (extra power) |
-| Right-click or Esc | Drop the plan and pull again |
-| P | Testing only: quick shot. The pull fires straight away at the pulled power, with no meter. |
+| Left / Right (or A / D) | Turn the aim around the ball. Hold Shift for fine turning. While a Tornado is active: steer it. |
+| Up / Down (or W / S) | Raise or lower the planned power (the dotted preview) |
+| Space (aiming) | Hold to charge the meter (up, down, up, down), release to shoot. Release at the very top for a PERFECT shot. |
+| Space (ball moving) | Bounce boost: press just before the ball lands |
+| F | Use your ability (once per shot, while the ball moves) |
+| Esc | Drop the plan and aim again |
+| Mouse: press, pull back, release; then hold and release | The same two-step shot with the mouse (slingshot pull to plan, hold to charge) |
+| Right-click | Drop the plan (mouse) |
 | T | Ground shot or lofted shot |
 | X / Z | More topspin / more backspin |
 | E / Q | Curve right / curve left |
-| Space | Bounce boost: press just before the ball lands |
-| R | Restart the course from the beginning (same seed) |
+| P | Testing only: quick shot. The pull fires straight away at the pulled power, with no meter. |
+| R | Restart the course (same seed) |
 | Enter | On the end screen: next course after a win, restart after a loss |
-| U | Tuning panel (debug): sliders for every physics number. Changes are remembered in your browser; "Reset all" undoes them. |
-| H | Show or hide the help lines |
-| Arrow keys / WASD, or drag with the right mouse button | Pan the camera |
+| I / J / K / L, or drag with the right mouse button | Pan the camera (moved from the arrows and WASD, which now aim) |
 | C | Centre the camera on the ball |
-| 1, 2, 3, N | Switch test course (1 is the course rules test course) |
-| G | Cycle the debug overlay: coordinates, heights, surfaces, off. Hover a tile for its details. |
+| 1, 2, 3, 4, N | Switch test course (4 is the enemies and abilities course) |
+| G | Cycle the debug overlay: coordinates, heights, surfaces, off. Shows sentinel radii (outer solid, inner dashed), paths and cloud danger zones. |
+| U | Tuning panel (debug) |
+| H | Show or hide the help lines |
 
 ### The HUD
 
-Top left: health (hearts), shots left (blue orbs), the star meter (stars collected towards the course's quota; it turns green and says OPEN when the exit opens), yellow stars held, and the seed (`#ABC123`). Each shot uses one orb. When they run out you get a recover turn and they refill.
+Top left: health (hearts), shots left (blue orbs), the star meter (stars towards the course's quota; it turns green and says OPEN when the exit opens), yellow stars held, and the seed (`#ABC123`). Each shot uses one orb. When they run out you get a recover turn and they refill. Next to it: the ability slot (the ability you hold; greyed once used this shot).
 
-You can also open a course directly: `?course=course-rules`, `?course=flat-walls` or `?course=slopes-surfaces`, and add `&seed=ABC123` to replay a seed, `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
+You can also open a course directly: `?course=course-rules`, `?course=flat-walls`, `?course=slopes-surfaces` or `?course=enemies-abilities`, and add `&seed=ABC123` to replay a seed, `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
 
 ## Folder layout
 

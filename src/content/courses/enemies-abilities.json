@@ -1,0 +1,198 @@
+{
+  "format": 2,
+  "name": "Enemies and abilities",
+  "legend": {
+    "g": "grass",
+    "~": "water",
+    "x": "spikes"
+  },
+  "start": [
+    2,
+    13
+  ],
+  "exit": [
+    17,
+    2
+  ],
+  "quota": 7,
+  "objects": [
+    {
+      "id": "trundler",
+      "at": [
+        3,
+        11
+      ],
+      "path": [
+        [
+          8,
+          11
+        ]
+      ]
+    },
+    {
+      "id": "sliding-block",
+      "at": [
+        7,
+        12
+      ],
+      "path": [
+        [
+          7,
+          14
+        ]
+      ],
+      "phase": 0.25
+    },
+    {
+      "id": "gate",
+      "at": [
+        10,
+        12
+      ],
+      "orient": "y"
+    },
+    {
+      "id": "emberback",
+      "at": [
+        13,
+        12
+      ]
+    },
+    {
+      "id": "spitter",
+      "at": [
+        4,
+        6
+      ],
+      "facing": "se"
+    },
+    {
+      "id": "lunger",
+      "at": [
+        11,
+        7
+      ],
+      "facing": "sw"
+    },
+    {
+      "id": "mole",
+      "at": [
+        8,
+        6
+      ]
+    },
+    {
+      "id": "mole",
+      "at": [
+        2,
+        9
+      ]
+    },
+    {
+      "id": "anchorback",
+      "at": [
+        8,
+        8
+      ]
+    },
+    {
+      "id": "crate",
+      "at": [
+        2,
+        6
+      ]
+    },
+    {
+      "id": "secured-crate",
+      "at": [
+        6,
+        5
+      ],
+      "drops": [
+        "yellow-star",
+        "yellow-star",
+        "wild"
+      ]
+    },
+    {
+      "id": "hopback",
+      "at": [
+        4,
+        2
+      ]
+    },
+    {
+      "id": "thunder-cloud",
+      "at": [
+        7,
+        2
+      ]
+    },
+    {
+      "id": "thunder-cloud",
+      "at": [
+        9,
+        2
+      ],
+      "path": [
+        [
+          12,
+          2
+        ]
+      ]
+    },
+    {
+      "id": "whirlback",
+      "at": [
+        13,
+        2
+      ]
+    },
+    {
+      "id": "cracked-tile",
+      "at": [
+        16,
+        1
+      ]
+    },
+    {
+      "id": "rock",
+      "at": [
+        16,
+        7
+      ]
+    },
+    {
+      "id": "stump",
+      "at": [
+        5,
+        4
+      ]
+    },
+    {
+      "id": "heart",
+      "at": [
+        1,
+        1
+      ]
+    }
+  ],
+  "tiles": [
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
+    "g2 g1 g1221 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g0 g0 g0 g0 g0 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 x1 g1 g0 g0 g0 g0 g0 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 x1 g1 g0 g0 g0 g0 g0 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
+    "g2 g1 g1 g1 g1 g1 ~1 ~1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
+    "g2 g1 g1 g1 g1 g1 ~1 ~1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g3 g1 g1 g1 g1 g1 g1 g1 g1 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g3 g1 g1 g1 g1 g1 g1 g1 g1 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g3 g1 g1 g1 g1 g1 g1 g1 g1 g2",
+    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g3 g1 g1 g1 g1 g1 g1 g1 g1 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2"
+  ]
+}

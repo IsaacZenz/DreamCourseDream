@@ -60,7 +60,7 @@ describe('parseCourse', () => {
 
   const bad: Array<[string, unknown, RegExp]> = [
     ['not an object', 'hello', /JSON object/],
-    ['wrong format version', base({ format: 2 }), /"format" must be 1/],
+    ['wrong format version', base({ format: 3 }), /"format" must be one of 1, 2/],
     ['an unknown field (typo)', base({ qouta: 1 }), /Unknown field.*qouta/],
     ['rows of different lengths', base({ tiles: ['g0 g0 g0', 'g0 g0'] }), /row 1: has 2 tiles/],
     ['a letter missing from the legend', base({ tiles: ['g0 g0 q0', 'g0 g0 g0'] }), /"q" is not in the legend/],
@@ -87,6 +87,6 @@ describe('parseCourse', () => {
   }
 
   it('reports every problem at once, not just the first', () => {
-    expect(errorsFor(base({ format: 2, quota: -1, start: [9, 9] })).length).toBeGreaterThanOrEqual(3);
+    expect(errorsFor(base({ format: 3, quota: -1, start: [9, 9] })).length).toBeGreaterThanOrEqual(3);
   });
 });

@@ -1,11 +1,26 @@
 import Phaser from 'phaser';
 import { TEST_COURSES } from '../content/courses';
+import { BENCH_ID, benchChoices, benchCourse } from '../content/courses/testBench';
 import { SURFACES } from '../content/surfaces';
 import { parseCourse, type Course } from '../sim/course';
 import { STEP_HEIGHT, type Tuning } from '../content/tuning';
 import { DT, groundAt, type BallState, type ShotType } from '../sim/ball';
-import { canShoot, createPlay, drainLog, previewShot, stepPlay, takeShot, type PlayEvent, type PlayState } from '../sim/play';
+import {
+  ballNow,
+  canShoot,
+  canUseAbility,
+  createPlay,
+  drainLog,
+  isImmune,
+  previewShot,
+  takeShot,
+  tick,
+  type PlayEvent,
+  type PlayState,
+  type Preview,
+} from '../sim/play';
 import { OBJECTS } from '../content/objects';
+import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
 import { loadTuning } from '../save/tuningStore';
 import { TuningPanel } from '../ui/tuningPanel';
@@ -40,10 +55,25 @@ const STAR_FILL = 0xf8d030;
 const HEALTH_LOST = 0x403040;
 const GOOD = 0x80f080;
 const BAD = 0xff8080;
+const GUIDE_WARN = 0xf89038;
+const DEBUG_OUTER = 0xf8e048;
+const DEBUG_INNER = 0xff6040;
+const DEBUG_PATH = 0x80c8ff;
+const DEBUG_ZONE = 0xf8f040;
+
+/** Keyboard aiming (owner, 2026-11-14: every mechanic works from the keyboard alone). Degrees per second. */
+const AIM_TURN = 90;
+const AIM_TURN_FINE = 20;
+/** Planned power change per second while Up or Down is held. */
+const PLAN_RATE = 0.6;
 
 /** Shared by every course and kept across restarts, so live tuning sticks. */
 let tuning: Tuning | null = null;
 let panel: TuningPanel | null = null;
+
+/** The test bench: what stands at the centre, and the ability to start with. Kept across restarts. */
+const bench = { object: 'mossback', ability: '' };
+let benchShown = false;
 
 /** Shot settings the player has chosen. Kept across course switches. */
 const settings = { type: 'ground' as ShotType, top: 0, side: 0, quickShot: false, help: true };
@@ -87,7 +117,7 @@ export class CourseScene extends Phaser.Scene {
   private overlay: Phaser.GameObjects.GameObject[] = [];
   private hoverPanel: Phaser.GameObjects.Container | null = null;
   private hoverKey = '';
-  private keys!: Record<'up' | 'down' | 'left' | 'right' | 'w' | 'a' | 's' | 'd', Phaser.Input.Keyboard.Key>;
+  private keys!: Record<'up' | 'down' | 'left' | 'right' | 'w' | 'a' | 's' | 'd' | 'i' | 'j' | 'k' | 'l' | 'shift', Phaser.Input.Keyboard.Key>;
   private camX = 0;
   private camY = 0;
   private ballScreen = { x: 0, y: 0 };
@@ -99,6 +129,11 @@ export class CourseScene extends Phaser.Scene {
   private prevBall: BallState | null = null;
   private accumulator = 0;
   private boostQueued = false;
+  private abilityQueued = false;
+  /** Wild pickup: the HUD ability slot flicks through the icons until this time. */
+  private wildUntil = 0;
+  private debugDyn!: Phaser.GameObjects.Graphics;
+  private ballFrame = '';
   private chargeStart = 0;
   private dragFrom = { x: 0, y: 0 };
   private aim = 0;
@@ -130,7 +165,9 @@ export class CourseScene extends Phaser.Scene {
 
   init(data: CourseSceneData): void {
     const params = new URLSearchParams(window.location.search);
-    const fromUrl = TEST_COURSES.findIndex((c) => c.id === params.get('course'));
+    // ?course=<id>, or #<id> (used where the address cannot carry a query, such as the shared test build).
+    const wanted = params.get('course') ?? window.location.hash.slice(1);
+    const fromUrl = TEST_COURSES.findIndex((c) => c.id === wanted);
     this.courseIndex = data.courseIndex ?? (fromUrl >= 0 ? fromUrl : 0);
     this.seed = data.seed ?? params.get('seed') ?? newSeed();
     const urlDebug = params.get('debug');
@@ -151,7 +188,7 @@ export class CourseScene extends Phaser.Scene {
 
   create(): void {
     const file = TEST_COURSES[this.courseIndex]!;
-    const parsed = parseCourse(file.data);
+    const parsed = parseCourse(file.id === BENCH_ID ? benchCourse(bench.object) : file.data);
     this.setupKeys();
     if (!parsed.ok) {
       this.course = null;
@@ -170,6 +207,22 @@ export class CourseScene extends Phaser.Scene {
     }
 
     this.play = createPlay(course, tuning, { seed: this.seed });
+    if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
+    // The first visit to the bench opens the panel, so the choices are easy to find.
+    if (file.id === BENCH_ID && !benchShown) {
+      benchShown = true;
+      panel?.toggle(true);
+    }
+    panel?.setBench({
+      choices: benchChoices(),
+      abilities: [{ id: '', label: '(none)' }, ...ABILITY_IDS.map((id) => ({ id, label: ABILITIES.get(id)!.name }))],
+      current: bench,
+      onLoad: (object, ability) => {
+        bench.object = object;
+        bench.ability = ability;
+        this.switchCourse(TEST_COURSES.findIndex((c) => c.id === BENCH_ID));
+      },
+    });
     this.phase = 'plan';
     this.messageQueue = [];
     this.message = null;
@@ -179,8 +232,14 @@ export class CourseScene extends Phaser.Scene {
     this.shadowImg = this.makeSprite('ball-shadow');
     this.ballImg = this.makeSprite(this.play.character.sprite);
     this.exitImg = this.makeSprite('exit', 'closed');
-    this.syncObjects();
     this.guide = this.add.graphics().setDepth(OVERLAY_DEPTH - 1);
+    this.debugDyn = this.add.graphics().setDepth(OVERLAY_DEPTH - 2);
+    this.syncObjects();
+    this.accumulator = 0;
+    this.boostQueued = false;
+    this.abilityQueued = false;
+    this.wildUntil = 0;
+    this.ballFrame = '';
     this.meter = this.add.graphics().setScrollFactor(0).setDepth(HUD_DEPTH);
     this.drawBall(this.play.ball);
     this.setupShotInput();
@@ -200,8 +259,9 @@ export class CourseScene extends Phaser.Scene {
   override update(_time: number, deltaMs: number): void {
     const k = this.keys;
     const step = (PAN_SPEED * deltaMs) / 1000;
-    const dx = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
-    const dy = (k.down.isDown || k.s.isDown ? 1 : 0) - (k.up.isDown || k.w.isDown ? 1 : 0);
+    // Camera pan moved to I/J/K/L: the arrows and WASD aim (owner, 2026-11-14).
+    const dx = (k.l.isDown ? 1 : 0) - (k.j.isDown ? 1 : 0);
+    const dy = (k.k.isDown ? 1 : 0) - (k.i.isDown ? 1 : 0);
     if (dx || dy) this.panBy(dx * step, dy * step);
     this.updateHover();
     if (!this.course) return;
@@ -241,12 +301,19 @@ export class CourseScene extends Phaser.Scene {
       a: kb.addKey(K.A),
       s: kb.addKey(K.S),
       d: kb.addKey(K.D),
+      i: kb.addKey(K.I),
+      j: kb.addKey(K.J),
+      k: kb.addKey(K.K),
+      l: kb.addKey(K.L),
+      shift: kb.addKey(K.SHIFT),
     };
     kb.on('keydown-G', () => this.cycleDebug());
     kb.on('keydown-C', () => this.centreOnBall());
     kb.on('keydown-ONE', () => this.switchCourse(0));
     kb.on('keydown-TWO', () => this.switchCourse(1));
     kb.on('keydown-THREE', () => this.switchCourse(2));
+    kb.on('keydown-FOUR', () => this.switchCourse(3));
+    kb.on('keydown-FIVE', () => this.switchCourse(4));
     kb.on('keydown-N', () => this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length));
 
     // Drag with the right or middle mouse button to pan. The left button is for shots.
@@ -312,26 +379,76 @@ export class CourseScene extends Phaser.Scene {
     return tileDepth(tx, ty, 'ball') + (x - tx + (y - ty) - 1) * 0.4;
   }
 
-  /** Make the sprites for course objects match the simulation: new drops appear, taken and defeated ones go. */
+  /** Make the sprites for course objects match the simulation: new things appear, gone ones are hidden. */
   private syncObjects(): void {
     const play = this.play;
-    const bob = Math.round(Math.sin(this.time.now / 250) * 1);
-    const show = (uid: string, sprite: string, x: number, y: number, z: number, alive: boolean, floats: boolean) => {
+    const now = this.time.now;
+    const bob = Math.round(Math.sin(now / 250) * 1);
+    const seen = new Set<string>();
+    const show = (uid: string, sprite: string, x: number, y: number, z: number, opts: { frame?: string; lift?: number; depth?: number; alpha?: number } = {}) => {
+      seen.add(uid);
       let img = this.objectImgs.get(uid);
-      if (!alive) {
-        img?.setVisible(false);
-        return;
-      }
       if (!img) {
-        img = this.makeSprite(sprite);
+        img = this.makeSprite(sprite, opts.frame ?? manifest.sprites[sprite]?.frames[0] ?? 'idle');
         this.objectImgs.set(uid, img);
       }
+      const entry = manifest.sprites[sprite]!;
+      if (img.texture.key !== sprite || opts.frame) img.setTexture(sprite, frameIndex(entry, opts.frame ?? entry.frames[0]!));
       const p = project(x, y, z / STEP_HEIGHT);
-      img.setPosition(Math.round(p.x), Math.round(p.y) - (floats ? 2 + bob : 0)).setDepth(this.standingDepth(x, y));
+      img
+        .setVisible(true)
+        .setAlpha(opts.alpha ?? 1)
+        .setPosition(Math.round(p.x), Math.round(p.y) - (opts.lift ?? 0))
+        .setDepth(opts.depth ?? this.standingDepth(x, y));
     };
-    for (const b of play.blockers) show(b.uid, b.def.sprite, b.x, b.y, b.z, true, false);
-    for (const e of play.enemies) show(e.uid, e.def.sprite, e.x, e.y, e.z, !e.defeated, false);
-    for (const p of play.pickups) show(p.uid, p.def.sprite, p.x, p.y, p.z, !p.taken, true);
+    const ball = ballNow(play);
+    const moving = !!play.shot;
+
+    for (const b of play.blockers) show(b.uid, b.def.sprite, b.x, b.y, b.z);
+    for (const m of play.movers) show(m.uid, m.def.sprite, m.x, m.y, m.z, m.def.motion.kind === 'gate' ? { frame: m.open ? 'open' : 'closed' } : {});
+    for (const b of play.breakables) {
+      if (b.broken) continue;
+      if (!b.def.shape) show(b.uid, b.def.sprite, b.x, b.y, b.z, { depth: tileDepth(b.tx, b.ty, 'arrow') });
+      else if (b.def.sprite === 'secured-crate') show(b.uid, b.def.sprite, b.x, b.y, b.z, { frame: b.health < b.def.health ? 'cracked' : 'whole' });
+      else show(b.uid, b.def.sprite, b.x, b.y, b.z);
+    }
+    for (const e of play.enemies) {
+      if (e.defeated) continue;
+      if (e.burrowed) {
+        // Set off: the hill shakes for the moment before the Mole pops out.
+        const shake = e.popAt !== null ? (Math.floor(now / 40) % 2) * 2 : 0;
+        show(e.uid, 'molehill', e.x, e.y, e.z, { depth: tileDepth(Math.floor(e.x), Math.floor(e.y), 'shadow'), lift: shake });
+        continue;
+      }
+      // In-game cue: a sentinel's eyes flash (it blinks) when the ball comes near its inner radius.
+      const inner = e.stats.get('innerRadius');
+      const near = moving && inner > 0 && e.def.triggers.passBy !== 'none' && Math.hypot(ball.x - e.x, ball.y - e.y) < inner + 0.5;
+      show(e.uid, e.def.sprite, e.x, e.y, e.z, { alpha: near && Math.floor(now / 80) % 2 ? 0.45 : 1 });
+      if (e.activated) show(`${e.uid}:alert`, 'alert', e.x, e.y, e.z, { lift: 18 + bob, depth: HUD_DEPTH - 10 });
+      if (e.statuses.some((st) => st.id === 'stunned')) show(`${e.uid}:stun`, 'icon-stunned', e.x, e.y, e.z, { lift: 20, depth: HUD_DEPTH - 10 });
+      if (e.lobTarget) {
+        const z = groundAt(play.course, e.lobTarget.x, e.lobTarget.y)?.h ?? 0;
+        show(`${e.uid}:ring`, 'target-ring', e.lobTarget.x, e.lobTarget.y, z, {
+          depth: tileDepth(Math.floor(e.lobTarget.x), Math.floor(e.lobTarget.y), 'shadow'),
+          alpha: 0.6 + 0.4 * Math.abs(Math.sin(now / 200)),
+        });
+      }
+    }
+    for (const sd of play.seeds) show(sd.uid, 'seed', sd.shot.ball.x, sd.shot.ball.y, sd.shot.ball.z);
+    for (const f of play.flags) {
+      show(f.uid, 'flag-pole', f.x, f.y, f.z, { frame: f.raised ? 'raised' : 'lowered' });
+      // Owner, 2026-11-14: a star hovers above a raised flag: the star secured by that defeat.
+      if (f.raised) show(`${f.uid}:star`, 'star-marker', f.x, f.y, f.z, { lift: 30 + bob, depth: this.standingDepth(f.x, f.y) + 0.01 });
+    }
+    for (const c of play.clouds) {
+      const g = groundAt(play.course, c.x, c.y)?.h ?? 0;
+      show(`${c.uid}:shadow`, 'ball-shadow', c.x, c.y, g, { depth: tileDepth(Math.floor(c.x), Math.floor(c.y), 'shadow'), alpha: 0.9 });
+      this.objectImgs.get(`${c.uid}:shadow`)?.setScale(3.5, 3);
+      const flash = Math.floor(now / 120 + c.x * 3) % 17 === 0;
+      show(c.uid, c.def.sprite, c.x, c.y, g, { frame: flash ? 'flash' : 'idle', lift: 20 + bob, depth: OVERLAY_DEPTH - 20 });
+    }
+    for (const p of play.pickups) if (!p.taken) show(p.uid, p.def.sprite, p.x, p.y, p.z, { lift: 2 + bob });
+    for (const [uid, img] of this.objectImgs) if (!seen.has(uid)) img.setVisible(false);
 
     if (this.exitImg) {
       const c = play.course;
@@ -343,6 +460,7 @@ export class CourseScene extends Phaser.Scene {
         .setPosition(Math.round(p.x), Math.round(p.y))
         .setDepth(tileDepth(c.exit.x, c.exit.y, 'exit'));
     }
+    this.drawDebugDynamic();
   }
 
   /** Put the ball and its shadow on screen. Heights in the sim are tiles; the screen uses steps. */
@@ -356,7 +474,20 @@ export class CourseScene extends Phaser.Scene {
     const inWater = !!g && !!SURFACES.get(g.tile.surface)?.sinks && b.z <= g.h + 0.05;
     const overWater = !!g && !!SURFACES.get(g.tile.surface)?.overlaySprite && !inWater;
     const depth = overWater ? tileDepth(tx, ty, 'overlay') + 0.5 : this.standingDepth(b.x, b.y);
-    this.ballImg.setPosition(Math.round(p.x), Math.round(p.y)).setDepth(depth);
+    // Tornado: the ball becomes a small whirlwind. Immune after damage: it blinks.
+    const frame = this.play.tornado ? `t${Math.floor(this.time.now / 60) % 4}` : 'ball';
+    if (frame !== this.ballFrame) {
+      this.ballFrame = frame;
+      if (frame === 'ball') this.ballImg.setTexture(this.play.character.sprite, 0);
+      else this.ballImg.setTexture('ball-tornado', frameIndex(manifest.sprites['ball-tornado']!, frame.slice(1)));
+      const id = frame === 'ball' ? this.play.character.sprite : 'ball-tornado';
+      const e = manifest.sprites[id]!;
+      this.ballImg.setOrigin(e.anchor[0] / e.frameWidth, e.anchor[1] / e.frameHeight);
+    }
+    this.ballImg
+      .setPosition(Math.round(p.x), Math.round(p.y))
+      .setDepth(depth)
+      .setAlpha(isImmune(this.play) && Math.floor(this.time.now / 70) % 2 ? 0.35 : 1);
     if (g && g.h <= b.z + 0.01 && !inWater) {
       const sp = project(b.x, b.y, g.h / STEP_HEIGHT);
       this.shadowImg.setVisible(true).setPosition(Math.round(sp.x), Math.round(sp.y)).setDepth(tileDepth(tx, ty, 'shadow'));
@@ -396,8 +527,24 @@ export class CourseScene extends Phaser.Scene {
       settings.help = !settings.help;
       for (const h of this.helpHud) h.setVisible(settings.help);
     });
+    // Space: bounce boost in flight; while aiming, hold to charge and release to shoot (keyboard play).
     onKey('SPACE', () => {
-      if (this.phase === 'flight') this.boostQueued = true;
+      if (this.phase === 'flight') {
+        this.boostQueued = true;
+        return;
+      }
+      if (!this.course || !canShoot(this.play) || this.phase === 'charge' || this.phase === 'pull' || settings.quickShot) return;
+      if (this.planPower <= 0) this.planPower = 0.5;
+      this.phase = 'charge';
+      this.chargeStart = this.time.now;
+      this.power = 0;
+      this.drawShotHud();
+    });
+    kb.on('keyup-SPACE', () => {
+      if (this.phase === 'charge' && canShoot(this.play) && !this.input.activePointer.leftButtonDown()) this.shoot(this.power);
+    });
+    onKey('F', () => {
+      if (canUseAbility(this.play)) this.abilityQueued = true;
     });
     onKey('ESC', () => this.cancelCharge());
 
@@ -463,8 +610,8 @@ export class CourseScene extends Phaser.Scene {
     this.power = power;
     const shot = takeShot(this.play, this.command(power));
     this.prevBall = { ...shot.ball };
-    this.accumulator = 0;
     this.boostQueued = false;
+    this.abilityQueued = false;
     this.phase = 'flight';
     this.messageQueue = [];
     if (shot.cmd.perfect) this.showMessage('PERFECT!', 0xf8e048);
@@ -475,6 +622,7 @@ export class CourseScene extends Phaser.Scene {
   private updateShot(t: Tuning, dt: number): void {
     const pointer = this.input.activePointer;
     const ballH = this.play.ball.z / STEP_HEIGHT;
+    const k = this.keys;
 
     if (this.phase === 'charge') {
       const m = chargeMeter((this.time.now - this.chargeStart) / 1000, t.meterPeriod, t.meterCycles);
@@ -482,9 +630,7 @@ export class CourseScene extends Phaser.Scene {
         // Held too long: the meter ran out, so the ball goes anyway, weakly.
         this.shoot(t.autoLaunchPower);
         this.showMessage('TOO SLOW!', 0xa0a8c0);
-        return;
-      }
-      this.power = m.power;
+      } else this.power = m.power;
     } else if (this.phase === 'pull') {
       const zoom = this.cameras.main.zoom;
       const d = dragShot(
@@ -495,54 +641,73 @@ export class CourseScene extends Phaser.Scene {
       );
       if (d.power > 0) this.aim = d.angle;
       this.planPower = d.power;
-    }
-
-    if (this.phase !== 'flight') {
-      // The guide previews the planned shot. It does not follow the meter.
-      if (this.phase === 'plan' || this.planPower <= 0) this.guide.clear();
-      else this.drawGuide(previewShot(this.play, this.command(Math.max(t.minPower, this.planPower))));
-      this.drawMeter();
-      return;
-    }
-
-    // Flight: fixed steps of 1/120 s, drawn smoothly in between.
-    const shot = this.play.shot;
-    if (!shot) {
-      this.endShot();
-      return;
-    }
-    this.accumulator = Math.min(this.accumulator + dt, 0.25);
-    while (this.accumulator >= DT && this.play.shot) {
-      this.prevBall = { ...shot.ball };
-      const boost = this.boostQueued;
-      this.boostQueued = false;
-      const before = shot.events.length;
-      stepPlay(this.play, { boost });
-      for (const e of shot.events.slice(before)) {
-        if (e.kind === 'bounce' && e.boosted) this.showMessage('BOOST!', 0xf8e048);
+    } else if ((this.phase === 'plan' || this.phase === 'set') && canShoot(this.play)) {
+      // Keyboard aiming: Left/Right (A/D) turn the aim, Up/Down (W/S) set the planned power.
+      const turn = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
+      const pw = (k.up.isDown || k.w.isDown ? 1 : 0) - (k.down.isDown || k.s.isDown ? 1 : 0);
+      if (turn || pw) {
+        if (this.planPower <= 0) this.planPower = 0.5;
+        this.phase = 'set';
+        this.aim += (turn * (k.shift.isDown ? AIM_TURN_FINE : AIM_TURN) * Math.PI * dt) / 180;
+        this.planPower = Phaser.Math.Clamp(this.planPower + pw * PLAN_RATE * dt, t.minPower, 1);
+        this.drawShotHud();
       }
+    }
+
+    // The world runs all the time in fixed steps of 1/120 s: things move while you aim.
+    const before = { ...ballNow(this.play) };
+    this.accumulator = Math.min(this.accumulator + dt, 0.25);
+    let stepped = false;
+    while (this.accumulator >= DT && this.play.status === 'playing') {
+      if (!stepped) this.prevBall = { ...ballNow(this.play) };
+      stepped = true;
+      const steer = this.play.tornado ? (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0) : 0;
+      const input = { ...(this.boostQueued && { boost: true }), ...(this.abilityQueued && { ability: true }), ...(steer && { steer }) };
+      this.boostQueued = false;
+      this.abilityQueued = false;
+      const shot = this.play.shot;
+      const evBefore = shot?.events.length ?? 0;
+      tick(this.play, input);
+      if (shot) for (const e of shot.events.slice(evBefore)) if (e.kind === 'bounce' && e.boosted) this.showMessage('BOOST!', 0xf8e048);
       this.showEvents(drainLog(this.play));
       this.accumulator -= DT;
     }
-    // A warp jumps the ball: do not slide it across the course in between.
-    const warped = Math.hypot((this.prevBall?.x ?? shot.ball.x) - shot.ball.x, (this.prevBall?.y ?? shot.ball.y) - shot.ball.y) > 0.5;
-    const a = !warped && this.prevBall ? this.prevBall : shot.ball;
-    const alpha = this.play.shot ? this.accumulator / DT : 1;
-    const lerp = (p: number, q: number) => p + (q - p) * alpha;
-    const shown = { ...shot.ball, x: lerp(a.x, shot.ball.x), y: lerp(a.y, shot.ball.y), z: lerp(a.z, shot.ball.z) };
-    this.drawBall(shown);
-    // Camera follows the ball.
-    this.camX += (this.ballScreen.x - VIEW_WIDTH / 2 - this.camX) * Math.min(1, dt * 6);
-    this.camY += (this.ballScreen.y - VIEW_HEIGHT / 2 - this.camY) * Math.min(1, dt * 6);
-    this.applyCamera();
+    if (!stepped) this.prevBall = before;
 
-    if (!this.play.shot) this.endShot(shot.outcome === 'timeout');
+    // Knocked while aiming (a Trundler, a Lunger, a cloud): drop the plan and watch.
+    if (this.phase !== 'flight' && !canShoot(this.play)) {
+      this.phase = 'flight';
+      this.power = 0;
+      this.planPower = 0;
+      this.guide.clear();
+      this.drawShotHud();
+    }
+    if (this.phase === 'flight' && canShoot(this.play)) {
+      this.endShot();
+    } else if (this.play.status !== 'playing' && !this.endScreen) {
+      this.endShot();
+    }
+
+    const now = ballNow(this.play);
+    const a = this.prevBall && Math.hypot(this.prevBall.x - now.x, this.prevBall.y - now.y) < 0.5 ? this.prevBall : now;
+    const alpha = this.accumulator / DT;
+    const lerp = (p: number, q: number) => p + (q - p) * alpha;
+    this.drawBall({ ...now, x: lerp(a.x, now.x), y: lerp(a.y, now.y), z: lerp(a.z, now.z) });
+
+    if (this.phase === 'flight') {
+      if (this.play.shot) {
+        // Camera follows the ball.
+        this.camX += (this.ballScreen.x - VIEW_WIDTH / 2 - this.camX) * Math.min(1, dt * 6);
+        this.camY += (this.ballScreen.y - VIEW_HEIGHT / 2 - this.camY) * Math.min(1, dt * 6);
+        this.applyCamera();
+      }
+    } else if (this.phase === 'plan' || this.planPower <= 0) this.drawGuide(null);
+    else this.drawGuide(previewShot(this.play, this.command(Math.max(t.minPower, this.planPower))));
     this.drawMeter();
   }
 
   /** The simulation finished the shot (and any turns after it). Show the result. */
-  private endShot(timedOut = false): void {
-    if (timedOut) this.queueMessage('SHOT STOPPED (TOOK TOO LONG)', UI_DIM);
+  private endShot(): void {
     this.showEvents(drainLog(this.play));
     this.prevBall = null;
     this.phase = 'plan';
@@ -574,8 +739,43 @@ export class CourseScene extends Phaser.Scene {
         case 'shotOrb':
           this.queueMessage('+1 SHOT', GOOD);
           break;
-        case 'damage':
-          this.queueMessage(e.cause === 'spikes' ? `SPIKES! -${e.amount} HEALTH` : `${e.cause === 'sunk' ? 'SANK' : 'OUT OF BOUNDS'}! -${e.amount} HEALTH`, BAD);
+        case 'damage': {
+          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED' }[e.cause];
+          this.queueMessage(`${what}! -${e.amount} HEALTH`, BAD);
+          break;
+        }
+        case 'activated':
+          this.queueMessage(`${this.nameOf(e.enemy)} WAKES UP!`, GUIDE_WARN);
+          break;
+        case 'flagDown':
+          this.queueMessage('FLAG KNOCKED DOWN! -1 STAR', BAD);
+          break;
+        case 'flagUp':
+          this.queueMessage('FLAG RAISED! +1 STAR', STAR_FILL);
+          break;
+        case 'abilityGained':
+          if (e.wild) this.wildUntil = this.time.now + 1000;
+          this.queueMessage(`${e.wild ? 'WILD! ' : ''}GOT ${ABILITIES.get(e.ability)?.name.toUpperCase() ?? e.ability}! F TO USE`, 0x80c8ff);
+          break;
+        case 'abilityUsed':
+          this.showMessage(`${ABILITIES.get(e.ability)?.name.toUpperCase() ?? ''}!`, 0x80c8ff);
+          break;
+        case 'stunned':
+          this.queueMessage(e.target === 'ball' ? 'STUNNED! -1 SHOT' : `${this.nameOf(e.target)} STUNNED`, 0xf8e048);
+          break;
+        case 'break':
+          this.queueMessage(e.wild ? 'CRATE BROKEN! A WILD!' : 'CRATE BROKEN!', GOOD);
+          break;
+        case 'rumble':
+          this.showMessage('THE GROUND RUMBLES...', GUIDE_WARN);
+          break;
+        case 'surface':
+          this.queueMessage('A MOLE!', GUIDE_WARN);
+          break;
+        case 'zap':
+          if (e.target === 'ball') this.showMessage('ZAP!', 0xf8f040);
+          break;
+        case 'enemyTurn':
           break;
         case 'returned':
           this.queueMessage('BACK TO LAST SPOT', 0x80c8ff);
@@ -589,23 +789,104 @@ export class CourseScene extends Phaser.Scene {
     }
   }
 
+  private nameOf(uid: string): string {
+    return (OBJECTS.get(uid.split('#')[0]!)?.name ?? 'ENEMY').toUpperCase();
+  }
+
   private queueMessage(text: string, color: number): void {
     if (this.messageQueue.some((m) => m.text === text)) return;
     this.messageQueue.push({ text, color });
   }
 
-  private drawGuide(points: readonly { x: number; y: number; z: number }[]): void {
+  /**
+   * The aim guide: dots every few steps; yellow in the air, white on the
+   * ground, orange where it passes through a sentinel's inner radius. It stops
+   * at a stationary thunder cloud (marked with an X); drifting clouds show their lane.
+   */
+  private drawGuide(preview: Preview | null): void {
     const g = this.guide;
     g.clear();
-    // A dot every few steps; yellow while in the air, white on the ground.
+    if (!preview) return;
+    const points = preview.points;
+    const zones = this.play.enemies
+      .filter((e) => !e.defeated && !e.body && e.def.triggers.passBy !== 'none' && e.stats.get('innerRadius') > 0)
+      .map((e) => ({ x: e.x, y: e.y, r: e.stats.get('innerRadius'), ground: e.def.passByGroundOnly }));
     for (let i = 4; i < points.length; i += 4) {
       const p = points[i]!;
       const ground = groundAt(this.course!, p.x, p.y);
       const air = !ground || p.z > ground.h + 0.02;
+      const warn = zones.some((z) => Math.hypot(p.x - z.x, p.y - z.y) < z.r && (!z.ground || !air));
       const s = project(p.x, p.y, p.z / STEP_HEIGHT);
       const fade = 1 - (i / points.length) * 0.6;
-      g.fillStyle(air ? GUIDE_AIR : GUIDE, fade);
+      g.fillStyle(warn ? GUIDE_WARN : air ? GUIDE_AIR : GUIDE, fade);
       g.fillRect(Math.round(s.x) - 1, Math.round(s.y) - 2, 2, 2);
+    }
+    if (preview.cloud && points.length) {
+      const p = points[points.length - 1]!;
+      const s = project(p.x, p.y, p.z / STEP_HEIGHT);
+      g.lineStyle(1, BAD, 1);
+      g.lineBetween(s.x - 3, s.y - 5, s.x + 3, s.y + 1);
+      g.lineBetween(s.x + 3, s.y - 5, s.x - 3, s.y + 1);
+    }
+    for (const c of this.play.clouds) {
+      if (!c.path) continue;
+      g.lineStyle(1, DEBUG_ZONE, 0.35);
+      const pts = c.path.pts.map((q) => project(q.x, q.y, (groundAt(this.course!, q.x, q.y)?.h ?? 0) / STEP_HEIGHT));
+      for (let i = 1; i < pts.length; i++) g.lineBetween(pts[i - 1]!.x, pts[i - 1]!.y, pts[i]!.x, pts[i]!.y);
+    }
+  }
+
+  /** Debug overlay parts that move: radii, paths, cloud zones. Redrawn every frame while debug is on. */
+  private drawDebugDynamic(): void {
+    const g = this.debugDyn;
+    g.clear();
+    if (this.debugMode === 'off' || !this.course) return;
+    const ring = (x: number, y: number, r: number, color: number, dashed: boolean) => {
+      const h = (groundAt(this.course!, x, y)?.h ?? 0) / STEP_HEIGHT;
+      g.lineStyle(1, color, 0.9);
+      const n = 48;
+      for (let i = 0; i < n; i++) {
+        if (dashed && i % 2) continue;
+        const a0 = (i / n) * Math.PI * 2;
+        const a1 = ((i + 1) / n) * Math.PI * 2;
+        const p = project(x + Math.cos(a0) * r, y + Math.sin(a0) * r, h);
+        const q = project(x + Math.cos(a1) * r, y + Math.sin(a1) * r, h);
+        g.lineBetween(p.x, p.y, q.x, q.y);
+      }
+    };
+    const path = (pts: readonly { x: number; y: number }[]) => {
+      g.lineStyle(1, DEBUG_PATH, 0.8);
+      const sp = pts.map((q) => project(q.x, q.y, (groundAt(this.course!, q.x, q.y)?.h ?? 0) / STEP_HEIGHT));
+      for (let i = 1; i < sp.length; i++) g.lineBetween(sp[i - 1]!.x, sp[i - 1]!.y, sp[i]!.x, sp[i]!.y);
+    };
+    for (const e of this.play.enemies) {
+      if (e.defeated) continue;
+      const outer = e.stats.get('outerRadius');
+      const inner = e.stats.get('innerRadius');
+      if (outer > 0) ring(e.x, e.y, outer, DEBUG_OUTER, false);
+      if (inner > 0) ring(e.x, e.y, inner, DEBUG_INNER, true);
+      if (e.path) path(e.path.pts);
+      if (e.lobTarget) ring(e.lobTarget.x, e.lobTarget.y, 0.75, DEBUG_INNER, false);
+    }
+    for (const m of this.play.movers) if (m.path) path(m.path.pts);
+    for (const c of this.play.clouds) {
+      if (c.path) path(c.path.pts);
+      const h = (groundAt(this.course, c.x, c.y)?.h ?? 0) / STEP_HEIGHT;
+      const top = c.def.zapHeight / STEP_HEIGHT;
+      g.lineStyle(1, DEBUG_ZONE, 0.9);
+      const corners = [
+        [c.x - c.def.half, c.y - c.def.half],
+        [c.x + c.def.half, c.y - c.def.half],
+        [c.x + c.def.half, c.y + c.def.half],
+        [c.x - c.def.half, c.y + c.def.half],
+      ] as const;
+      for (const lvl of [h, h + top]) {
+        for (let i = 0; i < 4; i++) {
+          const p = project(corners[i]![0], corners[i]![1], lvl);
+          const q = project(corners[(i + 1) % 4]![0], corners[(i + 1) % 4]![1], lvl);
+          g.lineBetween(p.x, p.y, q.x, q.y);
+        }
+      }
     }
   }
 
@@ -661,7 +942,9 @@ export class CourseScene extends Phaser.Scene {
     const p = this.play;
     const maxHealth = p.stats.get('maxHealth');
     const maxShots = p.stats.get('maxShots');
-    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen].join(',');
+    const wild = this.time.now < this.wildUntil ? Math.floor(this.time.now / 90) % ABILITY_IDS.length : -1;
+    const usedUp = p.abilityUsed && !!p.shot;
+    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length].join(',');
     if (key === this.statusKey) return;
     this.statusKey = key;
     this.statusHud?.destroy();
@@ -695,6 +978,19 @@ export class CourseScene extends Phaser.Scene {
     const starX = 94;
     icon('star-yellow', starX - 2, 9);
     c.add(pixelText(this, manifest, starX + 10, barY, `${p.wallet}  #${this.seed}`, { color: UI_TEXT }));
+    // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
+    const slotX = bgW + 4;
+    c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));
+    const shown = wild >= 0 ? ABILITY_IDS[wild]! : p.ability;
+    if (shown) {
+      const def = ABILITIES.get(shown)!;
+      const img = this.add.image(slotX + 2, 1, def.icon, 0).setOrigin(0, 0);
+      if (usedUp) img.setAlpha(0.35);
+      c.add(img);
+      c.add(pixelText(this, manifest, slotX + 14, 3, wild >= 0 ? '?' : def.name.toUpperCase(), { color: usedUp ? UI_DIM : UI_TEXT }));
+      c.add(pixelText(this, manifest, slotX + 14, 11, usedUp ? 'USED' : 'F: USE', { color: UI_DIM }));
+    } else c.add(pixelText(this, manifest, slotX + 3, 7, 'NO ABILITY', { color: UI_DIM }));
+    if (p.ballStatuses.some((st) => st.id === 'stunned')) c.add(this.add.image(x + 2, 0, 'icon-stunned', 0).setOrigin(0, 0));
     this.statusHud = c;
   }
 
@@ -721,7 +1017,7 @@ export class CourseScene extends Phaser.Scene {
 
   private stepLabel(): string {
     if (settings.quickShot) return 'QUICK SHOT (TEST)';
-    return { plan: '1 PULL TO PLAN', pull: '1 PULL TO PLAN', set: '2 HOLD TO CHARGE', charge: '2 RELEASE!', flight: '-' }[this.phase];
+    return { plan: '1 PULL OR AIM KEYS', pull: '1 PULL TO PLAN', set: '2 HOLD TO CHARGE', charge: '2 RELEASE!', flight: '-' }[this.phase];
   }
 
   private showMessage(text: string, color: number): void {
@@ -742,9 +1038,9 @@ export class CourseScene extends Phaser.Scene {
       .setDepth(HUD_DEPTH)
       .setName(`hud-${id}`);
     const lines = [
-      'LEFT: PULL BACK TO PLAN, THEN HOLD TO CHARGE  RIGHT/ESC: RE-PLAN  T: GROUND/LOFT',
-      'Z/X: SPIN  Q/E: CURVE  SPACE: BOOST  P: QUICK SHOT (TEST)  R: RESTART  U: TUNING  H: HELP',
-      'WASD/ARROWS OR RIGHT-DRAG: PAN  C: CENTRE  1/2/3/N: COURSE  G: DEBUG',
+      'MOUSE: PULL BACK TO PLAN, HOLD TO CHARGE  KEYS: ARROWS/WASD AIM+POWER, HOLD SPACE TO CHARGE',
+      'T: GROUND/LOFT  Z/X: SPIN  Q/E: CURVE  SPACE IN FLIGHT: BOOST  F: ABILITY  ESC: RE-PLAN',
+      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  1-5/N: COURSE  R: RESTART  G: DEBUG  U: TUNING+TEST BENCH  H: HELP',
     ];
     this.helpHud = lines.map((l, i) =>
       pixelText(this, manifest, 2, VIEW_HEIGHT - 7 * (lines.length - i) - 1, l, { color: UI_DIM, background: UI_BG })

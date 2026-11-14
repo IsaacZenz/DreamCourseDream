@@ -22,12 +22,19 @@
  * - Hazard tiles (Milestone 3) act on a ball touching them: boosters push,
  *   conveyors carry, springs launch, warps move it to their pair. Spikes only
  *   report a "hazard" event; the course rules (play.ts) decide the damage.
- * - Obstacles (blockers and enemies) are passed in as a `ShotWorld`. The ball
- *   bounces off them, or, when the rules say the hit defeated an enemy, carries
- *   on through with a little less speed.
+ * - Obstacles (blockers, enemies, moving things) are passed in as a `ShotWorld`.
+ *   The ball bounces off them, is knocked away by a moving one, or, when the
+ *   rules say so, carries on through.
+ * - The same code moves other rolling things (Milestone 4): a ball knocked while
+ *   resting, a Lunger or Mole launching itself, a Spitter's seed. Those use
+ *   `startBody`. Rolling enemies treat drops and water as walls.
+ * - Ability modes (Milestone 4), switched on by the course rules: Anchor (drop
+ *   and stop dead), Burner (minimum speed), Tornado (hover: no falling, no
+ *   surfaces; the rules steer it).
  */
 import type { ObjectShape } from '../content/objects.ts';
 import { DIRECTION_VECTORS, SURFACES } from '../content/surfaces.ts';
+import type { Rng } from './rng.ts';
 import { STEP_HEIGHT, STEPS_PER_SECOND, surfacePhysics, type Tuning } from '../content/tuning.ts';
 import { tileAt, type Course, type Tile } from './course.ts';
 import { planeAt } from './tileShape.ts';
@@ -71,6 +78,7 @@ export type ShotEvent =
   | { kind: 'spring'; step: number }
   | { kind: 'warp'; step: number; from: GridTile; to: GridTile }
   | { kind: 'contact'; step: number; obstacle: string; result: ContactResult }
+  | { kind: 'anchorStop'; step: number; x: number; y: number }
   | { kind: 'exit'; step: number };
 
 export type ShotOutcome = 'rest' | 'sunk' | 'out' | 'timeout' | 'exit';
@@ -80,8 +88,15 @@ interface GridTile {
   readonly y: number;
 }
 
-/** What happens when the ball touches an obstacle: it bounces off, or carries on through (a defeated enemy). */
-export type ContactResult = 'bounce' | 'pass';
+/**
+ * What happens when the ball touches an obstacle.
+ * - bounce: bounces off.
+ * - knock: bounces off and is pushed away at the obstacle's speed plus its `knock` (a moving thing ran into it).
+ * - pass: carries on through, keeping `defeatSpeedKeep` of its speed (a defeated enemy, a broken crate).
+ * - passFree: carries on through at full speed (Burner).
+ * - passPole: pushes past a flag pole, keeping `polePassKeep` of its speed.
+ */
+export type ContactResult = 'bounce' | 'knock' | 'pass' | 'passFree' | 'passPole';
 
 /** Something solid standing on the course: a blocker or an enemy. */
 export interface Obstacle {
@@ -95,6 +110,11 @@ export interface Obstacle {
   readonly shape: ObjectShape;
   /** Fraction of speed kept when the ball bounces off it. */
   readonly bounce: number;
+  /** Its own speed, for moving obstacles. */
+  readonly vx?: number;
+  readonly vy?: number;
+  /** Extra push-away speed when the result is 'knock'. */
+  readonly knock?: number;
 }
 
 /**
@@ -148,6 +168,23 @@ export interface ShotState {
   warpLock: string | null;
   /** The last hazard tile the ball touched, so each touch is reported once. */
   hazardTouch: string | null;
+  /** Radius of what is moving (the ball, a rolling enemy, a seed), in tiles. */
+  readonly radius: number;
+  /** Obstacles being passed through right now, so a pass is counted once. */
+  passing: string[];
+  /** Rolling enemies: a drop to lower ground or off the course works as a wall. */
+  edgeWalls: boolean;
+  /** Rolling enemies: the edge of water works as a wall. */
+  waterWalls: boolean;
+  /** Anchor: on the next landing (or now, if on the ground) stop dead. */
+  anchor: boolean;
+  /** Set for one step when an Anchor stop happens. */
+  anchorStopped: boolean;
+  /** Burner: steps left, and the sideways speed kept up while they last. */
+  burnSteps: number;
+  burnMin: number;
+  /** Tornado: the ball hovers at no lower than `floor` and ignores surfaces; the rules set its speed. */
+  hover: { floor: number } | null;
 }
 
 /** Where the ground is under a point, or null if the point is off the course. */
@@ -225,7 +262,39 @@ export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand, sca
     boostScale: scales.boost ?? 1,
     warpLock: null,
     hazardTouch: null,
+    radius: tuning.ballRadius,
+    passing: [],
+    edgeWalls: false,
+    waterWalls: false,
+    anchor: false,
+    anchorStopped: false,
+    burnSteps: 0,
+    burnMin: 0,
+    hover: null,
   };
+}
+
+export interface BodyOptions {
+  readonly radius?: number;
+  readonly edgeWalls?: boolean;
+  readonly waterWalls?: boolean;
+}
+
+/**
+ * Start something moving with a given velocity: a resting ball that was
+ * knocked, a rolling enemy, a seed. No spin, no shot command.
+ */
+export function startBody(tuning: Tuning, from: BallState, v: { vx: number; vy: number; vz: number }, opts: BodyOptions = {}): ShotState {
+  const angle = Math.atan2(v.vy, v.vx);
+  const airborne = v.vz > 0 || !from.grounded;
+  const s = startShot(tuning, from, { angle, power: 0, type: airborne ? 'lofted' : 'ground', topSpin: 0, sideSpin: 0 });
+  s.ball.vx = v.vx;
+  s.ball.vy = v.vy;
+  s.ball.vz = v.vz;
+  s.ball.grounded = !airborne;
+  if (airborne) s.ball.z += 0.001;
+  s.hasLanded = true;
+  return { ...s, radius: opts.radius ?? tuning.ballRadius, edgeWalls: !!opts.edgeWalls, waterWalls: !!opts.waterWalls };
 }
 
 /** Advance the shot by one step (1/120 s). Does nothing once the shot is over. */
@@ -244,8 +313,19 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     s.boostArmed = Math.max(1, Math.round(tuning.boostWindow * STEPS_PER_SECOND));
   }
 
-  // Side curve: turn the horizontal velocity a little, fading over time.
-  if (s.cmd.sideSpin !== 0) {
+  if (s.hover) {
+    stepHover(course, tuning, s, world, zBefore);
+    return;
+  }
+
+  // Anchor used while on the ground: stop dead now.
+  if (s.anchor && b.grounded) {
+    const g0 = groundAt(course, b.x, b.y);
+    if (g0) anchorStop(s, g0);
+  }
+
+  // Side curve: turn the horizontal velocity a little, fading over time. Not during a Burner burst.
+  if (s.cmd.sideSpin !== 0 && s.burnSteps <= 0) {
     const turn = ((s.cmd.sideSpin * tuning.curveRate * Math.PI) / 180) * Math.exp(-tuning.curveFade * t) * DT;
     const c = Math.cos(turn);
     const sn = Math.sin(turn);
@@ -295,6 +375,18 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     b.vz *= drag;
   }
 
+  // Burner: keep the sideways speed up while the burst lasts.
+  if (s.burnSteps > 0) {
+    s.burnSteps--;
+    const sp = Math.hypot(b.vx, b.vy);
+    if (sp < s.burnMin) {
+      const dx = sp > 1e-6 ? b.vx / sp : s.dirX;
+      const dy = sp > 1e-6 ? b.vy / sp : s.dirY;
+      b.vx = dx * s.burnMin;
+      b.vy = dy * s.burnMin;
+    }
+  }
+
   // Slope under the ball before moving, to know how a grounded ball should rise or fall.
   const before = groundAt(course, b.x, b.y);
   const slopeVz = b.grounded && before ? before.sx * b.vx + before.sy * b.vy : 0;
@@ -331,6 +423,17 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     return;
   }
 
+  // An Anchor stop ends the motion at once, unless a pad (booster, conveyor, spring) acts on it.
+  if (s.anchorStopped) {
+    s.anchorStopped = false;
+    const effect = now ? SURFACES.get(now.tile.surface)?.effect : undefined;
+    const pad = effect === 'push' || effect === 'carry' || effect === 'launch';
+    if (!pad && now) {
+      finish(s, SURFACES.get(now.tile.surface)?.sinks ? 'sunk' : 'rest');
+      return;
+    }
+  }
+
   // Rest: slow, on the ground, and the slope cannot overcome friction.
   if (b.grounded && now) {
     const phys = surfacePhysics(tuning, now.tile.surface);
@@ -349,6 +452,64 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
   if (s.step >= tuning.maxShotTime * STEPS_PER_SECOND) {
     finish(s, now && b.grounded && SURFACES.get(now.tile.surface)?.sinks ? 'sunk' : 'timeout');
   }
+}
+
+/** Anchor: stop dead on the ground. */
+function anchorStop(s: ShotState, g: Ground): void {
+  const b = s.ball;
+  b.vx = 0;
+  b.vy = 0;
+  b.vz = 0;
+  b.z = g.h;
+  b.grounded = true;
+  s.anchor = false;
+  s.anchorStopped = true;
+  s.events.push({ kind: 'anchorStop', step: s.step, x: b.x, y: b.y });
+}
+
+/**
+ * Tornado: the rules set the sideways speed each step. The ball never goes
+ * lower than the height it had (it can go out over a drop), follows the ground
+ * up, still bounces off walls and obstacles, and ignores surfaces and hazards.
+ */
+function stepHover(course: Course, tuning: Tuning, s: ShotState, world: ShotWorld | undefined, zBefore: number): void {
+  const b = s.ball;
+  const hover = s.hover!;
+  b.vz = 0;
+  moveAxis(course, tuning, s, 'x', b.vx * DT);
+  moveAxis(course, tuning, s, 'y', b.vy * DT);
+  if (world) collideObstacles(tuning, s, world, zBefore);
+  const g = groundAt(course, b.x, b.y);
+  b.z = Math.max(g?.h ?? -Infinity, hover.floor);
+  hover.floor = b.z;
+  b.grounded = !!g && b.z <= g.h + 1e-3;
+  if (s.step >= tuning.maxShotTime * STEPS_PER_SECOND) finish(s, 'timeout');
+}
+
+/**
+ * End a Tornado: normal physics again, keeping `keep` of the speed. Over a
+ * drop, the ball falls from where it is.
+ */
+export function endHover(course: Course, s: ShotState, keep: number): void {
+  const b = s.ball;
+  s.hover = null;
+  b.vx *= keep;
+  b.vy *= keep;
+  b.vz = 0;
+  const g = groundAt(course, b.x, b.y);
+  b.grounded = !!g && b.z <= g.h + 0.01;
+  if (b.grounded && g) b.z = g.h;
+}
+
+/** Turn the sideways velocity to a heading, keeping or setting its speed (used by the Tornado). */
+export function setHeading(s: ShotState, angle: number, speed: number): void {
+  s.ball.vx = Math.cos(angle) * speed;
+  s.ball.vy = Math.sin(angle) * speed;
+}
+
+/** A random direction from the seeded generator, in radians. */
+export function randomAngle(rng: Rng): number {
+  return rng.float(0, Math.PI * 2);
 }
 
 function finish(s: ShotState, outcome: ShotOutcome): void {
@@ -418,10 +579,17 @@ function touchTile(course: Course, tuning: Tuning, s: ShotState, landedNow: bool
  */
 function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefore: number): void {
   const b = s.ball;
-  const r = tuning.ballRadius;
+  const r = s.radius;
   for (const o of world.obstacles) {
     const top = o.base + o.height;
-    if (b.z >= top || b.z + 2 * r <= o.base) continue;
+    const leave = () => {
+      const k = s.passing.indexOf(o.id);
+      if (k >= 0) s.passing.splice(k, 1);
+    };
+    if (b.z >= top || b.z + 2 * r <= o.base) {
+      leave();
+      continue;
+    }
     // Closest point of the obstacle's core to the ball, seen from above.
     let cx = o.x;
     let cy = o.y;
@@ -434,7 +602,11 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
     let nx = b.x - cx;
     let ny = b.y - cy;
     const d = Math.hypot(nx, ny);
-    if (d >= reach) continue;
+    if (d >= reach) {
+      leave();
+      continue;
+    }
+    if (s.passing.includes(o.id)) continue;
     if (d < 1e-6) {
       // Centre inside a box: push out from the obstacle's centre, or back the way it came.
       nx = b.x - o.x;
@@ -443,6 +615,7 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
         nx = -b.vx;
         ny = -b.vy;
       }
+      if (Math.hypot(nx, ny) < 1e-6) nx = 1;
     }
     const nl = Math.hypot(nx, ny) || 1;
     nx /= nl;
@@ -450,12 +623,14 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
 
     const result = world.contact ? world.contact(o, s) : 'bounce';
     s.events.push({ kind: 'contact', step: s.step, obstacle: o.id, result });
-    if (result === 'pass') {
-      b.vx *= tuning.defeatSpeedKeep;
-      b.vy *= tuning.defeatSpeedKeep;
+    if (result === 'pass' || result === 'passFree' || result === 'passPole') {
+      const keep = result === 'pass' ? tuning.defeatSpeedKeep : result === 'passPole' ? tuning.polePassKeep : 1;
+      b.vx *= keep;
+      b.vy *= keep;
+      s.passing.push(o.id);
       continue;
     }
-    if (zBefore >= top - 0.01 && !b.grounded) {
+    if (zBefore >= top - 0.01 && !b.grounded && result === 'bounce') {
       // Came down on top: thrown back up and off the side.
       b.z = top;
       b.vz = Math.max(Math.abs(b.vz) * o.bounce, 2.5);
@@ -463,7 +638,7 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
       b.vy += ny * 1.5;
       continue;
     }
-    // Side hit: step back out and mirror the speed into the obstacle.
+    // Side hit: step back out and mirror the speed into the obstacle (seen from the obstacle, if it moves).
     if (o.shape.kind === 'round') {
       b.x = o.x + nx * (reach + 1e-4);
       b.y = o.y + ny * (reach + 1e-4);
@@ -471,10 +646,21 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
       b.x = cx + nx * (r + 1e-4);
       b.y = cy + ny * (r + 1e-4);
     }
-    const vn = b.vx * nx + b.vy * ny;
+    const ovx = o.vx ?? 0;
+    const ovy = o.vy ?? 0;
+    const vn = (b.vx - ovx) * nx + (b.vy - ovy) * ny;
     if (vn < 0) {
       b.vx -= (1 + o.bounce) * vn * nx;
       b.vy -= (1 + o.bounce) * vn * ny;
+    }
+    if (result === 'knock') {
+      // Pushed out of the way at the obstacle's speed plus the knock.
+      const want = ovx * nx + ovy * ny + (o.knock ?? 0);
+      const now = b.vx * nx + b.vy * ny;
+      if (now < want) {
+        b.vx += (want - now) * nx;
+        b.vy += (want - now) * ny;
+      }
     }
   }
 }
@@ -487,7 +673,7 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
 function moveAxis(course: Course, tuning: Tuning, s: ShotState, axis: 'x' | 'y', d: number): void {
   if (d === 0) return;
   const b = s.ball;
-  const r = tuning.ballRadius;
+  const r = s.radius;
   const sign = Math.sign(d);
   const pos = axis === 'x' ? b.x : b.y;
   const lead = pos + sign * r;
@@ -504,6 +690,24 @@ function moveAxis(course: Course, tuning: Tuning, s: ShotState, axis: 'x' | 'y',
     const nx = axis === 'x' ? (sign > 0 ? line - 1 : line) : tx;
     const ny = axis === 'y' ? (sign > 0 ? line - 1 : line) : ty;
     const near = edgeHeight(course, nx, ny, ex, ey);
+    // Rolling enemies (owner, 2026-11-14): a drop or the edge of the course, and the edge of water, work as walls.
+    if (near && (s.edgeWalls || s.waterWalls)) {
+      const drop = s.edgeWalls && (!far || far.h < near.h - WALL_TOLERANCE);
+      const water = s.waterWalls && !!far && !!SURFACES.get(far.tile.surface)?.sinks && !SURFACES.get(near.tile.surface)?.sinks;
+      if (drop || water) {
+        const stopAt = line - sign * (r + 1e-6);
+        const kb = 0.6;
+        if (axis === 'x') {
+          b.x = stopAt;
+          b.vx = -b.vx * kb;
+        } else {
+          b.y = stopAt;
+          b.vy = -b.vy * kb;
+        }
+        s.events.push({ kind: 'wall', step: s.step, surface: far?.tile.surface ?? 'edge' });
+        return;
+      }
+    }
     // A wall is a step up at the grid line that the ball is too low to clear.
     const stepUp = far !== null && far.h > (near?.h ?? -Infinity) + WALL_TOLERANCE;
     if (far && stepUp && far.h > b.z + WALL_TOLERANCE) {
@@ -529,6 +733,11 @@ function moveAxis(course: Course, tuning: Tuning, s: ShotState, axis: 'x' | 'y',
 
 function land(tuning: Tuning, s: ShotState, g: Ground): void {
   const b = s.ball;
+  if (s.anchor) {
+    anchorStop(s, g);
+    s.hasLanded = true;
+    return;
+  }
   const phys = surfacePhysics(tuning, g.tile.surface);
   b.z = g.h;
   // Ground normal for the plane z = h + sx * x + sy * y.

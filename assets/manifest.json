@@ -529,15 +529,15 @@
         10
       ]
     },
-    "post": {
-      "file": "sprites/post.png",
-      "frameWidth": 8,
+    "stump": {
+      "file": "sprites/stump.png",
+      "frameWidth": 10,
       "frameHeight": 28,
       "frames": [
         "idle"
       ],
       "anchor": [
-        4,
+        5,
         25
       ]
     },
@@ -563,6 +563,349 @@
       "anchor": [
         9,
         14
+      ]
+    },
+    "trundler": {
+      "file": "sprites/trundler.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "spitter": {
+      "file": "sprites/spitter.png",
+      "frameWidth": 18,
+      "frameHeight": 18,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        16
+      ]
+    },
+    "lunger": {
+      "file": "sprites/lunger.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "mole": {
+      "file": "sprites/mole.png",
+      "frameWidth": 16,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        8,
+        12
+      ]
+    },
+    "molehill": {
+      "file": "sprites/molehill.png",
+      "frameWidth": 16,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        8,
+        6
+      ]
+    },
+    "anchorback": {
+      "file": "sprites/anchorback.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "emberback": {
+      "file": "sprites/emberback.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "hopback": {
+      "file": "sprites/hopback.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "whirlback": {
+      "file": "sprites/whirlback.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "seed": {
+      "file": "sprites/seed.png",
+      "frameWidth": 6,
+      "frameHeight": 6,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        5
+      ]
+    },
+    "target-ring": {
+      "file": "sprites/target-ring.png",
+      "frameWidth": 26,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        13,
+        7
+      ]
+    },
+    "sliding-block": {
+      "file": "sprites/sliding-block.png",
+      "frameWidth": 28,
+      "frameHeight": 22,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        14,
+        14
+      ]
+    },
+    "gate": {
+      "file": "sprites/gate.png",
+      "frameWidth": 32,
+      "frameHeight": 26,
+      "frames": [
+        "open",
+        "closed"
+      ],
+      "anchor": [
+        16,
+        18
+      ]
+    },
+    "crate": {
+      "file": "sprites/crate.png",
+      "frameWidth": 26,
+      "frameHeight": 22,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        13,
+        15
+      ]
+    },
+    "secured-crate": {
+      "file": "sprites/secured-crate.png",
+      "frameWidth": 26,
+      "frameHeight": 22,
+      "frames": [
+        "whole",
+        "cracked"
+      ],
+      "anchor": [
+        13,
+        15
+      ]
+    },
+    "cracked-tile": {
+      "file": "sprites/cracked-tile.png",
+      "frameWidth": 32,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        8
+      ]
+    },
+    "flag-pole": {
+      "file": "sprites/flag-pole.png",
+      "frameWidth": 14,
+      "frameHeight": 30,
+      "frames": [
+        "raised",
+        "lowered"
+      ],
+      "anchor": [
+        5,
+        28
+      ]
+    },
+    "star-marker": {
+      "file": "sprites/star-marker.png",
+      "frameWidth": 11,
+      "frameHeight": 11,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        10
+      ]
+    },
+    "thunder-cloud": {
+      "file": "sprites/thunder-cloud.png",
+      "frameWidth": 30,
+      "frameHeight": 22,
+      "frames": [
+        "idle",
+        "flash"
+      ],
+      "anchor": [
+        15,
+        21
+      ]
+    },
+    "zap-spark": {
+      "file": "sprites/zap-spark.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "wild": {
+      "file": "sprites/wild.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        9
+      ]
+    },
+    "icon-anchor": {
+      "file": "sprites/icon-anchor.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-burner": {
+      "file": "sprites/icon-burner.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-hop": {
+      "file": "sprites/icon-hop.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-tornado": {
+      "file": "sprites/icon-tornado.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-stunned": {
+      "file": "sprites/icon-stunned.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "alert": {
+      "file": "sprites/alert.png",
+      "frameWidth": 5,
+      "frameHeight": 9,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        2,
+        9
+      ]
+    },
+    "ball-tornado": {
+      "file": "sprites/ball-tornado.png",
+      "frameWidth": 12,
+      "frameHeight": 14,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        6,
+        13
       ]
     },
     "font": {
