@@ -101,11 +101,12 @@ export const DEFAULT_TUNING: Tuning = {
   // perfect top-of-bar release 35% above the old top (1.35 / 1.2 = 1.125 x the new top).
   groundMaxSpeed: 13.2,
   loftMaxSpeed: 12,
-  perfectWindow: 0.03,
+  perfectWindow: 0.02,
   perfectBonus: 1.125,
+  // Owner tuning round 2 (2026-11-14): perfectWindow 0.02, meterPeriod 1.5, bumper bounce 1.
   loftAngle: 50,
   minPower: 0.05,
-  meterPeriod: 1.6,
+  meterPeriod: 1.5,
   dragFullPx: 80,
 
   spinLandingSpeed: 4,
@@ -133,7 +134,7 @@ export const DEFAULT_TUNING: Tuning = {
     rough: { friction: 0.45, bounce: 0.3, landingGrip: 0.35, wallBounce: 0.6 },
     sand: { friction: 1.0, bounce: 0.05, landingGrip: 0.7, wallBounce: 0.4 },
     ice: { friction: 0.03, bounce: 0.5, landingGrip: 0.03, wallBounce: 0.8 },
-    bumper: { friction: 0.15, bounce: 0.9, landingGrip: 0.1, wallBounce: 1.25 },
+    bumper: { friction: 0.15, bounce: 1, landingGrip: 0.1, wallBounce: 1.25 },
   },
 };
 
