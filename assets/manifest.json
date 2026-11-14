@@ -481,6 +481,90 @@
         5
       ]
     },
+    "star-yellow": {
+      "file": "sprites/star-yellow.png",
+      "frameWidth": 11,
+      "frameHeight": 11,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        10
+      ]
+    },
+    "heart": {
+      "file": "sprites/heart.png",
+      "frameWidth": 9,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        7
+      ]
+    },
+    "shot-orb": {
+      "file": "sprites/shot-orb.png",
+      "frameWidth": 9,
+      "frameHeight": 9,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        8
+      ]
+    },
+    "rock": {
+      "file": "sprites/rock.png",
+      "frameWidth": 20,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        10
+      ]
+    },
+    "post": {
+      "file": "sprites/post.png",
+      "frameWidth": 8,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        25
+      ]
+    },
+    "low-wall": {
+      "file": "sprites/low-wall.png",
+      "frameWidth": 32,
+      "frameHeight": 20,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        12
+      ]
+    },
+    "mossback": {
+      "file": "sprites/mossback.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
     "font": {
       "file": "sprites/font.png",
       "frameWidth": 4,

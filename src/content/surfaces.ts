@@ -28,11 +28,32 @@ export interface SurfaceDef {
   readonly sinks?: boolean;
   /** Sprite ID drawn over the tile, above the ball (see-through water surface). One frame per tile shape. */
   readonly overlaySprite?: string;
+  /**
+   * What the tile does to a ball on it (Milestone 3). The strengths are tuning
+   * numbers in src/content/tuning.ts ("hazards"); damage is in src/content/rules.ts.
+   * - push: speeds the ball up hard along the tile's direction (booster).
+   * - carry: moves the ball along the tile's direction at a set speed (conveyor).
+   * - launch: throws the ball upward (spring).
+   * - damage: hurts the ball on contact (spikes).
+   * - warp: moves the ball to the other tile with the same link (warp pair).
+   */
+  readonly effect?: 'push' | 'carry' | 'launch' | 'damage' | 'warp';
 }
 
 /** Directions along the grid axes, named by where they point on screen. */
 export const DIRECTIONS = ['ne', 'se', 'sw', 'nw'] as const;
 export type Direction = (typeof DIRECTIONS)[number];
+
+/**
+ * Each direction as a unit step on the grid. Grid x runs to the lower right of
+ * the screen (se) and grid y to the lower left (sw).
+ */
+export const DIRECTION_VECTORS: Readonly<Record<Direction, readonly [number, number]>> = {
+  ne: [0, -1],
+  se: [1, 0],
+  sw: [0, 1],
+  nw: [-1, 0],
+};
 
 const defs: readonly SurfaceDef[] = [
   { id: 'grass', name: 'Grass', tileSprite: 'tile-grass', faceSprite: 'face-earth', canHoldBall: true },
@@ -41,11 +62,11 @@ const defs: readonly SurfaceDef[] = [
   { id: 'ice', name: 'Ice', tileSprite: 'tile-ice', faceSprite: 'face-ice', canHoldBall: true },
   { id: 'water', name: 'Water', tileSprite: 'tile-water', faceSprite: 'face-earth', canHoldBall: false, sinks: true, overlaySprite: 'tile-water-surface' },
   { id: 'bumper', name: 'Bumper', tileSprite: 'tile-bumper', faceSprite: 'face-bumper', canHoldBall: false },
-  { id: 'booster', name: 'Booster', tileSprite: 'tile-booster', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsDir: true },
-  { id: 'conveyor', name: 'Conveyor', tileSprite: 'tile-conveyor', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsDir: true },
-  { id: 'spring', name: 'Spring', tileSprite: 'tile-spring', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true },
-  { id: 'spikes', name: 'Spikes', tileSprite: 'tile-spikes', faceSprite: 'face-metal', canHoldBall: false },
-  { id: 'warp', name: 'Warp', tileSprite: 'tile-warp', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsLink: true },
+  { id: 'booster', name: 'Booster', tileSprite: 'tile-booster', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsDir: true, effect: 'push' },
+  { id: 'conveyor', name: 'Conveyor', tileSprite: 'tile-conveyor', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsDir: true, effect: 'carry' },
+  { id: 'spring', name: 'Spring', tileSprite: 'tile-spring', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, effect: 'launch' },
+  { id: 'spikes', name: 'Spikes', tileSprite: 'tile-spikes', faceSprite: 'face-metal', canHoldBall: false, effect: 'damage' },
+  { id: 'warp', name: 'Warp', tileSprite: 'tile-warp', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsLink: true, effect: 'warp' },
 ];
 
 export const SURFACES: ReadonlyMap<string, SurfaceDef> = new Map(defs.map((d) => [d.id, d]));

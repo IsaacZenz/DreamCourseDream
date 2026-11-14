@@ -15,7 +15,8 @@
  *     ],
  *     "start": [1, 1],
  *     "exit": [2, 1],
- *     "quota": 0
+ *     "quota": 0,
+ *     "objects": [ { "id": "mossback", "at": [1, 0] }, { "id": "rock", "at": [0, 1] } ]
  *   }
  *
  * Each string in "tiles" is one grid row (grid y), with tiles separated by
@@ -23,9 +24,15 @@
  * digit (a flat tile at that height) or four digits (the corner heights nw, ne,
  * se, sw; see tileShape.ts). A single "." is an empty spot: out of bounds.
  *
+ * "objects" is optional: things placed on tiles, by id from
+ * src/content/objects.ts (pickups, blockers, enemies). At most one per tile,
+ * never on the start or the exit. The stars on offer (enemy star values plus
+ * placed yellow stars) must be at least the quota.
+ *
  * `parseCourse` checks everything and returns a list of readable errors
  * instead of a course if anything is wrong.
  */
+import { OBJECTS } from '../content/objects.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { minCorner, shapeOf, type Corners, type ShapeId } from './tileShape.ts';
 
@@ -50,6 +57,13 @@ export interface GridPoint {
   readonly y: number;
 }
 
+export interface CourseObject {
+  /** Object definition id in src/content/objects.ts. */
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+}
+
 export interface Course {
   readonly name: string;
   readonly width: number;
@@ -59,6 +73,7 @@ export interface Course {
   readonly start: GridPoint;
   readonly exit: GridPoint;
   readonly quota: number;
+  readonly objects: readonly CourseObject[];
 }
 
 export type ParseResult = { ok: true; course: Course } | { ok: false; errors: string[] };
@@ -74,7 +89,7 @@ interface LegendEntry {
   link?: string;
 }
 
-const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota'];
+const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects'];
 const TILE_TOKEN = /^(.)(\d|\d{4})$/u;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -200,7 +215,7 @@ export function parseCourse(raw: unknown): ParseResult {
     if (n !== 2) errors.push(`Warp link "${link}" is used by ${n} tile(s); it must be used by exactly 2.`);
   }
 
-  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number } as const;
+  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number, objects: [] as CourseObject[] };
   const checkSpot = (p: GridPoint | null, name: string) => {
     if (!p) return;
     const t = tileAt({ ...course, start: p, exit: p }, p.x, p.y);
@@ -213,6 +228,63 @@ export function parseCourse(raw: unknown): ParseResult {
   checkSpot(exit, 'exit');
   if (start && exit && start.x === exit.x && start.y === exit.y) errors.push('"start" and "exit" must be different tiles.');
 
+
+  const objects = parseObjects(raw.objects, course, errors);
+  for (const o of objects) {
+    if (start && o.x === start.x && o.y === start.y) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the start tile.`);
+    if (exit && o.x === exit.x && o.y === exit.y) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the exit tile.`);
+  }
+  const quota = course.quota;
+  if (Number.isInteger(quota)) {
+    const onOffer = starsOnOffer(objects);
+    if (onOffer < quota) errors.push(`"quota" is ${quota}, but the course only offers ${onOffer} star(s) (enemies plus placed yellow stars).`);
+  }
+
   if (errors.length || !start || !exit) return { ok: false, errors };
-  return { ok: true, course: { ...course, start, exit } };
+  return { ok: true, course: { ...course, start, exit, objects } };
+}
+
+/** Yellow stars a course can give: enemy star values plus placed yellow stars. */
+export function starsOnOffer(objects: readonly CourseObject[]): number {
+  let n = 0;
+  for (const o of objects) {
+    const def = OBJECTS.get(o.id);
+    if (def?.kind === 'enemy') n += def.starValue;
+    else if (def?.kind === 'pickup' && def.effect === 'yellowStar') n += 1;
+  }
+  return n;
+}
+
+function parseObjects(raw: unknown, course: Omit<Course, 'start' | 'exit'>, errors: string[]): CourseObject[] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) {
+    errors.push('"objects" must be a list of { "id": ..., "at": [x, y] }.');
+    return [];
+  }
+  const out: CourseObject[] = [];
+  const used = new Set<string>();
+  raw.forEach((entry: unknown, i) => {
+    const where = `objects[${i}]`;
+    if (!isRecord(entry) || typeof entry.id !== 'string') {
+      errors.push(`${where}: must be { "id": ..., "at": [x, y] }.`);
+      return;
+    }
+    const extra = Object.keys(entry).filter((k) => !['id', 'at'].includes(k));
+    if (extra.length) errors.push(`${where}: unknown field(s) ${extra.join(', ')}.`);
+    if (!OBJECTS.has(entry.id)) {
+      errors.push(`${where}: unknown object "${entry.id}". Known: ${[...OBJECTS.keys()].join(', ')}.`);
+      return;
+    }
+    const p = parsePoint(entry.at, `${where}.at`, errors);
+    if (!p) return;
+    if (!tileAt({ ...course, start: p, exit: p }, p.x, p.y)) {
+      errors.push(`${where}: "${entry.id}" at (${p.x}, ${p.y}) is not on a tile.`);
+      return;
+    }
+    const key = `${p.x},${p.y}`;
+    if (used.has(key)) errors.push(`${where}: tile (${p.x}, ${p.y}) already has an object. One per tile.`);
+    used.add(key);
+    out.push({ id: entry.id, x: p.x, y: p.y });
+  });
+  return out;
 }
