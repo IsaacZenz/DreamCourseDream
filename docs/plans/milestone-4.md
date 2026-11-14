@@ -162,7 +162,8 @@ How it plays: like a second golf ball aimed at you. You can use walls, slopes an
 | Health / stars / cost | 1 / 1 / 3 |
 | Underground | Only the molehill shows: a low mound (height 0.15) the ball rolls over without bouncing. The Mole cannot be hit while underground |
 | Trigger | The ball **rolling** over the molehill: touching the ground within 0.35 tiles of its centre. A ball flying over it does not count. Response: immediate. Fires again each time it is underground and you roll over it |
-| Launch | Out of the hill in a random direction (from the seed, so the same seed and shots give the same direction) at 8 tiles/s, then rolls with the same rules as the Lunger: terrain, edges and water bounce it back, spikes hurt it |
+| Wait and launch (owner, 2026-11-14, after the first test build) | The hill rumbles for **0.5 s** after being rolled over, then the Mole shoots out **up into the air** (7 tiles/s up, 4 tiles/s sideways) in a random direction. For its first **0.3 s** out of the ground it cannot touch the ball, so rolling over it never hurts at once |
+| Launch (first version, replaced) | Out of the hill in a random direction (from the seed, so the same seed and shots give the same direction) at 8 tiles/s, then rolls with the same rules as the Lunger: terrain, edges and water bounce it back, spikes hurt it |
 | Moving | Touching the ball costs the ball 1 damage, and the two deflect off each other (section 1.2a). Your ball and cannot hurt it while it moves (owner, 2026-11-14) |
 | Thunder cloud | Same as the Lunger: thrown in a random direction, no damage |
 | Stopped | Harmless and can be hit. One hit defeats it: star secured, flag pole where it stood |

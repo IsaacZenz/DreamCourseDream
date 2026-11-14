@@ -152,7 +152,19 @@ export type Behaviour =
    * The Mole (owner, 2026-11-14): hidden under a hill, shoots out in a random
    * direction at `launchSpeed` when rolled over, stays up for `upShots` shots.
    */
-  | { readonly kind: 'burrow'; readonly launchSpeed: number; readonly upShots: number; readonly hitWhileMoving: boolean };
+  | {
+      readonly kind: 'burrow';
+      /** Sideways speed it shoots out with, tiles per second. */
+      readonly launchSpeed: number;
+      /** Upward speed it shoots out with (owner, 2026-11-14: more up into the air). */
+      readonly launchUp: number;
+      /** Seconds between the ball rolling over the hill and the Mole popping out (owner, 2026-11-14). */
+      readonly delay: number;
+      /** Seconds after popping out in which it cannot hurt the ball. */
+      readonly grace: number;
+      readonly upShots: number;
+      readonly hitWhileMoving: boolean;
+    };
 
 /**
  * When touching the ball hurts it (the enemy's attack damage).
@@ -381,7 +393,7 @@ const defs: readonly ObjectDef[] = [
     passByGroundOnly: true,
     ...ROUND_ENEMY,
     triggers: { hit: 'none', rest: 'none', passBy: 'immediate' },
-    behaviour: { kind: 'burrow', launchSpeed: 8, upShots: 1, hitWhileMoving: false },
+    behaviour: { kind: 'burrow', launchSpeed: 4, launchUp: 7, delay: 0.5, grace: 0.3, upShots: 1, hitWhileMoving: false },
     contact: 'moving',
     grantsAbility: null,
     cost: 3,

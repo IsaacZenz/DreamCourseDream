@@ -147,7 +147,7 @@ Early courses use mostly tiers 1 and 2. Later regions shift the mix upward (sect
 | Trundler | Patroller | 2 | Rolls along its path. Contact: 1 damage and knock-back. Keeps to its path when it runs into the ball, even a resting one (owner, 2026-11-14). | 4 |
 | Spitter | Sentinel | 2 | When activated, marks the ball's spot each turn and lobs a seed at it the next turn. The seed has ball physics and keeps bouncing along its line after landing (owner, 2026-11-14). | 4 |
 | Lunger | Sentinel | 2 | Rest trigger activates it; pass-by trigger makes it launch at once. Each enemy turn it launches itself at the ball and rolls like the golf ball (owner, 2026-11-14): terrain affects it, it bounces back from edges and water, spikes hurt it, it hurts the ball only while moving. | 4 |
-| Mole | Sentinel | 2 | Owner, 2026-11-14. Hidden under a molehill. Rolling directly over the hill makes it shoot out in a random direction and roll to a stop. Hurts the ball only while moving. Stays up for one player turn, then burrows. | 4 |
+| Mole | Sentinel | 2 | Owner, 2026-11-14. Hidden under a molehill. Rolling directly over the hill sets it off: the hill rumbles for a moment (0.5 s), then it shoots up into the air in a random direction and rolls to a stop. It cannot hurt the ball the instant it pops out (0.3 s grace). Hurts the ball only while moving. Stays up for one player turn, then burrows. | 4 |
 | Ability carriers | Sentinel | 1 | One Mossback variant per starter ability; grants it on defeat. | 4 |
 
 **Owner, 2026-11-14:** for now every enemy is worth 1 star, whatever its tier (overrides the Stars column of the tier table until the Milestone 8 balance pass).

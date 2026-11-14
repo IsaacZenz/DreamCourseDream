@@ -18,13 +18,25 @@ const CSS = `
 #tuning-panel button { font: inherit; margin: 0 4px 4px 0; padding: 3px 8px; background: #2a2a48; color: #fff;
   border: 1px solid #5a5a8a; cursor: pointer; }
 #tuning-panel p { margin: 4px 0; color: #a0a8c0; }
+#tuning-panel select { font: inherit; width: 100%; margin: 2px 0 4px; background: #2a2a48; color: #fff; border: 1px solid #5a5a8a; }
+#tuning-panel .bench { border: 1px solid #3a3a5a; padding: 6px; margin: 6px 0 4px; }
 `;
+
+/** The test bench section (owner request, 2026-11-14): pick what stands at the centre of a blank course. */
+export interface BenchOptions {
+  readonly choices: readonly { id: string; label: string }[];
+  readonly abilities: readonly { id: string; label: string }[];
+  readonly current: { object: string; ability: string };
+  /** Load the bench with this choice. */
+  readonly onLoad: (object: string, ability: string) => void;
+}
 
 export class TuningPanel {
   private readonly root: HTMLDivElement;
   private readonly rows = new Map<string, { input: HTMLInputElement; value: HTMLSpanElement; name: HTMLSpanElement }>();
 
   private readonly tuning: Tuning;
+  private benchBox: HTMLDivElement | null = null;
 
   constructor(tuning: Tuning) {
     this.tuning = tuning;
@@ -73,6 +85,10 @@ export class TuningPanel {
     });
     head.append(copy, reset);
     this.root.appendChild(head);
+    this.benchBox = document.createElement('div');
+    this.benchBox.className = 'bench';
+    this.benchBox.style.display = 'none';
+    this.root.appendChild(this.benchBox);
 
     let group = '';
     for (const c of TUNING_CONTROLS) {
@@ -102,6 +118,43 @@ export class TuningPanel {
       this.rows.set(c.key, { input, value, name });
     }
     this.refresh();
+  }
+
+  /** Show the test bench controls. Called by the game once it knows what can be chosen. */
+  setBench(opts: BenchOptions): void {
+    const box = this.benchBox;
+    if (!box) return;
+    box.replaceChildren();
+    box.style.display = 'block';
+    const h = document.createElement('h3');
+    h.textContent = 'Test bench (key 5)';
+    const hint = document.createElement('p');
+    hint.textContent = 'A blank course with one thing at the centre. Pick it, then Load. Moving things cross the centre.';
+    const select = (id: string, items: readonly { id: string; label: string }[], value: string) => {
+      const el = document.createElement('select');
+      el.id = id;
+      for (const it of items) {
+        const o = document.createElement('option');
+        o.value = it.id;
+        o.textContent = it.label;
+        el.appendChild(o);
+      }
+      el.value = value;
+      return el;
+    };
+    const objLabel = document.createElement('p');
+    objLabel.textContent = 'At the centre:';
+    const obj = select('bench-object', opts.choices, opts.current.object);
+    const abLabel = document.createElement('p');
+    abLabel.textContent = 'Start with ability:';
+    const ab = select('bench-ability', opts.abilities, opts.current.ability);
+    const load = this.button('Load test bench', () => {
+      // Give the keys back to the game.
+      obj.blur();
+      ab.blur();
+      opts.onLoad(obj.value, ab.value);
+    });
+    box.append(h, hint, objLabel, obj, abLabel, ab, load);
   }
 
   private button(text: string, onClick: () => void): HTMLButtonElement {

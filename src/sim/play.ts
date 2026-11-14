@@ -115,6 +115,10 @@ export interface EnemyState {
   lobTarget: { x: number; y: number } | null;
   /** Mole: underground under its hill. */
   burrowed: boolean;
+  /** Mole: clock step at which it pops out (it was set off and is rumbling), or null. */
+  popAt: number | null;
+  /** Clock step it last launched, for the Mole's grace time. */
+  launchedAt: number;
   surfacedShot: number;
   /** The tile it was last on, so a flag is lowered only when it enters that tile. */
   tileKey: string;
@@ -224,6 +228,7 @@ export type PlayEvent =
   | { kind: 'launch'; enemy: string }
   | { kind: 'surface'; enemy: string }
   | { kind: 'burrow'; enemy: string }
+  | { kind: 'rumble'; enemy: string }
   | { kind: 'stunned'; target: string }
   | { kind: 'skip'; enemy: string }
   | { kind: 'flagDown'; flag: string }
@@ -450,6 +455,8 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
         vy: 0,
         lobTarget: null,
         burrowed: def.behaviour.kind === 'burrow',
+        popAt: null,
+        launchedAt: -Infinity,
         surfacedShot: 0,
         tileKey: tileKeyOf(cx, cy),
       };
@@ -559,7 +566,7 @@ function bodyWorld(play: PlayState, self: string): ShotWorld {
 
 /** The ball is still and nothing it set off is still rolling. */
 function settled(play: PlayState): boolean {
-  return !play.shot && play.seeds.length === 0 && play.enemies.every((e) => !e.body);
+  return !play.shot && play.seeds.length === 0 && play.enemies.every((e) => !e.body && e.popAt === null);
 }
 
 export function canShoot(play: PlayState): boolean {
@@ -605,6 +612,7 @@ export function tick(play: PlayState, input: TickInput = {}): void {
   if (play.status !== 'playing') return;
   play.clock++;
   moveThings(play);
+  popMoles(play);
   play.world.obstacles = obstaclesOf(play);
   knockRestingBall(play);
   if (play.shot) stepBall(play, input);
@@ -997,24 +1005,37 @@ function act(play: PlayState, e: EnemyState, now: boolean): void {
     launchEnemy(play, e, (dx / d) * speed, (dy / d) * speed);
     play.log.push({ kind: 'launch', enemy: e.uid });
   } else if (bh.kind === 'burrow') {
-    if (!e.burrowed) return;
+    // Owner, 2026-11-14: it waits a moment (the hill rumbles), then shoots up out of the ground.
+    if (!e.burrowed || e.popAt !== null) return;
+    e.popAt = play.clock + steps(bh.delay);
+    play.log.push({ kind: 'rumble', enemy: e.uid });
+  }
+  void now;
+}
+
+/** Moles whose wait is over shoot out of the ground: up in the air and off in a random direction. */
+function popMoles(play: PlayState): void {
+  for (const e of play.enemies) {
+    const bh = e.def.behaviour;
+    if (bh.kind !== 'burrow' || e.popAt === null || play.clock < e.popAt || e.defeated) continue;
+    e.popAt = null;
     const a = play.rng.float(0, Math.PI * 2);
     e.burrowed = false;
     e.surfacedShot = play.shotNumber;
     e.tileKey = '';
-    launchEnemy(play, e, Math.cos(a) * bh.launchSpeed, Math.sin(a) * bh.launchSpeed);
+    launchEnemy(play, e, Math.cos(a) * bh.launchSpeed, Math.sin(a) * bh.launchSpeed, bh.launchUp);
     play.log.push({ kind: 'surface', enemy: e.uid });
   }
-  void now;
 }
 
 function enemyRadius(e: EnemyState): number {
   return e.def.shape.kind === 'round' ? e.def.shape.r : Math.max(e.def.shape.hx, e.def.shape.hy);
 }
 
-function launchEnemy(play: PlayState, e: EnemyState, vx: number, vy: number): void {
+function launchEnemy(play: PlayState, e: EnemyState, vx: number, vy: number, vz = 0): void {
   const from: BallState = { x: e.x, y: e.y, z: e.z, vx: 0, vy: 0, vz: 0, grounded: true };
-  e.body = startBody(play.tuning, from, { vx, vy, vz: 0 }, { radius: enemyRadius(e), edgeWalls: true, waterWalls: true });
+  e.body = startBody(play.tuning, from, { vx, vy, vz }, { radius: enemyRadius(e), edgeWalls: true, waterWalls: true });
+  e.launchedAt = play.clock;
   e.bodySpiked = false;
   e.bodyZapped = [];
   play.world.obstacles = obstaclesOf(play);
@@ -1138,7 +1159,13 @@ function stepBodies(play: PlayState): void {
  */
 function meetBodies(play: PlayState): void {
   const things: { id: string; s: ShotState; enemy?: EnemyState; seed?: SeedState }[] = [];
-  for (const e of play.enemies) if (e.body) things.push({ id: e.uid, s: e.body, enemy: e });
+  for (const e of play.enemies) {
+    if (!e.body) continue;
+    // A Mole that has only just popped out cannot touch the ball yet (owner, 2026-11-14: no instant hit).
+    const bh = e.def.behaviour;
+    if (bh.kind === 'burrow' && play.clock - e.launchedAt < steps(bh.grace)) continue;
+    things.push({ id: e.uid, s: e.body, enemy: e });
+  }
   for (const sd of play.seeds) things.push({ id: sd.uid, s: sd.shot, seed: sd });
   const rb = play.tuning.ballRadius;
   const still: string[] = [];

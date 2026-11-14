@@ -422,6 +422,45 @@ describe('Mole', () => {
     expect(kinds(flew)).not.toContain('surface');
   });
 
+  it('waits a moment after being rolled over, then shoots up into the air (owner, 2026-11-14)', () => {
+    const p = play(field(12, 3, { objects: [{ id: 'mole', at: [3, 2] }] }));
+    const e = p.enemies[0]!;
+    p.ball = { ...p.ball, x: 1.5, y: 2.5 };
+    takeShot(p, shot({ power: 0.5 }));
+    let rumbleAt = -1;
+    let surfaceAt = -1;
+    let topZ = 0;
+    for (let i = 0; i < 3000 && surfaceAt < 0 || (e.body && i < 6000); i++) {
+      tick(p);
+      for (const ev of drainLog(p)) {
+        if (ev.kind === 'rumble') rumbleAt = p.clock;
+        if (ev.kind === 'surface') surfaceAt = p.clock;
+      }
+      if (e.body) topZ = Math.max(topZ, e.body.ball.z - 0.5);
+    }
+    expect(rumbleAt).toBeGreaterThan(0);
+    expect(surfaceAt - rumbleAt).toBe(60); // 0.5 s at 120 steps per second
+    expect(topZ).toBeGreaterThan(0.9);
+  });
+
+  it('does not hurt the ball the moment it pops out, even if the ball is right on the hill', () => {
+    const p = play(field(12, 3, { objects: [{ id: 'mole', at: [3, 2] }] }));
+    p.ball = { ...p.ball, x: 3.1, y: 2.5 };
+    // A tiny shot that stops on the hill.
+    takeShot(p, shot({ power: 0.06 }));
+    let hurtEarly = false;
+    let surfaced = -1;
+    for (let i = 0; i < 4000; i++) {
+      tick(p);
+      for (const ev of drainLog(p)) {
+        if (ev.kind === 'surface') surfaced = p.clock;
+        if (ev.kind === 'damage' && surfaced >= 0 && p.clock - surfaced < 36) hurtEarly = true;
+      }
+    }
+    expect(surfaced).toBeGreaterThan(0);
+    expect(hurtEarly).toBe(false);
+  });
+
   it('the same seed gives the same direction', () => {
     const run = (seed: string) => {
       const p = play(field(12, 5, { objects: [{ id: 'mole', at: [5, 3] }] }), seed);
@@ -898,5 +937,19 @@ describe('ballNow', () => {
   it('is the resting ball when nothing moves', () => {
     const p = play(field(4, 3));
     expect(ballNow(p)).toBe(p.ball);
+  });
+});
+
+describe('test bench (owner request, 2026-11-14)', () => {
+  it('every choice builds a valid course with that thing at or crossing the centre', async () => {
+    const { benchChoices, benchCourse } = await import('../src/content/courses/testBench');
+    for (const c of benchChoices()) {
+      const r = parseCourse(benchCourse(c.id));
+      expect(r.ok, `${c.id}: ${r.ok ? '' : r.errors.join('; ')}`).toBe(true);
+      if (r.ok && c.id) {
+        const p = createPlay(r.course, T, { seed: 'bench' });
+        expect(p.course.objects).toHaveLength(1);
+      }
+    }
   });
 });

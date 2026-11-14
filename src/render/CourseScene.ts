@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { TEST_COURSES } from '../content/courses';
+import { BENCH_ID, benchChoices, benchCourse } from '../content/courses/testBench';
 import { SURFACES } from '../content/surfaces';
 import { parseCourse, type Course } from '../sim/course';
 import { STEP_HEIGHT, type Tuning } from '../content/tuning';
@@ -69,6 +70,10 @@ const PLAN_RATE = 0.6;
 /** Shared by every course and kept across restarts, so live tuning sticks. */
 let tuning: Tuning | null = null;
 let panel: TuningPanel | null = null;
+
+/** The test bench: what stands at the centre, and the ability to start with. Kept across restarts. */
+const bench = { object: 'mossback', ability: '' };
+let benchShown = false;
 
 /** Shot settings the player has chosen. Kept across course switches. */
 const settings = { type: 'ground' as ShotType, top: 0, side: 0, quickShot: false, help: true };
@@ -183,7 +188,7 @@ export class CourseScene extends Phaser.Scene {
 
   create(): void {
     const file = TEST_COURSES[this.courseIndex]!;
-    const parsed = parseCourse(file.data);
+    const parsed = parseCourse(file.id === BENCH_ID ? benchCourse(bench.object) : file.data);
     this.setupKeys();
     if (!parsed.ok) {
       this.course = null;
@@ -202,6 +207,22 @@ export class CourseScene extends Phaser.Scene {
     }
 
     this.play = createPlay(course, tuning, { seed: this.seed });
+    if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
+    // The first visit to the bench opens the panel, so the choices are easy to find.
+    if (file.id === BENCH_ID && !benchShown) {
+      benchShown = true;
+      panel?.toggle(true);
+    }
+    panel?.setBench({
+      choices: benchChoices(),
+      abilities: [{ id: '', label: '(none)' }, ...ABILITY_IDS.map((id) => ({ id, label: ABILITIES.get(id)!.name }))],
+      current: bench,
+      onLoad: (object, ability) => {
+        bench.object = object;
+        bench.ability = ability;
+        this.switchCourse(TEST_COURSES.findIndex((c) => c.id === BENCH_ID));
+      },
+    });
     this.phase = 'plan';
     this.messageQueue = [];
     this.message = null;
@@ -292,6 +313,7 @@ export class CourseScene extends Phaser.Scene {
     kb.on('keydown-TWO', () => this.switchCourse(1));
     kb.on('keydown-THREE', () => this.switchCourse(2));
     kb.on('keydown-FOUR', () => this.switchCourse(3));
+    kb.on('keydown-FIVE', () => this.switchCourse(4));
     kb.on('keydown-N', () => this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length));
 
     // Drag with the right or middle mouse button to pan. The left button is for shots.
@@ -393,7 +415,9 @@ export class CourseScene extends Phaser.Scene {
     for (const e of play.enemies) {
       if (e.defeated) continue;
       if (e.burrowed) {
-        show(e.uid, 'molehill', e.x, e.y, e.z, { depth: tileDepth(Math.floor(e.x), Math.floor(e.y), 'shadow') });
+        // Set off: the hill shakes for the moment before the Mole pops out.
+        const shake = e.popAt !== null ? (Math.floor(now / 40) % 2) * 2 : 0;
+        show(e.uid, 'molehill', e.x, e.y, e.z, { depth: tileDepth(Math.floor(e.x), Math.floor(e.y), 'shadow'), lift: shake });
         continue;
       }
       // In-game cue: a sentinel's eyes flash (it blinks) when the ball comes near its inner radius.
@@ -742,6 +766,9 @@ export class CourseScene extends Phaser.Scene {
         case 'break':
           this.queueMessage(e.wild ? 'CRATE BROKEN! A WILD!' : 'CRATE BROKEN!', GOOD);
           break;
+        case 'rumble':
+          this.showMessage('THE GROUND RUMBLES...', GUIDE_WARN);
+          break;
         case 'surface':
           this.queueMessage('A MOLE!', GUIDE_WARN);
           break;
@@ -1013,7 +1040,7 @@ export class CourseScene extends Phaser.Scene {
     const lines = [
       'MOUSE: PULL BACK TO PLAN, HOLD TO CHARGE  KEYS: ARROWS/WASD AIM+POWER, HOLD SPACE TO CHARGE',
       'T: GROUND/LOFT  Z/X: SPIN  Q/E: CURVE  SPACE IN FLIGHT: BOOST  F: ABILITY  ESC: RE-PLAN',
-      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  1-4/N: COURSE  R: RESTART  G: DEBUG  U: TUNING  H: HELP',
+      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  1-5/N: COURSE  R: RESTART  G: DEBUG  U: TUNING+TEST BENCH  H: HELP',
     ];
     this.helpHud = lines.map((l, i) =>
       pixelText(this, manifest, 2, VIEW_HEIGHT - 7 * (lines.length - i) - 1, l, { color: UI_DIM, background: UI_BG })
