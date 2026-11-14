@@ -98,7 +98,8 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 - The aim guide runs the real simulation. While aiming it shows the path at full power; while charging, at the power being charged. It stops after 4 tiles of travel (the "Guide length" stat will scale this from Milestone 3).
 - The last resting spot is only updated when the ball rests on a surface that can hold it (not water, boosters and other pads).
 - Until Milestone 3, hazard surfaces (booster, conveyor, spring, spikes, warp) behave like grass. Bumpers already bounce the ball back faster, because that is just their wall-bounce number.
-- Power input: the sweeping meter is the default; drag-power (pull back like a slingshot) is behind the P key so the owner can compare (Open question 4).
+- **Decided (owner, 2026-11-14):** the real game uses the sweeping power meter only. Drag-power (pull back like a slingshot, P key) stays in the test build as a testing aid and follows the same power rules, including the perfect shot. Remove or hide it before release.
+- **Decided (owner, 2026-11-14):** shot speed across the whole bar is 20% above the first tuning (ground top 13.2, lofted top 12 tiles per second). A **perfect shot**, released in the top 3% of the bar (`perfectWindow`, Default), launches 35% faster than the first tuning's top, which is 12.5% above the new top (`perfectBonus` 1.125). The meter shows the perfect zone at its top and the game says "PERFECT!".
 
 ## 6. Shots and health
 
@@ -248,7 +249,7 @@ Opus: use the default and say that you did. The owner can change any of these at
 | 1 | Boss countdown length, and whether it varies by region | 5, same for every region, stored as a tuning number |
 | 2 | Reward for fighting the boss early | +1 blue star per countdown step remaining |
 | 3 | Does recovering refill all shots or only some? | All |
-| 4 | Power input: sweeping meter, or drag distance? | Sweeping meter; try both in Milestone 2 and let the owner pick |
+| 4 | ~~Power input: sweeping meter, or drag distance?~~ | Answered 2026-11-14: sweeping meter (see section 5) |
 | 5 | How many uses does an ability have? | Unlimited uses, one per shot, until replaced |
 | 6 | Can gear be sold? | No. Swapping is covered in FEATURES.md section 8 |
 | 7 | Is there healing outside shops and caches? | Bosses heal fully; nothing else |

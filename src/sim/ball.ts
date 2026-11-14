@@ -42,6 +42,8 @@ export interface ShotCommand {
   readonly topSpin: number;
   /** -1 (curve left) to 1 (curve right), as seen travelling along the shot. */
   readonly sideSpin: number;
+  /** Released at the very top of the meter: the shot gets the perfect bonus. */
+  readonly perfect?: boolean;
 }
 
 /** What the player does during one step of a shot. */
@@ -133,16 +135,17 @@ export function ballAtTile(course: Course, tx: number, ty: number): BallState {
 
 export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand): ShotState {
   const power = Math.min(1, Math.max(tuning.minPower, cmd.power));
+  const bonus = cmd.perfect ? tuning.perfectBonus : 1;
   const dirX = Math.cos(cmd.angle);
   const dirY = Math.sin(cmd.angle);
   const ball: BallState = { ...from, vx: 0, vy: 0, vz: 0 };
   if (cmd.type === 'ground') {
-    const speed = power * tuning.groundMaxSpeed;
+    const speed = power * bonus * tuning.groundMaxSpeed;
     ball.vx = dirX * speed;
     ball.vy = dirY * speed;
     ball.grounded = true;
   } else {
-    const speed = power * tuning.loftMaxSpeed;
+    const speed = power * bonus * tuning.loftMaxSpeed;
     const a = (tuning.loftAngle * Math.PI) / 180;
     ball.vx = dirX * speed * Math.cos(a);
     ball.vy = dirY * speed * Math.cos(a);

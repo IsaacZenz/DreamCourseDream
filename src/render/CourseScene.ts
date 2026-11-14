@@ -336,8 +336,23 @@ export class CourseScene extends Phaser.Scene {
     this.power = 0;
   }
 
+  /**
+   * A release in the top `perfectWindow` of the bar. Drag mode (a testing aid
+   * only; the real game is meter-only) uses the same rule.
+   */
+  private isPerfect(power: number): boolean {
+    return power >= 1 - tuning!.perfectWindow;
+  }
+
   private command(power: number) {
-    return { angle: this.aim, power, type: settings.type, topSpin: spinValue(settings.top), sideSpin: spinValue(settings.side) };
+    return {
+      angle: this.aim,
+      power,
+      type: settings.type,
+      topSpin: spinValue(settings.top),
+      sideSpin: spinValue(settings.side),
+      perfect: this.isPerfect(power),
+    };
   }
 
   private shoot(): void {
@@ -347,6 +362,7 @@ export class CourseScene extends Phaser.Scene {
     this.boostQueued = false;
     this.phase = 'flight';
     this.shotsTaken++;
+    if (this.shot.cmd.perfect) this.showMessage('PERFECT!', 0xf8e048);
     this.guide.clear();
     this.drawShotHud();
   }
@@ -454,8 +470,11 @@ export class CourseScene extends Phaser.Scene {
     m.fillRect(x - 1, y - 1, 8, h + 2);
     const showing = this.phase === 'charge' || this.phase === 'drag' ? this.power : this.shot ? this.shot.cmd.power : 0;
     const fill = Math.round(showing * h);
-    m.fillStyle(showing >= 0.98 ? METER_FULL : METER_FILL, 1);
+    m.fillStyle(this.isPerfect(showing) ? METER_FULL : METER_FILL, 1);
     m.fillRect(x, y + h - fill, 6, fill);
+    // The perfect zone at the top.
+    m.fillStyle(METER_FULL, 0.5);
+    m.fillRect(x, y, 6, Math.max(1, Math.round(h * tuning!.perfectWindow)));
     // Quarter marks.
     m.fillStyle(UI_DIM, 1);
     for (let q = 1; q < 4; q++) m.fillRect(x - 2, y + Math.round((h * q) / 4), 2, 1);

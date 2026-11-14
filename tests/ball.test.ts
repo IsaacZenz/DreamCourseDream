@@ -33,7 +33,9 @@ describe('ball physics', () => {
   it('a ball left alone on flat ground comes to rest where it is', () => {
     const c = box(5);
     const from = ballAtTile(c, 3, 3);
-    const s = simulateShot(c, T, from, shot({ power: 0 }));
+    const still = cloneTuning(T);
+    still.minPower = 0; // no push at all
+    const s = simulateShot(c, still, from, shot({ power: 0 }));
     expect(s.outcome).toBe('rest');
     expect(s.ball.x).toBeCloseTo(3.5, 1);
     expect(s.ball.y).toBeCloseTo(3.5, 1);
@@ -186,6 +188,25 @@ describe('ball physics', () => {
       expect(s.ball.y).toBe(guide[i]!.y);
       expect(s.ball.z).toBe(guide[i]!.z);
     }
+  });
+
+  it('a perfect release launches faster than the top of the bar by perfectBonus', () => {
+    const c = box(5);
+    const from = ballAtTile(c, 1, 1);
+    const top = startShot(T, from, shot({ power: 1 }));
+    const perfect = startShot(T, from, shot({ power: 1, perfect: true }));
+    expect(Math.hypot(perfect.ball.vx, perfect.ball.vy)).toBeCloseTo(Math.hypot(top.ball.vx, top.ball.vy) * T.perfectBonus, 9);
+    // Owner's numbers: the bar's top is 20% above the first tuning, a perfect shot 35% above it.
+    expect(T.groundMaxSpeed).toBeCloseTo(11 * 1.2, 9);
+    expect(T.loftMaxSpeed).toBeCloseTo(10 * 1.2, 9);
+    expect(T.groundMaxSpeed * T.perfectBonus).toBeCloseTo(11 * 1.35, 9);
+    expect(T.loftMaxSpeed * T.perfectBonus).toBeCloseTo(10 * 1.35, 9);
+  });
+
+  it('a perfect lofted shot carries further than a full-bar one', () => {
+    const c = box(30);
+    const go = (perfect: boolean) => simulateShot(c, T, ballAtTile(c, 1, 15), shot({ type: 'lofted', power: 1, perfect })).events.find((e) => e.kind === 'bounce')!.step;
+    expect(go(true)).toBeGreaterThan(go(false));
   });
 
   it('ground heights convert steps to tiles', () => {

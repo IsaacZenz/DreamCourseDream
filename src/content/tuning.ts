@@ -34,6 +34,10 @@ export interface Tuning {
   loftMaxSpeed: number;
   /** Launch angle of a lofted shot, in degrees above the ground. */
   loftAngle: number;
+  /** Releasing the meter this close to the top (0 to 1) is a perfect shot. */
+  perfectWindow: number;
+  /** Speed of a perfect shot, as a multiple of the top of the bar. */
+  perfectBonus: number;
   /** Lowest power the meter can give, 0 to 1. */
   minPower: number;
   /** Seconds for the meter to sweep from empty to full and back. */
@@ -93,8 +97,12 @@ export const DEFAULT_TUNING: Tuning = {
   ballRadius: 0.15,
   drag: 0.25,
 
-  groundMaxSpeed: 11,
-  loftMaxSpeed: 10,
+  // Owner, 2026-11-14: whole bar 20% faster than first tuning (11 and 10), and a
+  // perfect top-of-bar release 35% above the old top (1.35 / 1.2 = 1.125 x the new top).
+  groundMaxSpeed: 13.2,
+  loftMaxSpeed: 12,
+  perfectWindow: 0.03,
+  perfectBonus: 1.125,
   loftAngle: 50,
   minPower: 0.05,
   meterPeriod: 1.6,
@@ -155,6 +163,8 @@ export const TUNING_CONTROLS: readonly TuningControl[] = [
   top('Shot', 'groundMaxSpeed', 2, 30, 0.5),
   top('Shot', 'loftMaxSpeed', 2, 30, 0.5),
   top('Shot', 'loftAngle', 10, 80, 1),
+  top('Shot', 'perfectWindow', 0, 0.2, 0.005),
+  top('Shot', 'perfectBonus', 1, 2, 0.005),
   top('Shot', 'minPower', 0, 0.5, 0.01),
   top('Shot', 'meterPeriod', 0.4, 4, 0.05),
   top('Shot', 'dragFullPx', 20, 200, 1),

@@ -37,7 +37,8 @@ Then open the address it prints (usually http://localhost:5173).
 |---|---|
 | Move the mouse | Aim. The dotted line is the predicted path (yellow dots = in the air). |
 | Hold left mouse button, release | Power meter sweeps up and down; release to shoot. Right-click or Esc cancels. |
-| P | Switch power input: meter, or drag (press, pull back like a slingshot, release) |
+| Hold left mouse button at the top | Release in the red zone at the top of the meter for a PERFECT shot (extra power) |
+| P | Testing only: switch to drag power (press, pull back like a slingshot, release). Same power rules as the meter. The real game is meter-only. |
 | T | Ground shot or lofted shot |
 | X / Z | More topspin / more backspin |
 | E / Q | Curve right / curve left |
