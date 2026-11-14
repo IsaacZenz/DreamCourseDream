@@ -195,3 +195,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Owner decision: the thunder cloud cannot be beaten (an obstacle, not an enemy), and a cloud can be stationary or drift.
 - 2026-11-14 — Milestone 3 done: owner won and lost the test course (on the artifact test build) and signed it off.
 - 2026-11-14 — Owner decision: plan before building. Content milestones (4 to 8) now start with a design sheet the owner signs off; see the note at the top of this file.
+- 2026-11-14 — Milestone 4 design sheet written on branch `milestone-4-enemies-abilities`: `docs/plans/milestone-4.md`. Seven questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
