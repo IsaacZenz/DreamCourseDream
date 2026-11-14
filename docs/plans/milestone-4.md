@@ -270,7 +270,7 @@ All: one slot; **press F during a shot** (question 6), **once per shot**, unlimi
 | Element | None | Fire | None |
 | Works when | Ball in the air or rolling | Ball in the air or rolling | Ball in the air or rolling |
 | Effect | All sideways speed is removed and the ball drops straight down at 12 tiles/s. On landing it does not bounce and stops dead, even on a slope or ice. Normal rules after that (water still sinks it; pads still act) | Sideways speed becomes at least 14 tiles/s in the current direction, for 0.6 s. No curve during the burst. Gravity still applies | Upward speed becomes 6 tiles/s (about 0.9 tiles high); sideways speed kept |
-| Extra rule | Breaks a cracked tile it stops on. **Ground pound:** enemies within 1 tile of where it stops are Stunned (question 2) | During the burst, passes through tier 1 enemies it defeats with no bounce and no speed loss; hits on others are normal hits with the fire element. Pushes past flag poles with no speed loss | Clears thunder clouds, low walls, gates, sliding blocks and rocks |
+| Extra rule | Breaks a cracked tile it stops on. **Ground pound:** enemies within 1 tile of where it stops are Stunned (question 2) | During the burst, passes through tier 1 enemies it defeats with no bounce and no speed loss; hits on others are normal hits with the fire element. Pushes past flag poles with no speed loss | Clears thunder clouds, low walls, sliding blocks and rocks (all 0.5 tall or less). Not a closed gate (1.0) or a tree stump (1.5) |
 | Modifiers while active | None | None | None |
 | Duration | Until it lands | 0.6 s | Instant |
 
