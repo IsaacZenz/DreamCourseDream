@@ -292,6 +292,23 @@ The ball can still be hurt during a Tornado by enemies, clouds and seeds, with t
 
 ---
 
+## 4b. Keyboard-only controls (owner, 2026-11-14)
+
+**Owner decision:** every mechanic must be playable from the keyboard alone; the mouse is optional. The mouse controls keep working exactly as now. Nothing in the simulation changes: keys produce the same shot commands as the mouse.
+
+| Key | While aiming | While the ball moves |
+|---|---|---|
+| Left / Right (or A / D) | Turn the aim around the ball (hold; Shift for fine turning) | Steer the Tornado, when active |
+| Up / Down (or W / S) | Raise / lower the planned power (the preview) | — |
+| Space | Hold to charge the meter, release to shoot (same meter, perfect zone and auto-launch as the mouse) | Bounce boost |
+| F | — | Use the ability |
+| Esc | Drop the plan / cancel the charge | — |
+| I / J / K / L | Pan the camera (moved here from the arrows and WASD, which now aim) | Pan the camera |
+| C | Centre the camera on the ball | Same |
+| T, X / Z, E / Q, R, Enter, G, H, U, P, 1–4, N | Unchanged | Unchanged |
+
+The aim keys start from the last direction used, so small corrections are quick. The README controls table is updated to match.
+
 ## 5. Display
 
 - **Debug overlay (G):** each sentinel's outer radius (thin ring) and inner radius (dashed ring), patroller and obstacle paths, cloud danger zones, Lob target rings.
@@ -331,6 +348,7 @@ Quota set so you must clear at least two of the three areas. Exact layout drawn 
 - Flag pole: bounce below threshold, push-past above, lofted ball passes over, pole appears only once the ball is clear.
 - Thunder cloud: rolling zapped, high ball safe, once per cloud per shot, same seed same throw direction, no second damage after spikes.
 - Secured crate drops a Wild about 10% of the time over many seeds; the Wild gives a different ability from the one held; same seed gives the same result.
+- Keyboard only: a full course can be played with no mouse input (Playwright test): aim, plan power, charge, perfect shot, auto-launch, spin, shot type, ability, Tornado steering, bounce boost.
 - Each ability's effect, once per shot, replaced on pickup. Hop clears 1.1. Tornado: same seed gives the same weave; never falls while active, falls if it ends over a drop; 1 damage per enemy touched, with cooldown; ends after 1.5 s at half speed.
 - Gate never closes on a ball; crate breaks in 1 hit, secured crate in 2 (with cooldown) and bounces the ball on the first; crate and cracked tile drops.
 - Old course files using `post` are rejected with a message saying it is now `stump` (test courses updated).
@@ -346,24 +364,22 @@ Traits, elements on enemies, weak spots and guarded sides on real enemies, squad
 
 ## 9. Questions for the owner
 
-Questions 2, 4, 5, 6, 7 and 12 each have a default that this sheet already uses. Answer only the ones you want to change.
+All questions are answered.
 
-1. ~~Spitter's projectile~~ — answered, see below.
-2. **What causes Stunned now?** Default: Anchor's ground pound stuns enemies within 1 tile. Alternatives: the thunder cloud zap also stuns the ball (you lose a shot), or nothing causes it yet (built and tested only).
-3. ~~Moving things meeting a resting ball~~ — answered, see below.
-4. **Trundler.** Default: health 2, hitting it without defeating it costs you 1 health. Alternative: health 1, and it only hurts you when it runs into the moving ball.
-5. **Cracked tile.** Default: breaking it releases hidden stars and it becomes normal ground. Alternative: it becomes a hole one step deeper (a new route or a trap). Harder to build.
-6. **Ability key.** Default F (E, Q, Space and others are already used).
-7. **Burner and flag poles.** Default: a Burner burst pushes past poles with no speed loss. Alternative: poles slow it like any fast ball.
-12. **Tree stump size.** Default: same size as the old post (thin, 1.5 tall), so only the look changes. Alternative: a squat, wide stump (radius 0.35, height 0.4) that a lofted shot or Hop can clear, more like a real stump but plays differently from the post you tested.
 Answered by the owner, 2026-11-14 (now written into the sheet above):
 
 1. The Spitter's seed is a lobbed ball that lands on your old spot next turn and keeps bouncing with full physics (section 2.2).
+2. Yes: Anchor's ground pound stuns enemies within 1 tile.
 3. Moving things and the ball deflect off each other; fixed-route things keep going and knock the ball away. New: 0.5 s damage immunity after any hit, replacing once-per-shot (sections 1.2 and 1.2a).
+4. Yes: Trundler has health 2; hitting it without defeating it costs 1 health.
+5. Yes: a broken cracked tile releases hidden stars and becomes normal ground.
+6. F for now. New: every mechanic must work from the keyboard alone (section 4b).
+7. Yes: Burner pushes past flag poles with no speed loss.
 8. The Mole burrows where it stops.
 9. A moving Mole cannot be hit: the ball bounces off and takes the damage.
 10. Thunder clouds zap the Lunger and the Mole, throwing them in a random direction with no damage.
 11. The star counts the moment the enemy dies. New rule added: enemies passing over a flag lower it and take the star away until the ball raises it again (section 3.3).
+12. Yes for now: the stump keeps the post's size. The owner may come up with something better later.
 13. Tornado can be nudged left and right (section 4).
 
 ---

@@ -94,6 +94,7 @@ docs/
 - [ ] Radii visible in the debug overlay; a subtle in-game cue when the ball is about to pass through one
 - [ ] Ability slot, pickup from ability-carrying enemies, activation key
 - [ ] Four abilities: Anchor, Burner, Hop, Tornado (Tornado added by the owner, 2026-11-14)
+- [ ] Keyboard-only controls for every mechanic; mouse optional (owner, 2026-11-14)
 - [ ] Enemy and ability definitions fully in `src/content/`; adding a fourth enemy must need no logic changes
 - [ ] Tests for each trigger and each response mode
 
@@ -151,6 +152,7 @@ docs/
 - [ ] Linked objects (switches, gates, bridges); optional course modifiers
 - [ ] Second gear slot unlocks; extra characters
 - [ ] Three biomes with their own chunk sets
+- [ ] Theme switch after each boss (day, night, jungle, underground, spooky): same objects, different art set through the manifest (owner, 2026-11-14)
 - [ ] More gear and shop variety
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
 - [ ] Resolve the remaining open questions with the owner
@@ -161,6 +163,7 @@ docs/
 
 - [ ] Theme, character and title chosen with the owner
 - [ ] Final pixel art replaces placeholders through the manifest only
+- [ ] Several art variants per theme for each larger advancement (owner, 2026-11-14)
 - [ ] Sound effects and music, original or correctly licensed
 - [ ] An animation and a sound for most actions (owner, 2026-11-14), including a slot-machine wheel for the Wild pickup
 - [ ] Title screen, settings, a short tutorial course, controls help
