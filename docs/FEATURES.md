@@ -67,6 +67,7 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 - **Order of calculation:** hit damage after modifiers → element → position → shield or block → subtract from enemy health.
 - **Contact:** if the enemy survives, the ball bounces off it. If the enemy is defeated, the ball carries on with a small loss of speed. The same enemy cannot be hit again within half a second.
 - **Damage to the ball:** enemy attacks and hazards remove health. ~~After taking damage the ball cannot be damaged again for the rest of that shot.~~ **Owner, 2026-11-14:** after taking any damage the ball is immune for 0.5 seconds, then can be hurt again. A ball knocked around can take several hits.
+- **Owner, 2026-11-14 — only your own action deals damage:** the ball damages an enemy only while it is moving from the player's shot (including abilities used during it). A ball that was standing still and got run into or knocked (by a Trundler, a sliding block, a Lunger, a cloud) does no damage to any enemy it touches and sets off no hit trigger; the enemy's contact effect still applies to the ball. Crates are not enemies, so a knocked ball can still break them.
 - **Owner, 2026-11-14 — moving things and the ball:** free-rolling things (Lunger, Mole, Spitter seed) and the ball deflect off each other. Things on a fixed route (Trundler, sliding block) keep going and knock the ball out of the way, even a resting ball. Details in `docs/plans/milestone-4.md` section 1.2a.
 
 ---

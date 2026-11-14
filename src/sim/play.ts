@@ -845,7 +845,9 @@ function hitStats(play: PlayState, s: ShotState): { base: number; element: Abili
 /** The ball hits an enemy (FEATURES.md section 2). Returns what the ball does next. */
 function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
   if (e.defeated) return 'pass';
-  const counted = play.clock - e.lastHitClock >= steps(RULES.hitCooldown);
+  // Owner, 2026-11-14: the ball only damages an enemy during the player's own action (a shot).
+  // A ball that was knocked while standing still does no damage and sets off no hit trigger.
+  const counted = !play.knocked && play.clock - e.lastHitClock >= steps(RULES.hitCooldown);
   if (counted) {
     e.lastHitClock = play.clock;
     const { base, element } = hitStats(play, s);

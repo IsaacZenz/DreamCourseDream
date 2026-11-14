@@ -513,8 +513,21 @@ describe('Trundler and moving obstacles', () => {
     expect(knocked).toBe(true);
     expect(log).toContainEqual({ kind: 'damage', amount: 1, cause: 'enemy' });
     expect(p.shots).toBe(shots);
+    // Owner, 2026-11-14: a ball standing still does not damage the enemy that runs into it.
+    expect(log.some((e) => e.kind === 'hit')).toBe(false);
+    expect(p.enemies[0]!.health).toBe(2);
     // It is still on its path (y never changes on this path).
     expect(p.enemies[0]!.y).toBeCloseTo(2.5, 5);
+  });
+
+  it('a knocked ball rolling into another enemy does not damage it (only your own shots do)', () => {
+    const p = play(field(12, 3, { objects: [{ id: 'sliding-block', at: [2, 2], path: [[4, 2]] }, { id: 'mossback', at: [7, 2] }] }));
+    p.ball = { ...p.ball, x: 4.2, y: 2.5 };
+    wait(p, 600);
+    const log = drainLog(p);
+    expect(kinds(log)).toContain('knocked');
+    expect(p.enemies[0]!.defeated).toBe(false);
+    expect(log.some((e) => e.kind === 'hit')).toBe(false);
   });
 
   it('a sliding block pushes a resting ball out of the way without damage', () => {

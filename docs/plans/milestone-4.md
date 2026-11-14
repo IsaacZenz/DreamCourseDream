@@ -35,6 +35,7 @@ Patrollers, moving obstacles and drifting clouds keep moving while you aim (DESI
 - **Things on a fixed route** (Trundler, sliding block) keep going on their route and knock the ball out of the way. The ball is pushed off at the mover's speed plus a knock of 5 tiles/s away from it.
 - This can happen to a resting ball, even while you are aiming. The ball then rolls under normal physics until it rests: it can be bounced into more enemies, hazards or water and take several hits on the way (with the 0.5 s immunity between hits). This does **not** use up a shot. Your aim and any meter charge are cancelled; you aim again once the ball rests.
 - A gate still never closes on the ball: it stays open until the ball has left its tile.
+- **Owner, 2026-11-14 (after the first test build):** the ball only damages an enemy during the player's own shot. A ball knocked while standing still (or still rolling from a knock) deals no damage and sets off no hit trigger, but the Trundler and other enemies still hurt it.
 
 ### 1.3 Damage calculation (FEATURES.md section 2, in this order)
 
