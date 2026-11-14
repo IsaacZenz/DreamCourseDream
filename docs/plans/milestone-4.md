@@ -22,9 +22,9 @@ Patrollers, moving obstacles and drifting clouds keep moving while you aim (DESI
 ### 1.2 Turn order (DESIGN.md section 8)
 
 1. **Aim.** Clock runs; patrollers, moving obstacles and drifting clouds move. Sentinels wait.
-2. **Shot.** The simulation runs until the ball rests. Hit and pass-by triggers fire as they happen. "Immediate" responses act at once.
+2. **Shot.** The simulation runs until the ball **and any enemy launched during the shot** (Lunger, Mole) have stopped. Hit and pass-by triggers fire as they happen. "Immediate" responses act at once.
 3. **Rest check.** Rest triggers fire. Pending dropped stars and flag poles settle.
-4. **Enemy turn.** Every activated sentinel takes one action, in the order they are listed in the course file. Stunned ones skip (section 4). The display shows each action for about 0.4 s; input is locked until it finishes.
+4. **Enemy turn.** Every activated sentinel takes one action (a Lunger's launch is simulated until it stops), in the order they are listed in the course file. Stunned ones skip (section 4). The display shows each action for about 0.4 s; input is locked until it finishes.
 5. If shots are 0: recover turn (step 4 runs again), then shots refill. Otherwise back to step 1.
 
 **Ball damage during enemy turns:** the "once per shot" rule covers the shot only. In an enemy turn, each enemy that attacks can hurt the ball once. Two Lungers next to you can each hit you.
@@ -49,7 +49,7 @@ Every enemy entry in `src/content/objects.ts` gets all template fields, even unu
 
 `id, name, sprite, family, tier, stats (health, attackDamage, moveRange, attackRange, outerRadius, innerRadius), starValue, element, weakTo[], resists[], weakSpots[], guardedSides[], triggers {hit, rest, passBy}, behaviour, contact, grantsAbility, allowedTraits[], allowedGear[], squadThemes[], cost`, plus the existing shape, height and bounce.
 
-- **Behaviour** is picked from a fixed list with settings: `none`, `patrol` (speed), `lob` (projectile settings), `chase` (move and strike settings). A fourth enemy that mixes these with new numbers is a new data entry only. A truly new kind of behaviour would need code, once.
+- **Behaviour** is picked from a fixed list with settings: `none`, `patrol` (speed), `lob` (projectile settings), `launch` (rolls like the ball: aimed at the ball or in a random direction, with speed settings), `burrow` (hidden under a hill, surfaces when rolled over, stays up for N turns). A fourth enemy that mixes these with new numbers is a new data entry only. A truly new kind of behaviour would need code, once.
 - **Facing:** each enemy faces one of the four diagonal directions (ne, se, sw, nw). The course file can set it (default se). Patrollers face where they are going; a Lunger turns to face the ball when it moves.
 
 ### 1.5 Status effects (FEATURES.md section 12)
@@ -85,13 +85,15 @@ The schema check rejects paths that leave the course, cross out of bounds or a f
 
 ## 2. Enemies
 
+**Owner, 2026-11-14:** for now every enemy is worth **1 star**. When an enemy is defeated, its star is secured and shown hovering above its flag pole (section 3.3).
+
 All have `element: none`, no weak/resistant elements, no weak spots or guarded sides, no traits, no gear, no squad themes (these come in Milestone 8). Shape is a circle, radius 0.3, height 0.6, bounce 0.6, unless noted.
 
 ### 2.1 Trundler — patroller, tier 2
 
 | Field | Value |
 |---|---|
-| Health / stars / cost | 2 / 2 / 3 |
+| Health / stars / cost | 2 / 1 / 3 |
 | Movement | Follows its `path` at 1.5 tiles/s, there and back, all the time (also while you aim) |
 | Contact effect | When the ball hits it **and it survives**: the ball takes 1 damage (attack damage 1) and is knocked back — bounced away from the Trundler at at least 5 tiles/s |
 | Defeated by the hit | No contact effect; the ball carries on; flag pole goes up (section 3.3) |
@@ -105,7 +107,7 @@ How it plays: the first hit costs you 1 health unless you finish it in one (two 
 
 | Field | Value |
 |---|---|
-| Health / stars / cost | 2 / 2 / 3 |
+| Health / stars / cost | 2 / 1 / 3 |
 | Outer radius / inner radius | 3.5 / 1.5 |
 | Hit | Activated |
 | Rest (ball stops inside 3.5) | Activated |
@@ -117,19 +119,45 @@ How it plays: once woken it is a slow, readable threat — you always get one sh
 
 ### 2.3 Lunger — sentinel, tier 2 (the one that chases)
 
-**Decided** shape: rest trigger activates it; pass-by makes it strike at once; moves toward the ball each turn.
+**Decided** shape: rest trigger activates it; pass-by makes it act at once; it comes after the ball each turn.
+
+**Owner, 2026-11-14:** the Lunger **launches itself and rolls like the golf ball**, using the same physics. It is affected by the terrain and bumps into obstacles. If it would fall off an edge it bounces back instead. If it rolls into water it bounces back out. Spikes still hurt it.
 
 | Field | Value |
 |---|---|
-| Health / stars / cost | 2 / 2 / 3 |
+| Health / stars / cost | 2 / 1 / 3 |
 | Outer radius / inner radius | 3 / 1.25 |
 | Hit | Activated |
-| Rest | Activated |
-| Pass-by | **Immediate:** strikes the ball mid-shot — 1 damage (once-per-shot rule applies) and the ball's speed is halved and turned away from the Lunger. Then it is activated. Fires once per shot. |
-| Action each enemy turn | If the ball is within 0.8 tiles (attack range): strike for 1 damage. Otherwise move straight toward the ball, up to 1.5 tiles (move range). |
-| Movement limits | Stops before blockers, other enemies, water, void, out of bounds, hazard tiles, and any rise or drop of more than one step |
+| Rest (ball stops inside 3) | Activated |
+| Pass-by (ball goes through 1.25) | **Immediate:** it launches at the ball at once, while the ball is still moving. Then it is activated. Once per shot. |
+| Action each enemy turn | **Launch:** rolls straight at the ball's spot along the ground. Launch speed is what would carry it to the ball on flat grass, capped at 10 tiles/s. It then rolls until it stops, like the ball. |
+| Terrain | Slopes, friction per surface, boosters, conveyors, springs and warps all act on it as on the ball |
+| Edges | Any drop to lower ground, or the edge of the course, works as a wall for it: it bounces back (bounce 0.6). Rising faces work as for the ball |
+| Water | The edge of water works as a wall for it: it bounces off and never stops in water |
+| Spikes | 1 damage to it, at most once per launch. If that defeats it, you still get its star and a flag pole |
+| Obstacles | Bounces off blockers, flag poles, crates, moving obstacles and other enemies. Thunder clouds do not affect enemies (question 10) |
+| Touching the ball while it is moving | The ball takes 1 damage (once-per-shot rule applies during a shot) and the Lunger bounces off. A resting ball is not moved |
+| When it has stopped | Harmless: touching it does not hurt you. It is a normal target |
+| Ball hits it while both are moving | Your hit counts against it **and** you take 1 damage |
 
-How it plays: striking and moving are separate turns, so after it closes in you get one shot to get away before it hits.
+How it plays: like a second golf ball aimed at you. You can use walls, slopes and water to make it miss, and you hit it safely once it has stopped.
+
+### 2.5 Mole — sentinel, tier 2 (new, owner 2026-11-14)
+
+**Owner, 2026-11-14:** the Mole lives underground under a molehill. Rolling directly over the molehill sets it off: it shoots out of the ground in a random direction and rolls to a stop. While it is moving it hurts the ball on contact; once stopped it does not. It stays still for one of your turns, then burrows back into the ground.
+
+| Field | Value |
+|---|---|
+| Health / stars / cost | 1 / 1 / 3 |
+| Underground | Only the molehill shows: a low mound (height 0.15) the ball rolls over without bouncing. The Mole cannot be hit while underground |
+| Trigger | The ball **rolling** over the molehill: touching the ground within 0.35 tiles of its centre. A ball flying over it does not count. Response: immediate. Fires again each time it is underground and you roll over it |
+| Launch | Out of the hill in a random direction (from the seed, so the same seed and shots give the same direction) at 8 tiles/s, then rolls with the same rules as the Lunger: terrain, edges and water bounce it back, spikes hurt it |
+| Moving | Touching the ball costs the ball 1 damage (once-per-shot rule). Your ball bounces off it and cannot hurt it while it moves (question 9) |
+| Stopped | Harmless and can be hit. One hit defeats it: star secured, flag pole where it stood |
+| Burrowing | It stays up for the whole of your **next** shot. On the enemy turn after that shot it burrows and a new molehill appears where it stopped (question 8) |
+| Stunned | Stays up one turn longer before burrowing |
+
+How it plays: a trap you can see. Roll over the hill on purpose to make it come up, dodge it, then hit it on your next shot before it goes back down.
 
 ### 2.4 Ability carriers — sentinel, tier 1
 
@@ -164,12 +192,13 @@ Never act; all triggers none. On defeat the ability goes straight into your slot
 |---|---|---|
 | Looks like | Wooden box, 0.8 × 0.8, height 0.5 | Cracked floor drawn on the tile; flat, nothing to bump |
 | Broken by | Any hit from the ball (health 1, goes through the damage steps) | Only the Anchor: the ball stopping on it after using Anchor |
-| On breaking | Ball carries on at 85% speed (`defeatSpeedKeep`); drops its `drops` like an enemy drops stars. Default drop: 1 yellow star | Releases its `drops` (default: 2 yellow stars) and becomes plain ground (question 5) |
+| On breaking | Ball carries on at 85% speed (`defeatSpeedKeep`); drops its `drops` on the ground to be collected. Default drop: 1 yellow star | Releases its `drops` (default: 2 yellow stars) and becomes plain ground (question 5) |
 | Flag pole | No | No |
 | Cost | 1 | 1 |
 
 ### 3.3 Flag pole (Decided by owner; defaults restated)
 
+- **Owner, 2026-11-14:** a star hovers above every flag pole, showing the star you secured by defeating that enemy. The star counts towards the meter and your wallet the moment the enemy is defeated; you no longer have to roll over a dropped star to collect it (question 11). The hovering star is only a marker and cannot be picked up.
 - Goes up where a defeated enemy stood, once the ball has moved clear (0.1 tiles past touching), so it never traps the ball. Stays for the rest of the course and is never knocked down.
 - Thin pole, radius 0.08, height 1.5 (as tall as the post). A lofted ball higher than 1.5 passes over.
 - Hit below **8 tiles/s**: bounces off (bounce 0.75, like the post).
@@ -218,7 +247,7 @@ All: one slot; **press F during a shot** (question 6), **once per shot**, unlimi
 - Activated sentinels show a small "!" above them for the rest of the course.
 - HUD gains the ability icon and status icons.
 
-New placeholder sprites (via `npm run art` and the manifest only): trundler, spitter, lunger, anchorback, emberback, hopback, lob seed, target ring, sliding block, gate open, gate closed, crate, cracked tile, flag pole, thunder cloud, zap spark, three ability icons, stun icon, "!" mark.
+New placeholder sprites (via `npm run art` and the manifest only): trundler, spitter, lunger, mole, molehill, anchorback, emberback, hopback, lob seed, target ring, sliding block, gate open, gate closed, crate, cracked tile, flag pole, hovering star marker, thunder cloud, zap spark, three ability icons, stun icon, "!" mark.
 
 ---
 
@@ -227,7 +256,7 @@ New placeholder sprites (via `npm run art` and the manifest only): trundler, spi
 One hand-built course with three areas, so each trigger can be tried on purpose:
 
 1. **Patrol yard:** a Trundler on a straight path, a sliding block, and a gate between you and an Emberback.
-2. **Sentinel field:** a Spitter and a Lunger on open grass with room to try rest, pass-by and hit on each; an Anchorback nearby; a crate.
+2. **Sentinel field:** a Spitter and a Lunger on open grass with room to try rest, pass-by and hit on each, next to a ledge, a pond and a spike strip so you can watch the Lunger bounce back and get hurt; two molehills; an Anchorback nearby; a crate.
 3. **Sky lane:** a stationary cloud and a drifting cloud across a narrow strip, a Hopback before it, and a cracked tile on a ledge you can only break with Anchor.
 
 Quota set so you must clear at least two of the three areas. Exact layout drawn when building.
@@ -239,9 +268,10 @@ Quota set so you must clear at least two of the three areas. Exact layout drawn 
 - World clock: same clock step gives the same positions; a replayed run gives the same final state.
 - Damage order: each step separately (element ×2 and half-down, from-above, from-behind, guarded side blocks, shield blocks the first hit only), using test-only enemy entries.
 - Each trigger × each response: hit/rest/pass-by × none/immediate/activated.
-- Spitter lob lands for damage, and misses when the ball moved away; Lunger moves, stops at limits, strikes in range; Lunger immediate strike fires once per shot.
+- Spitter lob lands for damage, and misses when the ball moved away; Lunger launches at the ball, bounces back from edges and water, takes spike damage once per launch, hurts only while moving; its immediate launch fires once per shot. Mole: rolling over the hill triggers it, flying over does not; same seed same direction; hurts only while moving; cannot be hit while moving or underground; burrows after one shot and leaves a new hill.
 - Stunned: enemy skips one action; ball loses one shot; reapplying is ignored.
 - Trundler contact effect only when it survives; turns round at a resting ball.
+- Defeating an enemy adds its star to the meter and wallet at once; a star marker sits above its pole.
 - Flag pole: bounce below threshold, push-past above, lofted ball passes over, pole appears only once the ball is clear.
 - Thunder cloud: rolling zapped, high ball safe, once per cloud per shot, same seed same throw direction, no second damage after spikes.
 - Each ability's effect, once per shot, replaced on pickup.
@@ -267,6 +297,10 @@ Each has a default that this sheet already uses. Answer only the ones you want t
 5. **Cracked tile.** Default: breaking it releases hidden stars and it becomes normal ground. Alternative: it becomes a hole one step deeper (a new route or a trap). Harder to build.
 6. **Ability key.** Default F (E, Q, Space and others are already used).
 7. **Burner and flag poles.** Default: a Burner burst pushes past poles with no speed loss. Alternative: poles slow it like any fast ball.
+8. **Where does the Mole burrow?** Default: where it stopped, leaving a new molehill there (the trap moves around the course). Alternative: it goes back to its original hill.
+9. **Can you hit a moving Mole?** Default: no, the ball bounces off it and takes the damage; you must wait until it stops. Alternative: your hit counts and you still take 1 damage, as with a moving Lunger.
+10. **Do thunder clouds zap enemies** (Lunger, Mole)? Default: no, clouds only affect the ball.
+11. **Star collection.** Default: the star counts the moment the enemy is defeated, and the star over the pole is only a marker. Alternative: the star still drops nearby and you roll over it to collect it, as in Milestone 3, and the pole just has a decorative star.
 
 ---
 

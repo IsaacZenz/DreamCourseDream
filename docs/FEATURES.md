@@ -145,8 +145,11 @@ Early courses use mostly tiers 1 and 2. Later regions shift the mix upward (sect
 | Mossback | Sentinel | 1 | Never acts. A plain target. | 3 |
 | Trundler | Patroller | 2 | Rolls along its path. Contact: 1 damage and knock-back. | 4 |
 | Spitter | Sentinel | 2 | When activated, fires a slow projectile at the ball each turn. | 4 |
-| Lunger | Sentinel | 2 | Rest trigger activates it; pass-by trigger makes it strike at once. Moves toward the ball each turn. | 4 |
+| Lunger | Sentinel | 2 | Rest trigger activates it; pass-by trigger makes it launch at once. Each enemy turn it launches itself at the ball and rolls like the golf ball (owner, 2026-11-14): terrain affects it, it bounces back from edges and water, spikes hurt it, it hurts the ball only while moving. | 4 |
+| Mole | Sentinel | 2 | Owner, 2026-11-14. Hidden under a molehill. Rolling directly over the hill makes it shoot out in a random direction and roll to a stop. Hurts the ball only while moving. Stays up for one player turn, then burrows. | 4 |
 | Ability carriers | Sentinel | 1 | One Mossback variant per starter ability; grants it on defeat. | 4 |
+
+**Owner, 2026-11-14:** for now every enemy is worth 1 star, whatever its tier (overrides the Stars column of the tier table until the Milestone 8 balance pass).
 
 Tiers 3 and 4, traits, elements, squads and enemy gear are Milestone 8, but the template fields must exist from Milestone 4.
 
@@ -200,6 +203,7 @@ Moving obstacles run in real time like patrollers, including while the player ai
 **Decided (owner, 2026-11-14):**
 
 - When an enemy is defeated, a golf flag pole goes up where it died. The enemy still drops its yellow stars as before.
+- **Owner, 2026-11-14:** a star hovers above the flag pole, showing the star secured by defeating that enemy. (Default until the owner says otherwise: the star counts at once, with no dropped star to collect. See `docs/plans/milestone-4.md` question 11.)
 - The pole is an obstacle. A ball hitting it below a speed threshold bounces off.
 - A ball at or above the threshold pushes past the pole and loses most of its speed doing it.
 
