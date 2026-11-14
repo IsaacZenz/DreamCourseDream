@@ -89,6 +89,17 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 - The ball is "at rest" when its speed stays under a threshold on a tile it will not roll off.
 - Every tuning number (gravity, friction per surface, bounce, power range, spin strength) lives in one tuning file so it can be changed without touching logic.
 
+### As built in Milestone 2 (Default, pending the owner's tuning)
+
+- Physics units are tiles. One height step is half a tile high (`STEP_HEIGHT` in `src/content/tuning.ts`), matching the art's 8-pixel step on a 32×16 tile. A one-step slope across one tile is therefore about 27 degrees.
+- Walls are always along grid lines, so a wall hit mirrors the ball's x or y speed, scaled by the wall surface's `wallBounce`. A wall is any step up at a tile edge that the ball is too low to clear.
+- Topspin and backspin: on a lofted shot they add or remove speed on the first landing; on a ground shot they push forward or back for a short time after the shot. Side curve turns the ball's path and fades over time. Each has five levels (−2 to +2).
+- Bounce boost: press Space while the ball is in the air. It counts only if the ball lands within a short window after the press (0.15 s to start); one press per flight, so mashing does not work.
+- The aim guide runs the real simulation. While aiming it shows the path at full power; while charging, at the power being charged. It stops after 4 tiles of travel (the "Guide length" stat will scale this from Milestone 3).
+- The last resting spot is only updated when the ball rests on a surface that can hold it (not water, boosters and other pads).
+- Until Milestone 3, hazard surfaces (booster, conveyor, spring, spikes, warp) behave like grass. Bumpers already bounce the ball back faster, because that is just their wall-bounce number.
+- Power input: the sweeping meter is the default; drag-power (pull back like a slingshot) is behind the P key so the owner can compare (Open question 4).
+
 ## 6. Shots and health
 
 **Decided:** these are two separate pools, and both can be upgraded.

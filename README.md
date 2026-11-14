@@ -31,16 +31,26 @@ Then open the address it prints (usually http://localhost:5173).
 | `npm run build` | Build the site into `dist/` |
 | `npm run preview` | Serve the built site locally |
 
-## Controls (Milestone 1)
+## Controls (Milestone 2)
 
 | Key | Action |
 |---|---|
+| Move the mouse | Aim. The dotted line is the predicted path (yellow dots = in the air). |
+| Hold left mouse button, release | Power meter sweeps up and down; release to shoot. Right-click or Esc cancels. |
+| P | Switch power input: meter, or drag (press, pull back like a slingshot, release) |
+| T | Ground shot or lofted shot |
+| X / Z | More topspin / more backspin |
+| E / Q | Curve right / curve left |
+| Space | Bounce boost: press just before the ball lands |
+| R | Put the ball back at the start |
+| U | Tuning panel (debug): sliders for every physics number. Changes are remembered in your browser; "Reset all" undoes them. |
+| H | Show or hide the help lines |
 | Arrow keys / WASD, or drag with the right mouse button | Pan the camera |
 | C | Centre the camera on the ball |
 | 1, 2, N | Switch test course |
 | G | Cycle the debug overlay: coordinates, heights, surfaces, off. Hover a tile for its details. |
 
-You can also open a course directly: `?course=flat-walls` or `?course=slopes-surfaces`, and add `&debug=heights` (or `coords`, `surfaces`).
+You can also open a course directly: `?course=flat-walls` or `?course=slopes-surfaces`, and add `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
 
 ## Folder layout
 
