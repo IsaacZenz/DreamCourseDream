@@ -18,6 +18,7 @@ The owner is new to game development and works as a software tester. Explain cho
 - If you hit a question listed under "Open questions" in `docs/DESIGN.md`, use the stated default, say so in your summary, and keep going. Ask the owner only when there is no default and the answer changes what you build.
 - When the owner makes a new design decision, record it in `docs/DESIGN.md` or `docs/FEATURES.md` in the same session.
 - Build only the starter sets named in `docs/FEATURES.md` for the current milestone. Do not invent extra enemies, gear or abilities ahead of Milestone 8.
+- **Plan before building (owner decision).** A milestone that adds content or a larger system starts with its **Plan gate**: write a design sheet in `docs/plans/milestone-N.md` listing every item to be built with its template fields, starting numbers and behaviour in each case, then stop and ask the owner to review it. Build nothing on the sheet until the owner signs it off. Record the sign-off and any changes they make in the sheet and in `docs/FEATURES.md`.
 
 ## Rules that must not be broken
 

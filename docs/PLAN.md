@@ -2,6 +2,8 @@
 
 Milestones are in build order. Each one ends with something the owner can open in a browser and play. Do them in order. A milestone marked **Gate** needs the owner's sign-off before the next one starts.
 
+**Plan before building (owner, 2026-11-14).** Every milestone that adds content or a larger system (characters, enemies, obstacles, abilities, gear, bosses, upgrades, shops, chunks) starts with a **design sheet** in `docs/plans/milestone-N.md`: a list of every item to be built, each with its template fields from FEATURES.md filled in, the numbers it starts with, and how it behaves in each case. The owner reviews it, changes what they want, and signs it off. Nothing on the sheet is built before that sign-off. This is the first checklist item of those milestones, marked **Plan gate**.
+
 Why this order: the shot has to feel good on one hand-built course before anything is generated. Generation multiplies whatever is already there, good or bad.
 
 ## Target folder layout
@@ -64,26 +66,29 @@ docs/
 
 ## Milestone 3 — Course rules
 
-- [ ] Stat sheet and modifier system (FEATURES.md section 1), with tests
-- [ ] Playable character as a data entry (FEATURES.md section 3)
-- [ ] Shots pool and health pool, with the recover turn at zero shots
-- [ ] Pickups: yellow star, heart, shot orb (FEATURES.md section 13)
-- [ ] Static blockers (FEATURES.md section 6)
-- [ ] Simple stationary enemy that is defeated when hit and drops yellow stars
-- [ ] Star quota meter; exit opens when full; entering the exit completes the course
-- [ ] Hazards from the surface table: spikes, bumper, booster, conveyor, spring, warp pair
-- [ ] HUD: shots, health, star meter, yellow star total, seed
-- [ ] Course complete and run over screens; restart
+- [x] Stat sheet and modifier system (FEATURES.md section 1), with tests
+- [x] Playable character as a data entry (FEATURES.md section 3)
+- [x] Shots pool and health pool, with the recover turn at zero shots
+- [x] Pickups: yellow star, heart, shot orb (FEATURES.md section 13)
+- [x] Static blockers (FEATURES.md section 6)
+- [x] Simple stationary enemy that is defeated when hit and drops yellow stars
+- [x] Star quota meter; exit opens when full; entering the exit completes the course
+- [x] Hazards from the surface table: spikes, bumper, booster, conveyor, spring, warp pair
+- [x] HUD: shots, health, star meter, yellow star total, seed
+- [x] Course complete and run over screens; restart
 
 **Done when:** a test course can be won and lost, and the owner has done both.
 
 ## Milestone 4 — Enemies and abilities
 
+- [ ] **Plan gate:** design sheet for the enemies (Trundler, Spitter, Lunger, ability carriers), the three abilities, the Stunned status, the moving obstacles and destructibles, the flag pole and the thunder cloud. Owner signs it off before any of them is built.
 - [ ] Turn order from DESIGN.md section 8
 - [ ] Damage calculation in the order given in FEATURES.md section 2, including element, position and shield steps even though the starter enemies do not use them yet
 - [ ] Full enemy template from FEATURES.md section 4 (tier, traits, element, gear fields present, mostly unused)
 - [ ] Status effect system and the Stunned status
 - [ ] Moving obstacles and destructibles (FEATURES.md section 6)
+- [ ] Flag pole left by a defeated enemy: bounce off when slow, push past and lose most speed when fast (FEATURES.md section 6, owner decision 2026-11-14)
+- [ ] Thunder cloud obstacle, stationary or drifting, cannot be beaten: rolling under it zaps the ball (damage, thrown in a random direction); hopping over is safe (FEATURES.md section 6, owner decision 2026-11-14)
 - [ ] Patroller family: path following in real time, contact effect. Build one type.
 - [ ] Sentinel family: outer and inner radius, three triggers, immediate or activated response per trigger. Build two types: one ranged, one that chases.
 - [ ] Radii visible in the debug overlay; a subtle in-game cue when the ball is about to pass through one
@@ -96,6 +101,7 @@ docs/
 
 ## Milestone 5 — Course generator **(Gate)**
 
+- [ ] **Plan gate:** design sheet for the first chunk set, the difficulty budget costs, and how enemies, obstacles and hazards are placed. Owner signs it off before the generator is built.
 - [ ] Chunk format and a first set of at least twelve chunks
 - [ ] Generator: seed and difficulty budget in, course data out
 - [ ] Enemy placement in squads that spends the budget (FEATURES.md section 4). Squad themes can be switched on in Milestone 8.
@@ -110,6 +116,7 @@ docs/
 
 ## Milestone 6 — The run
 
+- [ ] **Plan gate:** design sheet for the map node types and rules, the starter gear, the run upgrades, the shop and its prices. Owner signs it off before any of them is built.
 - [ ] Branching map generator with node types: Course, Hard course, Shop, Cache, Boss
 - [ ] Map rules: shops not guaranteed, forced course-only stretches possible, every path reaches a boss
 - [ ] Boss countdown, early boss choice, forced boss at zero (boss is a stand-in hard course until Milestone 7)
@@ -124,6 +131,7 @@ docs/
 
 ## Milestone 7 — Boss and permanent progress
 
+- [ ] **Plan gate:** design sheet for The Warden (phases, attacks, summons, arena), blue star sources, the hub screen and the permanent upgrades. Owner signs it off before any of them is built.
 - [ ] Boss template and the first boss, The Warden (FEATURES.md section 5)
 - [ ] Blue stars: sources and wallet
 - [ ] Hub screen between runs with the levelled list and the starting-ability unlock (FEATURES.md section 10)
@@ -135,6 +143,7 @@ docs/
 
 ## Milestone 8 — Content and balance
 
+- [ ] **Plan gate:** design sheet for every new ability, enemy, trait, status, boss, linked object, biome, gear item and character in this milestone. Owner signs it off before any of them is built. This milestone is large; it may be planned and built in several rounds, each with its own sheet.
 - [ ] Remaining abilities from DESIGN.md section 9
 - [ ] Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear and its drop chance
 - [ ] Remaining statuses: Poisoned, Burning, Chilled
@@ -180,3 +189,9 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Owner tuning round 4: automatic launch when the meter runs out raised from 5% to 10% power.
 - 2026-11-14 — Water reworked (owner design): see-through, slows the ball hard, and only resets the ball if it stops in it; the ball can roll or bounce out. Water may be sloped. New water bed and see-through surface placeholder sprites. 4 new tests.
 - 2026-11-14 — Milestone 2 done: owner played both courses through four tuning rounds, the two-phase shot and the water rework, and signed off the gate. Merged to `main` (pull request 3).
+- 2026-11-14 — Milestone 3 built on branch `milestone-3-course-rules`: stat sheet and modifier system (`src/sim/stats.ts`, stat limits in `src/content/stats.ts`); the playable character Rollo as data (`src/content/characters.ts`); shots and health pools with a recover turn; pickups, static blockers (rock, post, low wall) and the Mossback enemy as content entries (`src/content/objects.ts`) placed through a new optional `objects` list in course files; hazard tiles in the ball physics (booster, conveyor, spring, spikes, warp; bumper already worked); star quota meter, opening exit and course completion; course rules in `src/sim/play.ts`; HUD with health, shots, star meter, stars held and seed; course complete and run over screens with restart. New test course "course rules" (key 1). 33 new tests (140 in total). In a browser: won the test course in 3 shots and lost it by sinking 5 times; screenshots checked. Defaults chosen are listed in DESIGN.md section 7, "As built in Milestone 3". **Waiting for the owner** to win and lose the test course.
+- 2026-11-14 — Owner decision: a defeated enemy leaves a golf flag pole where it died. Slow balls bounce off it; fast balls push past and lose most of their speed. Recorded in FEATURES.md section 6 and added to Milestone 4.
+- 2026-11-14 — Owner decision: a thunder cloud obstacle. Rolling under it zaps the ball (damage, thrown in a random direction); hopping over it is safe. Recorded in FEATURES.md section 6 and added to Milestone 4.
+- 2026-11-14 — Owner decision: the thunder cloud cannot be beaten (an obstacle, not an enemy), and a cloud can be stationary or drift.
+- 2026-11-14 — Milestone 3 done: owner won and lost the test course (on the artifact test build) and signed it off.
+- 2026-11-14 — Owner decision: plan before building. Content milestones (4 to 8) now start with a design sheet the owner signs off; see the note at the top of this file.

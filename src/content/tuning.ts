@@ -83,6 +83,24 @@ export interface Tuning {
   /** How far along the path the guide is drawn, in tiles. */
   guideLength: number;
 
+  // Hazards and course objects (Milestone 3)
+  /** Booster: push along its arrow while the ball is on it, in tiles per second per second. */
+  boosterAccel: number;
+  /** Booster: a ball leaving it is going at least this fast along the arrow. */
+  boosterMinSpeed: number;
+  /** Conveyor: the speed it carries the ball at, along its arrow. */
+  conveyorSpeed: number;
+  /** Conveyor: how quickly it brings the ball to its speed, per second. */
+  conveyorGrip: number;
+  /** Spring: upward speed it launches the ball with. */
+  springLaunch: number;
+  /** Exit: the ball drops in when it rolls within this distance of the hole's centre, in tiles... */
+  exitRadius: number;
+  /** ...and is moving slower than this. Faster, it rolls over the hole. */
+  exitMaxSpeed: number;
+  /** Fraction of speed the ball keeps when it defeats an enemy and carries on. */
+  defeatSpeedKeep: number;
+
   // Safety
   /** Falling this far below height 0 counts as out of bounds, in tiles. */
   outOfBoundsDepth: number;
@@ -133,6 +151,16 @@ export const DEFAULT_TUNING: Tuning = {
   boostMinSpeed: 5,
 
   guideLength: 4,
+
+  // Owner, 2026-11-14: arrow tiles must push hard. Default values, tune with the panel.
+  boosterAccel: 45,
+  boosterMinSpeed: 9,
+  conveyorSpeed: 4,
+  conveyorGrip: 6,
+  springLaunch: 9,
+  exitRadius: 0.4,
+  exitMaxSpeed: 7,
+  defeatSpeedKeep: 0.85,
 
   outOfBoundsDepth: 2,
   maxShotTime: 30,
@@ -196,6 +224,14 @@ export const TUNING_CONTROLS: readonly TuningControl[] = [
   top('Boost', 'boostMultiplier', 1, 3, 0.05),
   top('Boost', 'boostMinSpeed', 0, 15, 0.25),
   top('Guide', 'guideLength', 0.5, 20, 0.5),
+  top('Hazards', 'boosterAccel', 0, 150, 1),
+  top('Hazards', 'boosterMinSpeed', 0, 25, 0.5),
+  top('Hazards', 'conveyorSpeed', 0, 15, 0.25),
+  top('Hazards', 'conveyorGrip', 0, 30, 0.5),
+  top('Hazards', 'springLaunch', 0, 25, 0.5),
+  top('Hazards', 'exitRadius', 0.1, 0.5, 0.01),
+  top('Hazards', 'exitMaxSpeed', 0, 20, 0.25),
+  top('Hazards', 'defeatSpeedKeep', 0, 1, 0.01),
   ...['grass', 'rough', 'sand', 'ice', 'bumper', 'water'].flatMap((s) => [
     { key: `surfaces.${s}.friction`, min: 0, max: 2, step: 0.01, group: `Surface: ${s}` },
     { key: `surfaces.${s}.bounce`, min: 0, max: 1, step: 0.01, group: `Surface: ${s}` },

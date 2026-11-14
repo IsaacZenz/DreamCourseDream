@@ -76,7 +76,7 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 
 **Template (Default):** id, name, sprite id, starting stat sheet, starting ability (may be none), one passive trait, unlock cost in blue stars.
 
-**Starter set:** one balanced character with the stats in section 1, no starting ability, no trait. Build in Milestone 3.
+**Starter set:** one balanced character with the stats in section 1, no starting ability, no trait. Build in Milestone 3. Built as **Rollo** (working name) in `src/content/characters.ts`.
 
 **Later examples, Milestone 8:** a heavy ball (more damage, less bounce, shorter shots); a light ball (more bounce, an extra shot, less health).
 
@@ -194,6 +194,46 @@ id, name, sprite id, size in tiles, whether it blocks the ball, contact effect, 
 | Linked objects | Switch that lowers a gate or raises a bridge | 8 |
 
 Moving obstacles run in real time like patrollers, including while the player aims.
+
+### Flag pole left by a defeated enemy
+
+**Decided (owner, 2026-11-14):**
+
+- When an enemy is defeated, a golf flag pole goes up where it died. The enemy still drops its yellow stars as before.
+- The pole is an obstacle. A ball hitting it below a speed threshold bounces off.
+- A ball at or above the threshold pushes past the pole and loses most of its speed doing it.
+
+**Default (owner may change):**
+
+- The pole stays for the rest of the course and is still standing after a ball pushes past it.
+- The speed threshold and the speed kept after pushing past are tuning numbers, so they can be set with the tuning panel. Starting values: push past at 8 tiles per second or more, keep 25% of the speed.
+- A lofted ball flying higher than the pole passes over it.
+- The pole is a thin round obstacle about as tall as the post, with its own placeholder sprite.
+- It replaces the current rule where the ball carries on through a defeated enemy with a small loss of speed. Contact with the enemy itself is unchanged: the hit that defeats it still counts, and the pole goes up once the ball has moved clear, so it never traps the ball.
+
+Build in Milestone 4, alongside the other contact rules and obstacles.
+
+### Thunder cloud
+
+**Decided (owner, 2026-11-14):**
+
+- A thunder cloud floats above the course.
+- A ball that rolls under it is electrocuted: it takes damage and is thrown in a random direction.
+- A ball that hops over it is not damaged or affected.
+- It cannot be beaten. It is an obstacle, not an enemy: no health, no stars, no flag pole.
+- A cloud can be stationary or drift. Each placement on a course chooses which.
+
+**Default (owner may change):**
+
+- It floats over one tile and covers that tile. A ball is "over" it only when the bottom of the ball is higher than the top of the cloud. Anything lower, rolling or bouncing, counts as under and is zapped.
+- The zap deals 1 damage. The usual rule applies: the ball takes damage at most once per shot.
+- The ball is thrown along the ground in a random direction at a set speed, with a small hop (tuning numbers; starting at 6 tiles per second). The direction comes from the seeded random number generator, so the same seed and the same shots give the same zap.
+- Each cloud zaps at most once per shot, so the ball cannot be caught in a loop under it.
+- The aim guide stops at the cloud and marks it, because the direction after a zap is meant to be a surprise.
+- A drifting cloud follows a path set in the course file, back and forth, in real time like a patroller (it keeps moving while the player aims). Its speed is a tuning number, starting at 1 tile per second. The course generator (Milestone 5) decides which clouds drift.
+- Ways over it: a lofted shot, a spring, a bounce boost, and later the Hop ability.
+
+Build in Milestone 4.
 
 ---
 

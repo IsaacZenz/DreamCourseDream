@@ -3,7 +3,9 @@ import { TEST_COURSES } from '../content/courses';
 import { SURFACES } from '../content/surfaces';
 import { parseCourse, type Course } from '../sim/course';
 import { STEP_HEIGHT, type Tuning } from '../content/tuning';
-import { DT, ballAtTile, groundAt, predictPath, startShot, stepShot, type BallState, type ShotState, type ShotType } from '../sim/ball';
+import { DT, groundAt, type BallState, type ShotType } from '../sim/ball';
+import { canShoot, createPlay, drainLog, previewShot, stepPlay, takeShot, type PlayEvent, type PlayState } from '../sim/play';
+import { OBJECTS } from '../content/objects';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
 import { loadTuning } from '../save/tuningStore';
 import { TuningPanel } from '../ui/tuningPanel';
@@ -34,6 +36,10 @@ const METER_BG = 0x202038;
 const METER_FILL = 0xf8b048;
 const METER_FULL = 0xff6040;
 const METER_PLAN = 0xffffff;
+const STAR_FILL = 0xf8d030;
+const HEALTH_LOST = 0x403040;
+const GOOD = 0x80f080;
+const BAD = 0xff8080;
 
 /** Shared by every course and kept across restarts, so live tuning sticks. */
 let tuning: Tuning | null = null;
@@ -56,12 +62,23 @@ type Phase = 'plan' | 'pull' | 'set' | 'charge' | 'flight';
 export interface CourseSceneData {
   courseIndex?: number;
   debug?: DebugMode;
+  /** Keep this seed (restart). Otherwise the address's ?seed= or a new random one. */
+  seed?: string;
+}
+
+/** A short random seed for a new course. The display may use Math.random; the simulation never does. */
+function newSeed(): string {
+  return Math.floor(Math.random() * 36 ** 6)
+    .toString(36)
+    .toUpperCase()
+    .padStart(6, '0');
 }
 
 /**
- * Draws a course from its data file and plays shots on it (Milestone 2), with
- * camera pan and a debug overlay. All ball movement comes from src/sim/ball.ts;
- * this scene only reads the simulation's state and draws it.
+ * Draws a course from its data file and plays it (Milestones 2 and 3), with
+ * camera pan, a HUD and a debug overlay. All rules and ball movement come from
+ * src/sim/play.ts and src/sim/ball.ts; this scene only reads the simulation's
+ * state and draws it.
  */
 export class CourseScene extends Phaser.Scene {
   private course: Course | null = null;
@@ -77,10 +94,8 @@ export class CourseScene extends Phaser.Scene {
 
   // The shot
   private phase: Phase = 'plan';
-  private ball!: BallState;
-  /** Where the ball last came to rest; water and out of bounds return it here. */
-  private restSpot!: BallState;
-  private shot: ShotState | null = null;
+  private play!: PlayState;
+  private seed = '';
   private prevBall: BallState | null = null;
   private accumulator = 0;
   private boostQueued = false;
@@ -90,9 +105,10 @@ export class CourseScene extends Phaser.Scene {
   private power = 0;
   /** Power chosen while planning. A preview only: the meter alone sets the real power. */
   private planPower = 0;
-  private shotsTaken = 0;
   private message: Phaser.GameObjects.Container | null = null;
   private messageUntil = 0;
+  /** Messages wait their turn so several things in one shot can all be read. */
+  private messageQueue: { text: string; color: number }[] = [];
 
   // Display
   private ballImg!: Phaser.GameObjects.Image;
@@ -101,6 +117,12 @@ export class CourseScene extends Phaser.Scene {
   private meter!: Phaser.GameObjects.Graphics;
   private shotHud: Phaser.GameObjects.Container | null = null;
   private helpHud: Phaser.GameObjects.Container[] = [];
+  private statusHud: Phaser.GameObjects.Container | null = null;
+  private statusKey = '';
+  private endScreen: Phaser.GameObjects.Container | null = null;
+  /** Course objects on screen, by their uid in the simulation. */
+  private objectImgs = new Map<string, Phaser.GameObjects.Image>();
+  private exitImg: Phaser.GameObjects.Image | null = null;
 
   constructor() {
     super('course');
@@ -110,6 +132,7 @@ export class CourseScene extends Phaser.Scene {
     const params = new URLSearchParams(window.location.search);
     const fromUrl = TEST_COURSES.findIndex((c) => c.id === params.get('course'));
     this.courseIndex = data.courseIndex ?? (fromUrl >= 0 ? fromUrl : 0);
+    this.seed = data.seed ?? params.get('seed') ?? newSeed();
     const urlDebug = params.get('debug');
     this.debugMode = data.debug ?? (DEBUG_MODES.includes(urlDebug as DebugMode) ? (urlDebug as DebugMode) : urlDebug === '1' ? 'coords' : 'off');
   }
@@ -138,7 +161,7 @@ export class CourseScene extends Phaser.Scene {
     const course = parsed.course;
     this.course = course;
 
-    for (const p of buildDrawList(course)) this.place(p);
+    for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
 
     if (!tuning) tuning = loadTuning();
     if (!panel) {
@@ -146,16 +169,20 @@ export class CourseScene extends Phaser.Scene {
       if (new URLSearchParams(window.location.search).get('tune') === '1') panel.toggle(true);
     }
 
-    this.ball = ballAtTile(course, course.start.x, course.start.y);
-    this.restSpot = { ...this.ball };
+    this.play = createPlay(course, tuning, { seed: this.seed });
     this.phase = 'plan';
-    this.shot = null;
-    this.shotsTaken = 0;
+    this.messageQueue = [];
+    this.message = null;
+    this.endScreen = null;
+    this.statusKey = '';
+    this.objectImgs = new Map();
     this.shadowImg = this.makeSprite('ball-shadow');
-    this.ballImg = this.makeSprite('ball');
+    this.ballImg = this.makeSprite(this.play.character.sprite);
+    this.exitImg = this.makeSprite('exit', 'closed');
+    this.syncObjects();
     this.guide = this.add.graphics().setDepth(OVERLAY_DEPTH - 1);
     this.meter = this.add.graphics().setScrollFactor(0).setDepth(HUD_DEPTH);
-    this.drawBall(this.ball);
+    this.drawBall(this.play.ball);
     this.setupShotInput();
 
     // Camera: start on the ball, keep the course in view.
@@ -178,10 +205,16 @@ export class CourseScene extends Phaser.Scene {
     if (dx || dy) this.panBy(dx * step, dy * step);
     this.updateHover();
     if (!this.course) return;
-    this.updateShot(this.course, tuning!, deltaMs / 1000);
+    this.updateShot(tuning!, deltaMs / 1000);
+    this.syncObjects();
+    this.drawStatusHud();
     if (this.message && this.time.now > this.messageUntil) {
       this.message.destroy();
       this.message = null;
+    }
+    if (!this.message && this.messageQueue.length) {
+      const m = this.messageQueue.shift()!;
+      this.showMessage(m.text, m.color);
     }
   }
 
@@ -213,6 +246,7 @@ export class CourseScene extends Phaser.Scene {
     kb.on('keydown-C', () => this.centreOnBall());
     kb.on('keydown-ONE', () => this.switchCourse(0));
     kb.on('keydown-TWO', () => this.switchCourse(1));
+    kb.on('keydown-THREE', () => this.switchCourse(2));
     kb.on('keydown-N', () => this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length));
 
     // Drag with the right or middle mouse button to pan. The left button is for shots.
@@ -228,6 +262,11 @@ export class CourseScene extends Phaser.Scene {
   private switchCourse(index: number): void {
     if (index >= TEST_COURSES.length) return;
     this.scene.restart({ courseIndex: index, debug: this.debugMode });
+  }
+
+  /** Start this course again from the beginning, with the same seed. */
+  private restartCourse(): void {
+    this.scene.restart({ courseIndex: this.courseIndex, debug: this.debugMode, seed: this.seed });
   }
 
   private panBy(dx: number, dy: number): void {
@@ -254,12 +293,56 @@ export class CourseScene extends Phaser.Scene {
   // -------------------------------------------------------------------------
   // The shot
 
-  private makeSprite(id: string): Phaser.GameObjects.Image {
+  private makeSprite(id: string, frame = 'idle'): Phaser.GameObjects.Image {
     const entry = manifest.sprites[id];
     if (!entry) throw new Error(`Sprite "${id}" is not in the asset manifest.`);
     return this.add
-      .image(0, 0, id, frameIndex(entry, 'idle'))
+      .image(0, 0, id, frameIndex(entry, frame))
       .setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight);
+  }
+
+  /**
+   * Draw order for things standing on a tile: by their spot inside the tile, so
+   * the ball is hidden behind an enemy when it is further back, and in front of
+   * it when nearer. Objects sit at the tile centre.
+   */
+  private standingDepth(x: number, y: number): number {
+    const tx = Math.floor(x);
+    const ty = Math.floor(y);
+    return tileDepth(tx, ty, 'ball') + (x - tx + (y - ty) - 1) * 0.4;
+  }
+
+  /** Make the sprites for course objects match the simulation: new drops appear, taken and defeated ones go. */
+  private syncObjects(): void {
+    const play = this.play;
+    const bob = Math.round(Math.sin(this.time.now / 250) * 1);
+    const show = (uid: string, sprite: string, x: number, y: number, z: number, alive: boolean, floats: boolean) => {
+      let img = this.objectImgs.get(uid);
+      if (!alive) {
+        img?.setVisible(false);
+        return;
+      }
+      if (!img) {
+        img = this.makeSprite(sprite);
+        this.objectImgs.set(uid, img);
+      }
+      const p = project(x, y, z / STEP_HEIGHT);
+      img.setPosition(Math.round(p.x), Math.round(p.y) - (floats ? 2 + bob : 0)).setDepth(this.standingDepth(x, y));
+    };
+    for (const b of play.blockers) show(b.uid, b.def.sprite, b.x, b.y, b.z, true, false);
+    for (const e of play.enemies) show(e.uid, e.def.sprite, e.x, e.y, e.z, !e.defeated, false);
+    for (const p of play.pickups) show(p.uid, p.def.sprite, p.x, p.y, p.z, !p.taken, true);
+
+    if (this.exitImg) {
+      const c = play.course;
+      const t = groundAt(c, c.exit.x + 0.5, c.exit.y + 0.5);
+      const p = project(c.exit.x + 0.5, c.exit.y + 0.5, (t?.h ?? 0) / STEP_HEIGHT);
+      const entry = manifest.sprites.exit!;
+      this.exitImg
+        .setTexture('exit', frameIndex(entry, play.exitOpen ? 'open' : 'closed'))
+        .setPosition(Math.round(p.x), Math.round(p.y))
+        .setDepth(tileDepth(c.exit.x, c.exit.y, 'exit'));
+    }
   }
 
   /** Put the ball and its shadow on screen. Heights in the sim are tiles; the screen uses steps. */
@@ -272,7 +355,7 @@ export class CourseScene extends Phaser.Scene {
     // In water the ball is drawn under the see-through surface; flying over it, on top.
     const inWater = !!g && !!SURFACES.get(g.tile.surface)?.sinks && b.z <= g.h + 0.05;
     const overWater = !!g && !!SURFACES.get(g.tile.surface)?.overlaySprite && !inWater;
-    const depth = overWater ? tileDepth(tx, ty, 'overlay') + 0.5 : tileDepth(tx, ty, 'ball');
+    const depth = overWater ? tileDepth(tx, ty, 'overlay') + 0.5 : this.standingDepth(b.x, b.y);
     this.ballImg.setPosition(Math.round(p.x), Math.round(p.y)).setDepth(depth);
     if (g && g.h <= b.z + 0.01 && !inWater) {
       const sp = project(b.x, b.y, g.h / STEP_HEIGHT);
@@ -303,16 +386,10 @@ export class CourseScene extends Phaser.Scene {
       this.cancelCharge();
       this.drawShotHud();
     });
-    onKey('R', () => {
-      if (!this.course) return;
-      this.ball = ballAtTile(this.course, this.course.start.x, this.course.start.y);
-      this.restSpot = { ...this.ball };
-      this.shot = null;
-      this.phase = 'plan';
-      this.power = 0;
-      this.planPower = 0;
-      this.drawBall(this.ball);
-      this.centreOnBall();
+    onKey('R', () => this.restartCourse());
+    onKey('ENTER', () => {
+      if (this.play.status === 'won') this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length);
+      else if (this.play.status === 'lost') this.restartCourse();
     });
     onKey('U', () => panel?.toggle());
     onKey('H', () => {
@@ -325,7 +402,7 @@ export class CourseScene extends Phaser.Scene {
     onKey('ESC', () => this.cancelCharge());
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (!this.course) return;
+      if (!this.course || !canShoot(this.play)) return;
       if (p.rightButtonDown() && this.phase !== 'plan' && this.phase !== 'flight') {
         this.cancelCharge();
         return;
@@ -343,7 +420,7 @@ export class CourseScene extends Phaser.Scene {
       this.drawShotHud();
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (!p.leftButtonReleased()) return;
+      if (!p.leftButtonReleased() || !canShoot(this.play)) return;
       if (this.phase === 'charge') this.shoot(this.power);
       else if (this.phase === 'pull') {
         if (this.planPower < 0.02) this.cancelCharge(); // a click, not a pull
@@ -382,21 +459,22 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private shoot(power: number): void {
+    if (!canShoot(this.play)) return;
     this.power = power;
-    this.shot = startShot(tuning!, this.ball, this.command(power));
-    this.prevBall = { ...this.shot.ball };
+    const shot = takeShot(this.play, this.command(power));
+    this.prevBall = { ...shot.ball };
     this.accumulator = 0;
     this.boostQueued = false;
     this.phase = 'flight';
-    this.shotsTaken++;
-    if (this.shot.cmd.perfect) this.showMessage('PERFECT!', 0xf8e048);
+    this.messageQueue = [];
+    if (shot.cmd.perfect) this.showMessage('PERFECT!', 0xf8e048);
     this.guide.clear();
     this.drawShotHud();
   }
 
-  private updateShot(course: Course, t: Tuning, dt: number): void {
+  private updateShot(t: Tuning, dt: number): void {
     const pointer = this.input.activePointer;
-    const ballH = this.ball.z / STEP_HEIGHT;
+    const ballH = this.play.ball.z / STEP_HEIGHT;
 
     if (this.phase === 'charge') {
       const m = chargeMeter((this.time.now - this.chargeStart) / 1000, t.meterPeriod, t.meterCycles);
@@ -422,27 +500,34 @@ export class CourseScene extends Phaser.Scene {
     if (this.phase !== 'flight') {
       // The guide previews the planned shot. It does not follow the meter.
       if (this.phase === 'plan' || this.planPower <= 0) this.guide.clear();
-      else this.drawGuide(predictPath(course, t, this.ball, this.command(Math.max(t.minPower, this.planPower))));
+      else this.drawGuide(previewShot(this.play, this.command(Math.max(t.minPower, this.planPower))));
       this.drawMeter();
       return;
     }
 
     // Flight: fixed steps of 1/120 s, drawn smoothly in between.
-    const shot = this.shot!;
+    const shot = this.play.shot;
+    if (!shot) {
+      this.endShot();
+      return;
+    }
     this.accumulator = Math.min(this.accumulator + dt, 0.25);
-    while (this.accumulator >= DT && !shot.outcome) {
+    while (this.accumulator >= DT && this.play.shot) {
       this.prevBall = { ...shot.ball };
       const boost = this.boostQueued;
       this.boostQueued = false;
       const before = shot.events.length;
-      stepShot(course, t, shot, { boost });
+      stepPlay(this.play, { boost });
       for (const e of shot.events.slice(before)) {
         if (e.kind === 'bounce' && e.boosted) this.showMessage('BOOST!', 0xf8e048);
       }
+      this.showEvents(drainLog(this.play));
       this.accumulator -= DT;
     }
-    const a = this.prevBall ?? shot.ball;
-    const alpha = shot.outcome ? 1 : this.accumulator / DT;
+    // A warp jumps the ball: do not slide it across the course in between.
+    const warped = Math.hypot((this.prevBall?.x ?? shot.ball.x) - shot.ball.x, (this.prevBall?.y ?? shot.ball.y) - shot.ball.y) > 0.5;
+    const a = !warped && this.prevBall ? this.prevBall : shot.ball;
+    const alpha = this.play.shot ? this.accumulator / DT : 1;
     const lerp = (p: number, q: number) => p + (q - p) * alpha;
     const shown = { ...shot.ball, x: lerp(a.x, shot.ball.x), y: lerp(a.y, shot.ball.y), z: lerp(a.z, shot.ball.z) };
     this.drawBall(shown);
@@ -451,31 +536,62 @@ export class CourseScene extends Phaser.Scene {
     this.camY += (this.ballScreen.y - VIEW_HEIGHT / 2 - this.camY) * Math.min(1, dt * 6);
     this.applyCamera();
 
-    if (shot.outcome) this.endShot(course, shot);
+    if (!this.play.shot) this.endShot(shot.outcome === 'timeout');
     this.drawMeter();
   }
 
-  private endShot(course: Course, shot: ShotState): void {
-    const outcome = shot.outcome;
-    if (outcome === 'sunk' || outcome === 'out') {
-      this.showMessage(outcome === 'sunk' ? 'SANK! BACK TO LAST SPOT' : 'OUT OF BOUNDS! BACK TO LAST SPOT', 0x80c8ff);
-      this.ball = { ...this.restSpot };
-    } else {
-      const b = shot.ball;
-      const g = groundAt(course, b.x, b.y);
-      this.ball = { x: b.x, y: b.y, z: g?.h ?? b.z, vx: 0, vy: 0, vz: 0, grounded: true };
-      if (outcome === 'timeout') this.showMessage('SHOT STOPPED (TOOK TOO LONG)', 0xa0a8c0);
-      // Only spots that can hold the ball count as a safe return point.
-      if (g && SURFACES.get(g.tile.surface)?.canHoldBall) this.restSpot = { ...this.ball };
-    }
-    this.shot = null;
+  /** The simulation finished the shot (and any turns after it). Show the result. */
+  private endShot(timedOut = false): void {
+    if (timedOut) this.queueMessage('SHOT STOPPED (TOOK TOO LONG)', UI_DIM);
+    this.showEvents(drainLog(this.play));
     this.prevBall = null;
     this.phase = 'plan';
     this.power = 0;
     this.planPower = 0;
-    this.drawBall(this.ball);
-    if (outcome === 'sunk' || outcome === 'out') this.centreOnBall();
+    this.guide.clear();
+    this.drawBall(this.play.ball);
+    if (this.play.status === 'playing') this.centreOnBall();
     this.drawShotHud();
+    if (this.play.status !== 'playing') this.showEndScreen();
+  }
+
+  /** Turn what the rules report into short messages. */
+  private showEvents(events: readonly PlayEvent[]): void {
+    for (const e of events) {
+      switch (e.kind) {
+        case 'star':
+          this.queueMessage(`+1 STAR  ${this.play.meter}/${this.play.quota}`, STAR_FILL);
+          break;
+        case 'exitOpen':
+          this.queueMessage('QUOTA MET! THE EXIT IS OPEN', GOOD);
+          break;
+        case 'defeat':
+          this.queueMessage(`${OBJECTS.get(e.enemy.split('#')[0]!)?.name ?? 'ENEMY'} DEFEATED!`, GOOD);
+          break;
+        case 'heart':
+          this.queueMessage('+1 HEALTH', GOOD);
+          break;
+        case 'shotOrb':
+          this.queueMessage('+1 SHOT', GOOD);
+          break;
+        case 'damage':
+          this.queueMessage(e.cause === 'spikes' ? `SPIKES! -${e.amount} HEALTH` : `${e.cause === 'sunk' ? 'SANK' : 'OUT OF BOUNDS'}! -${e.amount} HEALTH`, BAD);
+          break;
+        case 'returned':
+          this.queueMessage('BACK TO LAST SPOT', 0x80c8ff);
+          break;
+        case 'recover':
+          this.queueMessage('OUT OF SHOTS: RECOVER TURN. SHOTS REFILLED', 0x80c8ff);
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  private queueMessage(text: string, color: number): void {
+    if (this.messageQueue.some((m) => m.text === text)) return;
+    this.messageQueue.push({ text, color });
   }
 
   private drawGuide(points: readonly { x: number; y: number; z: number }[]): void {
@@ -501,7 +617,8 @@ export class CourseScene extends Phaser.Scene {
     const h = 60;
     m.fillStyle(METER_BG, 0.9);
     m.fillRect(x - 1, y - 1, 8, h + 2);
-    const showing = this.phase === 'charge' ? this.power : this.shot ? this.shot.cmd.power : settings.quickShot && this.phase === 'pull' ? this.planPower : 0;
+    const shot = this.play.shot;
+    const showing = this.phase === 'charge' ? this.power : shot ? shot.cmd.power : settings.quickShot && this.phase === 'pull' ? this.planPower : 0;
     const fill = Math.round(showing * h);
     m.fillStyle(this.isPerfect(showing) ? METER_FULL : METER_FILL, 1);
     m.fillRect(x, y + h - fill, 6, fill);
@@ -532,9 +649,74 @@ export class CourseScene extends Phaser.Scene {
       `SPIN: ${settings.top === 0 ? 'NONE' : settings.top > 0 ? 'TOP' : 'BACK'} ${sign(settings.top)}`,
       `CURVE: ${settings.side === 0 ? 'NONE' : settings.side > 0 ? 'RIGHT' : 'LEFT'} ${sign(settings.side)}`,
       `STEP: ${this.stepLabel()}`,
-      `SHOTS: ${this.shotsTaken}`,
     ].join('\n');
-    this.shotHud = pixelText(this, manifest, 2, 10, text, { color: UI_TEXT, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
+    this.shotHud = pixelText(this, manifest, 2, 30, text, { color: UI_DIM, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
+  }
+
+  /**
+   * The status HUD: health, shots, the star meter, yellow stars held and the
+   * seed. Redrawn only when something in it changes.
+   */
+  private drawStatusHud(): void {
+    const p = this.play;
+    const maxHealth = p.stats.get('maxHealth');
+    const maxShots = p.stats.get('maxShots');
+    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen].join(',');
+    if (key === this.statusKey) return;
+    this.statusKey = key;
+    this.statusHud?.destroy();
+    const c = this.add.container(2, 10).setScrollFactor(0).setDepth(HUD_DEPTH);
+    const bgW = 150;
+    c.add(this.add.rectangle(0, 0, bgW, 19, UI_BG, 0.85).setOrigin(0, 0));
+    const icon = (id: string, x: number, y: number, dim = false) => {
+      const entry = manifest.sprites[id]!;
+      const img = this.add.image(x, y, id, 0).setOrigin(0, 0);
+      if (dim) img.setTint(HEALTH_LOST).setAlpha(0.8);
+      c.add(img);
+      return entry.frameWidth;
+    };
+    // Row 1: health hearts, then shot orbs.
+    let x = 2;
+    for (let i = 0; i < maxHealth; i++) x += icon('heart', x, 1, i >= p.health) + 1;
+    x += 6;
+    for (let i = 0; i < maxShots; i++) x += icon('shot-orb', x, 1, i >= p.shots) + 1;
+    // Row 2: the star meter, the stars held and the seed.
+    const barX = 2;
+    const barY = 12;
+    const barW = 48;
+    const g = this.add.graphics();
+    g.fillStyle(METER_BG, 1).fillRect(barX, barY, barW, 5);
+    const fill = p.quota > 0 ? Math.min(1, p.meter / p.quota) : 1;
+    g.fillStyle(p.exitOpen ? GOOD : STAR_FILL, 1).fillRect(barX, barY, Math.round(barW * fill), 5);
+    c.add(g);
+    const meterText = p.quota > 0 ? `${Math.min(p.meter, p.quota)}/${p.quota}${p.exitOpen ? ' OPEN' : ''}` : 'OPEN';
+    c.add(pixelText(this, manifest, barX + barW + 3, barY, meterText, { color: p.exitOpen ? GOOD : UI_TEXT }));
+    c.add(pixelText(this, manifest, 104, 2, `HP ${p.health}/${maxHealth}`, { color: UI_TEXT }));
+    const starX = 94;
+    icon('star-yellow', starX - 2, 9);
+    c.add(pixelText(this, manifest, starX + 10, barY, `${p.wallet}  #${this.seed}`, { color: UI_TEXT }));
+    this.statusHud = c;
+  }
+
+  /** Course complete or run over. */
+  private showEndScreen(): void {
+    this.endScreen?.destroy();
+    const p = this.play;
+    const won = p.status === 'won';
+    const lines = won
+      ? ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: NEXT COURSE   R: PLAY AGAIN']
+      : ['RUN OVER', '', 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
+    const text = pixelText(this, manifest, 0, 0, lines.join('\n'), { color: won ? GOOD : BAD });
+    const w = text.width + 16;
+    const h = text.height + 14;
+    const c = this.add.container(Math.round((VIEW_WIDTH - w) / 2), Math.round((VIEW_HEIGHT - h) / 2)).setScrollFactor(0).setDepth(HUD_DEPTH + 10);
+    c.add(this.add.rectangle(0, 0, w, h, UI_BG, 0.94).setOrigin(0, 0).setStrokeStyle(1, won ? GOOD : BAD));
+    text.setPosition(8, 7);
+    c.add(text);
+    this.endScreen = c;
+    this.messageQueue = [];
+    this.message?.destroy();
+    this.message = null;
   }
 
   private stepLabel(): string {
@@ -546,7 +728,7 @@ export class CourseScene extends Phaser.Scene {
     this.message?.destroy();
     this.message = pixelText(this, manifest, 0, 46, text, { color, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
     this.message.x = Math.round((VIEW_WIDTH - this.message.width) / 2);
-    this.messageUntil = this.time.now + 1800;
+    this.messageUntil = this.time.now + 1400;
   }
 
   // -------------------------------------------------------------------------
@@ -554,14 +736,15 @@ export class CourseScene extends Phaser.Scene {
 
   private drawHud(id: string, course: Course): void {
     const n = `${this.courseIndex + 1}/${TEST_COURSES.length}`;
+    this.drawStatusHud();
     pixelText(this, manifest, 2, 2, `${n} ${course.name}`, { color: UI_TEXT, background: UI_BG })
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH)
       .setName(`hud-${id}`);
     const lines = [
       'LEFT: PULL BACK TO PLAN, THEN HOLD TO CHARGE  RIGHT/ESC: RE-PLAN  T: GROUND/LOFT',
-      'Z/X: SPIN  Q/E: CURVE  SPACE: BOOST  P: QUICK SHOT (TEST)  R: RESET  U: TUNING  H: HELP',
-      'WASD/ARROWS OR RIGHT-DRAG: PAN  C: CENTRE  1/2/N: COURSE  G: DEBUG',
+      'Z/X: SPIN  Q/E: CURVE  SPACE: BOOST  P: QUICK SHOT (TEST)  R: RESTART  U: TUNING  H: HELP',
+      'WASD/ARROWS OR RIGHT-DRAG: PAN  C: CENTRE  1/2/3/N: COURSE  G: DEBUG',
     ];
     this.helpHud = lines.map((l, i) =>
       pixelText(this, manifest, 2, VIEW_HEIGHT - 7 * (lines.length - i) - 1, l, { color: UI_DIM, background: UI_BG })
@@ -638,7 +821,9 @@ export class CourseScene extends Phaser.Scene {
     }
     const surface = SURFACES.get(t.surface)?.name ?? t.surface;
     const extra = [t.dir ? `DIR ${t.dir}` : '', t.link ? `LINK ${t.link}` : ''].filter(Boolean).join(' ');
-    const text = `TILE ${t.x},${t.y}  ${surface}  CORNERS ${t.corners.join(' ')}  SHAPE ${t.shape}${extra ? '  ' + extra : ''}`;
+    const obj = this.course.objects.find((o) => o.x === t.x && o.y === t.y);
+    const objText = obj ? `  OBJ ${OBJECTS.get(obj.id)?.name ?? obj.id}` : '';
+    const text = `TILE ${t.x},${t.y}  ${surface}  CORNERS ${t.corners.join(' ')}  SHAPE ${t.shape}${extra ? '  ' + extra : ''}${objText}`;
     this.hoverPanel = pixelText(this, manifest, 2, VIEW_HEIGHT - 30, text, { color: 0xf8e048, background: UI_BG })
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH);

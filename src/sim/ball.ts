@@ -19,8 +19,15 @@
  * - Rolling off a lower edge makes the ball airborne.
  * - Water and falling off the course end the shot ("sunk" or "out"); the game
  *   puts the ball back where the shot started.
+ * - Hazard tiles (Milestone 3) act on a ball touching them: boosters push,
+ *   conveyors carry, springs launch, warps move it to their pair. Spikes only
+ *   report a "hazard" event; the course rules (play.ts) decide the damage.
+ * - Obstacles (blockers and enemies) are passed in as a `ShotWorld`. The ball
+ *   bounces off them, or, when the rules say the hit defeated an enemy, carries
+ *   on through with a little less speed.
  */
-import { SURFACES } from '../content/surfaces.ts';
+import type { ObjectShape } from '../content/objects.ts';
+import { DIRECTION_VECTORS, SURFACES } from '../content/surfaces.ts';
 import { STEP_HEIGHT, STEPS_PER_SECOND, surfacePhysics, type Tuning } from '../content/tuning.ts';
 import { tileAt, type Course, type Tile } from './course.ts';
 import { planeAt } from './tileShape.ts';
@@ -59,9 +66,55 @@ export type ShotEvent =
   | { kind: 'airborne'; step: number }
   | { kind: 'sunk'; step: number }
   | { kind: 'out'; step: number }
-  | { kind: 'rest'; step: number };
+  | { kind: 'rest'; step: number }
+  | { kind: 'hazard'; step: number; surface: string; x: number; y: number }
+  | { kind: 'spring'; step: number }
+  | { kind: 'warp'; step: number; from: GridTile; to: GridTile }
+  | { kind: 'contact'; step: number; obstacle: string; result: ContactResult }
+  | { kind: 'exit'; step: number };
 
-export type ShotOutcome = 'rest' | 'sunk' | 'out' | 'timeout';
+export type ShotOutcome = 'rest' | 'sunk' | 'out' | 'timeout' | 'exit';
+
+interface GridTile {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** What happens when the ball touches an obstacle: it bounces off, or carries on through (a defeated enemy). */
+export type ContactResult = 'bounce' | 'pass';
+
+/** Something solid standing on the course: a blocker or an enemy. */
+export interface Obstacle {
+  readonly id: string;
+  /** Centre, in grid coordinates. */
+  readonly x: number;
+  readonly y: number;
+  /** Height of its bottom and its height, in tiles. */
+  readonly base: number;
+  readonly height: number;
+  readonly shape: ObjectShape;
+  /** Fraction of speed kept when the ball bounces off it. */
+  readonly bounce: number;
+}
+
+/**
+ * The things on the course the shot can run into. The course rules own it and
+ * may change `obstacles` between steps (a defeated enemy is removed).
+ * `contact` is asked each time the ball touches one; it decides bounce or pass.
+ * Without it every contact is a bounce.
+ */
+export interface ShotWorld {
+  obstacles: readonly Obstacle[];
+  contact?: (o: Obstacle, s: ShotState) => ContactResult;
+}
+
+/** Stat-driven changes to a shot (FEATURES.md section 1): shot power and bounce boost. */
+export interface ShotScales {
+  /** Multiplies the launch speed. 1 is normal. */
+  readonly power?: number;
+  /** Multiplies the bounce boost's strength. 1 is normal. */
+  readonly boost?: number;
+}
 
 export interface BallState {
   x: number;
@@ -90,6 +143,11 @@ export interface ShotState {
   /** Set once the shot is over. */
   outcome: ShotOutcome | null;
   events: ShotEvent[];
+  readonly boostScale: number;
+  /** After a warp: the tile the ball arrived on. It must leave before warps work again. */
+  warpLock: string | null;
+  /** The last hazard tile the ball touched, so each touch is reported once. */
+  hazardTouch: string | null;
 }
 
 /** Where the ground is under a point, or null if the point is off the course. */
@@ -133,9 +191,9 @@ export function ballAtTile(course: Course, tx: number, ty: number): BallState {
   return { x, y, z: g?.h ?? 0, vx: 0, vy: 0, vz: 0, grounded: true };
 }
 
-export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand): ShotState {
+export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand, scales: ShotScales = {}): ShotState {
   const power = Math.min(1, Math.max(tuning.minPower, cmd.power));
-  const bonus = cmd.perfect ? tuning.perfectBonus : 1;
+  const bonus = (cmd.perfect ? tuning.perfectBonus : 1) * (scales.power ?? 1);
   const dirX = Math.cos(cmd.angle);
   const dirY = Math.sin(cmd.angle);
   const ball: BallState = { ...from, vx: 0, vy: 0, vz: 0 };
@@ -164,13 +222,18 @@ export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand): Sh
     boostSpent: false,
     outcome: null,
     events: [],
+    boostScale: scales.boost ?? 1,
+    warpLock: null,
+    hazardTouch: null,
   };
 }
 
 /** Advance the shot by one step (1/120 s). Does nothing once the shot is over. */
-export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: StepInput = {}): void {
+export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: StepInput = {}, world?: ShotWorld): void {
   if (s.outcome) return;
   const b = s.ball;
+  const zBefore = b.z;
+  const eventsBefore = s.events.length;
   const t = s.step * DT;
   s.step++;
 
@@ -208,6 +271,8 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
         b.vx += s.dirX * s.cmd.topSpin * tuning.spinRollAccel * DT;
         b.vy += s.dirY * s.cmd.topSpin * tuning.spinRollAccel * DT;
       }
+      // Arrow tiles: boosters push hard, conveyors carry.
+      tileForce(tuning, g.tile, b);
       // Friction and drag, plus the surface's own drag (water).
       const surfaceDrag = Math.max(0, 1 - phys.drag * DT);
       b.vx *= drag * surfaceDrag;
@@ -236,6 +301,7 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
 
   moveAxis(course, tuning, s, 'x', b.vx * DT);
   moveAxis(course, tuning, s, 'y', b.vy * DT);
+  if (world) collideObstacles(tuning, s, world, zBefore);
 
   const g = groundAt(course, b.x, b.y);
   if (b.grounded) {
@@ -253,6 +319,10 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     b.z += b.vz * DT;
     if (g && b.z <= g.h) land(tuning, s, g);
   }
+
+  // Hazard tiles the ball is touching: on the ground, or landed this step.
+  const landedNow = s.events.slice(eventsBefore).some((e) => e.kind === 'land' || e.kind === 'bounce');
+  touchTile(course, tuning, s, landedNow);
 
   // Out of bounds. (Water only counts if the ball stops in it; see below.)
   const now = groundAt(course, b.x, b.y);
@@ -283,7 +353,130 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
 
 function finish(s: ShotState, outcome: ShotOutcome): void {
   s.outcome = outcome;
-  if (outcome !== 'timeout') s.events.push({ kind: outcome, step: s.step });
+  if (outcome !== 'timeout') s.events.push({ kind: outcome, step: s.step } as ShotEvent);
+}
+
+/** End a shot from outside the physics (the course rules: the ball dropped into the exit). */
+export function endShot(s: ShotState, outcome: ShotOutcome): void {
+  if (!s.outcome) finish(s, outcome);
+}
+
+/** Boosters and conveyors act on a ball rolling over them. */
+function tileForce(tuning: Tuning, tile: Tile, b: BallState): void {
+  const effect = SURFACES.get(tile.surface)?.effect;
+  if (!tile.dir || (effect !== 'push' && effect !== 'carry')) return;
+  const [dx, dy] = DIRECTION_VECTORS[tile.dir];
+  const along = b.vx * dx + b.vy * dy;
+  let target: number;
+  if (effect === 'push') {
+    // Owner, 2026-11-14: push hard. Never slower than the minimum along the arrow, and speeding up.
+    target = Math.max(along, tuning.boosterMinSpeed) + tuning.boosterAccel * DT;
+  } else {
+    target = along + (tuning.conveyorSpeed - along) * Math.min(1, tuning.conveyorGrip * DT);
+  }
+  b.vx += (target - along) * dx;
+  b.vy += (target - along) * dy;
+}
+
+/** Springs, warps and spikes act on a ball touching the tile. */
+function touchTile(course: Course, tuning: Tuning, s: ShotState, landedNow: boolean): void {
+  const b = s.ball;
+  const g = groundAt(course, b.x, b.y);
+  const key = g ? `${g.tile.x},${g.tile.y}` : null;
+  if (s.warpLock && s.warpLock !== key) s.warpLock = null;
+  const touching = !!g && (b.grounded || landedNow) && b.z <= g.h + 0.02;
+  if (!g || !touching) {
+    if (s.hazardTouch !== key) s.hazardTouch = null;
+    return;
+  }
+  const effect = SURFACES.get(g.tile.surface)?.effect;
+  if (effect === 'launch') {
+    b.vz = Math.max(b.vz, tuning.springLaunch);
+    b.grounded = false;
+    b.z = g.h + 0.001;
+    s.events.push({ kind: 'spring', step: s.step });
+  } else if (effect === 'damage') {
+    if (s.hazardTouch !== key) s.events.push({ kind: 'hazard', step: s.step, surface: g.tile.surface, x: b.x, y: b.y });
+    s.hazardTouch = key;
+  } else if (effect === 'warp' && g.tile.link && s.warpLock !== key) {
+    const other = course.tiles.find((t) => t && t.link === g.tile.link && (t.x !== g.tile.x || t.y !== g.tile.y));
+    if (!other) return;
+    // Keep the spot inside the tile and the speed; the ball leaves the other warp the same way it entered.
+    b.x = other.x + (b.x - g.tile.x);
+    b.y = other.y + (b.y - g.tile.y);
+    const to = groundAt(course, b.x, b.y);
+    b.z = to?.h ?? b.z;
+    s.warpLock = `${other.x},${other.y}`;
+    s.events.push({ kind: 'warp', step: s.step, from: { x: g.tile.x, y: g.tile.y }, to: { x: other.x, y: other.y } });
+  }
+}
+
+/**
+ * Bounce off, or pass through, obstacles. Seen from above, the ball is a
+ * circle; obstacles are circles or boxes. A ball coming down onto an
+ * obstacle's top is thrown back up and off its side: nothing rests on top.
+ */
+function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefore: number): void {
+  const b = s.ball;
+  const r = tuning.ballRadius;
+  for (const o of world.obstacles) {
+    const top = o.base + o.height;
+    if (b.z >= top || b.z + 2 * r <= o.base) continue;
+    // Closest point of the obstacle's core to the ball, seen from above.
+    let cx = o.x;
+    let cy = o.y;
+    let reach = r;
+    if (o.shape.kind === 'round') reach += o.shape.r;
+    else {
+      cx = Math.min(o.x + o.shape.hx, Math.max(o.x - o.shape.hx, b.x));
+      cy = Math.min(o.y + o.shape.hy, Math.max(o.y - o.shape.hy, b.y));
+    }
+    let nx = b.x - cx;
+    let ny = b.y - cy;
+    const d = Math.hypot(nx, ny);
+    if (d >= reach) continue;
+    if (d < 1e-6) {
+      // Centre inside a box: push out from the obstacle's centre, or back the way it came.
+      nx = b.x - o.x;
+      ny = b.y - o.y;
+      if (Math.hypot(nx, ny) < 1e-6) {
+        nx = -b.vx;
+        ny = -b.vy;
+      }
+    }
+    const nl = Math.hypot(nx, ny) || 1;
+    nx /= nl;
+    ny /= nl;
+
+    const result = world.contact ? world.contact(o, s) : 'bounce';
+    s.events.push({ kind: 'contact', step: s.step, obstacle: o.id, result });
+    if (result === 'pass') {
+      b.vx *= tuning.defeatSpeedKeep;
+      b.vy *= tuning.defeatSpeedKeep;
+      continue;
+    }
+    if (zBefore >= top - 0.01 && !b.grounded) {
+      // Came down on top: thrown back up and off the side.
+      b.z = top;
+      b.vz = Math.max(Math.abs(b.vz) * o.bounce, 2.5);
+      b.vx += nx * 1.5;
+      b.vy += ny * 1.5;
+      continue;
+    }
+    // Side hit: step back out and mirror the speed into the obstacle.
+    if (o.shape.kind === 'round') {
+      b.x = o.x + nx * (reach + 1e-4);
+      b.y = o.y + ny * (reach + 1e-4);
+    } else {
+      b.x = cx + nx * (r + 1e-4);
+      b.y = cy + ny * (r + 1e-4);
+    }
+    const vn = b.vx * nx + b.vy * ny;
+    if (vn < 0) {
+      b.vx -= (1 + o.bounce) * vn * nx;
+      b.vy -= (1 + o.bounce) * vn * ny;
+    }
+  }
 }
 
 /**
@@ -357,7 +550,7 @@ function land(tuning: Tuning, s: ShotState, g: Ground): void {
 
   const boosted = s.boostArmed > 0;
   let out = -vn * phys.bounce;
-  if (boosted) out = Math.max(out * tuning.boostMultiplier, tuning.boostMinSpeed);
+  if (boosted) out = Math.max(out * tuning.boostMultiplier * s.boostScale, tuning.boostMinSpeed * s.boostScale);
   s.boostArmed = 0;
   s.boostSpent = false;
 
@@ -383,9 +576,11 @@ export function simulateShot(
   from: BallState,
   cmd: ShotCommand,
   inputs: readonly StepInput[] = [],
+  world?: ShotWorld,
+  scales?: ShotScales,
 ): ShotState {
-  const s = startShot(tuning, from, cmd);
-  while (!s.outcome) stepShot(course, tuning, s, inputs[s.step] ?? {});
+  const s = startShot(tuning, from, cmd, scales);
+  while (!s.outcome) stepShot(course, tuning, s, inputs[s.step] ?? {}, world);
   return s;
 }
 
@@ -401,15 +596,23 @@ export interface GuidePoint {
  * it is the same simulation, the guide always matches what the shot will do,
  * as long as the player presses nothing during the shot.
  */
-export function predictPath(course: Course, tuning: Tuning, from: BallState, cmd: ShotCommand, lengthScale = 1): GuidePoint[] {
-  const s = startShot(tuning, from, cmd);
+export function predictPath(
+  course: Course,
+  tuning: Tuning,
+  from: BallState,
+  cmd: ShotCommand,
+  lengthScale = 1,
+  world?: ShotWorld,
+  scales?: ShotScales,
+): GuidePoint[] {
+  const s = startShot(tuning, from, cmd, scales);
   const pts: GuidePoint[] = [{ x: s.ball.x, y: s.ball.y, z: s.ball.z }];
   const max = tuning.guideLength * lengthScale;
   let travelled = 0;
   while (!s.outcome && travelled < max) {
     const px = s.ball.x;
     const py = s.ball.y;
-    stepShot(course, tuning, s);
+    stepShot(course, tuning, s, {}, world);
     travelled += Math.hypot(s.ball.x - px, s.ball.y - py);
     pts.push({ x: s.ball.x, y: s.ball.y, z: s.ball.z });
   }

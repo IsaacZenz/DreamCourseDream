@@ -99,7 +99,7 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
 - Bounce boost: press Space while the ball is in the air. It counts only if the ball lands within a short window after the press (0.15 s to start); one press per flight, so mashing does not work.
 - The aim guide runs the real simulation. It previews the planned shot from the pull, and keeps showing that plan while the meter charges. It stops after 4 tiles of travel (the "Guide length" stat will scale this from Milestone 3).
 - The last resting spot is only updated when the ball rests on a surface that can hold it (not water, boosters and other pads).
-- Until Milestone 3, hazard surfaces (booster, conveyor, spring, spikes, warp) behave like grass. Bumpers already bounce the ball back faster, because that is just their wall-bounce number.
+- ~~Until Milestone 3, hazard surfaces behave like grass.~~ Hazard tiles work from Milestone 3; see section 7, "As built in Milestone 3".
 - **Decided (owner, 2026-11-14):** the arrow tiles (booster, and conveyor) must push **hard**. A ball rolling over a booster should clearly speed up in the arrow's direction, enough to change where the shot ends, not a gentle nudge. Built in Milestone 3, with the push strength as a tuning number so the owner can set it with the panel.
 - ~~Decided (owner, 2026-11-14): the real game uses the sweeping power meter only.~~ Replaced by the two-phase shot below.
 - **Decided (owner, 2026-11-14): the two-phase shot.** (1) **Plan:** pull back like a slingshot to set the direction and a planned power; the aim guide previews that path. The planned power is a preview only. (2) **Charge:** hold to charge the meter, which goes up, down, up, down (`meterCycles` 2). Release to shoot; the meter alone sets the real power, and the perfect shot still comes from the top of the meter. The meter shows the planned power as a white mark. If the player has not released when the second down sweep reaches the bottom, the ball launches on its own at 10% power (`autoLaunchPower` 0.1; was 5%, raised in owner tuning round 4). Right-click or Esc drops the plan. Default (not chosen by the owner, easy to change): the charge is press-and-hold, release to shoot. Quick shot (P key, the pull fires straight away) stays as a testing aid only.
@@ -127,6 +127,21 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
 - When the meter is full, the exit opens. The player leaves by getting the ball into it.
 
 **Default:** the exit's position is visible from the start, shown closed.
+
+### As built in Milestone 3 (Default unless marked; waiting for the owner to play)
+
+- **Exit:** an open exit catches the ball when it rolls within 0.4 tiles of the hole's centre at under 7 tiles per second (`exitRadius`, `exitMaxSpeed`). Faster, it rolls over the hole, like a golf ball lipping out. A closed exit is just ground.
+- **Hazard tiles** act on a ball touching the ground on them, not one flying over:
+  - Booster: the ball is brought up to at least 9 tiles per second along the arrow at once, then pushed harder still (`boosterMinSpeed` 9, `boosterAccel` 45). This follows the owner's "push hard" decision; tune with the panel.
+  - Conveyor: pulls the ball's speed along the arrow towards 4 tiles per second (`conveyorSpeed`, `conveyorGrip`). It also slows a ball rolling against it.
+  - Spring: throws the ball up at 9 tiles per second (`springLaunch`), keeping its sideways speed.
+  - Spikes: 1 damage (`src/content/rules.ts`).
+  - Warp: the ball comes out of the paired warp at the same spot in the tile, with the same speed. It must leave that tile before a warp can fire again.
+- **Damage once per shot** (FEATURES.md section 2) also covers sinking: if spikes already hurt the ball this shot, stopping in water does not cost a second health.
+- **Blockers** (rock, post, low wall) stand on their tile. The ball bounces off their sides. A ball that comes down on top is thrown back up and off the side: nothing can rest on a blocker. A lofted shot that is higher than the blocker passes over it (the low wall is a quarter of a tile high).
+- **Stars from enemies** land a short way off (1.1 to 1.9 tiles, at a random angle from the seed) on ground that can hold the ball, so the player sometimes has to go and fetch them. With the starting star reach of 1 tile, a ball rolling through often picks them up anyway.
+- **Hearts and shot orbs** are left on the ground when health or shots are already full, so they are not wasted.
+- **Restart (R)** replays the same course with the same seed. A new seed is picked when the page loads, or set it with `?seed=` in the address.
 
 ## 8. Enemies
 

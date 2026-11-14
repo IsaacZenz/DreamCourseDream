@@ -403,6 +403,135 @@ function drawExit(open: boolean): Image {
 }
 
 // ---------------------------------------------------------------------------
+// Course objects (Milestone 3): pickups, blockers, the first enemy.
+
+/** Fill an ellipse with a shaded ramp lit from the upper left, plus an outline. */
+function blob(img: Image, cx: number, cy: number, rx: number, ry: number, base: string, outline = '#202030'): void {
+  const shades = ramp(base);
+  const edge = hex2(outline);
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      const dx = (x + 0.5 - cx) / rx;
+      const dy = (y + 0.5 - cy) / ry;
+      const r = Math.hypot(dx, dy);
+      if (r > 1) continue;
+      const rIn = Math.hypot((x + 0.5 - cx) / (rx - 1), (y + 0.5 - cy) / (ry - 1));
+      if (rIn > 1) {
+        img.set(x, y, edge);
+        continue;
+      }
+      const lit = -dx * 0.6 - dy * 0.8;
+      img.set(x, y, shades[lit > 0.55 ? 4 : lit > -0.1 ? 3 : lit > -0.6 ? 2 : 1]!);
+    }
+  }
+}
+
+function drawStar(fillHex: string): Image {
+  const img = new Image(11, 11);
+  const fill = ramp(fillHex);
+  const edge = hex2('#5a3a08');
+  // A five-pointed star: inside if the polar radius is under a wavy limit.
+  const inside = (x: number, y: number) => {
+    const dx = x + 0.5 - 5.5;
+    const dy = y + 0.5 - 5.8;
+    const a = Math.atan2(dy, dx) + Math.PI / 2;
+    const k = Math.abs(((((a * 5) / (2 * Math.PI)) % 1) + 1) % 1 - 0.5) * 2; // 1 at a point, 0 between
+    return Math.hypot(dx, dy) < 2.3 + 2.9 * k * k;
+  };
+  for (let y = 0; y < 11; y++) {
+    for (let x = 0; x < 11; x++) {
+      if (inside(x, y)) img.set(x, y, fill[x + y < 9 ? 4 : x + y < 13 ? 3 : 2]!);
+      else if (inside(x + 1, y) || inside(x - 1, y) || inside(x, y + 1) || inside(x, y - 1)) img.set(x, y, edge);
+    }
+  }
+  return img;
+}
+
+function drawHeart(): Image {
+  const img = new Image(9, 8);
+  const rows = ['.oo...oo.', 'o44o.o43o', 'o4433333o', 'o3333332o', '.o33332o.', '..o332o..', '...o2o...', '....o....'];
+  const sh = ramp('#e83c50');
+  const edge = hex2('#401018');
+  rows.forEach((r, y) => [...r].forEach((ch, x) => ch === 'o' ? img.set(x, y, edge) : ch !== '.' && img.set(x, y, sh[Number(ch)]!)));
+  return img;
+}
+
+function drawShotOrb(): Image {
+  const img = new Image(9, 9);
+  blob(img, 4.5, 4.5, 4.5, 4.5, '#40c8e8', '#103048');
+  // A small white arrow mark: "one more shot".
+  const w = hex2('#f8f8ff');
+  for (const [x, y] of [[4, 2], [3, 3], [4, 3], [5, 3], [4, 4], [4, 5]] as const) img.set(x, y, w);
+  return img;
+}
+
+function drawRock(): Image {
+  const img = new Image(20, 14);
+  blob(img, 10, 8, 10, 6.5, '#8c8478');
+  // A few cracks.
+  const crack = hex2('#4a4238');
+  for (const [x, y] of [[7, 6], [8, 7], [13, 9], [14, 8], [11, 5]] as const) img.set(x, y, crack);
+  return img;
+}
+
+function drawPost(): Image {
+  // 1.5 tiles tall = 3 steps = 24 px, plus a cap.
+  const img = new Image(8, 28);
+  const sh = ramp('#a07040');
+  const edge = hex2('#302010');
+  for (let y = 2; y < 27; y++) {
+    for (let x = 1; x < 7; x++) {
+      const e = x === 1 || x === 6 || y === 26;
+      img.set(x, y, e ? edge : sh[x < 3 ? 4 : x < 5 ? 3 : 2]!);
+    }
+  }
+  blob(img, 4, 3, 3.5, 2.5, '#c89060', '#302010');
+  return img;
+}
+
+function drawLowWall(): Image {
+  // A full-tile block half a step high (4 px): a raised diamond top and two front sides.
+  const img = new Image(32, 20);
+  const top = ramp('#a8a090');
+  const left = ramp('#807868');
+  const right = ramp('#605848');
+  const brick = hex2('#3a3428');
+  const topPoly: P[] = [[16, 0], [32, 8], [16, 16], [0, 8]];
+  const leftPoly: P[] = [[0, 8], [16, 16], [16, 20], [0, 12]];
+  const rightPoly: P[] = [[16, 16], [32, 8], [32, 12], [16, 20]];
+  for (let y = 0; y < 20; y++) {
+    for (let x = 0; x < 32; x++) {
+      const px = x + BIAS_X;
+      const py = y + BIAS_Y;
+      if (insidePoly(px, py, topPoly)) img.set(x, y, (x + 2 * y) % 16 === 0 ? brick : top[!insidePoly(px, py + 1, topPoly) ? 2 : 3]!);
+      else if (insidePoly(px, py, leftPoly)) img.set(x, y, x % 8 === 0 ? brick : left[3]!);
+      else if (insidePoly(px, py, rightPoly)) img.set(x, y, x % 8 === 4 ? brick : right[3]!);
+    }
+  }
+  return img;
+}
+
+function drawMossback(): Image {
+  const img = new Image(18, 16);
+  // Feet, then the mossy shell, then a little head with eyes.
+  const foot = hex2('#5a4020');
+  for (const [x, y] of [[3, 13], [4, 13], [13, 13], [14, 13], [3, 14], [14, 14]] as const) img.set(x, y, foot);
+  blob(img, 9, 9, 8, 6, '#5c8c30', '#18280c');
+  const moss = hex2('#9cc850');
+  const dark = hex2('#3a5a1c');
+  for (let y = 4; y < 14; y++) for (let x = 2; x < 16; x++) {
+    if (hash(x, y, 21) < 0.12 && img.get(x, y)[3] > 0) img.set(x, y, moss);
+    else if (hash(x, y, 22) < 0.08 && img.get(x, y)[3] > 0) img.set(x, y, dark);
+  }
+  // Face at the front (lower left on screen).
+  blob(img, 5, 11, 3.5, 3, '#c8a868', '#3a2a10');
+  const eye = hex2('#101010');
+  img.set(4, 10, eye);
+  img.set(6, 10, eye);
+  return img;
+}
+
+// ---------------------------------------------------------------------------
 // Tiny pixel font: 3x5 glyphs in 4x6 cells, white, tinted by the game.
 
 const GLYPHS: Record<string, string> = {
@@ -471,6 +600,13 @@ emit('arrow', sheet(DIRECTIONS.map(drawArrow)), 32, 16, [...DIRECTIONS], [16, 8]
 emit('ball', drawBall(), 8, 8, ['idle'], [4, 7]);
 emit('ball-shadow', drawShadow(), 8, 4, ['idle'], [4, 2]);
 emit('exit', sheet([drawExit(false), drawExit(true)]), 16, 10, ['closed', 'open'], [8, 5]);
+emit('star-yellow', drawStar('#f8d030'), 11, 11, ['idle'], [5, 10]);
+emit('heart', drawHeart(), 9, 8, ['idle'], [4, 7]);
+emit('shot-orb', drawShotOrb(), 9, 9, ['idle'], [4, 8]);
+emit('rock', drawRock(), 20, 14, ['idle'], [10, 10]);
+emit('post', drawPost(), 8, 28, ['idle'], [4, 25]);
+emit('low-wall', drawLowWall(), 32, 20, ['idle'], [16, 12]);
+emit('mossback', drawMossback(), 18, 16, ['idle'], [9, 14]);
 const font = drawFont();
 emit('font', font.img, 4, 6, font.frames, [0, 0]);
 
