@@ -140,16 +140,19 @@ Each enemy type is a definition file entry: family, health, star value, radii, t
 
 **Decided:** bosses exist and are fought on the run map (see section 10).
 
-**Default:** a boss is a large enemy with a health bar and two or three phases, on a course built for it. It needs several hits and changes its attack pattern as it loses health.
+**Decided:** a boss is mainly a large health bar with phases whose attack pattern changes as it loses health. Some bosses, not all, add a weak-point puzzle. See `docs/FEATURES.md` section 5.
 
 ## 9. Abilities and gear
 
 **Decided:** one ability slot plus gear slots.
 
 - **Abilities:** defeating an ability-carrying enemy gives you its ability, replacing the one you hold. It is triggered with a key during a shot.
-- **Gear:** passive items found on courses or bought in shops. They sit in a small number of slots.
+- **Gear:** passive items in three categories: weapon, armour, accessory. The ball holds one of each. Rolling over gear of a held category swaps it automatically. Gear never needs a button; weapon effects trigger only on contact with an enemy.
+- **Run upgrades:** plain stackable stat boosts, separate from gear, with no slot limit.
 
-**Default:** three gear slots to start; more can be bought as a permanent upgrade. An ability lasts until replaced or until its uses run out.
+Full detail for gear, run upgrades, damage, enemy tiers, statuses, shops and permanent upgrades is in `docs/FEATURES.md`.
+
+**Default:** an ability lasts until replaced or until its uses run out.
 
 ### Starting ability archetypes (Default; all names are original working names)
 
@@ -167,9 +170,7 @@ Each enemy type is a definition file entry: family, health, star value, radii, t
 
 Milestone 4 builds three of these. The rest come in Milestone 8.
 
-### Gear examples (Default)
-
-Longer aim guide; +1 bounce; stars are pulled toward the ball; first hazard hit each course is ignored; splash damage on landing; ability has one extra use.
+Gear examples are in `docs/FEATURES.md` section 8.
 
 ## 10. The run
 
@@ -236,7 +237,7 @@ Opus: use the default and say that you did. The owner can change any of these at
 | 3 | Does recovering refill all shots or only some? | All |
 | 4 | Power input: sweeping meter, or drag distance? | Sweeping meter; try both in Milestone 2 and let the owner pick |
 | 5 | How many uses does an ability have? | Unlimited uses, one per shot, until replaced |
-| 6 | Can gear be sold or swapped in a shop? | Swapped when slots are full; no selling |
+| 6 | Can gear be sold? | No. Swapping is covered in FEATURES.md section 8 |
 | 7 | Is there healing outside shops and caches? | Bosses heal fully; nothing else |
 | 8 | Does the run have an end, or go until death? | Three regions and a final boss, then an endless mode unlocks |
 | 9 | Theme, setting, main character and the game's name | Undecided; needed before Milestone 9 |

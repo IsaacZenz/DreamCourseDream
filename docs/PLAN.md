@@ -62,7 +62,11 @@ docs/
 
 ## Milestone 3 — Course rules
 
+- [ ] Stat sheet and modifier system (FEATURES.md section 1), with tests
+- [ ] Playable character as a data entry (FEATURES.md section 3)
 - [ ] Shots pool and health pool, with the recover turn at zero shots
+- [ ] Pickups: yellow star, heart, shot orb (FEATURES.md section 13)
+- [ ] Static blockers (FEATURES.md section 6)
 - [ ] Simple stationary enemy that is defeated when hit and drops yellow stars
 - [ ] Star quota meter; exit opens when full; entering the exit completes the course
 - [ ] Hazards from the surface table: spikes, bumper, booster, conveyor, spring, warp pair
@@ -74,6 +78,10 @@ docs/
 ## Milestone 4 — Enemies and abilities
 
 - [ ] Turn order from DESIGN.md section 8
+- [ ] Damage calculation in the order given in FEATURES.md section 2, including element, position and shield steps even though the starter enemies do not use them yet
+- [ ] Full enemy template from FEATURES.md section 4 (tier, traits, element, gear fields present, mostly unused)
+- [ ] Status effect system and the Stunned status
+- [ ] Moving obstacles and destructibles (FEATURES.md section 6)
 - [ ] Patroller family: path following in real time, contact effect. Build one type.
 - [ ] Sentinel family: outer and inner radius, three triggers, immediate or activated response per trigger. Build two types: one ranged, one that chases.
 - [ ] Radii visible in the debug overlay; a subtle in-game cue when the ball is about to pass through one
@@ -88,7 +96,8 @@ docs/
 
 - [ ] Chunk format and a first set of at least twelve chunks
 - [ ] Generator: seed and difficulty budget in, course data out
-- [ ] Enemy and hazard placement that spends the budget
+- [ ] Enemy placement in squads that spends the budget (FEATURES.md section 4). Squad themes can be switched on in Milestone 8.
+- [ ] Obstacle and hazard placement that spends the budget
 - [ ] Structure validator
 - [ ] Bot validator that plays the course in the simulation with no display
 - [ ] Reject-and-retry loop with a cap, and a logged count of rejections
@@ -103,8 +112,9 @@ docs/
 - [ ] Map rules: shops not guaranteed, forced course-only stretches possible, every path reaches a boss
 - [ ] Boss countdown, early boss choice, forced boss at zero (boss is a stand-in hard course until Milestone 7)
 - [ ] Map screen
-- [ ] Shop: run upgrades and gear for yellow stars
-- [ ] Gear slots and at least six gear items
+- [ ] Gear: three categories, one of each, automatic swap on pickup, dropped item stays on the ground (FEATURES.md section 8)
+- [ ] The six starter gear items and five starter run upgrades
+- [ ] Shop: five random offers, reroll, services (FEATURES.md section 11)
 - [ ] Difficulty budget rises along the run
 - [ ] One seed drives the whole run
 
@@ -112,9 +122,9 @@ docs/
 
 ## Milestone 7 — Boss and permanent progress
 
-- [ ] One boss with phases, on its own course layout
+- [ ] Boss template and the first boss, The Warden (FEATURES.md section 5)
 - [ ] Blue stars: sources and wallet
-- [ ] Hub screen between runs with permanent upgrades
+- [ ] Hub screen between runs with the levelled list and the starting-ability unlock (FEATURES.md section 10)
 - [ ] Death flow: lose run items, keep permanent upgrades and blue stars
 - [ ] Save and load with a version number and a safe fallback if the save is unreadable
 - [ ] Region two starts after the boss with a higher budget
@@ -124,7 +134,11 @@ docs/
 ## Milestone 8 — Content and balance
 
 - [ ] Remaining abilities from DESIGN.md section 9
-- [ ] More enemy types in both families; a second and third boss
+- [ ] Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear and its drop chance
+- [ ] Remaining statuses: Poisoned, Burning, Chilled
+- [ ] More enemy types in both families; a second and third boss, one with a gimmick
+- [ ] Linked objects (switches, gates, bridges); optional course modifiers
+- [ ] Second gear slot unlocks; extra characters
 - [ ] Three biomes with their own chunk sets
 - [ ] More gear and shop variety
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
@@ -151,3 +165,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 ## Progress log
 
 - 2026-11-14 — Design and plan written. No code yet.
+- 2026-11-14 — Features file added; plan checklists updated to reference it.
