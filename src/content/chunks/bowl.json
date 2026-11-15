@@ -1,0 +1,52 @@
+{
+  "id": "bowl",
+  "name": "Bowl",
+  "role": "path",
+  "cost": 1,
+  "minBudget": 0,
+  "open": [
+    "ne",
+    "se",
+    "sw",
+    "nw"
+  ],
+  "legend": {
+    "g": "grass",
+    "r": "rough"
+  },
+  "tiles": [
+    "r1 g1 g1 g1 r1",
+    "g1 g1101 g1100 g1110 g1",
+    "g1 g1001 g0 g0110 g1",
+    "g1 g1011 g0011 g0111 g1",
+    "r1 g1 g1 g1 r1"
+  ],
+  "spots": [
+    {
+      "kind": "enemy",
+      "at": [
+        1,
+        1
+      ]
+    },
+    {
+      "kind": "enemy",
+      "at": [
+        3,
+        3
+      ]
+    },
+    {
+      "kind": "hazard",
+      "tiles": [
+        [
+          2,
+          2
+        ]
+      ],
+      "allow": [
+        "spikes"
+      ]
+    }
+  ]
+}

@@ -639,6 +639,37 @@ export function runShot(play: PlayState, inputs: readonly TickInput[] = []): voi
   }
 }
 
+/**
+ * An independent copy of the whole course state, so a shot can be tried
+ * without changing the real game (the course generator's bot, Milestone 5).
+ * Definitions, the course and the tuning are shared; everything that changes
+ * during play is copied.
+ */
+export function clonePlay(play: PlayState): PlayState {
+  const shared = new Set<unknown>([play.course, play.tuning, play.character, ...play.course.objects, ...OBJECTS.values(), ...ABILITIES.values(), ...STATUSES.values()]);
+  const memo = new Map<unknown, unknown>();
+  const copy = (v: unknown): unknown => {
+    if (typeof v !== 'object' || v === null || shared.has(v)) return v;
+    const seen = memo.get(v);
+    if (seen !== undefined) return seen;
+    if (v instanceof Rng) return Rng.fromState(v.getState());
+    if (v instanceof StatSheet) return v.clone();
+    if (Array.isArray(v)) {
+      const out: unknown[] = [];
+      memo.set(v, out);
+      for (const x of v) out.push(copy(x));
+      return out;
+    }
+    const out: Record<string, unknown> = {};
+    memo.set(v, out);
+    for (const [k, x] of Object.entries(v)) out[k] = typeof x === 'function' ? x : copy(x);
+    return out;
+  };
+  const out = copy(play) as PlayState;
+  out.world.contact = (o, s) => onBallContact(out, o, s);
+  return out;
+}
+
 /** Let the world run for a number of steps (tests and tools). */
 export function wait(play: PlayState, n: number): void {
   for (let i = 0; i < n && play.status === 'playing'; i++) tick(play);

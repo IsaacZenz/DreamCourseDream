@@ -1,10 +1,15 @@
 import Phaser from 'phaser';
-import { TEST_COURSES } from '../content/courses';
+import { GENERATED_ID, TEST_COURSES } from '../content/courses';
+import { GEN } from '../content/gen';
+import { generateCourse, type GenResult } from '../gen/validate';
+import type { BotMove } from '../gen/bot';
+import { Rng } from '../sim/rng';
+import { SeedViewer } from '../ui/seedViewer';
 import { BENCH_ID, benchChoices, benchCourse } from '../content/courses/testBench';
 import { SURFACES } from '../content/surfaces';
 import { parseCourse, type Course } from '../sim/course';
 import { STEP_HEIGHT, type Tuning } from '../content/tuning';
-import { DT, groundAt, type BallState, type ShotType } from '../sim/ball';
+import { DT, groundAt, type BallState, type ShotCommand, type ShotType } from '../sim/ball';
 import {
   ballNow,
   canShoot,
@@ -33,7 +38,7 @@ import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 let manifest: Manifest = { version: 1, sprites: {} };
 
 /** Debug overlay modes, cycled with the G key. */
-const DEBUG_MODES = ['off', 'coords', 'heights', 'surfaces'] as const;
+const DEBUG_MODES = ['off', 'coords', 'heights', 'surfaces', 'chunks'] as const;
 type DebugMode = (typeof DEBUG_MODES)[number];
 
 const PAN_SPEED = 160; // screen pixels per second
@@ -75,6 +80,15 @@ let panel: TuningPanel | null = null;
 const bench = { object: 'mossback', ability: '' };
 let benchShown = false;
 
+/** Generated courses (Milestone 5): the budget in use, and the last course made (kept so R does not regenerate). */
+let genBudget: number | null = null;
+let lastGen: { result: GenResult; ms: number } | null = null;
+let viewer: SeedViewer | null = null;
+/** How fast the bot replays (B key), as a multiple of real time. */
+const WATCH_SPEED = 2;
+/** The bot's next shot is drawn this long before it is taken, in ms. */
+const WATCH_PREVIEW = 700;
+
 /** Shot settings the player has chosen. Kept across course switches. */
 const settings = { type: 'ground' as ShotType, top: 0, side: 0, quickShot: false, help: true };
 
@@ -94,6 +108,18 @@ export interface CourseSceneData {
   debug?: DebugMode;
   /** Keep this seed (restart). Otherwise the address's ?seed= or a new random one. */
   seed?: string;
+  /** Generated course: the difficulty budget. */
+  budget?: number;
+  /** Generated course: replay the bot's game instead of playing (B key). */
+  watch?: boolean;
+}
+
+/** Six letters and digits from a random stream, for the next generated course's seed. */
+function seedFrom(rng: Rng): string {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let out = '';
+  for (let i = 0; i < 6; i++) out += chars[rng.int(0, 35)];
+  return out;
 }
 
 /** A short random seed for a new course. The display may use Math.random; the simulation never does. */
@@ -158,6 +184,13 @@ export class CourseScene extends Phaser.Scene {
   /** Course objects on screen, by their uid in the simulation. */
   private objectImgs = new Map<string, Phaser.GameObjects.Image>();
   private exitImg: Phaser.GameObjects.Image | null = null;
+  /** Bot replay (B key): its shots still to take, and when the next one fires. */
+  private watching = false;
+  private botMoves: readonly BotMove[] = [];
+  private botNext = 0;
+  private botAt = 0;
+  /** Thumbnail mode for the contact sheet (?thumb=1): no HUD, whole course in view. */
+  private thumb = false;
 
   constructor() {
     super('course');
@@ -169,7 +202,12 @@ export class CourseScene extends Phaser.Scene {
     const wanted = params.get('course') ?? window.location.hash.slice(1);
     const fromUrl = TEST_COURSES.findIndex((c) => c.id === wanted);
     this.courseIndex = data.courseIndex ?? (fromUrl >= 0 ? fromUrl : 0);
-    this.seed = data.seed ?? params.get('seed') ?? newSeed();
+    this.seed = data.seed ?? params.get('seed')?.toUpperCase() ?? newSeed();
+    if (genBudget === null) genBudget = Number(params.get('budget')) || GEN.defaultBudget;
+    if (data.budget !== undefined) genBudget = data.budget;
+    genBudget = Phaser.Math.Clamp(Math.round(genBudget), GEN.minBudget, GEN.maxBudget);
+    this.watching = data.watch === true;
+    this.thumb = params.get('thumb') === '1';
     const urlDebug = params.get('debug');
     this.debugMode = data.debug ?? (DEBUG_MODES.includes(urlDebug as DebugMode) ? (urlDebug as DebugMode) : urlDebug === '1' ? 'coords' : 'off');
   }
@@ -188,7 +226,11 @@ export class CourseScene extends Phaser.Scene {
 
   create(): void {
     const file = TEST_COURSES[this.courseIndex]!;
-    const parsed = parseCourse(file.id === BENCH_ID ? benchCourse(bench.object) : file.data);
+    if (!tuning) tuning = loadTuning();
+    let data: unknown = file.data;
+    if (file.id === BENCH_ID) data = benchCourse(bench.object);
+    else if (file.id === GENERATED_ID) data = this.generated().result.raw;
+    const parsed = parseCourse(data);
     this.setupKeys();
     if (!parsed.ok) {
       this.course = null;
@@ -200,7 +242,6 @@ export class CourseScene extends Phaser.Scene {
 
     for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
 
-    if (!tuning) tuning = loadTuning();
     if (!panel) {
       panel = new TuningPanel(tuning);
       if (new URLSearchParams(window.location.search).get('tune') === '1') panel.toggle(true);
@@ -254,6 +295,70 @@ export class CourseScene extends Phaser.Scene {
     this.drawHud(file.id, course);
     this.drawShotHud();
     this.drawOverlay();
+
+    if (file.id === GENERATED_ID) {
+      this.updateViewer();
+      const bot = lastGen!.result.bot;
+      this.botMoves = this.watching && bot ? bot.moves : [];
+      this.botNext = 0;
+      this.botAt = 0;
+      if (this.watching) this.showMessage(bot ? 'WATCHING THE BOT' : 'NO BOT GAME TO WATCH', 0x80c8ff);
+      if (!bot) this.watching = false;
+    } else this.watching = false;
+    if (this.thumb) this.thumbView(course);
+  }
+
+  /** The generated course for this seed and budget, made once and kept for restarts. */
+  private generated(): { result: GenResult; ms: number } {
+    if (lastGen && lastGen.result.seed === this.seed && lastGen.result.budget === genBudget) return lastGen;
+    const t0 = performance.now();
+    const result = generateCourse(this.seed, genBudget!, tuning!);
+    const ms = performance.now() - t0;
+    lastGen = { result, ms };
+    (result.fallback ? console.warn : console.info)(`${result.summary}, ${Math.round(ms)} ms`);
+    return lastGen;
+  }
+
+  /** Thumbnail for the contact sheet: no HUD, zoomed out so the whole course shows. */
+  private thumbView(course: Course): void {
+    const b = courseBounds(course);
+    const cam = this.cameras.main;
+    const zoom = Math.min(1, VIEW_WIDTH / (b.right - b.left + 16), VIEW_HEIGHT / (b.bottom - b.top + 16));
+    cam.removeBounds();
+    cam.setZoom(zoom);
+    cam.centerOn((b.left + b.right) / 2, (b.top + b.bottom) / 2);
+    for (const o of this.children.list) {
+      const hud = o as unknown as { scrollFactorX?: number; setVisible?: (v: boolean) => void };
+      if (hud.scrollFactorX === 0) hud.setVisible?.(false);
+    }
+    this.statusHud?.setVisible(false);
+  }
+
+  private updateViewer(): void {
+    if (!viewer || !lastGen) return;
+    const { result: r, ms } = lastGen;
+    const lines: string[] = [];
+    lines.push(r.fallback ? 'Every attempt failed: this is the fallback course.' : `Accepted on attempt ${r.attempts}.`);
+    const rej = Object.entries(r.rejections);
+    lines.push(rej.length ? `Rejected: ${rej.map(([k, n]) => `${k} x${n}`).join(', ')}` : 'No rejections.');
+    lines.push(`Generated in ${Math.round(ms)} ms.`);
+    if (r.bot) lines.push(`Bot: won in ${r.bot.shots} shots with ${r.bot.health} health (${r.bot.simulated} shots tried).`);
+    if (r.meta) {
+      const s = r.meta.spend;
+      lines.push(`Budget ${r.budget}: terrain ${s.terrain}, enemies ${s.enemies}, obstacles ${s.obstacles}, hazards ${s.hazards}.`);
+      lines.push(`${r.meta.enemies} enemies, ${r.meta.stars} stars on offer, quota ${r.course.quota}.`);
+      lines.push(`Chunks: ${r.meta.layout.chunks.map((c) => c.chunk.id).join(', ')}`);
+    }
+    viewer.show({ seed: r.seed, budget: r.budget, passed: !r.fallback, lines, json: JSON.stringify(r.raw, null, 2) });
+  }
+
+  /** Load a generated course (key 6, the seed viewer, [ and ], Enter after a win). */
+  private loadGenerated(seed: string, budget: number, watch = false): void {
+    this.scene.restart({ courseIndex: TEST_COURSES.findIndex((c) => c.id === GENERATED_ID), debug: this.debugMode, seed, budget, watch });
+  }
+
+  private get isGenerated(): boolean {
+    return TEST_COURSES[this.courseIndex]?.id === GENERATED_ID;
   }
 
   override update(_time: number, deltaMs: number): void {
@@ -314,6 +419,17 @@ export class CourseScene extends Phaser.Scene {
     kb.on('keydown-THREE', () => this.switchCourse(2));
     kb.on('keydown-FOUR', () => this.switchCourse(3));
     kb.on('keydown-FIVE', () => this.switchCourse(4));
+    kb.on('keydown-SIX', () => this.loadGenerated(this.isGenerated ? this.seed : newSeed(), genBudget!));
+    // Generated course: [ and ] lower or raise the budget by 2 and make a new course.
+    kb.on('keydown-OPEN_BRACKET', () => this.isGenerated && this.loadGenerated(newSeed(), Math.max(GEN.minBudget, genBudget! - 2)));
+    kb.on('keydown-CLOSED_BRACKET', () => this.isGenerated && this.loadGenerated(newSeed(), Math.min(GEN.maxBudget, genBudget! + 2)));
+    kb.on('keydown-V', () => {
+      if (!viewer) viewer = new SeedViewer({ generate: (seed, budget) => this.loadGenerated(seed, budget), watchBot: () => this.loadGenerated(this.seed, genBudget!, true) });
+      viewer.toggle();
+      if (viewer.visible && !this.isGenerated) this.loadGenerated(newSeed(), genBudget!);
+      else this.updateViewer();
+    });
+    kb.on('keydown-B', () => this.isGenerated && this.loadGenerated(this.seed, genBudget!, !this.watching));
     kb.on('keydown-N', () => this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length));
 
     // Drag with the right or middle mouse button to pan. The left button is for shots.
@@ -333,7 +449,7 @@ export class CourseScene extends Phaser.Scene {
 
   /** Start this course again from the beginning, with the same seed. */
   private restartCourse(): void {
-    this.scene.restart({ courseIndex: this.courseIndex, debug: this.debugMode, seed: this.seed });
+    this.scene.restart({ courseIndex: this.courseIndex, debug: this.debugMode, seed: this.seed, ...(this.isGenerated && { budget: genBudget! }) });
   }
 
   private panBy(dx: number, dy: number): void {
@@ -519,7 +635,12 @@ export class CourseScene extends Phaser.Scene {
     });
     onKey('R', () => this.restartCourse());
     onKey('ENTER', () => {
-      if (this.play.status === 'won') this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length);
+      if (this.play.status === 'won' && this.isGenerated) {
+        // Owner, 2026-11-15: the next generated course's budget rises by a random 0 to 4, from the seed.
+        const rng = Rng.fromSeed(`next/${this.seed}/${genBudget}`);
+        const budget = Math.min(GEN.maxBudget, genBudget! + rng.int(GEN.climbMin, GEN.climbMax));
+        this.loadGenerated(seedFrom(rng), budget);
+      } else if (this.play.status === 'won') this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length);
       else if (this.play.status === 'lost') this.restartCourse();
     });
     onKey('U', () => panel?.toggle());
@@ -606,9 +727,14 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private shoot(power: number): void {
-    if (!canShoot(this.play)) return;
+    if (!canShoot(this.play) || this.watching) return;
     this.power = power;
-    const shot = takeShot(this.play, this.command(power));
+    this.fire(this.command(power));
+  }
+
+  private fire(cmd: ShotCommand): void {
+    this.power = cmd.power;
+    const shot = takeShot(this.play, cmd);
     this.prevBall = { ...shot.ball };
     this.boostQueued = false;
     this.abilityQueued = false;
@@ -641,7 +767,7 @@ export class CourseScene extends Phaser.Scene {
       );
       if (d.power > 0) this.aim = d.angle;
       this.planPower = d.power;
-    } else if ((this.phase === 'plan' || this.phase === 'set') && canShoot(this.play)) {
+    } else if ((this.phase === 'plan' || this.phase === 'set') && canShoot(this.play) && !this.watching) {
       // Keyboard aiming: Left/Right (A/D) turn the aim, Up/Down (W/S) set the planned power.
       const turn = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
       const pw = (k.up.isDown || k.w.isDown ? 1 : 0) - (k.down.isDown || k.s.isDown ? 1 : 0);
@@ -656,9 +782,28 @@ export class CourseScene extends Phaser.Scene {
 
     // The world runs all the time in fixed steps of 1/120 s: things move while you aim.
     const before = { ...ballNow(this.play) };
-    this.accumulator = Math.min(this.accumulator + dt, 0.25);
+    const speed = this.watching ? WATCH_SPEED : 1;
+    this.accumulator = Math.min(this.accumulator + dt * speed, 0.25 * speed);
     let stepped = false;
     while (this.accumulator >= DT && this.play.status === 'playing') {
+      // Bot replay (B key): take its next shot on exactly the clock step it took it.
+      const move = this.watching && canShoot(this.play) ? this.botMoves[this.botNext] : undefined;
+      if (move) {
+        if (move.clock !== this.play.clock) {
+          this.watching = false;
+          this.showMessage('BOT REPLAY OUT OF STEP', BAD);
+        } else {
+          // Show the shot it chose first; the world waits meanwhile, so the replay stays in step.
+          if (!this.botAt) this.botAt = this.time.now + WATCH_PREVIEW / speed;
+          if (this.time.now < this.botAt) {
+            this.accumulator = 0;
+            break;
+          }
+          this.botAt = 0;
+          this.botNext++;
+          this.fire(move.cmd);
+        }
+      }
       if (!stepped) this.prevBall = { ...ballNow(this.play) };
       stepped = true;
       const steer = this.play.tornado ? (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0) : 0;
@@ -701,6 +846,9 @@ export class CourseScene extends Phaser.Scene {
         this.camY += (this.ballScreen.y - VIEW_HEIGHT / 2 - this.camY) * Math.min(1, dt * 6);
         this.applyCamera();
       }
+    } else if (this.watching) {
+      const next = this.botAt ? this.botMoves[this.botNext] : undefined;
+      this.drawGuide(next ? previewShot(this.play, next.cmd) : null);
     } else if (this.phase === 'plan' || this.planPower <= 0) this.drawGuide(null);
     else this.drawGuide(previewShot(this.play, this.command(Math.max(t.minPower, this.planPower))));
     this.drawMeter();
@@ -977,7 +1125,7 @@ export class CourseScene extends Phaser.Scene {
     c.add(pixelText(this, manifest, 104, 2, `HP ${p.health}/${maxHealth}`, { color: UI_TEXT }));
     const starX = 94;
     icon('star-yellow', starX - 2, 9);
-    c.add(pixelText(this, manifest, starX + 10, barY, `${p.wallet}  #${this.seed}`, { color: UI_TEXT }));
+    c.add(pixelText(this, manifest, starX + 10, barY, `${p.wallet}  #${this.seed}${this.isGenerated ? ` B${genBudget}` : ''}`, { color: UI_TEXT }));
     // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
     const slotX = bgW + 4;
     c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -1040,7 +1188,8 @@ export class CourseScene extends Phaser.Scene {
     const lines = [
       'MOUSE: PULL BACK TO PLAN, HOLD TO CHARGE  KEYS: ARROWS/WASD AIM+POWER, HOLD SPACE TO CHARGE',
       'T: GROUND/LOFT  Z/X: SPIN  Q/E: CURVE  SPACE IN FLIGHT: BOOST  F: ABILITY  ESC: RE-PLAN',
-      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  1-5/N: COURSE  R: RESTART  G: DEBUG  U: TUNING+TEST BENCH  H: HELP',
+      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  1-6/N: COURSE  R: RESTART  G: DEBUG  U: TUNING+TEST BENCH  H: HELP',
+      ...(TEST_COURSES[this.courseIndex]?.id === GENERATED_ID ? ['GENERATED: BRACKET KEYS: BUDGET -/+2  V: SEED VIEWER  B: WATCH THE BOT  ENTER AFTER A WIN: NEXT'] : []),
     ];
     this.helpHud = lines.map((l, i) =>
       pixelText(this, manifest, 2, VIEW_HEIGHT - 7 * (lines.length - i) - 1, l, { color: UI_DIM, background: UI_BG })
@@ -1084,15 +1233,67 @@ export class CourseScene extends Phaser.Scene {
       } else if (this.debugMode === 'heights') {
         // Flat tiles show one height; sloped tiles show their four corners (nw ne se sw).
         this.label(t.shape === '0000' ? String(t.base) : t.corners.join(''), c.x, c.y);
-      } else {
+      } else if (this.debugMode === 'surfaces') {
         this.label((SURFACES.get(t.surface)?.name ?? t.surface).slice(0, 3), c.x, c.y);
       }
     }
+    if (this.debugMode === 'chunks') this.drawChunks(course);
     const mode = pixelText(this, manifest, VIEW_WIDTH - 2, 2, `DEBUG: ${this.debugMode}`, { color: 0xf8e048, background: UI_BG })
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH);
     mode.x -= mode.width;
     this.overlay.push(mode);
+  }
+
+  /**
+   * Debug mode "chunks" (generated courses): each chunk's outline and id (with
+   * its turn and flip), the spots it offered (bright: used, dim: not used), and
+   * how the budget was spent.
+   */
+  private drawChunks(course: Course): void {
+    const meta = this.isGenerated ? lastGen?.result.meta : null;
+    if (!meta) {
+      const t = pixelText(this, manifest, 2, 22, 'CHUNKS: ONLY FOR GENERATED COURSES (KEY 6)', { color: 0xf8e048, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
+      this.overlay.push(t);
+      return;
+    }
+    const n = GEN.chunkSize;
+    const g = this.add.graphics().setDepth(OVERLAY_DEPTH + 1);
+    g.lineStyle(1, DEBUG_OUTER, 0.9);
+    this.overlay.push(g);
+    for (const pc of meta.layout.chunks) {
+      const x0 = pc.sx * n;
+      const y0 = pc.sy * n;
+      const h = pc.offset;
+      const pts = [project(x0, y0, h), project(x0 + n, y0, h), project(x0 + n, y0 + n, h), project(x0, y0 + n, h)];
+      g.beginPath();
+      g.moveTo(pts[0]!.x, pts[0]!.y);
+      for (const p of pts.slice(1)) g.lineTo(p.x, p.y);
+      g.closePath();
+      g.strokePath();
+      const c = project(x0 + n / 2, y0 + n / 2, h);
+      const name = `${pc.chunk.id}${pc.chunk.rot ? ` R${pc.chunk.rot}` : ''}${pc.chunk.mirror ? ' M' : ''}`;
+      const t = pixelText(this, manifest, 0, 0, name.toUpperCase(), { color: DEBUG_OUTER, background: UI_BG, padding: 0 }).setDepth(OVERLAY_DEPTH + 2);
+      t.setPosition(Math.round(c.x - t.width / 2), Math.round(c.y - 20));
+      this.overlay.push(t);
+    }
+    const letter: Record<string, string> = { enemy: 'E', lane: 'L', blocker: 'B', cloud: 'C', gate: 'G', hazard: 'H', pickup: 'P', crack: 'K' };
+    for (const sp of meta.spots) {
+      const tile = course.tiles[sp.y * course.width + sp.x];
+      const z = tile ? Math.max(...tile.corners) : 0;
+      const c = project(sp.x + 0.5, sp.y + 0.5, z);
+      const t = pixelText(this, manifest, 0, 0, letter[sp.kind] ?? '?', { color: sp.used ? 0xf8e048 : UI_DIM, background: UI_BG, padding: 0 }).setDepth(OVERLAY_DEPTH + 2);
+      t.setPosition(Math.round(c.x - t.width / 2), Math.round(c.y - t.height / 2));
+      this.overlay.push(t);
+    }
+    const s = meta.spend;
+    const info = pixelText(this, manifest, 2, 22, `BUDGET ${meta.budget}: TERRAIN ${s.terrain}  ENEMIES ${s.enemies}  OBSTACLES ${s.obstacles}  HAZARDS ${s.hazards}`, {
+      color: 0xf8e048,
+      background: UI_BG,
+    })
+      .setScrollFactor(0)
+      .setDepth(HUD_DEPTH);
+    this.overlay.push(info);
   }
 
   private label(text: string, cx: number, cy: number): void {

@@ -1,12 +1,15 @@
 /**
- * Hand-built courses. Generated courses (Milestone 5) use the same format but
- * are made at run time, so they are not listed here.
+ * Hand-built courses, plus one slot for a generated course (Milestone 5). A
+ * generated course uses the same format but is made at run time from a seed and
+ * a budget, so its slot has no data here.
  */
 import flatWalls from './flat-walls.json';
 import slopesSurfaces from './slopes-surfaces.json';
 import courseRules from './course-rules.json';
 import enemiesAbilities from './enemies-abilities.json';
 import { BENCH_ID, benchCourse } from './testBench.ts';
+
+export const GENERATED_ID = 'generated';
 
 export interface CourseFile {
   readonly id: string;
@@ -20,4 +23,6 @@ export const TEST_COURSES: readonly CourseFile[] = [
   { id: 'enemies-abilities', data: enemiesAbilities },
   // The test bench: rebuilt by the game with the thing chosen in the tuning panel.
   { id: BENCH_ID, data: benchCourse('mossback') },
+  // A generated course (key 6): made by src/gen/ from the seed and budget.
+  { id: GENERATED_ID, data: null },
 ];

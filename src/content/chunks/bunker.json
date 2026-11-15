@@ -1,0 +1,46 @@
+{
+  "id": "bunker",
+  "name": "Bunker",
+  "role": "path",
+  "cost": 1,
+  "minBudget": 0,
+  "open": [
+    "nw",
+    "se"
+  ],
+  "legend": {
+    "g": "grass",
+    "r": "rough",
+    "s": "sand"
+  },
+  "tiles": [
+    "r0 s0 s0 s0 r0",
+    "g0 s0 s0 s0 g0",
+    "g0 g0 g0 g0 g0",
+    "g0 g0 g0 g0 g0",
+    "r0 g0 g0 g0 r0"
+  ],
+  "spots": [
+    {
+      "kind": "enemy",
+      "at": [
+        2,
+        1
+      ]
+    },
+    {
+      "kind": "enemy",
+      "at": [
+        3,
+        3
+      ]
+    },
+    {
+      "kind": "blocker",
+      "at": [
+        1,
+        3
+      ]
+    }
+  ]
+}

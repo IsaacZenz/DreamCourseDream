@@ -1,0 +1,60 @@
+{
+  "id": "nook",
+  "name": "Nook",
+  "role": "branch",
+  "cost": 0,
+  "minBudget": 0,
+  "open": [
+    "se"
+  ],
+  "legend": {
+    "g": "grass",
+    "r": "rough"
+  },
+  "tiles": [
+    "r0 r0 r0 r0 r0",
+    "r0 g0 g0 g0 g0",
+    "r0 g0 g0 g0 g0",
+    "r0 g0 g0 g0 g0",
+    "r0 r0 r0 r0 r0"
+  ],
+  "spots": [
+    {
+      "kind": "enemy",
+      "at": [
+        2,
+        2
+      ]
+    },
+    {
+      "kind": "blocker",
+      "at": [
+        1,
+        1
+      ],
+      "crate": true
+    },
+    {
+      "kind": "blocker",
+      "at": [
+        1,
+        3
+      ],
+      "crate": true
+    },
+    {
+      "kind": "pickup",
+      "at": [
+        1,
+        2
+      ]
+    },
+    {
+      "kind": "crack",
+      "at": [
+        3,
+        1
+      ]
+    }
+  ]
+}

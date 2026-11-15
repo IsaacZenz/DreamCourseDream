@@ -99,6 +99,13 @@ export class StatSheet {
   modifiers(): readonly Modifier[] {
     return this.mods.map((m) => m.mod);
   }
+
+  /** An independent copy (the course generator's bot tries shots on copies of the game). */
+  clone(): StatSheet {
+    const out = new StatSheet(this.base);
+    out.mods = this.mods.map((m) => ({ ...m }));
+    return out;
+  }
 }
 
 export function clampStat(stat: StatId, value: number): number {

@@ -1,0 +1,51 @@
+{
+  "id": "ramp",
+  "name": "Ramp",
+  "role": "path",
+  "cost": 1,
+  "minBudget": 0,
+  "open": [
+    "nw",
+    "se"
+  ],
+  "legend": {
+    "g": "grass",
+    "r": "rough"
+  },
+  "tiles": [
+    "r0 r0 r0110 r1 r1",
+    "g0 g0 g0110 g1 g1",
+    "g0 g0 g0110 g1 g1",
+    "g0 g0 g0110 g1 g1",
+    "r0 r0 r0110 r1 r1"
+  ],
+  "spots": [
+    {
+      "kind": "enemy",
+      "at": [
+        3,
+        1
+      ]
+    },
+    {
+      "kind": "blocker",
+      "at": [
+        1,
+        3
+      ]
+    },
+    {
+      "kind": "hazard",
+      "tiles": [
+        [
+          1,
+          2
+        ]
+      ],
+      "allow": [
+        "booster"
+      ],
+      "dir": "se"
+    }
+  ]
+}
