@@ -23,7 +23,7 @@ export function canStep(a: Tile, b: Tile, d: Direction): boolean {
   const [i, j] = EDGE[d];
   const [k, l] = EDGE[OPP[d]];
   const up = Math.max(b.corners[k]! - a.corners[i]!, b.corners[l]! - a.corners[j]!);
-  return up <= 1;
+  return up <= GEN.climbSteps;
 }
 
 /** Every tile the ball can reach from the start. */

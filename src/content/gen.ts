@@ -7,6 +7,8 @@
 export const GEN = {
   /** Chunks are this many tiles on a side. */
   chunkSize: 5,
+  /** Structure check: the ball can climb a rise of up to this many height steps (half a tile; a lofted shot clears it). */
+  climbSteps: 2,
   /** Budget presets (sheet section 3.1). */
   presets: { easy: 8, normal: 12, hard: 20 },
   defaultBudget: 12,

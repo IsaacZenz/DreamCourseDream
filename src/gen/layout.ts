@@ -8,7 +8,6 @@
 import { CHUNK_FILES } from '../content/chunks/index.ts';
 import { GEN } from '../content/gen.ts';
 import { DIRECTION_VECTORS, DIRECTIONS, type Direction } from '../content/surfaces.ts';
-import { MAX_HEIGHT } from '../sim/course.ts';
 import type { Rng } from '../sim/rng.ts';
 import type { Corners } from '../sim/tileShape.ts';
 import { loadChunks, opposite, orientations, sideRow, type ChunkDef, type ChunkTile, type OrientedChunk } from './chunks.ts';
@@ -194,8 +193,8 @@ export function makeLayout(rng: Rng, budget: number): LayoutResult {
   let lo = Infinity;
   let hi = -Infinity;
   for (const t of tiles) if (t) for (const c of t.corners) [lo, hi] = [Math.min(lo, c), Math.max(hi, c)];
-  // Room for a bumper standing one step up.
-  if (hi - lo > MAX_HEIGHT - 1) return { ok: false, reason: 'too tall' };
+  // This layout writes format 2 (digits 0-9, doubled when read): room for a bumper on top.
+  if (hi - lo > 8) return { ok: false, reason: 'too tall' };
   for (let i = 0; i < tiles.length; i++) {
     const t = tiles[i];
     if (t && lo !== 0) tiles[i] = { ...t, corners: t.corners.map((c) => c - lo) as unknown as Corners };

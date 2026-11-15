@@ -284,7 +284,8 @@ export function generateAttempt(seed: string, budget: number, attempt: number): 
             const dir = def.needsDir ? (s.dir ?? place.pick(DIRECTIONS)) : undefined;
             for (const p of ts) {
               const t = tileAt(p)!;
-              const corners = t.corners.map((c) => c + (def.raise ?? 0)) as unknown as Corners;
+              // This generator writes format 2 (half-tile steps), so a raise in new steps is halved.
+              const corners = t.corners.map((c) => c + Math.ceil((def.raise ?? 0) / 2)) as unknown as Corners;
               const nt: ChunkTile = { surface, corners, ...(dir && { dir }) };
               tiles[p[1] * layout.width + p[0]] = nt;
               used.add(key(p));

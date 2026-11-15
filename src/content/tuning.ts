@@ -117,7 +117,7 @@ export interface Tuning {
 }
 
 /** Height of one course step in tiles. Fixed by the art (8 px step, 32x16 tile), not a tuning number. */
-export const STEP_HEIGHT = 0.5;
+export const STEP_HEIGHT = 0.25;
 
 /** Simulation steps per second. Fixed timestep (DESIGN.md section 5). */
 export const STEPS_PER_SECOND = 120;

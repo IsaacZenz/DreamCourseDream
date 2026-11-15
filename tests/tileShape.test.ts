@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { SHAPES, heightAt, shapeOf, triangles, type Corners } from '../src/sim/tileShape';
 
 describe('tile shapes', () => {
-  it('has exactly 13 allowed shapes', () => {
-    expect(SHAPES).toHaveLength(13);
-    expect(new Set(SHAPES).size).toBe(13);
+  it('has 25 allowed shapes: flat, and 12 patterns each gentle (one step) or steep (two)', () => {
+    expect(SHAPES).toHaveLength(25);
+    expect(new Set(SHAPES).size).toBe(25);
+    expect(shapeOf([2, 2, 0, 0])).toBe('2200');
   });
 
   it('names shapes relative to the lowest corner', () => {
@@ -16,7 +17,9 @@ describe('tile shapes', () => {
   it('rejects saddles and steps bigger than one', () => {
     expect(shapeOf([1, 0, 1, 0])).toBeNull();
     expect(shapeOf([0, 1, 0, 1])).toBeNull();
-    expect(shapeOf([2, 0, 0, 0])).toBeNull();
+    expect(shapeOf([3, 0, 0, 0])).toBeNull();
+    expect(shapeOf([2, 1, 0, 0])).toBeNull(); // mixed gentle and steep in one tile
+    expect(shapeOf([2, 0, 2, 0])).toBeNull();
   });
 
   it('splits odd-corner tiles along the diagonal that avoids the odd corner', () => {

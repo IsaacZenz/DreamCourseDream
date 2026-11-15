@@ -21,7 +21,8 @@ export type Corners = readonly [nw: number, ne: number, se: number, sw: number];
 /** Corner heights relative to the lowest corner, written as four digits, e.g. "1100". */
 export type ShapeId = string;
 
-export const SHAPES: readonly ShapeId[] = [
+/** The 13 basic shapes: flat, and one step of rise. */
+export const BASIC_SHAPES: readonly ShapeId[] = [
   '0000',
   // straight slopes, named by which on-screen edge of the diamond is high
   '1100', // upper-right edge high (nw + ne)
@@ -39,6 +40,14 @@ export const SHAPES: readonly ShapeId[] = [
   '1101',
   '1110',
 ];
+
+/**
+ * Every allowed shape (Milestone 5b, owner 2026-11-15: the height step was
+ * halved). A tile rises by one step (gentle, about 14 degrees) or two steps
+ * (steep, about 27 degrees, the old one-step slope) in one of the 12 basic
+ * patterns: "1100" and "2200" are the same slope, gentle and steep.
+ */
+export const SHAPES: readonly ShapeId[] = [...BASIC_SHAPES, ...BASIC_SHAPES.filter((s) => s !== '0000').map((s) => s.replace(/1/gu, '2'))];
 
 const SHAPE_SET = new Set(SHAPES);
 
@@ -63,7 +72,8 @@ export function shapeOf(c: Corners): ShapeId | null {
  * Returns corner indices (0 = nw, 1 = ne, 2 = se, 3 = sw).
  */
 export function triangles(shape: ShapeId): readonly [readonly [number, number, number], readonly [number, number, number]] {
-  const r = [...shape].map(Number);
+  // Steep shapes ("2200") split the same way as gentle ones ("1100").
+  const r = [...shape].map((c): number => (c === '0' ? 0 : 1));
   const sum = r.reduce((a, b) => a + b, 0);
   const oddCorner = sum === 1 ? r.indexOf(1) : sum === 3 ? r.indexOf(0) : -1;
   if (oddCorner === 0 || oddCorner === 2) {

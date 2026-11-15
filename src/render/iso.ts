@@ -4,8 +4,9 @@
  *
  * Screen position of a grid point (gx, gy) at height h (in steps):
  *   screenX = (gx - gy) * 16
- *   screenY = (gx + gy) * 8 - h * 8
- * Tiles are 32x16 diamonds; one height step is 8 pixels (DESIGN.md section 4).
+ *   screenY = (gx + gy) * 8 - h * 4
+ * Tiles are 32x16 diamonds; one height step is 4 pixels (DESIGN.md section 4;
+ * halved from 8 by the owner, 2026-11-15).
  *
  * Draw order: tiles are drawn back to front by diagonal (x + y). Within a
  * tile: its vertical faces, then its top, then anything sitting on it. Faces
@@ -18,9 +19,9 @@ import { ARROW_SPRITE, SURFACES } from '../content/surfaces.ts';
 
 export const HALF_W = 16;
 export const HALF_H = 8;
-export const STEP_PX = 8;
+export const STEP_PX = 4;
 /** Faces at the outside of the course, or next to an empty spot, go down to this height. */
-export const FLOOR_HEIGHT = -1;
+export const FLOOR_HEIGHT = -2;
 
 export interface ScreenPoint {
   x: number;
@@ -59,13 +60,24 @@ export function tileDepth(x: number, y: number, layer: keyof typeof LAYER): numb
  * which frame to use. The neighbour is drawn later and covers anything below
  * its own surface, so bands only need to start from the neighbour's lower end.
  */
-export function faceBands(a: number, b: number, na: number, nb: number): { k: number; frame: 'full' | 'capA' | 'capB' }[] {
+export type FaceFrame = 'full' | 'capA' | 'capB' | 'capA2' | 'capB2';
+
+/** A face band from height k up `size` steps (2 only for the cap above a steep edge). */
+export interface FaceBand {
+  k: number;
+  size: number;
+  frame: FaceFrame;
+}
+
+export function faceBands(a: number, b: number, na: number, nb: number): FaceBand[] {
   if (a <= na && b <= nb) return [];
   const bottom = Math.min(na, nb);
   const top = Math.min(a, b);
-  const bands: { k: number; frame: 'full' | 'capA' | 'capB' }[] = [];
-  for (let k = bottom; k < top; k++) bands.push({ k, frame: 'full' });
-  if (a !== b) bands.push({ k: top, frame: a > b ? 'capA' : 'capB' });
+  const bands: FaceBand[] = [];
+  for (let k = bottom; k < top; k++) bands.push({ k, size: 1, frame: 'full' });
+  const d = Math.abs(a - b);
+  if (d === 1) bands.push({ k: top, size: 1, frame: a > b ? 'capA' : 'capB' });
+  else if (d === 2) bands.push({ k: top, size: 2, frame: a > b ? 'capA2' : 'capB2' });
   return bands;
 }
 
@@ -99,13 +111,13 @@ export function buildDrawList(course: Course, opts: DrawOptions = {}): Placement
       // Lower-left face: edge sw → se, neighbour below-left is (x, y + 1) whose nw, ne match.
       const left = tileAt(course, x, y + 1);
       for (const band of faceBands(sw, se, left?.corners[0] ?? FLOOR_HEIGHT, left?.corners[1] ?? FLOOR_HEIGHT)) {
-        const p = project(x, y + 1, band.k + 1);
+        const p = project(x, y + 1, band.k + band.size);
         out.push({ sprite: `${def.faceSprite}-left`, frame: band.frame, ...p, depth: tileDepth(x, y, 'face'), kind: 'face', tile });
       }
       // Lower-right face: edge se → ne, neighbour below-right is (x + 1, y) whose sw, nw match.
       const right = tileAt(course, x + 1, y);
       for (const band of faceBands(se, ne, right?.corners[3] ?? FLOOR_HEIGHT, right?.corners[0] ?? FLOOR_HEIGHT)) {
-        const p = project(x + 1, y + 1, band.k + 1);
+        const p = project(x + 1, y + 1, band.k + band.size);
         out.push({ sprite: `${def.faceSprite}-right`, frame: band.frame, ...p, depth: tileDepth(x, y, 'face'), kind: 'face', tile });
       }
 

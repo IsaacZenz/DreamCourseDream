@@ -121,13 +121,16 @@ const FACE_LOOKS: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Tiles: one sheet per surface, one 32x24 frame per shape.
+// Tiles: one sheet per surface, one 32x24 frame per shape (room for steep shapes).
 // In a frame, the diamond at relative height 0 has corners
-// nw (16,8), ne (32,16), se (16,24), sw (0,16). Each step up moves a corner 8px up.
+// nw (16,8), ne (32,16), se (16,24), sw (0,16). Each step up moves a corner 4px up
+// (owner, 2026-11-15: the height step was halved from 8 pixels).
 
+/** Pixels per height step (STEP_PX in src/render/iso.ts). */
+const S = 4;
 const TILE_W = 32;
-const TILE_H = 24;
-const TILE_ANCHOR: P = [16, 16];
+const TILE_H = 16 + 2 * S;
+const TILE_ANCHOR: P = [16, 8 + 2 * S];
 
 // Light comes from the upper left of the screen. Grid x points down-right on
 // screen and grid y points down-left, so "upper left" is mostly -x.
@@ -137,7 +140,7 @@ const LIGHT = (() => {
   return v.map((n) => n / len) as [number, number, number];
 })();
 /** One height step, in tile widths, for lighting only. */
-const STEP = 0.5;
+const STEP = 0.25;
 const CORNER_GRID: readonly (readonly [number, number])[] = [
   [0, 0],
   [1, 0],
@@ -147,13 +150,13 @@ const CORNER_GRID: readonly (readonly [number, number])[] = [
 
 function cornerScreen(i: number, rel: number): P {
   const base: P[] = [
-    [16, 8],
-    [32, 16],
-    [16, 24],
-    [0, 16],
+    [16, 2 * S],
+    [32, 8 + 2 * S],
+    [16, 16 + 2 * S],
+    [0, 8 + 2 * S],
   ];
   const b = base[i]!;
-  return [b[0], b[1] - rel * 8];
+  return [b[0], b[1] - rel * S];
 }
 
 function triShade(rel: number[], tri: readonly number[]): number {
@@ -209,7 +212,7 @@ function drawSpringPad(img: Image): void {
   const dark = hex2('#5a4a10');
   for (let y = 0; y < img.height; y++) {
     for (let x = 0; x < img.width; x++) {
-      const [u, v] = frameToUV(x + 0.5, y + 0.5, 8);
+      const [u, v] = frameToUV(x + 0.5, y + 0.5, 2 * S);
       const r = Math.hypot(u - 0.5, v - 0.5);
       if (r < 0.32 && r > 0.22) img.set(x, y, ring);
       else if (r <= 0.12) img.set(x, y, ring);
@@ -221,7 +224,7 @@ function drawSpringPad(img: Image): void {
 function drawSpikes(img: Image, rel: number[]): void {
   const light = hex2('#e0e0e8');
   const dark = hex2('#2a2830');
-  const lift = (rel.reduce((a, b) => a + b, 0) / 4) * 8;
+  const lift = (rel.reduce((a, b) => a + b, 0) / 4) * S;
   for (const [u, v] of [
     [0.25, 0.25],
     [0.75, 0.25],
@@ -230,7 +233,7 @@ function drawSpikes(img: Image, rel: number[]): void {
     [0.5, 0.5],
   ] as const) {
     const cx = Math.round(16 + (u - v) * 16);
-    const cy = Math.round(8 + (u + v) * 8 - lift);
+    const cy = Math.round(2 * S + (u + v) * 8 - lift);
     // A little 3-pixel-wide cone pointing up.
     img.set(cx, cy - 3, light);
     img.set(cx, cy - 2, light);
@@ -249,7 +252,7 @@ function drawWarpRing(img: Image): void {
   const core = hex2('#200838');
   for (let y = 0; y < img.height; y++) {
     for (let x = 0; x < img.width; x++) {
-      const [u, v] = frameToUV(x + 0.5, y + 0.5, 8);
+      const [u, v] = frameToUV(x + 0.5, y + 0.5, 2 * S);
       const r = Math.hypot(u - 0.5, v - 0.5);
       if (r < 0.14) img.set(x, y, core);
       else if (r < 0.22) img.set(x, y, mid);
@@ -264,48 +267,71 @@ function drawWarpRing(img: Image): void {
 // capA when the first corner is higher, capB when the second is).
 // Left faces run sw → se; right faces run se → ne.
 
-const FACE_FRAMES = ['full', 'capA', 'capB'];
+/** Face frames are tall enough for the two-step cap. */
+const FACE_H = 8 + 2 * S;
+const FACE_FRAMES = ['full', 'capA', 'capB', 'capA2', 'capB2'];
 const LEFT_SHAPES: Record<string, P[]> = {
   full: [
     [0, 0],
     [16, 8],
-    [16, 16],
-    [0, 8],
+    [16, 8 + S],
+    [0, S],
   ],
   capA: [
     [0, 0],
-    [16, 16],
-    [0, 8],
+    [16, 8 + S],
+    [0, S],
   ],
   capB: [
-    [0, 8],
+    [0, S],
     [16, 8],
-    [16, 16],
+    [16, 8 + S],
+  ],
+  // Above a steep edge (the two corners two steps apart).
+  capA2: [
+    [0, 0],
+    [16, 8 + 2 * S],
+    [0, 2 * S],
+  ],
+  capB2: [
+    [0, 2 * S],
+    [16, 8],
+    [16, 8 + 2 * S],
   ],
 };
 const RIGHT_SHAPES: Record<string, P[]> = {
   full: [
     [0, 8],
     [16, 0],
-    [16, 8],
-    [0, 16],
+    [16, S],
+    [0, 8 + S],
   ],
   capA: [
     [0, 8],
-    [16, 8],
-    [0, 16],
+    [16, S],
+    [0, 8 + S],
   ],
   capB: [
-    [0, 16],
+    [0, 8 + S],
     [16, 0],
-    [16, 8],
+    [16, S],
+  ],
+  capA2: [
+    [0, 8],
+    [16, 2 * S],
+    [0, 8 + 2 * S],
+  ],
+  capB2: [
+    [0, 8 + 2 * S],
+    [16, 0],
+    [16, 2 * S],
   ],
 };
 
 function drawFace(base: string, poly: P[], shade: number): Image {
   const shades = ramp(base);
-  const img = new Image(16, 16);
-  for (let y = 0; y < 16; y++) {
+  const img = new Image(16, FACE_H);
+  for (let y = 0; y < FACE_H; y++) {
     for (let x = 0; x < 16; x++) {
       if (!insidePoly(x + BIAS_X, y + BIAS_Y, poly)) continue;
       let s = shade;
@@ -865,8 +891,8 @@ for (const def of SURFACES.values()) {
 for (const id of faceIds) {
   const base = FACE_LOOKS[id];
   if (!base) throw new Error(`No placeholder colour for face "${id}". Add one to FACE_LOOKS.`);
-  emit(`${id}-left`, sheet(FACE_FRAMES.map((f) => drawFace(base, LEFT_SHAPES[f]!, 3))), 16, 16, FACE_FRAMES, [0, 0]);
-  emit(`${id}-right`, sheet(FACE_FRAMES.map((f) => drawFace(base, RIGHT_SHAPES[f]!, 1))), 16, 16, FACE_FRAMES, [0, 8]);
+  emit(`${id}-left`, sheet(FACE_FRAMES.map((f) => drawFace(base, LEFT_SHAPES[f]!, 3))), 16, FACE_H, FACE_FRAMES, [0, 0]);
+  emit(`${id}-right`, sheet(FACE_FRAMES.map((f) => drawFace(base, RIGHT_SHAPES[f]!, 1))), 16, FACE_H, FACE_FRAMES, [0, 8]);
 }
 emit('arrow', sheet(DIRECTIONS.map(drawArrow)), 32, 16, [...DIRECTIONS], [16, 8]);
 emit('ball', drawBall(), 8, 8, ['idle'], [4, 7]);

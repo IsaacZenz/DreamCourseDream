@@ -36,7 +36,8 @@ describe('test courses', () => {
     if (!r.ok) throw new Error(r.errors.join('\n'));
     const tiles = r.course.tiles.filter((t) => t !== null);
     expect(new Set(tiles.map((t) => t.surface))).toEqual(new Set(SURFACES.keys()));
-    expect(new Set(tiles.map((t) => t.shape))).toEqual(new Set(SHAPES));
+    // A format 1 file: its one-step slopes are read as steep (two-step) slopes.
+    expect(new Set(tiles.map((t) => t.shape))).toEqual(new Set(SHAPES.filter((s) => !s.includes('1'))));
     expect(r.course.tiles.some((t) => t === null)).toBe(true); // has an out-of-bounds hole
   });
 });
@@ -47,21 +48,22 @@ describe('parseCourse', () => {
     if (!r.ok) throw new Error(r.errors.join('\n'));
     expect(r.course.width).toBe(3);
     expect(r.course.height).toBe(2);
-    expect(tileAt(r.course, 2, 0)?.corners).toEqual([1, 1, 1, 1]);
+    // Format 1 heights are doubled (the height step was halved, owner 2026-11-15).
+    expect(tileAt(r.course, 2, 0)?.corners).toEqual([2, 2, 2, 2]);
     expect(tileAt(r.course, 3, 0)).toBeNull();
   });
 
   it('reads corner heights, directions and links', () => {
     const r = parseCourse(base({ tiles: ['g0 g1001 >0', 'w0 g0 w0'] }));
     if (!r.ok) throw new Error(r.errors.join('\n'));
-    expect(tileAt(r.course, 1, 0)).toMatchObject({ corners: [1, 0, 0, 1], shape: '1001', base: 0 });
+    expect(tileAt(r.course, 1, 0)).toMatchObject({ corners: [2, 0, 0, 2], shape: '2002', base: 0 });
     expect(tileAt(r.course, 2, 0)?.dir).toBe('se');
     expect(tileAt(r.course, 0, 1)?.link).toBe('a');
   });
 
   const bad: Array<[string, unknown, RegExp]> = [
     ['not an object', 'hello', /JSON object/],
-    ['wrong format version', base({ format: 3 }), /"format" must be one of 1, 2/],
+    ['wrong format version', base({ format: 4 }), /"format" must be one of 1, 2, 3/],
     ['an unknown field (typo)', base({ qouta: 1 }), /Unknown field.*qouta/],
     ['rows of different lengths', base({ tiles: ['g0 g0 g0', 'g0 g0'] }), /row 1: has 2 tiles/],
     ['a letter missing from the legend', base({ tiles: ['g0 g0 q0', 'g0 g0 g0'] }), /"q" is not in the legend/],
@@ -87,7 +89,19 @@ describe('parseCourse', () => {
     });
   }
 
+  it('reads format 3: base-36 heights, gentle and steep slopes, no doubling', () => {
+    const r = parseCourse(base({ format: 3, tiles: ['ga gaa99 gaa88', 'g0 g0 g0'] }));
+    if (!r.ok) throw new Error(r.errors.join('\n'));
+    expect(tileAt(r.course, 0, 0)?.corners).toEqual([10, 10, 10, 10]);
+    expect(tileAt(r.course, 1, 0)).toMatchObject({ corners: [10, 10, 9, 9], shape: '1100' });
+    expect(tileAt(r.course, 2, 0)).toMatchObject({ corners: [10, 10, 8, 8], shape: '2200' });
+  });
+
+  it('rejects a format 3 tile that rises more than two steps', () => {
+    expect(errorsFor(base({ format: 3, tiles: ['g0300 g0 g0', 'g0 g0 g0'] })).join(' ')).toMatch(/corner heights/);
+  });
+
   it('reports every problem at once, not just the first', () => {
-    expect(errorsFor(base({ format: 3, quota: -1, start: [9, 9] })).length).toBeGreaterThanOrEqual(3);
+    expect(errorsFor(base({ format: 4, quota: -1, start: [9, 9] })).length).toBeGreaterThanOrEqual(3);
   });
 });

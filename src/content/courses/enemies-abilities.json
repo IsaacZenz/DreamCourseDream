@@ -1,5 +1,5 @@
 {
-  "format": 2,
+  "format": 3,
   "name": "Enemies and abilities",
   "legend": {
     "g": "grass",
@@ -178,21 +178,21 @@
     }
   ],
   "tiles": [
-    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
-    "g2 g1 g1221 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g0 g0 g0 g0 g0 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 x1 g1 g0 g0 g0 g0 g0 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 x1 g1 g0 g0 g0 g0 g0 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
-    "g2 g1 g1 g1 g1 g1 ~1 ~1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
-    "g2 g1 g1 g1 g1 g1 ~1 ~1 g1 g1 g1 g1 g1 g1 g0 g0 g0 g0 g0 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g3 g1 g1 g1 g1 g1 g1 g1 g1 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g3 g1 g1 g1 g1 g1 g1 g1 g1 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g3 g1 g1 g1 g1 g1 g1 g1 g1 g2",
-    "g2 g1 g1 g1 g1 g1 g1 g1 g1 g1 g3 g1 g1 g1 g1 g1 g1 g1 g1 g2",
-    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2"
+    "g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g0 g0 g0 g0 g0 g4",
+    "g4 g2 g2442 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g0 g0 g0 g0 g0 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g0 g0 g0 g0 g0 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 x2 g2 g0 g0 g0 g0 g0 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 x2 g2 g0 g0 g0 g0 g0 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g0 g0 g0 g0 g0 g4",
+    "g4 g2 g2 g2 g2 g2 ~2 ~2 g2 g2 g2 g2 g2 g2 g0 g0 g0 g0 g0 g4",
+    "g4 g2 g2 g2 g2 g2 ~2 ~2 g2 g2 g2 g2 g2 g2 g0 g0 g0 g0 g0 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g6 g2 g2 g2 g2 g2 g2 g2 g2 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g6 g2 g2 g2 g2 g2 g2 g2 g2 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g6 g2 g2 g2 g2 g2 g2 g2 g2 g4",
+    "g4 g2 g2 g2 g2 g2 g2 g2 g2 g2 g6 g2 g2 g2 g2 g2 g2 g2 g2 g4",
+    "g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4 g4"
   ]
 }

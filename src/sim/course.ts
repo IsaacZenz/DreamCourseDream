@@ -5,7 +5,7 @@
  * A course file is JSON:
  *
  *   {
- *     "format": 1,
+ *     "format": 3,
  *     "name": "Flat with walls",
  *     "legend": { "g": "grass", ">": { "surface": "booster", "dir": "se" }, "w": { "surface": "warp", "link": "a" } },
  *     "tiles": [
@@ -21,8 +21,13 @@
  *
  * Each string in "tiles" is one grid row (grid y), with tiles separated by
  * spaces (grid x). A tile is written as a legend letter followed by either one
- * digit (a flat tile at that height) or four digits (the corner heights nw, ne,
- * se, sw; see tileShape.ts). A single "." is an empty spot: out of bounds.
+ * height (a flat tile at that height) or four heights (the corners nw, ne, se,
+ * sw; see tileShape.ts). A single "." is an empty spot: out of bounds.
+ *
+ * Format 3 (Milestone 5b, owner 2026-11-15): one height step is a quarter of a
+ * tile, and each height is one base-36 character: 0-9 then a-z (10 to 35).
+ * Formats 1 and 2 used half-tile steps and digits only; their heights are
+ * doubled when they are read, so old files look and play exactly as before.
  *
  * "objects" is optional: things placed on tiles, by id from
  * src/content/objects.ts (pickups, blockers, moving obstacles, breakables,
@@ -46,10 +51,18 @@ import { OBJECTS, RENAMED_OBJECTS } from '../content/objects.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { minCorner, shapeOf, type Corners, type ShapeId } from './tileShape.ts';
 
-export const COURSE_FORMAT_VERSION = 2;
-const FORMATS_READ = [1, 2];
-/** Highest corner height allowed, in steps. Keeps courses on screen. */
-export const MAX_HEIGHT = 9;
+export const COURSE_FORMAT_VERSION = 3;
+const FORMATS_READ = [1, 2, 3];
+/** Highest corner height allowed, in steps (format 3 steps: a quarter of a tile). */
+export const MAX_HEIGHT = 35;
+
+/** Paths may not cross a rise or drop bigger than this, in steps (half a tile). */
+const PATH_MAX_RISE = 2;
+
+/** One height in a tile token: a base-36 character (format 3). */
+export function heightChar(h: number): string {
+  return h.toString(36);
+}
 
 export interface Tile {
   readonly x: number;
@@ -108,7 +121,8 @@ interface LegendEntry {
 }
 
 const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects'];
-const TILE_TOKEN = /^(.)(\d|\d{4})$/u;
+const TILE_TOKEN = /^(.)([0-9a-z]|[0-9a-z]{4})$/u;
+const OLD_TILE_TOKEN = /^(.)(\d|\d{4})$/u;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -182,6 +196,9 @@ export function parseCourse(raw: unknown): ParseResult {
     errors.push('"tiles" must be a non-empty list of row strings.');
   } else {
     height = rows.length;
+    // Formats 1 and 2: digits only, half-tile steps, so heights are doubled.
+    const old = raw.format === 1 || raw.format === 2;
+    const scale = old ? 2 : 1;
     const split = rows.map((r: string) => r.trim().split(/\s+/u));
     width = split[0]?.length ?? 0;
     split.forEach((tokens, y) => {
@@ -195,9 +212,9 @@ export function parseCourse(raw: unknown): ParseResult {
           tiles.push(null);
           continue;
         }
-        const m = TILE_TOKEN.exec(token);
+        const m = (old ? OLD_TILE_TOKEN : TILE_TOKEN).exec(token);
         if (!m) {
-          errors.push(`${where}: expected a legend letter then 1 or 4 digits, or ".".`);
+          errors.push(`${where}: expected a legend letter then 1 or 4 heights${old ? ' (digits)' : ' (0-9, a-z)'}, or ".".`);
           tiles.push(null);
           continue;
         }
@@ -208,7 +225,7 @@ export function parseCourse(raw: unknown): ParseResult {
           tiles.push(null);
           continue;
         }
-        const h = [...digits].map(Number);
+        const h = [...digits].map((c) => parseInt(c, 36) * scale);
         const corners: Corners = h.length === 1 ? [h[0]!, h[0]!, h[0]!, h[0]!] : [h[0]!, h[1]!, h[2]!, h[3]!];
         if (Math.max(...corners) > MAX_HEIGHT) errors.push(`${where}: heights go up to ${MAX_HEIGHT}.`);
         const shape = shapeOf(corners);
@@ -287,7 +304,7 @@ function takesPath(id: string): boolean {
 
 /**
  * A path may not leave the course, cross an empty spot, or cross a rise or drop
- * of more than one step. Checked by walking each leg in small steps.
+ * of more than half a tile (two steps). Checked by walking each leg in small steps.
  */
 function checkPath(course: Omit<Course, 'start' | 'exit'>, pts: readonly GridPoint[], where: string, errors: string[]): void {
   const c = { ...course, start: pts[0]!, exit: pts[0]! };
@@ -304,8 +321,8 @@ function checkPath(course: Omit<Course, 'start' | 'exit'>, pts: readonly GridPoi
         errors.push(`${where}: the path from (${a.x}, ${a.y}) to (${b.x}, ${b.y}) leaves the course.`);
         return;
       }
-      if (prev && t !== prev && Math.abs(t.base - prev.base) > 1) {
-        errors.push(`${where}: the path from (${a.x}, ${a.y}) to (${b.x}, ${b.y}) crosses a rise or drop of more than one step.`);
+      if (prev && t !== prev && Math.abs(t.base - prev.base) > PATH_MAX_RISE) {
+        errors.push(`${where}: the path from (${a.x}, ${a.y}) to (${b.x}, ${b.y}) crosses a rise or drop of more than half a tile.`);
         return;
       }
       prev = t;

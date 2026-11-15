@@ -69,7 +69,7 @@ const defs: readonly SurfaceDef[] = [
   { id: 'sand', name: 'Sand', tileSprite: 'tile-sand', faceSprite: 'face-sand', canHoldBall: true },
   { id: 'ice', name: 'Ice', tileSprite: 'tile-ice', faceSprite: 'face-ice', canHoldBall: true },
   { id: 'water', name: 'Water', tileSprite: 'tile-water', faceSprite: 'face-earth', canHoldBall: false, sinks: true, overlaySprite: 'tile-water-surface' },
-  { id: 'bumper', name: 'Bumper', tileSprite: 'tile-bumper', faceSprite: 'face-bumper', canHoldBall: false, cost: 1, raise: 1 },
+  { id: 'bumper', name: 'Bumper', tileSprite: 'tile-bumper', faceSprite: 'face-bumper', canHoldBall: false, cost: 1, raise: 2 },
   { id: 'booster', name: 'Booster', tileSprite: 'tile-booster', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsDir: true, effect: 'push', cost: 1 },
   { id: 'conveyor', name: 'Conveyor', tileSprite: 'tile-conveyor', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsDir: true, effect: 'carry', cost: 1 },
   { id: 'spring', name: 'Spring', tileSprite: 'tile-spring', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, effect: 'launch', cost: 1 },

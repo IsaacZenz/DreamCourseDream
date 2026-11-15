@@ -1,46 +1,133 @@
 {
-  "format": 1,
+  "format": 3,
   "name": "Test: course rules",
   "legend": {
     "g": "grass",
     "~": "water",
     "x": "spikes",
     "^": "spring",
-    ">": { "surface": "booster", "dir": "ne" },
-    "c": { "surface": "conveyor", "dir": "se" },
-    "w": { "surface": "warp", "link": "a" }
+    ">": {
+      "surface": "booster",
+      "dir": "ne"
+    },
+    "c": {
+      "surface": "conveyor",
+      "dir": "se"
+    },
+    "w": {
+      "surface": "warp",
+      "link": "a"
+    }
   },
-  "start": [2, 11],
-  "exit": [13, 2],
+  "start": [
+    2,
+    11
+  ],
+  "exit": [
+    13,
+    2
+  ],
   "quota": 4,
   "objects": [
-    { "id": "mossback", "at": [6, 3] },
-    { "id": "mossback", "at": [9, 9] },
-    { "id": "mossback", "at": [12, 10] },
-    { "id": "mossback", "at": [3, 7] },
-    { "id": "mossback", "at": [10, 2] },
-    { "id": "yellow-star", "at": [13, 8] },
-    { "id": "heart", "at": [1, 5] },
-    { "id": "shot-orb", "at": [8, 7] },
-    { "id": "rock", "at": [8, 4] },
-    { "id": "stump", "at": [5, 9] },
-    { "id": "low-wall", "at": [13, 4] },
-    { "id": "low-wall", "at": [14, 4] }
+    {
+      "id": "mossback",
+      "at": [
+        6,
+        3
+      ]
+    },
+    {
+      "id": "mossback",
+      "at": [
+        9,
+        9
+      ]
+    },
+    {
+      "id": "mossback",
+      "at": [
+        12,
+        10
+      ]
+    },
+    {
+      "id": "mossback",
+      "at": [
+        3,
+        7
+      ]
+    },
+    {
+      "id": "mossback",
+      "at": [
+        10,
+        2
+      ]
+    },
+    {
+      "id": "yellow-star",
+      "at": [
+        13,
+        8
+      ]
+    },
+    {
+      "id": "heart",
+      "at": [
+        1,
+        5
+      ]
+    },
+    {
+      "id": "shot-orb",
+      "at": [
+        8,
+        7
+      ]
+    },
+    {
+      "id": "rock",
+      "at": [
+        8,
+        4
+      ]
+    },
+    {
+      "id": "stump",
+      "at": [
+        5,
+        9
+      ]
+    },
+    {
+      "id": "low-wall",
+      "at": [
+        13,
+        4
+      ]
+    },
+    {
+      "id": "low-wall",
+      "at": [
+        14,
+        4
+      ]
+    }
   ],
   "tiles": [
-    "g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    x0    x0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    ~0    ~0    ~0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    ~0    ~0    ~0    g0    g0    c0    c0    c0    c0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    w0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    >0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    ^0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    w0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1"
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 x0 x0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 ~0 ~0 ~0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 ~0 ~0 ~0 g0 g0 c0 c0 c0 c0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 w0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 >0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 ^0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 w0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2"
   ]
 }
