@@ -9,6 +9,7 @@
 import { GEN } from '../content/gen.ts';
 import type { Tuning } from '../content/tuning.ts';
 import { parseCourse, type Course } from '../sim/course.ts';
+import type { Loadout } from '../sim/play.ts';
 import { playBot, type BotResult } from './bot.ts';
 import { generateAttempt, type GenMeta } from './generate.ts';
 import { journeyRow } from './journey.ts';
@@ -37,6 +38,8 @@ export interface GenOptions {
   readonly noBot?: boolean;
   /** An extra check (tests): return a reason to reject the attempt, or null to accept it. */
   readonly extraCheck?: (course: Course, attempt: number) => string | null;
+  /** Milestone 6: the bot plays with this loadout (the player's upgrades, gear and ability; full health). */
+  readonly loadout?: Loadout;
 }
 
 function describe(rej: Record<string, number>): string {
@@ -67,7 +70,7 @@ export function generateCourse(seed: string, budget: number, tuning: Tuning, opt
         reject(extra);
         continue;
       }
-      const bot = opts.noBot ? null : playBot(r.course, tuning, seed, { maxShots: journeyRow(b).botShots });
+      const bot = opts.noBot ? null : playBot(r.course, tuning, seed, { maxShots: journeyRow(b).botShots, ...(opts.loadout && { loadout: opts.loadout }) });
       if (bot && !bot.passed) {
         reject(bot.reason);
         continue;

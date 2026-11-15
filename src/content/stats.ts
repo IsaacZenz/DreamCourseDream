@@ -19,6 +19,8 @@ export const STAT_IDS = [
   'dropLuck',
   'shopPrices',
   'gearCapacity',
+  /** Owner, 2026-11-15: naps (recover turns) per course. A stat from Milestone 6 so gear can change it. */
+  'naps',
   // Enemies
   'health',
   'moveRange',
@@ -49,6 +51,7 @@ export const STAT_DEFS: Readonly<Record<StatId, StatDef>> = {
   dropLuck: { name: 'Drop luck', min: 0, max: 10, whole: false },
   shopPrices: { name: 'Shop prices', min: 0.1, max: 10, whole: false },
   gearCapacity: { name: 'Gear capacity', min: 1, max: 3, whole: true },
+  naps: { name: 'Naps', min: 0, max: 9, whole: true },
   health: { name: 'Health', min: 1, max: 999, whole: true },
   moveRange: { name: 'Move range', min: 0, max: 20, whole: false },
   attackDamage: { name: 'Attack damage', min: 0, max: 99, whole: true },

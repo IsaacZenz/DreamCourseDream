@@ -24,6 +24,7 @@
  */
 import { ABILITIES, ABILITY_IDS, type AbilityDef } from '../content/abilities.ts';
 import { CHARACTERS, DEFAULT_CHARACTER, type CharacterDef } from '../content/characters.ts';
+import { GEAR, GEAR_CATEGORIES, NO_GEAR, type GearCategory, type GearEffect, type GearSlots } from '../content/gear.ts';
 import {
   OBJECTS,
   type BlockerDef,
@@ -63,7 +64,7 @@ import {
 import { railTileList, railTiles, tileAt, type Course, type CourseObject, type GridPoint } from './course.ts';
 import { computeHit, isBehind } from './damage.ts';
 import { Rng, type Seed } from './rng.ts';
-import { StatSheet } from './stats.ts';
+import { StatSheet, type Modifier } from './stats.ts';
 
 const steps = (seconds: number) => Math.round(seconds * STEPS_PER_SECOND);
 
@@ -134,6 +135,19 @@ export interface PickupState {
   readonly y: number;
   readonly z: number;
   taken: boolean;
+}
+
+/** A gear item lying on the course (Milestone 6). */
+export interface GearItemState {
+  readonly uid: string;
+  /** Gear id in src/content/gear.ts. */
+  readonly item: string;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  taken: boolean;
+  /** A dropped item cannot be picked up again before this clock step. */
+  lockUntil: number;
 }
 
 export interface BlockerState {
@@ -247,7 +261,29 @@ export type PlayEvent =
   /** A damaging hit on an enemy: one shot back (owner, 2026-11-15). */
   | { kind: 'bonusShot' }
   /** Fell off the edge: the held ability is lost (owner, 2026-11-15). */
-  | { kind: 'abilityLost'; ability: string };
+  | { kind: 'abilityLost'; ability: string }
+  // Milestone 6: gear.
+  /** Rolled over a gear item: it is equipped, and the one it replaced (if any) is left on the ground. */
+  | { kind: 'gearEquipped'; item: string; dropped: string | null }
+  /** Armour ignored a damage (Lining family, Bastion Plate). */
+  | { kind: 'shielded'; item: string }
+  /** Armour stopped a kind of damage outright (Cork Plate, Storm Cloak). */
+  | { kind: 'resisted'; item: string; cause: string }
+  /** Armour hurt back an enemy that hurt the ball (Guard family, Mirror Plate). */
+  | { kind: 'thorns'; enemy: string; damage: number }
+  /** Phoenix Plate saved the ball and crumbled. */
+  | { kind: 'phoenix'; item: string; health: number }
+  /** A status other than Stunned took hold on an enemy (Burning). */
+  | { kind: 'status'; target: string; status: string }
+  /** Damage from a status at the start of an enemy turn. */
+  | { kind: 'statusDamage'; enemy: string; status: string; damage: number }
+  /** Thunder Knuckle zapped a second enemy; Sunfire Crown's burst. */
+  | { kind: 'chainZap'; enemy: string }
+  | { kind: 'burst'; enemy: string }
+  /** Health healed by gear during a course (Leech Fang). */
+  | { kind: 'healed'; amount: number; item: string }
+  /** Echo Shell: this hit counted twice. */
+  | { kind: 'echo' };
 
 export type PlayStatus = 'playing' | 'won' | 'lost';
 
@@ -304,6 +340,15 @@ export interface PlayState {
   abilityUsed: boolean;
   tornado: TornadoState | null;
   ballStatuses: StatusState[];
+  /** Gear held, one per category (Milestone 6). */
+  gear: { -readonly [C in GearCategory]: string | null };
+  /** Gear lying on the course. */
+  readonly gearItems: GearItemState[];
+  /** Damages ignored by armour on this course (Lining family, Bastion Plate). */
+  shieldsUsed: number;
+  /** Shot number of the last Echo Shell hit and the last Leech Fang heal (once per shot each). */
+  echoShot: number;
+  leechShot: number;
   /** Clouds that already zapped the ball in this motion. */
   zapped: string[];
   /** Ball and rolling things touching right now, so each meeting counts once. */
@@ -323,6 +368,19 @@ export interface PlayState {
 export interface PlayOptions {
   readonly seed: Seed;
   readonly character?: string;
+  /** What the ball brings from the run (Milestone 6). Leave out for a fresh ball. */
+  readonly loadout?: Loadout;
+}
+
+/** The ball's state carried into a course from the run. */
+export interface Loadout {
+  /** Health at the start, before any heal at the start of the course. Full if left out. */
+  readonly health?: number;
+  readonly ability?: string | null;
+  readonly gear?: GearSlots;
+  readonly wallet?: number;
+  /** Run upgrades: modifiers that last the run. */
+  readonly modifiers?: readonly Modifier[];
 }
 
 /** What the player does during one step. */
@@ -422,15 +480,22 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
   const character = CHARACTERS.get(opts.character ?? DEFAULT_CHARACTER);
   if (!character) throw new Error(`Unknown character "${opts.character}".`);
   const stats = new StatSheet(character.stats);
+  const lo = opts.loadout ?? {};
+  for (const m of lo.modifiers ?? []) stats.add(m);
+  const startGear = lo.gear ?? NO_GEAR;
+  for (const c of GEAR_CATEGORIES) {
+    const g = startGear[c] ? GEAR.get(startGear[c]!) : undefined;
+    for (const m of g?.modifiers ?? []) stats.add({ ...m, source: { kind: 'gear', id: g!.id }, duration: { kind: 'equipped' } });
+  }
   const play: PlayState = {
     course,
     tuning,
     seed: String(opts.seed),
     character,
     stats,
-    health: stats.get('maxHealth'),
+    health: Math.min(stats.get('maxHealth'), lo.health ?? stats.get('maxHealth')),
     shots: stats.get('maxShots'),
-    wallet: 0,
+    wallet: lo.wallet ?? 0,
     meter: 0,
     quota: course.quota,
     exitOpen: course.quota <= 0,
@@ -454,10 +519,15 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     shotNumber: 0,
     clock: 0,
     immuneUntil: 0,
-    ability: character.startingAbility,
+    ability: lo.ability !== undefined ? lo.ability : character.startingAbility,
     abilityUsed: false,
     tornado: null,
     ballStatuses: [],
+    gear: { weapon: startGear.weapon, armour: startGear.armour, bauble: startGear.bauble },
+    gearItems: [],
+    shieldsUsed: 0,
+    echoShot: -1,
+    leechShot: -1,
     zapped: [],
     touching: [],
     turnQueue: [],
@@ -535,6 +605,8 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
       play.movers.push(m);
     } else if (def.kind === 'breakable') {
       play.breakables.push({ uid, def, x: cx, y: cy, z, tx: o.x, ty: o.y, health: def.health, broken: false, drops: o.drops ?? def.drops, lastHitClock: -Infinity });
+    } else if (def.kind === 'gear') {
+      play.gearItems.push({ uid, item: def.item, x: cx, y: cy, z, taken: false, lockUntil: 0 });
     } else if (def.kind === 'cloud') {
       const path = makePath(o.path);
       const c: CloudState = { uid, def, x: cx, y: cy, path, pathDist: path ? o.phase * path.total * 2 : 0 };
@@ -548,7 +620,85 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
   });
   play.world.obstacles = obstaclesOf(play);
   play.world.contact = (o, s) => onBallContact(play, o, s);
+  // Moss Plate: heal at the start of each course.
+  for (const fx of gearFx(play, 'healAtStart')) play.health = Math.min(play.stats.get('maxHealth'), play.health + fx.amount);
   return play;
+}
+
+// ---------------------------------------------------------------------------
+// Gear (Milestone 6)
+
+/** The effects of a kind from the gear the ball holds. */
+export function gearFx<K extends GearEffect['kind']>(play: PlayState, kind: K): Extract<GearEffect, { kind: K }>[] {
+  const out: Extract<GearEffect, { kind: K }>[] = [];
+  for (const c of GEAR_CATEGORIES) {
+    const id = play.gear[c];
+    if (!id) continue;
+    for (const fx of GEAR.get(id)?.effects ?? []) if (fx.kind === kind) out.push(fx as Extract<GearEffect, { kind: K }>);
+  }
+  return out;
+}
+
+/** The item held that has an effect of this kind (for messages). */
+function gearWith(play: PlayState, kind: GearEffect['kind']): string {
+  for (const c of GEAR_CATEGORIES) {
+    const id = play.gear[c];
+    if (id && GEAR.get(id)?.effects.some((fx) => fx.kind === kind)) return id;
+  }
+  return '';
+}
+
+/** Take an item off: its modifiers go with it. Health and shots stay inside the new limits. */
+function unequip(play: PlayState, c: GearCategory): void {
+  const id = play.gear[c];
+  if (!id) return;
+  play.stats.removeSource({ kind: 'gear', id });
+  play.gear[c] = null;
+  play.health = Math.min(play.health, play.stats.get('maxHealth'));
+  play.shots = Math.min(play.shots, play.stats.get('maxShots'));
+}
+
+/** Put an item on (replacing the one in its category). Returns the id it replaced, or null. */
+export function equipGear(play: PlayState, id: string): string | null {
+  const g = GEAR.get(id);
+  if (!g) return null;
+  const old = play.gear[g.category];
+  unequip(play, g.category);
+  play.gear[g.category] = id;
+  for (const m of g.modifiers) play.stats.add({ ...m, source: { kind: 'gear', id }, duration: { kind: 'equipped' } });
+  return old;
+}
+
+/** How many damages the held armour still ignores on this course. */
+export function shieldsLeft(play: PlayState): number {
+  return Math.max(0, gearFx(play, 'ignoreDamage').reduce((n, fx) => n + fx.count, 0) - play.shieldsUsed);
+}
+
+/** Rolling over a gear item swaps it in; the old item drops on the same spot, briefly locked (sheet section 5.1). */
+function collectGear(play: PlayState): void {
+  const b = ballNow(play);
+  const r = play.tuning.ballRadius;
+  for (const it of play.gearItems) {
+    if (it.taken || play.clock < it.lockUntil) continue;
+    if (Math.hypot(b.x - it.x, b.y - it.y, b.z + r - (it.z + r)) > RULES.touchReach) continue;
+    it.taken = true;
+    const dropped = equipGear(play, it.item);
+    if (dropped) {
+      const n = play.gearItems.length;
+      play.gearItems.push({ uid: `gear-drop:${n}`, item: dropped, x: it.x, y: it.y, z: it.z, taken: false, lockUntil: play.clock + steps(RULES.gearRelock) });
+    }
+    play.log.push({ kind: 'gearEquipped', item: it.item, dropped });
+    return;
+  }
+}
+
+/** Testing aid (the U panel): finish the course at once, as if the ball had dropped into the exit. */
+export function debugWin(play: PlayState): void {
+  if (play.status !== 'playing') return;
+  play.shot = null;
+  play.status = 'won';
+  play.stats.endScope('course');
+  play.log.push({ kind: 'won' });
 }
 
 function placeOnPath(play: PlayState, e: EnemyState): void {
@@ -708,6 +858,7 @@ export function tick(play: PlayState, input: TickInput = {}): void {
   passByTriggers(play);
   updateFlags(play);
   collectPickups(play);
+  collectGear(play);
   if (play.shot?.outcome) finishBallMotion(play);
   if (play.status !== 'playing') return;
   advance(play);
@@ -931,12 +1082,55 @@ function gainShots(play: PlayState, n: number): void {
   if (play.shots > before) play.log.push({ kind: 'bonusShot' });
 }
 
-/** The ball takes damage. Owner, 2026-11-14: then it is immune for half a second. */
-function damageBall(play: PlayState, amount: number, cause: Extract<PlayEvent, { kind: 'damage' }>['cause']): void {
+/**
+ * The ball takes damage. Owner, 2026-11-14: then it is immune for half a
+ * second. `attacker` is the enemy that did it (its contact, its attack or its
+ * seed), for the Guard family and Mirror Plate.
+ */
+function damageBall(play: PlayState, amount: number, cause: Extract<PlayEvent, { kind: 'damage' }>['cause'], attacker?: EnemyState): void {
   if (amount <= 0 || play.status !== 'playing' || play.clock < play.immuneUntil) return;
+  // Storm Cloak, Cork Plate: some kinds of damage cannot hurt the ball at all.
+  if (gearFx(play, 'immune').some((fx) => (fx.causes as readonly string[]).includes(cause))) {
+    play.log.push({ kind: 'resisted', item: gearWith(play, 'immune'), cause });
+    return;
+  }
+  if ((cause === 'sunk' || cause === 'out') && gearFx(play, 'safeFalls').length) {
+    play.log.push({ kind: 'resisted', item: gearWith(play, 'safeFalls'), cause });
+    return;
+  }
   play.immuneUntil = play.clock + steps(RULES.damageImmunity);
+  // Guard family and Mirror Plate: the enemy that did it is hurt back (even if the Lining then ignores the damage).
+  if (attacker && !attacker.defeated) {
+    let back = 0;
+    let stun = false;
+    for (const fx of gearFx(play, 'thorns')) {
+      back += fx.damage;
+      stun ||= fx.stun;
+    }
+    if (cause === 'seed' && gearFx(play, 'mirror').length) back += amount;
+    if (back > 0) {
+      play.log.push({ kind: 'thorns', enemy: attacker.uid, damage: back });
+      hurtEnemy(play, attacker, back);
+      if (stun && !attacker.defeated) applyEnemyStatus(play, attacker, 'stunned');
+    }
+  }
+  if (shieldsLeft(play) > 0) {
+    play.shieldsUsed++;
+    play.log.push({ kind: 'shielded', item: gearWith(play, 'ignoreDamage') });
+    return;
+  }
   play.health = Math.max(0, play.health - amount);
   play.log.push({ kind: 'damage', amount, cause });
+  const phoenix = gearFx(play, 'phoenix')[0];
+  if (play.health <= 0 && phoenix) {
+    // Phoenix Plate: stay alive, and the plate crumbles.
+    const item = gearWith(play, 'phoenix');
+    const cat = GEAR.get(item)!.category;
+    unequip(play, cat);
+    play.health = Math.min(play.stats.get('maxHealth'), phoenix.health);
+    play.log.push({ kind: 'phoenix', item, health: play.health });
+    return;
+  }
   if (play.health <= 0) {
     play.status = 'lost';
     play.lostBy = 'health';
@@ -966,14 +1160,18 @@ function onBallContact(play: PlayState, o: Obstacle, s: ShotState): ContactResul
   return (o.knock ?? 0) > 0 ? 'knock' : 'bounce';
 }
 
-/** The hit's own damage and element: the Tornado deals its own number; Burner hits are fire. */
+/**
+ * The hit's own damage and element: the Tornado deals its own number; Burner
+ * hits are fire; otherwise the weapon's element, if it has one (Milestone 6).
+ */
 function hitStats(play: PlayState, s: ShotState): { base: number; element: AbilityDef['element'] } {
+  const weapon = play.gear.weapon ? (GEAR.get(play.gear.weapon)?.element ?? null) : null;
   if (s.hover) {
     const fx = ABILITIES.get('tornado')!.effect;
-    return { base: fx.kind === 'tornado' ? fx.damage : 1, element: null };
+    return { base: fx.kind === 'tornado' ? fx.damage : 1, element: weapon };
   }
   const burning = s.burnSteps > 0;
-  return { base: play.stats.get('hitDamage'), element: burning ? (ABILITIES.get('burner')?.element ?? null) : null };
+  return { base: play.stats.get('hitDamage'), element: burning ? (ABILITIES.get('burner')?.element ?? null) : weapon };
 }
 
 /** The ball hits an enemy (FEATURES.md section 2). Returns what the ball does next. */
@@ -984,7 +1182,9 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
   const counted = !play.knocked && play.clock - e.lastHitClock >= steps(RULES.hitCooldown);
   if (counted) {
     e.lastHitClock = play.clock;
-    const { base, element } = hitStats(play, s);
+    const { base: plain, element } = hitStats(play, s);
+    // Gong Knob: extra damage against a stunned enemy (part of step 1, hit damage).
+    const base = plain + (hasStatus(e.statuses, 'stunned') ? gearFx(play, 'stunnedBonus').reduce((n, fx) => n + fx.damage, 0) : 0);
     const res = computeHit(
       {
         base,
@@ -995,23 +1195,74 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
       { weakTo: e.def.weakTo, resists: e.def.resists, weakSpots: e.def.weakSpots, guardedSides: e.def.guardedSides, shieldUp: e.def.shield && e.shieldMotion !== play.motion },
     );
     if (res.shieldUsed) e.shieldMotion = play.motion;
-    e.health = Math.max(0, e.health - res.damage);
-    play.log.push({ kind: 'hit', enemy: e.uid, damage: res.damage, blocked: res.blocked });
+    // Echo Shell: the first hit each shot counts twice.
+    const echo = res.damage > 0 && gearFx(play, 'echo').length > 0 && play.echoShot !== play.shotNumber;
+    if (echo) {
+      play.echoShot = play.shotNumber;
+      play.log.push({ kind: 'echo' });
+    }
+    const damage = res.damage * (echo ? 2 : 1);
+    e.health = Math.max(0, e.health - damage);
+    play.log.push({ kind: 'hit', enemy: e.uid, damage, blocked: res.blocked });
     // Owner, 2026-11-15: every hit that does damage gives a shot back, up to the shot allowance.
-    if (res.damage > 0) gainShots(play, RULES.shotsPerHit);
+    if (damage > 0) gainShots(play, RULES.shotsPerHit * (echo ? 2 : 1));
+    if (damage > 0) weaponEffects(play, e, s);
     if (e.health <= 0) defeat(play, e);
-    else respond(play, e, 'hit');
+    else if (!e.defeated) respond(play, e, 'hit');
   }
   if (e.defeated) {
+    // Wrecking Shell: defeats never slow the ball.
+    if (gearFx(play, 'rollThrough').length) return 'passFree';
     const burn = ABILITIES.get('burner')!.effect;
     const passTier = burn.kind === 'burn' ? burn.passTier : 1;
     return s.burnSteps > 0 && e.def.tier <= passTier ? 'passFree' : 'pass';
   }
   if (e.def.contact === 'survives') {
-    damageBall(play, e.stats.get('attackDamage'), 'enemy');
+    damageBall(play, e.stats.get('attackDamage'), 'enemy', e);
     return e.def.behaviour.kind === 'patrol' ? 'knock' : 'bounce';
   }
   return 'bounce';
+}
+
+/** What the weapon does on a damaging hit (Milestone 6), before the enemy is checked for defeat. */
+function weaponEffects(play: PlayState, e: EnemyState, s: ShotState): void {
+  const alive = e.health > 0;
+  for (const fx of gearFx(play, 'burn')) if (alive) applyEnemyStatus(play, e, 'burning', fx.turns);
+  for (const fx of gearFx(play, 'stunChance')) if (alive && play.rng.chance(fx.chance)) applyEnemyStatus(play, e, 'stunned');
+  for (const fx of gearFx(play, 'leech')) {
+    if (play.leechShot === play.shotNumber) break;
+    play.leechShot = play.shotNumber;
+    const before = play.health;
+    play.health = Math.min(play.stats.get('maxHealth'), play.health + fx.heal);
+    if (play.health > before) play.log.push({ kind: 'healed', amount: play.health - before, item: gearWith(play, 'leech') });
+  }
+  for (const fx of gearFx(play, 'chainZap')) {
+    let best: EnemyState | null = null;
+    let bestD = fx.range;
+    for (const o of play.enemies) {
+      if (o === e || o.defeated || o.burrowed) continue;
+      const d = Math.hypot(o.x - e.x, o.y - e.y);
+      if (d <= bestD) {
+        best = o;
+        bestD = d;
+      }
+    }
+    if (best) {
+      play.log.push({ kind: 'chainZap', enemy: best.uid });
+      hurtEnemy(play, best, fx.damage);
+    }
+  }
+  for (const fx of gearFx(play, 'knockBack')) {
+    // Patrollers keep to their path, and a Mole underground cannot be moved.
+    if (!alive || e.def.behaviour.kind === 'patrol' || !standing(e)) continue;
+    const b = s.ball;
+    const dx = e.x - b.x;
+    const dy = e.y - b.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 1e-6) continue;
+    const speed = rollSpeedFor(play.tuning, fx.distance);
+    launchEnemy(play, e, (dx / d) * speed, (dy / d) * speed);
+  }
 }
 
 function hitBreakable(play: PlayState, b: BreakableState, s: ShotState): ContactResult {
@@ -1071,6 +1322,15 @@ function defeat(play: PlayState, e: EnemyState): void {
   e.lobTarget = null;
   play.log.push({ kind: 'defeat', enemy: e.uid, stars: e.def.starValue });
   addStars(play, e.def.starValue, e.x, e.y);
+  // Golden Tooth: extra stars in the wallet only.
+  for (const fx of gearFx(play, 'starPerDefeat')) play.wallet += fx.stars;
+  // Sunfire Crown: a burning enemy bursts when defeated.
+  if (hasStatus(e.statuses, 'burning')) {
+    for (const fx of gearFx(play, 'burst')) {
+      play.log.push({ kind: 'burst', enemy: e.uid });
+      for (const o of play.enemies) if (o !== e && !o.defeated && !o.burrowed && Math.hypot(o.x - e.x, o.y - e.y) <= fx.radius) hurtEnemy(play, o, fx.damage);
+    }
+  }
   play.flags.push({
     uid: `flag:${e.uid}`,
     def: FLAG_DEF,
@@ -1086,9 +1346,11 @@ function defeat(play: PlayState, e: EnemyState): void {
   play.world.obstacles = obstaclesOf(play);
 }
 
-function addStars(play: PlayState, n: number, x: number, y: number): void {
+/** Stars to the meter and the wallet. Crown of Plenty doubles the wallet's share, except for a raised flag (its star was already counted once). */
+function addStars(play: PlayState, n: number, x: number, y: number, fromFlag = false): void {
+  const wallet = !fromFlag && gearFx(play, 'walletDouble').length ? 2 : 1;
   for (let i = 0; i < n; i++) {
-    play.wallet++;
+    play.wallet += wallet;
     play.meter++;
     play.log.push({ kind: 'star', x, y });
   }
@@ -1343,11 +1605,11 @@ function meetBodies(play: PlayState): void {
     // First touch of this meeting.
     if (t.seed) {
       const sp = enemyByUid(play, t.seed.spitter);
-      damageBall(play, sp ? sp.stats.get('attackDamage') : 1, 'seed');
+      damageBall(play, sp ? sp.stats.get('attackDamage') : 1, 'seed', sp);
     } else if (t.enemy) {
       const e = t.enemy;
       const bh = e.def.behaviour;
-      if (e.def.contact === 'moving') damageBall(play, e.stats.get('attackDamage'), 'enemy');
+      if (e.def.contact === 'moving') damageBall(play, e.stats.get('attackDamage'), 'enemy', e);
       if ((bh.kind === 'launch' || bh.kind === 'burrow') && bh.hitWhileMoving && ballWasMoving) hitEnemy(play, e, s);
     }
     if (play.status !== 'playing') return;
@@ -1454,7 +1716,7 @@ function updateFlags(play: PlayState): void {
       f.raised = true;
       f.solid = false;
       play.log.push({ kind: 'flagUp', flag: f.uid });
-      addStars(play, 1, f.x, f.y);
+      addStars(play, 1, f.x, f.y, true);
       changed = true;
     }
     // A raised pole turns solid once the ball is clear of it, so it never traps the ball.
@@ -1569,18 +1831,20 @@ function anchorEffects(play: PlayState, x: number, y: number): void {
 // ---------------------------------------------------------------------------
 // Statuses (FEATURES.md section 12)
 
-export function applyEnemyStatus(play: PlayState, e: EnemyState, id: string): void {
+/** Put a status on an enemy. `turns` overrides the status's own length (the fire gear sets how long Burning lasts). */
+export function applyEnemyStatus(play: PlayState, e: EnemyState, id: string, turns?: number): void {
   const def = STATUSES.get(id);
   if (!def) return;
+  const n = turns ?? def.turns;
   const have = e.statuses.find((s) => s.id === id);
   if (have) {
-    if (def.reapply === 'add') have.turnsLeft += def.turns;
-    else if (def.reapply === 'reset') have.turnsLeft = def.turns;
+    if (def.reapply === 'add') have.turnsLeft += n;
+    else if (def.reapply === 'reset') have.turnsLeft = Math.max(have.turnsLeft, n);
     return;
   }
-  e.statuses.push({ id, turnsLeft: def.turns });
-  for (const m of def.modifiers) e.stats.add({ ...m, source: { kind: 'status', id }, duration: { kind: 'turns', turns: def.turns } });
-  play.log.push({ kind: 'stunned', target: e.uid });
+  e.statuses.push({ id, turnsLeft: n });
+  for (const m of def.modifiers) e.stats.add({ ...m, source: { kind: 'status', id }, duration: { kind: 'turns', turns: n } });
+  play.log.push(id === 'stunned' ? { kind: 'stunned', target: e.uid } : { kind: 'status', target: e.uid, status: id });
 }
 
 export function applyBallStatus(play: PlayState, id: string): void {
@@ -1620,7 +1884,7 @@ function afterShot(play: PlayState): void {
   play.stats.tickTurn();
   play.turnQueue = ['normal'];
   if (play.shots <= 0) {
-    if (play.napsUsed < RULES.naps) play.turnQueue.push('recover');
+    if (play.napsUsed < play.stats.get('naps')) play.turnQueue.push('recover');
     else {
       // Owner, 2026-11-15: out of shots with no naps left: the course is failed.
       play.status = 'lost';
@@ -1666,6 +1930,16 @@ function runEnemyTurns(play: PlayState): void {
 function startTurn(play: PlayState, kind: 'normal' | 'recover'): void {
   play.turn = kind;
   play.log.push({ kind: 'enemyTurn' });
+  // Burning (Milestone 6): damage at the start of each enemy turn.
+  for (const e of play.enemies) {
+    if (e.defeated) continue;
+    for (const st of e.statuses) {
+      const dmg = STATUSES.get(st.id)?.enemyDamagePerTurn ?? 0;
+      if (dmg <= 0 || e.defeated) continue;
+      play.log.push({ kind: 'statusDamage', enemy: e.uid, status: st.id, damage: dmg });
+      hurtEnemy(play, e, dmg);
+    }
+  }
   if (kind === 'normal') burrowMoles(play);
   play.turnActions = play.enemies.filter((e) => !e.defeated && e.activated && !e.burrowed).map((e) => e.uid);
 }

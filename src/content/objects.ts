@@ -10,6 +10,7 @@
  * Every number is a starting value (Milestone 4 design sheet,
  * docs/plans/milestone-4.md, signed off by the owner 2026-11-14).
  */
+import { GEAR_LIST } from './gear.ts';
 import type { BaseStats } from './stats.ts';
 
 /**
@@ -231,7 +232,20 @@ export interface EnemyDef {
   readonly cost: number;
 }
 
-export type ObjectDef = PickupDef | BlockerDef | MoverDef | BreakableDef | CloudDef | FlagDef | EnemyDef;
+/**
+ * A gear item lying on a course (Milestone 6). Rolling over it equips it; the
+ * item it replaces drops on the same tile. One entry per item in gear.ts.
+ */
+export interface GearObjectDef {
+  readonly kind: 'gear';
+  readonly id: string;
+  readonly name: string;
+  readonly sprite: string;
+  /** The gear id in src/content/gear.ts. */
+  readonly item: string;
+}
+
+export type ObjectDef = PickupDef | BlockerDef | MoverDef | BreakableDef | CloudDef | FlagDef | EnemyDef | GearObjectDef;
 
 /** Template fields that are mostly unused until Milestone 8. */
 const PLAIN = {
@@ -426,7 +440,10 @@ const defs: readonly ObjectDef[] = [
   carrier('whirlback', 'Whirlback', 'tornado'),
 ];
 
-const registry = new Map<string, ObjectDef>(defs.map((d) => [d.id, d]));
+// Gear lying on a course (Milestone 6): one object per gear item, by the same id.
+const gearObjects: readonly GearObjectDef[] = GEAR_LIST.map((g) => ({ kind: 'gear', id: g.id, name: g.name, sprite: g.icon, item: g.id }));
+
+const registry = new Map<string, ObjectDef>([...defs, ...gearObjects].map((d) => [d.id, d]));
 export const OBJECTS: ReadonlyMap<string, ObjectDef> = registry;
 
 /**

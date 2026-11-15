@@ -7,8 +7,10 @@
  * file is a starting value").
  */
 export const RULES = {
-  /** Owner, 2026-11-15: naps (recover turns) allowed per course. Running out of shots a third time fails the course. */
+  /** Owner, 2026-11-15: naps (recover turns) allowed per course; the ball's base value of the "naps" stat. Running out of shots a third time fails the course. */
   naps: 2,
+  /** Milestone 6: a dropped gear item cannot be picked up again for this long, in seconds. */
+  gearRelock: 0.5,
   /** Owner, 2026-11-15: shots gained each time the ball does damage to an enemy (never above the shot allowance). */
   shotsPerHit: 1,
   /** Health lost when the ball stops in water or falls off the course (DESIGN.md section 6). */
