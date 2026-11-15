@@ -1,6 +1,6 @@
 # Milestone 5b design sheet — Journeys, rails, gentle slopes and water
 
-**Status: signed off by the owner, 2026-11-15.** Being built on branch `milestone-5-course-generator`.
+**Status: built and approved by the owner, 2026-11-15.** Merged to `main` with Milestone 5.
 
 This reworks the Milestone 5 course generator before its gate. Your playtest verdict was that courses are too small, too flat and not interesting enough, so the Milestone 5 gate ("ten generated courses worth playing") moves to the end of this sheet.
 

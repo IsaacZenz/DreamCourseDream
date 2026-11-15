@@ -1,6 +1,6 @@
 # Milestone 5 design sheet — Course generator
 
-**Status: signed off by the owner, 2026-11-15.** Built on branch `milestone-5-course-generator`.
+**Status: signed off by the owner, 2026-11-15.** Built, then reworked by Milestone 5b (`docs/plans/milestone-5b.md`, which replaced the chunk generator with journeys). Merged to `main`.
 
 How to review: read each section, change any number or rule you want, and answer the numbered questions in [section 9](#9-questions-for-the-owner). Each question has a default, so "use the defaults" is a valid answer. Every number here is a starting value and goes into `src/content/` so it can be tuned later (DESIGN.md section 2, "keep it easy to fine-tune").
 
