@@ -122,7 +122,7 @@ Enemies and objects already have a `cost` in `src/content/objects.ts`; these are
 | Thing | Cost |
 |---|---|
 | Mossback | 1 |
-| Ability carrier (any) | 1 |
+| Ability carrier (any) | 2 (the sheet first said 1; the game data already had 2, and the data wins) |
 | Trundler, Spitter, Lunger, Mole | 3 |
 | Rock, tree stump, low wall | 1 |
 | Crate | 1 |
@@ -134,7 +134,7 @@ Enemies and objects already have a `cost` in `src/content/objects.ts`; these are
 | Hazard spot as booster, spring, conveyor or bumper | 1 |
 | Chunk terrain | 0 to 2 (section 2.4) |
 
-Worked example, budget 12: terrain 3 (a `ramp` and a `pond`); enemies 7 (a squad of Trundler + Mossback + Mossback, a squad of Mossback + Hopback); obstacles and hazards 2 (a crate and a booster). That is 5 enemies and 1 crate star = 6 stars, quota 4.
+Worked example, budget 12: terrain 3 (a `ramp` and a `pond`); enemies 8 (a squad of Trundler + Mossback + Mossback, a squad of Mossback + Hopback); obstacles and hazards 1 (a booster). That is 5 enemies = 5 stars, quota 3.
 
 ---
 
@@ -278,6 +278,21 @@ Answered by the owner, 2026-11-15: defaults for questions 1–6 and 8; question 
 8. **Chunk size.** 5×5 tiles per chunk. Smaller chunks (4×4) give more joins and more variety but less room inside each piece. *Default: 5×5.*
 
 ---
+
+## As built (2026-11-15)
+
+Built on branch `milestone-5-course-generator`. Where the build differs from the sheet above:
+
+- **Files.** Chunks: `src/content/chunks/*.json` (listed in `index.ts`). Generator numbers: `src/content/gen.ts`. Hazard costs: `cost` (and `raise` for the bumper) in `src/content/surfaces.ts`. Code: `src/gen/chunks.ts` (reading, turning, flipping), `layout.ts` (route, branches, heights, rims), `generate.ts` (spending the budget), `structure.ts`, `bot.ts`, `validate.ts` (checks and retries). `clonePlay` in `src/sim/play.ts` lets the bot try shots on a copy of the game.
+- **Ability carriers cost 2**, as the game data already said (section 3.4 corrected).
+- **Budget split, exactly:** terrain gets at most 25%. Enemies get the larger of half the budget and three quarters of what is left after terrain. Obstacles and hazards get the rest. To keep at least 3 enemies, the generator holds back 1 budget for each enemy still needed.
+- **Rims:** every chunk side that faces nothing gets the one-step rough rim, not only open sides. Sides facing another chunk that is not joined to it are left as they are, so neighbouring chunks may run into each other with a face or a drop.
+- **Safety rules:** clouds and lanes (Trundlers, sliding blocks, drifting clouds) also stay more than 2 tiles from the start and out of the ring round the exit, the same as everything else.
+- **Tee:** its pickup spot is in a far corner, more than 2 tiles from the start.
+- **Bot:** each turn it tries 3 targets × 9 shots (3 angles; 2 ground powers; 1 lofted), and goes for **awake attackers first**. If none of those shots wins a star without losing health, it looks harder: 5 targets, wider angles (±10°, ±16°) and more power. Without that wider search only about 80% of courses passed on the first try; with it, nearly all do. Its numbers are in `GEN.bot`.
+- **Generation time** is measured by whoever calls the generator (the game and the tools). `src/gen/` may not read the clock (CLAUDE.md rule 3).
+- **Contact sheet:** `npm run gen:batch` needs Playwright for the pictures. It is on the cloud machines; on another computer the tool says how to install it, and still prints the report without it.
+- **Seed viewer** has no keyboard B while its text boxes have focus; use its "Watch the bot" button, or close it (Esc) and press B.
 
 ## Sign-off
 

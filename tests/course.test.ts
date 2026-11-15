@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TEST_COURSES } from '../src/content/courses';
+import { GENERATED_ID, TEST_COURSES } from '../src/content/courses';
 import { SURFACES } from '../src/content/surfaces';
 import { SHAPES } from '../src/sim/tileShape';
 import { parseCourse, tileAt } from '../src/sim/course';
@@ -23,7 +23,8 @@ function errorsFor(raw: unknown): string[] {
 }
 
 describe('test courses', () => {
-  for (const file of TEST_COURSES) {
+  // The generated slot (key 6) has no data file; generated courses are tested in gen.test.ts.
+  for (const file of TEST_COURSES.filter((c) => c.id !== GENERATED_ID)) {
     it(`${file.id} passes the schema check`, () => {
       const r = parseCourse(file.data);
       expect(r.ok ? [] : r.errors).toEqual([]);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_TUNING, cloneTuning } from '../src/content/tuning';
-import { TEST_COURSES } from '../src/content/courses';
+import { GENERATED_ID, TEST_COURSES } from '../src/content/courses';
 import { parseCourse, type Course } from '../src/sim/course';
 import { simulateShot, ballAtTile, type ShotCommand } from '../src/sim/ball';
 import { canShoot, createPlay, drainLog, runShot, takeShot, type PlayState } from '../src/sim/play';
@@ -247,7 +247,7 @@ describe('course rules: blockers, enemies, stars and the exit', () => {
 
 describe('the test courses', () => {
   it('every hand-built course parses', () => {
-    for (const f of TEST_COURSES) {
+    for (const f of TEST_COURSES.filter((c) => c.id !== GENERATED_ID)) {
       const r = parseCourse(f.data);
       expect(r.ok, `${f.id}: ${r.ok ? '' : r.errors.join('; ')}`).toBe(true);
     }

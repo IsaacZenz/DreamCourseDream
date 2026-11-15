@@ -34,6 +34,8 @@ export interface GenResult {
 export interface GenOptions {
   /** Skip the bot (structure check only). For quick previews and tests. */
   readonly noBot?: boolean;
+  /** An extra check (tests): return a reason to reject the attempt, or null to accept it. */
+  readonly extraCheck?: (course: Course, attempt: number) => string | null;
 }
 
 function describe(rej: Record<string, number>): string {
@@ -57,6 +59,11 @@ export function generateCourse(seed: string, budget: number, tuning: Tuning, opt
       const st = checkStructure(r.course);
       if (!st.ok) {
         reject(st.reason);
+        continue;
+      }
+      const extra = opts.extraCheck?.(r.course, n);
+      if (extra) {
+        reject(extra);
         continue;
       }
       const bot = opts.noBot ? null : playBot(r.course, tuning, seed);

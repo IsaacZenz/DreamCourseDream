@@ -135,7 +135,7 @@ export function generateAttempt(seed: string, budget: number, attempt: number): 
     }
     return true;
   };
-  const laneSafe = (s: GlobalSpot) => laneTiles(s.at, s.path ?? []).every((p) => !!tileAt(p) && key(p) !== key(start) && key(p) !== key(exit) && dist(p, start) > 1);
+  const laneSafe = (s: GlobalSpot) => laneTiles(s.at, s.path ?? []).every((p) => !!tileAt(p) && dist(p, start) > GEN.startClear && !near(p, exit, 1));
 
   // ---- Enemies -----------------------------------------------------------
   const afterTerrain = budget - spend.terrain;
@@ -239,7 +239,7 @@ export function generateAttempt(seed: string, budget: number, attempt: number): 
             },
           });
         }
-      } else if (s.kind === 'cloud' && cloudCost <= left && key(s.at) !== key(start) && key(s.at) !== key(exit)) {
+      } else if (s.kind === 'cloud' && cloudCost <= left && dist(s.at, start) > GEN.startClear && !near(s.at, exit, 1)) {
         options.push({ weight: W.cloud!, item: () => {
             objects.push({ id: 'thunder-cloud', at: s.at });
             spend.obstacles += cloudCost;

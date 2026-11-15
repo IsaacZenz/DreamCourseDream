@@ -28,10 +28,12 @@ Then open the address it prints (usually http://localhost:5173).
 | `npm run lint` | Check code rules, including that `src/sim/` and `src/gen/` stay free of Phaser, the browser, the clock and `Math.random` |
 | `npm run check` | Type check, lint and test in one go |
 | `npm run art` | Regenerate the placeholder sprites and `assets/manifest.json` |
+| `npm run gen -- ABC123 12` | Print one generated course (seed, budget) as text, with pass or fail |
+| `npm run gen:batch` | Generate 500 courses, report the pass rate and times, and draw a contact sheet in `tools/out/` (the pictures need Playwright) |
 | `npm run build` | Build the site into `dist/` |
 | `npm run preview` | Serve the built site locally |
 
-## Controls (Milestone 4)
+## Controls (Milestone 5)
 
 Every mechanic works from the keyboard alone; the mouse is optional (owner decision).
 
@@ -53,8 +55,13 @@ Every mechanic works from the keyboard alone; the mouse is optional (owner decis
 | Enter | On the end screen: next course after a win, restart after a loss |
 | I / J / K / L, or drag with the right mouse button | Pan the camera (moved from the arrows and WASD, which now aim) |
 | C | Centre the camera on the ball |
-| 1, 2, 3, 4, N | Switch test course (4 is the enemies and abilities course) |
-| G | Cycle the debug overlay: coordinates, heights, surfaces, off. Shows sentinel radii (outer solid, inner dashed), paths and cloud danger zones. |
+| 1, 2, 3, 4, 5, N | Switch test course (4 is the enemies and abilities course, 5 the test bench) |
+| 6 | A generated course (Milestone 5). Same seed and budget always give the same course |
+| [ / ] | Generated course: lower or raise the budget by 2 and make a new course |
+| V | Seed viewer: type a seed and a budget, see the course and whether it passed the checks |
+| B | Generated course: watch the bot play it (press again to stop) |
+| Enter (after winning a generated course) | The next generated course: new seed, budget up by a random 0 to 4 |
+| G | Cycle the debug overlay: coordinates, heights, surfaces, chunks (generated courses: chunk outlines and names, spots, budget spend), off. Shows sentinel radii (outer solid, inner dashed), paths and cloud danger zones. |
 | U | Tuning panel (debug) |
 | H | Show or hide the help lines |
 
@@ -62,7 +69,7 @@ Every mechanic works from the keyboard alone; the mouse is optional (owner decis
 
 Top left: health (hearts), shots left (blue orbs), the star meter (stars towards the course's quota; it turns green and says OPEN when the exit opens), yellow stars held, and the seed (`#ABC123`). Each shot uses one orb. When they run out you get a recover turn and they refill. Next to it: the ability slot (the ability you hold; greyed once used this shot).
 
-You can also open a course directly: `?course=course-rules`, `?course=flat-walls`, `?course=slopes-surfaces` or `?course=enemies-abilities`, and add `&seed=ABC123` to replay a seed, `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
+You can also open a course directly: `?course=course-rules`, `?course=flat-walls`, `?course=slopes-surfaces` or `?course=enemies-abilities` or `?course=generated` (add `&budget=12` for the budget), and add `&seed=ABC123` to replay a seed, `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
 
 ## Folder layout
 
