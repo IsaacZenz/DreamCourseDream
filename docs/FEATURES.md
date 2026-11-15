@@ -403,6 +403,7 @@ Build in Milestone 3.
 - **Prices:** common gear 15, rare 30, epic 60, stat boost 12 rising by 6, heal 10, first reroll 3.
 - **Budget:** each course has a difficulty budget that rises with each node and jumps after each boss. Enemies, traits, obstacles and hazards each cost budget.
 - **Tier mix by region:** region 1 is mostly tiers 1–2; region 2 adds tier 3; region 3 adds tier 4.
+- **Owner, 2026-11-15 (Milestone 5 testing, before the run exists):** after winning a generated course, the next one's budget rises by a random 0 to 4 (seeded), capped at 40. The Milestone 5 generator rules are in `docs/plans/milestone-5.md`.
 - **Hard courses:** 150% of the normal budget, a guaranteed tier-up squad leader, better rewards.
 
 ---

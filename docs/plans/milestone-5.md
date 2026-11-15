@@ -1,6 +1,6 @@
 # Milestone 5 design sheet — Course generator
 
-**Status: waiting for the owner's sign-off.** Nothing on this sheet is built yet.
+**Status: signed off by the owner, 2026-11-15.** Built on branch `milestone-5-course-generator`.
 
 How to review: read each section, change any number or rule you want, and answer the numbered questions in [section 9](#9-questions-for-the-owner). Each question has a default, so "use the defaults" is a valid answer. Every number here is a starting value and goes into `src/content/` so it can be tuned later (DESIGN.md section 2, "keep it easy to fine-tune").
 
@@ -220,7 +220,7 @@ Measured today on this cloud machine: one simulated shot on the 20×16 test cour
 ### 6.1 In the game
 
 - **Key 6, or `?course=generated`:** a generated course. Add `&seed=ABC123&budget=12` to pick one. The HUD seed reads `#ABC123 · B12`.
-- **On the course complete screen, Enter** loads a **new** generated course (new seed, same budget), so you can play ten in a row (the "Done when" for this milestone).
+- **On the course complete screen, Enter** loads a **new** generated course with a new seed, so you can play ten in a row (the "Done when" for this milestone). **Owner, 2026-11-15:** the next course's budget goes up by a random 0 to 4 (from the seeded random numbers, so the same seed and the same wins give the same climb), capped at the testing maximum of 40.
 - **R** restarts the same generated course.
 - **[ and ]** lower or raise the budget by 2 and generate a new course (section 3.1 presets are just starting points).
 - **G** gets a fourth debug mode, **chunks**: chunk outlines and ids, spot markers, and the budget spend (terrain / enemies / obstacles / hazards).
@@ -266,7 +266,7 @@ Squad themes, traits, elements and tier-up leaders (Milestone 8); biomes and per
 
 ## 9. Questions for the owner
 
-Each has a default. Answer any you care about; the rest use the default.
+Answered by the owner, 2026-11-15: defaults for questions 1–6 and 8; question 7 changed as marked.
 
 1. **Course shape.** Empty grid slots become out of bounds, so courses are odd shapes with drops off the side. Or fill them with plain rough so every course is a full rectangle? *Default: out of bounds.*
 2. **Terrain costs budget.** Should tricky ground (ramps, ponds, ice) spend budget, so easy courses are also flatter? *Default: yes, up to 25%.*
@@ -274,11 +274,11 @@ Each has a default. Answer any you care about; the rest use the default.
 4. **Cracked-tile stars as a bonus.** Stars under a cracked tile do not count towards the quota, so you never need the Anchor to finish. *Default: yes, bonus only.*
 5. **Bot pass standard.** Win within 24 shots with at least 2 of 5 health left, without using abilities or bounce boost. Stricter (easier courses) or looser (harder courses)? *Default: as written.*
 6. **Hazards the generator may use.** Spikes, booster, spring, conveyor, bumper. Leave warps out until there is a chunk designed around them? *Default: leave warps out.*
-7. **Playing ten in a row.** Enter after a win gives a new generated course at the same budget. Would you rather the budget go up by 2 each time, to feel a rough difficulty curve before Milestone 6? *Default: same budget.*
+7. **Playing ten in a row.** ~~Enter after a win gives a new generated course at the same budget.~~ **Answered by the owner, 2026-11-15:** after a win, the next course's budget rises by a random 0 to 4 (section 6.1).
 8. **Chunk size.** 5×5 tiles per chunk. Smaller chunks (4×4) give more joins and more variety but less room inside each piece. *Default: 5×5.*
 
 ---
 
 ## Sign-off
 
-- [ ] Owner sign-off. Changes the owner makes during review will be marked "owner, date" throughout this sheet and recorded in FEATURES.md and DESIGN.md.
+- [x] Owner sign-off, 2026-11-15. The one change (question 7, budget rises by a random 0 to 4 after a win) is marked "owner, 2026-11-15" in this sheet and recorded in FEATURES.md section 14.

@@ -102,7 +102,7 @@ docs/
 
 ## Milestone 5 — Course generator **(Gate)**
 
-- [ ] **Plan gate:** design sheet for the first chunk set, the difficulty budget costs, and how enemies, obstacles and hazards are placed. Owner signs it off before the generator is built.
+- [x] **Plan gate:** design sheet for the first chunk set, the difficulty budget costs, and how enemies, obstacles and hazards are placed. Owner signs it off before the generator is built.
 - [ ] Chunk format and a first set of at least twelve chunks
 - [ ] Generator: seed and difficulty budget in, course data out
 - [ ] Enemy placement in squads that spends the budget (FEATURES.md section 4). Squad themes can be switched on in Milestone 8.
@@ -207,3 +207,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Owner tuning: the Mole jumps faster (10 up, 6 sideways) after a shorter rumble (0.3 s); grace 0.15 s, so rolling over it still does not guarantee a hit.
 - 2026-11-14 — Milestone 4 done: owner played the test build and the test bench, tuned the Mole, and approved. Owner decision recorded in DESIGN.md: keep fine-tuning and adding content easy. Merged to `main`.
 - 2026-11-15 — Milestone 5 design sheet written on branch `milestone-5-course-generator`: `docs/plans/milestone-5.md` (14 chunks, budget presets and costs, squad placement, structure and bot validators, seed viewer). Eight questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-15 — Milestone 5 design sheet signed off by the owner: defaults for all questions except 7 (after a win, the next generated course's budget rises by a random 0 to 4). Recorded in the sheet and FEATURES.md section 14.
