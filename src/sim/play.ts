@@ -16,8 +16,9 @@
  *
  * Turn order (DESIGN.md section 8): aim, shot (until the ball and anything it
  * set rolling have stopped), rest check, enemy turn (activated sentinels act one
- * after another); when the shots run out, a recover turn (enemies act once
- * more) refills them.
+ * after another); when the shots run out, a recover turn ("nap": enemies act
+ * once more) refills them. Owner, 2026-11-15: two naps per course; running out
+ * a third time fails the course. Each damaging hit on an enemy gives a shot back.
  *
  * The display reads this state and drains `log` for messages and effects.
  */
@@ -243,7 +244,7 @@ export type PlayEvent =
   | { kind: 'knocked' }
   /** The ball came to rest in water and stays there (owner, 2026-11-15). */
   | { kind: 'underwater' }
-  /** An enemy was defeated: one shot back (owner, 2026-11-15). */
+  /** A damaging hit on an enemy: one shot back (owner, 2026-11-15). */
   | { kind: 'bonusShot' };
 
 export type PlayStatus = 'playing' | 'won' | 'lost';
@@ -279,6 +280,10 @@ export interface PlayState {
   readonly flags: FlagState[];
   seeds: SeedState[];
   status: PlayStatus;
+  /** Why the course was lost: health ran out, or shots ran out with no naps left (owner, 2026-11-15). */
+  lostBy: 'health' | 'shots' | null;
+  /** Naps (recover turns) taken on this course (owner, 2026-11-15: two allowed). */
+  napsUsed: number;
   phase: Phase;
   /** The ball's motion: the player's shot, or a knock while it was resting. */
   shot: ShotState | null;
@@ -438,6 +443,8 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     flags: [],
     seeds: [],
     status: 'playing',
+    lostBy: null,
+    napsUsed: 0,
     phase: 'aim',
     shot: null,
     motion: 0,
@@ -910,6 +917,13 @@ function checkExit(play: PlayState, s: ShotState): void {
   endShot(s, 'exit');
 }
 
+/** Shots back for a damaging hit, never above the shot allowance. */
+function gainShots(play: PlayState, n: number): void {
+  const before = play.shots;
+  play.shots = Math.min(play.stats.get('maxShots'), play.shots + n);
+  if (play.shots > before) play.log.push({ kind: 'bonusShot' });
+}
+
 /** The ball takes damage. Owner, 2026-11-14: then it is immune for half a second. */
 function damageBall(play: PlayState, amount: number, cause: Extract<PlayEvent, { kind: 'damage' }>['cause']): void {
   if (amount <= 0 || play.status !== 'playing' || play.clock < play.immuneUntil) return;
@@ -918,6 +932,7 @@ function damageBall(play: PlayState, amount: number, cause: Extract<PlayEvent, {
   play.log.push({ kind: 'damage', amount, cause });
   if (play.health <= 0) {
     play.status = 'lost';
+    play.lostBy = 'health';
     play.shot = null;
     play.log.push({ kind: 'lost' });
   }
@@ -975,6 +990,8 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
     if (res.shieldUsed) e.shieldMotion = play.motion;
     e.health = Math.max(0, e.health - res.damage);
     play.log.push({ kind: 'hit', enemy: e.uid, damage: res.damage, blocked: res.blocked });
+    // Owner, 2026-11-15: every hit that does damage gives a shot back, up to the shot allowance.
+    if (res.damage > 0) gainShots(play, RULES.shotsPerHit);
     if (e.health <= 0) defeat(play, e);
     else respond(play, e, 'hit');
   }
@@ -1059,11 +1076,6 @@ function defeat(play: PlayState, e: EnemyState): void {
     solid: false,
   });
   if (e.def.grantsAbility) giveAbility(play, e.def.grantsAbility, false);
-  // Owner, 2026-11-15: every enemy defeated gives back one shot, up to the shot allowance.
-  if (play.shots < play.stats.get('maxShots')) {
-    play.shots++;
-    play.log.push({ kind: 'bonusShot' });
-  }
   play.world.obstacles = obstaclesOf(play);
 }
 
@@ -1600,7 +1612,16 @@ function afterShot(play: PlayState): void {
   play.ballStatuses = tickStatuses(play.ballStatuses);
   play.stats.tickTurn();
   play.turnQueue = ['normal'];
-  if (play.shots <= 0) play.turnQueue.push('recover');
+  if (play.shots <= 0) {
+    if (play.napsUsed < RULES.naps) play.turnQueue.push('recover');
+    else {
+      // Owner, 2026-11-15: out of shots with no naps left: the course is failed.
+      play.status = 'lost';
+      play.lostBy = 'shots';
+      play.log.push({ kind: 'lost' });
+      return;
+    }
+  }
   play.turn = null;
   play.phase = 'enemy';
 }
@@ -1650,6 +1671,7 @@ function endTurn(play: PlayState): void {
   if (play.turn === 'recover') {
     // DESIGN.md section 6, open question 3: recovering refills all the shots.
     play.shots = play.stats.get('maxShots');
+    play.napsUsed++;
     play.log.push({ kind: 'recover' });
   }
   play.turn = null;

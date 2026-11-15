@@ -105,10 +105,10 @@ describe('course rules: shots and health', () => {
   });
 });
 
-describe('bonus shots (owner, 2026-11-15)', () => {
+describe('shots back and naps (owner, 2026-11-15)', () => {
   const two = () => corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0'], { quota: 2, objects: [{ id: 'mossback', at: [3, 1] }, { id: 'mossback', at: [5, 1] }] });
 
-  it('each enemy defeated gives one shot back, one per enemy in the same shot', () => {
+  it('each damaging hit gives one shot back, one per enemy hit in the same shot', () => {
     const p = play(two());
     p.shots = 1;
     const log = fire(p, shot({ power: 0.8 }));
@@ -117,11 +117,36 @@ describe('bonus shots (owner, 2026-11-15)', () => {
     expect(p.shots).toBe(2);
   });
 
+  it('a hit that does damage but does not defeat still gives a shot back', () => {
+    // A Trundler has 2 health: one hit damages it without defeating it.
+    const p = play(corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0'], { quota: 1, objects: [{ id: 'trundler', at: [4, 1], path: [[4, 1]] }] }));
+    p.shots = 2;
+    fire(p, shot({ power: 0.5 }));
+    const t = p.enemies[0]!;
+    expect(t.health).toBe(1);
+    expect(p.shots).toBe(2);
+  });
+
   it('never goes above the shot allowance', () => {
     const p = play(two());
     fire(p, shot({ power: 0.8 }));
-    expect(p.enemies.every((e) => e.defeated)).toBe(true);
     expect(p.shots).toBe(p.stats.get('maxShots'));
+  });
+
+  it('two naps refill the shots; running out a third time fails the course', () => {
+    const p = play(corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0']));
+    const tiny = shot({ power: 0.05, angle: Math.PI / 2 });
+    for (let nap = 1; nap <= 2; nap++) {
+      p.shots = 1;
+      const log = fire(p, tiny);
+      expect(log.some((e) => e.kind === 'recover')).toBe(true);
+      expect(p.napsUsed).toBe(nap);
+      expect(p.status).toBe('playing');
+    }
+    p.shots = 1;
+    fire(p, tiny);
+    expect(p.status).toBe('lost');
+    expect(p.lostBy).toBe('shots');
   });
 });
 

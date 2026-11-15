@@ -117,10 +117,12 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
 **Decided:** these are two separate pools, and both can be upgraded.
 
 - **Shots:** each shot costs one. At zero you must spend a turn recovering. Enemies get an extra turn while you recover, then your shots refill.
-- **Decided (owner, 2026-11-15):** defeating an enemy gives back 1 shot. Defeating several in one shot gives 1 for each. Shots never go above the shot allowance (the max shots stat).
+- ~~**Decided (owner, 2026-11-15):** defeating an enemy gives back 1 shot.~~ Replaced the same day by:
+- **Decided (owner, 2026-11-15):** every hit that does damage to an enemy gives back 1 shot (one per enemy hit, also when several are hit in one shot). Shots never go above the shot allowance (the max shots stat).
+- **Decided (owner, 2026-11-15): two naps per course.** The recover turn is called a nap. Running out of shots the first and second time gives a nap (enemies act once more, shots refill). Running out a third time fails the course. Numbers in `src/content/rules.ts` (`naps`, `shotsPerHit`).
 - **Health:** lost to enemy attacks and hazards. At zero the run ends.
 
-**Default:** recovering refills shots to full. Falling in water or out of bounds costs 1 health and returns the ball to its last resting spot.
+**Default:** recovering (a nap) refills shots to full. Falling in water or out of bounds costs 1 health and returns the ball to its last resting spot.
 
 ## 7. Course objective
 

@@ -7,6 +7,10 @@
  * file is a starting value").
  */
 export const RULES = {
+  /** Owner, 2026-11-15: naps (recover turns) allowed per course. Running out of shots a third time fails the course. */
+  naps: 2,
+  /** Owner, 2026-11-15: shots gained each time the ball does damage to an enemy (never above the shot allowance). */
+  shotsPerHit: 1,
   /** Health lost when the ball stops in water or falls off the course (DESIGN.md section 6). */
   sinkDamage: 1,
   /** Health lost touching spikes. */

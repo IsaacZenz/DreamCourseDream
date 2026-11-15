@@ -25,6 +25,7 @@ import {
   type Preview,
 } from '../sim/play';
 import { OBJECTS, RAIL } from '../content/objects';
+import { RULES } from '../content/rules';
 import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
 import { loadTuning } from '../save/tuningStore';
@@ -1094,7 +1095,7 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage('UNDER WATER: NEXT SHOT IS WEAKER', 0x80c8ff);
           break;
         case 'recover':
-          this.queueMessage('OUT OF SHOTS: RECOVER TURN. SHOTS REFILLED', 0x80c8ff);
+          this.queueMessage(this.play.napsUsed >= RULES.naps ? 'OUT OF SHOTS: NAP. SHOTS REFILLED. THAT WAS YOUR LAST NAP' : 'OUT OF SHOTS: NAP. SHOTS REFILLED', 0x80c8ff);
           break;
         default:
           break;
@@ -1243,6 +1244,8 @@ export class CourseScene extends Phaser.Scene {
       `SPIN: ${settings.top === 0 ? 'NONE' : settings.top > 0 ? 'TOP' : 'BACK'} ${sign(settings.top)}`,
       `CURVE: ${settings.side === 0 ? 'NONE' : settings.side > 0 ? 'RIGHT' : 'LEFT'} ${sign(settings.side)}`,
       `STEP: ${this.stepLabel()}`,
+      // Owner, 2026-11-15: two naps per course; running out a third time ends it.
+      `NAPS LEFT: ${this.play ? Math.max(0, RULES.naps - this.play.napsUsed) : RULES.naps}${this.play && this.play.napsUsed >= RULES.naps ? ' (LAST SHOTS!)' : ''}`,
     ].join('\n');
     this.shotHud = pixelText(this, manifest, 2, 30, text, { color: UI_DIM, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
   }
@@ -1314,7 +1317,7 @@ export class CourseScene extends Phaser.Scene {
     const won = p.status === 'won';
     const lines = won
       ? ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: NEXT COURSE   R: PLAY AGAIN']
-      : ['RUN OVER', '', 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
+      : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
     const text = pixelText(this, manifest, 0, 0, lines.join('\n'), { color: won ? GOOD : BAD });
     const w = text.width + 16;
     const h = text.height + 14;
