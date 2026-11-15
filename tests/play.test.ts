@@ -105,6 +105,26 @@ describe('course rules: shots and health', () => {
   });
 });
 
+describe('bonus shots (owner, 2026-11-15)', () => {
+  const two = () => corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0'], { quota: 2, objects: [{ id: 'mossback', at: [3, 1] }, { id: 'mossback', at: [5, 1] }] });
+
+  it('each enemy defeated gives one shot back, one per enemy in the same shot', () => {
+    const p = play(two());
+    p.shots = 1;
+    const log = fire(p, shot({ power: 0.8 }));
+    expect(p.enemies.every((e) => e.defeated)).toBe(true);
+    expect(log.filter((e) => e.kind === 'bonusShot')).toHaveLength(2);
+    expect(p.shots).toBe(2);
+  });
+
+  it('never goes above the shot allowance', () => {
+    const p = play(two());
+    fire(p, shot({ power: 0.8 }));
+    expect(p.enemies.every((e) => e.defeated)).toBe(true);
+    expect(p.shots).toBe(p.stats.get('maxShots'));
+  });
+});
+
 describe('course rules: hazards', () => {
   it('spikes deal 1 damage, once per shot', () => {
     const p = play(corridor(['g0', 'x0', 'x0', 'x0', 'g0', 'g0', 'g0', 'g0']));

@@ -242,7 +242,9 @@ export type PlayEvent =
   | { kind: 'zap'; target: string }
   | { kind: 'knocked' }
   /** The ball came to rest in water and stays there (owner, 2026-11-15). */
-  | { kind: 'underwater' };
+  | { kind: 'underwater' }
+  /** An enemy was defeated: one shot back (owner, 2026-11-15). */
+  | { kind: 'bonusShot' };
 
 export type PlayStatus = 'playing' | 'won' | 'lost';
 
@@ -1057,6 +1059,11 @@ function defeat(play: PlayState, e: EnemyState): void {
     solid: false,
   });
   if (e.def.grantsAbility) giveAbility(play, e.def.grantsAbility, false);
+  // Owner, 2026-11-15: every enemy defeated gives back one shot, up to the shot allowance.
+  if (play.shots < play.stats.get('maxShots')) {
+    play.shots++;
+    play.log.push({ kind: 'bonusShot' });
+  }
   play.world.obstacles = obstaclesOf(play);
 }
 

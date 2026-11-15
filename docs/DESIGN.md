@@ -80,6 +80,7 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 - **Shot type:** toggle between a ground shot (rolls) and a lofted shot (flies, then bounces).
 - **Power:** hold the mouse button to charge a meter that sweeps up and down; release to shoot.
 - **Spin:** topspin or backspin changes what happens on landing (run forward, stop short, or pull back). Side curve bends the path left or right.
+- **Decided (owner, 2026-11-15):** spin and curve go back to none at the start of each turn (the shot type, ground or lofted, stays as chosen).
 - **Mid-shot:** one key triggers the current ability. One key gives a bounce boost if pressed at the moment of landing.
 
 ### Physics model (Default)
@@ -116,6 +117,7 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
 **Decided:** these are two separate pools, and both can be upgraded.
 
 - **Shots:** each shot costs one. At zero you must spend a turn recovering. Enemies get an extra turn while you recover, then your shots refill.
+- **Decided (owner, 2026-11-15):** defeating an enemy gives back 1 shot. Defeating several in one shot gives 1 for each. Shots never go above the shot allowance (the max shots stat).
 - **Health:** lost to enemy attacks and hazards. At zero the run ends.
 
 **Default:** recovering refills shots to full. Falling in water or out of bounds costs 1 health and returns the ball to its last resting spot.

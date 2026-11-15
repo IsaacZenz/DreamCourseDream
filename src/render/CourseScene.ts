@@ -286,6 +286,9 @@ export class CourseScene extends Phaser.Scene {
       },
     });
     this.phase = 'plan';
+    // Each course starts with no spin or curve (owner, 2026-11-15).
+    settings.top = 0;
+    settings.side = 0;
     this.messageQueue = [];
     this.message = null;
     this.endScreen = null;
@@ -1009,6 +1012,9 @@ export class CourseScene extends Phaser.Scene {
 
   /** The simulation finished the shot (and any turns after it). Show the result. */
   private endShot(): void {
+    // Owner, 2026-11-15: spin and curve go back to none at the start of each turn.
+    settings.top = 0;
+    settings.side = 0;
     this.showEvents(drainLog(this.play));
     this.prevBall = null;
     this.phase = 'plan';
@@ -1080,6 +1086,9 @@ export class CourseScene extends Phaser.Scene {
           break;
         case 'returned':
           this.queueMessage('BACK TO LAST SPOT', 0x80c8ff);
+          break;
+        case 'bonusShot':
+          this.queueMessage('+1 SHOT', GOOD);
           break;
         case 'underwater':
           this.queueMessage('UNDER WATER: NEXT SHOT IS WEAKER', 0x80c8ff);
