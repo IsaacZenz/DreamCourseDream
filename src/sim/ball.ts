@@ -80,6 +80,8 @@ export type ShotEvent =
   | { kind: 'contact'; step: number; obstacle: string; result: ContactResult }
   | { kind: 'anchorStop'; step: number; x: number; y: number }
   | { kind: 'railBoost'; step: number }
+  /** The ball landed in water or skipped off it (for a splash on screen). */
+  | { kind: 'splash'; step: number; x: number; y: number; skip: boolean; boosted: boolean }
   | { kind: 'exit'; step: number };
 
 export type ShotOutcome = 'rest' | 'sunk' | 'out' | 'timeout' | 'exit';
@@ -777,6 +779,24 @@ function land(tuning: Tuning, s: ShotState, g: Ground): void {
   }
   const phys = surfacePhysics(tuning, g.tile.surface);
   b.z = g.h;
+  // Skipping across water (owner, 2026-11-15): fast and low, the ball bounces off the surface.
+  if (SURFACES.get(g.tile.surface)?.sinks) {
+    const flat = Math.hypot(b.vx, b.vy);
+    const boosted = s.boostArmed > 0;
+    if (flat > tuning.waterSkipSpeed && Math.abs(b.vz) < flat * tuning.waterSkipAngle) {
+      const keep = boosted ? tuning.waterSkipBoostKeep : tuning.waterSkipKeep;
+      b.vx *= keep;
+      b.vy *= keep;
+      b.vz = Math.max(Math.abs(b.vz) * tuning.waterSkipLift, tuning.waterSkipMinHop);
+      b.grounded = false;
+      s.hasLanded = true;
+      s.boostArmed = 0;
+      s.boostSpent = false;
+      s.events.push({ kind: 'splash', step: s.step, x: b.x, y: b.y, skip: true, boosted });
+      return;
+    }
+    s.events.push({ kind: 'splash', step: s.step, x: b.x, y: b.y, skip: false, boosted: false });
+  }
   // Ground normal for the plane z = h + sx * x + sy * y.
   const nl = Math.hypot(g.sx, g.sy, 1);
   const nx = -g.sx / nl;

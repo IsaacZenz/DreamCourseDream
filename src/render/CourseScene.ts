@@ -184,6 +184,8 @@ export class CourseScene extends Phaser.Scene {
   /** Course objects on screen, by their uid in the simulation. */
   private objectImgs = new Map<string, Phaser.GameObjects.Image>();
   private exitImg: Phaser.GameObjects.Image | null = null;
+  private animated: { img: Phaser.GameObjects.Image; frame: string; entry: Manifest['sprites'][string] }[] = [];
+  private animPhase = -1;
   /** Bot replay (B key): its shots still to take, and when the next one fires. */
   private watching = false;
   private botMoves: readonly BotMove[] = [];
@@ -242,6 +244,8 @@ export class CourseScene extends Phaser.Scene {
     const course = parsed.course;
     this.course = course;
 
+    this.animated = [];
+    this.animPhase = -1;
     for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
 
     if (!panel) {
@@ -401,6 +405,7 @@ export class CourseScene extends Phaser.Scene {
     this.updateHover();
     if (!this.course) return;
     this.updateShot(tuning!, deltaMs / 1000);
+    this.animateTiles();
     this.syncObjects();
     this.drawStatusHud();
     if (this.message && this.time.now > this.messageUntil) {
@@ -418,10 +423,34 @@ export class CourseScene extends Phaser.Scene {
   private place(p: Placement): void {
     const entry = manifest.sprites[p.sprite];
     if (!entry) throw new Error(`Sprite "${p.sprite}" is not in the asset manifest.`);
-    this.add
+    const img = this.add
       .image(p.x, p.y, p.sprite, frameIndex(entry, p.frame))
       .setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight)
       .setDepth(p.depth);
+    // Animated overlays (water shimmer, Milestone 5b) have frames "<shape>~1", "<shape>~2", ...
+    if (entry.frames.includes(`${p.frame}~1`)) this.animated.push({ img, frame: p.frame, entry });
+  }
+
+  /** Step animated tiles (water shimmer) every quarter second. */
+  private animateTiles(): void {
+    const phase = Math.floor(this.time.now / 250);
+    if (phase === this.animPhase) return;
+    this.animPhase = phase;
+    for (const a of this.animated) {
+      const n = a.entry.frames.filter((f) => f.startsWith(`${a.frame}~`)).length + 1;
+      const k = phase % n;
+      a.img.setFrame(frameIndex(a.entry, k === 0 ? a.frame : `${a.frame}~${k}`));
+    }
+  }
+
+  /** A splash where something entered or skipped off water. */
+  private splash(x: number, y: number): void {
+    const g = groundAt(this.course!, x, y);
+    const p = project(x, y, (g?.h ?? 0) / STEP_HEIGHT);
+    const img = this.makeSprite('splash', '0').setPosition(p.x, p.y).setDepth(this.standingDepth(x, y) + 0.3);
+    const entry = manifest.sprites['splash']!;
+    for (let f = 1; f < 4; f++) this.time.delayedCall(f * 90, () => img.setFrame(frameIndex(entry, String(f))));
+    this.time.delayedCall(360, () => img.destroy());
   }
 
   private setupKeys(): void {
@@ -843,7 +872,15 @@ export class CourseScene extends Phaser.Scene {
       const shot = this.play.shot;
       const evBefore = shot?.events.length ?? 0;
       tick(this.play, input);
-      if (shot) for (const e of shot.events.slice(evBefore)) if ((e.kind === 'bounce' && e.boosted) || e.kind === 'railBoost') this.showMessage('BOOST!', 0xf8e048);
+      if (shot) {
+        for (const e of shot.events.slice(evBefore)) {
+          if ((e.kind === 'bounce' && e.boosted) || e.kind === 'railBoost' || (e.kind === 'splash' && e.boosted)) this.showMessage('BOOST!', 0xf8e048);
+          if (e.kind === 'splash') {
+            this.splash(e.x, e.y);
+            if (e.skip && !e.boosted) this.showMessage('SKIP!', 0x80c8ff);
+          }
+        }
+      }
       this.showEvents(drainLog(this.play));
       this.accumulator -= DT;
     }
@@ -957,6 +994,9 @@ export class CourseScene extends Phaser.Scene {
           break;
         case 'returned':
           this.queueMessage('BACK TO LAST SPOT', 0x80c8ff);
+          break;
+        case 'underwater':
+          this.queueMessage('UNDER WATER: NEXT SHOT IS WEAKER', 0x80c8ff);
           break;
         case 'recover':
           this.queueMessage('OUT OF SHOTS: RECOVER TURN. SHOTS REFILLED', 0x80c8ff);

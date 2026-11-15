@@ -81,6 +81,17 @@ export function faceBands(a: number, b: number, na: number, nb: number): FaceBan
   return bands;
 }
 
+/** A tile away from the bank: all eight neighbours have the same surface. */
+function isDeep(course: Course, t: Tile): boolean {
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      if (tileAt(course, t.x + dx, t.y + dy)?.surface !== t.surface) return false;
+    }
+  }
+  return true;
+}
+
 function surfaceOf(tile: Tile) {
   const def = SURFACES.get(tile.surface);
   if (!def) throw new Error(`Unknown surface ${tile.surface}`);
@@ -122,10 +133,22 @@ export function buildDrawList(course: Course, opts: DrawOptions = {}): Placement
       }
 
       const centre = project(x + 0.5, y + 0.5, t.base);
-      out.push({ sprite: def.tileSprite, frame: t.shape, ...centre, depth: tileDepth(x, y, 'top'), kind: 'top', tile });
+      // Checkerboard (owner, 2026-11-15): every other tile uses the second shade.
+      const checker = def.checker && (x + y) % 2 === 1 ? 'b' : '';
+      out.push({ sprite: def.tileSprite, frame: t.shape + checker, ...centre, depth: tileDepth(x, y, 'top'), kind: 'top', tile });
       if (t.dir) out.push({ sprite: ARROW_SPRITE, frame: t.dir, ...centre, depth: tileDepth(x, y, 'arrow'), kind: 'arrow', tile });
       // A see-through layer over the ball, so a ball in water shows through it.
-      if (def.overlaySprite) out.push({ sprite: def.overlaySprite, frame: t.shape, ...centre, depth: tileDepth(x, y, 'overlay'), kind: 'overlay', tile });
+      if (def.overlaySprite) {
+        const deep = def.deepOverlaySprite && isDeep(course, t) ? def.deepOverlaySprite : def.overlaySprite;
+        out.push({ sprite: deep, frame: t.shape, ...centre, depth: tileDepth(x, y, 'overlay'), kind: 'overlay', tile });
+      }
+      // Shore foam where water meets other ground.
+      if (def.shoreSprite) {
+        for (const [dir, nx, ny] of [['ne', x, y - 1], ['se', x + 1, y], ['sw', x, y + 1], ['nw', x - 1, y]] as const) {
+          const n = tileAt(course, nx, ny);
+          if (n && n.surface !== t.surface) out.push({ sprite: def.shoreSprite, frame: dir, ...centre, depth: tileDepth(x, y, 'overlay') + 0.5, kind: 'overlay', tile });
+        }
+      }
     }
   }
 

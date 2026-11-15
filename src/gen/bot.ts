@@ -107,7 +107,7 @@ export function playBot(course: Course, tuning: Tuning, seed: string): BotResult
     const scoreOf = (trial: PlayState, logFrom: number) => {
       const s = cfg.score;
       const lostHealth = startHealth - trial.health;
-      const sunk = trial.log.slice(logFrom).filter((e) => e.kind === 'returned').length;
+      const sunk = trial.log.slice(logFrom).filter((e) => e.kind === 'returned' || e.kind === 'underwater').length;
       let score = (trial.meter - startMeter) * s.star - lostHealth * s.health - sunk * s.sunk;
       if (trial.status === 'won') score += s.win;
       else if (trial.status === 'lost') score -= s.lost;

@@ -92,14 +92,23 @@ interface SurfaceLook {
   alpha?: number;
 }
 
+/** Animation frame being drawn (water shimmer, Milestone 5b). */
+let PHASE = 0;
+/** Shimmer: short light dashes that drift sideways from frame to frame. */
+const shimmer = (x: number, y: number) => (y % 4 === 0 && (x + Math.floor(y / 4) * 3 + PHASE * 2) % 8 < 3 ? 1 : (y + 2) % 8 === 0 && (x - PHASE * 2 + 40) % 11 < 2 ? 2 : 0);
+
 const LOOKS: Record<string, SurfaceLook> = {
   grass: { base: '#4fa83d', pattern: (x, y) => (hash(x, y) < 0.08 ? 1 : 0) },
+  // Checkerboard (owner, 2026-11-15): the second shade for every other grass tile.
+  'grass-b': { base: '#5cba4a', pattern: (x, y) => (hash(x, y) < 0.08 ? 1 : 0) },
   rough: { base: '#2f7a35', pattern: (x, y) => (hash(x, y, 1) < 0.22 ? -1 : hash(x, y, 2) < 0.06 ? 1 : 0) },
   sand: { base: '#e3c47a', pattern: (x, y) => (hash(x, y, 3) < 0.12 ? -1 : 0) },
   ice: { base: '#a8dcf0', pattern: (x, y) => ((x + y * 2) % 11 === 0 ? 1 : 0) },
   // Water is two sprites: an opaque bed under the ball and a see-through surface over it.
   water: { base: '#1d4a86', pattern: (x, y) => (hash(x, y, 4) < 0.1 ? -1 : 0) },
-  'water-surface': { base: '#3c86e0', alpha: 150, pattern: (x, y) => ((y % 4 === 0 && (x + Math.floor(y / 4) * 3) % 8 < 3) ? 1 : 0) },
+  'water-surface': { base: '#3c86e0', alpha: 150, pattern: shimmer },
+  // Away from the bank the water is darker (Milestone 5b).
+  'water-deep-surface': { base: '#2a62b8', alpha: 175, pattern: shimmer },
   bumper: { base: '#d83c3c', pattern: (x, y) => (Math.floor((x + y * 2) / 4) % 2 === 0 ? 0 : hex2('#f0e8e0')) },
   booster: { base: '#7a7f8c', pattern: (x, y) => ((x + y) % 4 === 0 ? -1 : 0) },
   conveyor: { base: '#5a5560', pattern: (x, y) => ((x - y * 2) % 4 === 0 ? -1 : 0) },
@@ -725,6 +734,43 @@ function drawCrackedTile(): Image {
   return img;
 }
 
+// Water shore and splash (Milestone 5b).
+
+/** A foam line just inside one edge of a flat tile. ne: the nw-ne edge, se: ne-se, sw: se-sw, nw: sw-nw. */
+function drawShore(dir: Direction): Image {
+  const img = new Image(TILE_W, TILE_H);
+  const c = [cornerScreen(0, 0), cornerScreen(1, 0), cornerScreen(2, 0), cornerScreen(3, 0)];
+  const [a, b] = ({ ne: [c[0]!, c[1]!], se: [c[1]!, c[2]!], sw: [c[2]!, c[3]!], nw: [c[3]!, c[0]!] } as const)[dir];
+  const mid: P = [16, 8 + 2 * S + 8 - 8];
+  const foam = hex2('#e8f4ff');
+  for (let i = 1; i < 16; i++) {
+    const t = i / 16;
+    // One pixel in from the edge, towards the middle of the tile.
+    const x = a[0] + (b[0] - a[0]) * t + (mid[0] - (a[0] + b[0]) / 2) * 0.12;
+    const y = a[1] + (b[1] - a[1]) * t + (mid[1] - (a[1] + b[1]) / 2) * 0.25;
+    if (hash(i, dir.length, 7) < 0.8) img.set(Math.round(x), Math.round(y), foam);
+  }
+  return img;
+}
+
+/** A splash ring that grows and fades over four frames, with a few drops. */
+function drawSplash(f: number): Image {
+  const img = new Image(16, 12);
+  const light = hex2('#e8f4ff');
+  const mid = hex2('#8cc4f8');
+  const rx = 2 + f * 1.8;
+  const ry = rx / 2;
+  for (let i = 0; i < 40; i++) {
+    const a = (i / 40) * Math.PI * 2;
+    if (f === 3 && i % 2) continue;
+    img.set(Math.round(8 + Math.cos(a) * rx), Math.round(9 + Math.sin(a) * ry), f < 2 ? light : mid);
+  }
+  if (f < 3) {
+    for (const [dx, h] of [[-2, 3], [0, 5], [2, 3]] as const) img.set(8 + dx * (1 + f * 0.5), 9 - h + f, light);
+  }
+  return img;
+}
+
 // Guard rail (Milestone 5b): a post at each tile centre and a thin bar drawn in
 // short pieces, so the bar follows slopes. Mostly see-through: just lines.
 const RAIL_LIGHT = '#e8f0f8';
@@ -918,14 +964,39 @@ function emit(id: string, img: Image, frameWidth: number, frameHeight: number, f
 }
 
 const faceIds = new Set<string>();
-for (const def of SURFACES.values()) {
-  emit(def.tileSprite, sheet(SHAPES.map((s) => drawTile(def.id, s))), TILE_W, TILE_H, [...SHAPES], TILE_ANCHOR);
-  if (def.overlaySprite) {
-    const look = def.overlaySprite.replace(/^tile-/, '');
-    emit(def.overlaySprite, sheet(SHAPES.map((s) => drawTile(look, s))), TILE_W, TILE_H, [...SHAPES], TILE_ANCHOR);
+/** Overlay frames: "<shape>" then "<shape>~1", "<shape>~2", ... for each animation phase. */
+function overlaySheet(look: string, phases: number): { img: Image; frames: string[] } {
+  const imgs: Image[] = [];
+  const frames: string[] = [];
+  for (let p = 0; p < phases; p++) {
+    PHASE = p;
+    for (const s of SHAPES) {
+      imgs.push(drawTile(look, s));
+      frames.push(p === 0 ? s : `${s}~${p}`);
+    }
   }
+  PHASE = 0;
+  return { img: sheet(imgs), frames };
+}
+
+for (const def of SURFACES.values()) {
+  // Checkerboard surfaces get a second frame per shape, "<shape>b".
+  const tiles = SHAPES.map((s) => drawTile(def.id, s));
+  const names = [...SHAPES];
+  if (def.checker) {
+    tiles.push(...SHAPES.map((s) => drawTile(`${def.id}-b`, s)));
+    names.push(...SHAPES.map((s) => `${s}b`));
+  }
+  emit(def.tileSprite, sheet(tiles), TILE_W, TILE_H, names, TILE_ANCHOR);
+  for (const id of [def.overlaySprite, def.deepOverlaySprite]) {
+    if (!id) continue;
+    const o = overlaySheet(id.replace(/^tile-/, ''), def.overlayFrames ?? 1);
+    emit(id, o.img, TILE_W, TILE_H, o.frames, TILE_ANCHOR);
+  }
+  if (def.shoreSprite) emit(def.shoreSprite, sheet(DIRECTIONS.map(drawShore)), TILE_W, TILE_H, [...DIRECTIONS], TILE_ANCHOR);
   faceIds.add(def.faceSprite);
 }
+emit('splash', sheet([0, 1, 2, 3].map(drawSplash)), 16, 12, ['0', '1', '2', '3'], [8, 9]);
 for (const id of faceIds) {
   const base = FACE_LOOKS[id];
   if (!base) throw new Error(`No placeholder colour for face "${id}". Add one to FACE_LOOKS.`);

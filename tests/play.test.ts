@@ -3,7 +3,7 @@ import { DEFAULT_TUNING, cloneTuning } from '../src/content/tuning';
 import { GENERATED_ID, TEST_COURSES } from '../src/content/courses';
 import { parseCourse, type Course } from '../src/sim/course';
 import { simulateShot, ballAtTile, type ShotCommand } from '../src/sim/ball';
-import { canShoot, createPlay, drainLog, runShot, takeShot, type PlayState } from '../src/sim/play';
+import { canShoot, createPlay, drainLog, runShot, takeShot, wait, type PlayState } from '../src/sim/play';
 
 const T = DEFAULT_TUNING;
 const LEGEND = {
@@ -58,18 +58,47 @@ describe('course rules: shots and health', () => {
     expect(p.shots).toBe(4);
   });
 
-  it('stopping in water costs 1 health and returns the ball to its last resting spot', () => {
+  it('stopping in water costs 1 health and the ball stays there, under the water (owner, 2026-11-15)', () => {
     const p = play(corridor(['g0', '~0', '~0', '~0', '~0', '~0', '~0', 'g0']));
     const start = { ...p.ball };
     const log = fire(p, shot({ power: 0.25 }));
     expect(log.some((e) => e.kind === 'damage' && e.cause === 'sunk')).toBe(true);
+    expect(log.some((e) => e.kind === 'underwater')).toBe(true);
     expect(p.health).toBe(4);
-    expect(p.ball.x).toBeCloseTo(start.x, 5);
+    expect(p.ball.x).toBeGreaterThan(start.x + 0.5);
+  });
+
+  it('a fast, low ball skips off water; a slow one does not (owner, 2026-11-15)', () => {
+    // A bank one (old) step above the water: the ball drops off it onto the surface at a shallow angle.
+    const c = corridor(['g1', 'g1', '~0', '~0', '~0', '~0', 'g1', 'g1']);
+    const skips = (power: number) => {
+      const p = play(c);
+      const s = takeShot(p, shot({ power }));
+      runShot(p);
+      return s.events.filter((e) => e.kind === 'splash' && e.skip).length;
+    };
+    expect(skips(1)).toBeGreaterThan(0);
+    expect(skips(0.3)).toBe(0);
+  });
+
+  it('a shot from inside water is weaker (half power, owner 2026-11-15)', () => {
+    const c = corridor(['g0', 'g0', '~0', '~0', '~0', '~0', '~0', 'g0']);
+    const land = play(c);
+    const wet = play(c);
+    wet.ball = { ...wet.ball, x: wet.ball.x + 2 };
+    const vLand = takeShot(land, shot({ power: 0.6 })).ball.vx;
+    const vWet = takeShot(wet, shot({ power: 0.6 })).ball.vx;
+    expect(vWet).toBeCloseTo(vLand * T.waterShotPower, 5);
   });
 
   it('losing all health ends the run', () => {
     const p = play(corridor(['g0', '~0', '~0', '~0', '~0', '~0', '~0', 'g0']));
-    for (let i = 0; i < 5; i++) fire(p, shot({ power: 0.25 }));
+    // Each shot ends under water and costs 1. Wait a second between shots, as a player aiming would,
+    // so the half-second damage immunity has passed.
+    for (let i = 0; i < 5 && p.status === 'playing'; i++) {
+      fire(p, shot({ power: 0.25 }));
+      wait(p, 120);
+    }
     expect(p.health).toBe(0);
     expect(p.status).toBe('lost');
     expect(canShoot(p)).toBe(false);

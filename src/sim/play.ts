@@ -240,7 +240,9 @@ export type PlayEvent =
   | { kind: 'crateHit'; uid: string }
   | { kind: 'break'; uid: string; wild: boolean }
   | { kind: 'zap'; target: string }
-  | { kind: 'knocked' };
+  | { kind: 'knocked' }
+  /** The ball came to rest in water and stays there (owner, 2026-11-15). */
+  | { kind: 'underwater' };
 
 export type PlayStatus = 'playing' | 'won' | 'lost';
 
@@ -627,7 +629,13 @@ export function canShoot(play: PlayState): boolean {
 
 /** Shot power and bounce boost from the stat sheet. */
 function scales(play: PlayState) {
-  return { power: play.stats.get('shotPower'), boost: play.stats.get('bounceBoost') };
+  return { power: play.stats.get('shotPower') * (inWater(play) ? play.tuning.waterShotPower : 1), boost: play.stats.get('bounceBoost') };
+}
+
+/** The resting ball is in water: its next shot is weaker (owner, 2026-11-15). */
+export function inWater(play: PlayState): boolean {
+  const g = groundAt(play.course, play.ball.x, play.ball.y);
+  return !!g && !!SURFACES.get(g.tile.surface)?.sinks;
 }
 
 function newMotion(play: PlayState, s: ShotState): void {
@@ -849,11 +857,18 @@ function finishBallMotion(play: PlayState): void {
     play.log.push({ kind: 'won' });
     return;
   }
-  if (outcome === 'sunk' || outcome === 'out') {
+  if (outcome === 'out') {
     // DESIGN.md section 6: costs 1 health and returns the ball to its last resting spot.
     damageBall(play, RULES.sinkDamage, outcome);
     play.ball = { ...play.restSpot };
     play.log.push({ kind: 'returned', cause: outcome });
+  } else if (outcome === 'sunk') {
+    // Owner, 2026-11-15: a ball that stops in water stays there, under the water, and takes 1 damage.
+    const b = s.ball;
+    const g = groundAt(play.course, b.x, b.y);
+    play.ball = { x: b.x, y: b.y, z: g?.h ?? b.z, vx: 0, vy: 0, vz: 0, grounded: true };
+    damageBall(play, RULES.sinkDamage, 'sunk');
+    play.log.push({ kind: 'underwater' });
   } else {
     const b = s.ball;
     const g = groundAt(play.course, b.x, b.y);
