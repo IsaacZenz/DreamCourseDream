@@ -133,7 +133,7 @@ After playing the first generator, the owner asked for larger, more open, much m
 
 ## Milestone 6 — The run
 
-- [ ] **Plan gate:** design sheet for the map node types and rules, the starter gear, the run upgrades, the shop and its prices. Owner signs it off before any of them is built.
+- [x] **Plan gate:** design sheet for the map node types and rules, the starter gear, the run upgrades, the shop and its prices. Owner signs it off before any of them is built.
 - [ ] Branching map generator with node types: Course, Hard course, Shop, Cache, Boss
 - [ ] Map rules: shops not guaranteed, forced course-only stretches possible, every path reaches a boss
 - [ ] Boss countdown, early boss choice, forced boss at zero (boss is a stand-in hard course until Milestone 7)
@@ -237,3 +237,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-15 — Milestones 5 and 5b done: the owner approved the generated courses and asked for the merge. Known limits carried forward: first-try pass rate and generation time miss their targets above budget 12, by owner choice for now (run upgrades in Milestones 6 and 7 are meant to keep up with harder courses). Merged to `main`.
 - 2026-11-15 — Milestone 6 design sheet written on branch `milestone-6-the-run`: `docs/plans/milestone-6.md` (map shape and node odds, boss countdown and early boss, budget per row, the six gear items, five run upgrades, shop and cache). Seven questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
 - 2026-11-15 — Owner decision: 54 gear items instead of six. Six rarities in three pairs (common/uncommon, rare/double rare, special rare/legendary), three items per rarity per category, families for the first four rarities and unique effects for the top two, rarity odds rising through the run, accessory renamed Bauble. All 54 in Milestone 6. Sheet section 5 rewritten; FEATURES.md section 8 updated.
+- 2026-11-15 — Milestone 6 design sheet signed off by the owner. Changes from the defaults: running out of naps still fails the course, which ends the run; run courses capped at budget 30; shops do not lower the boss countdown (so the map has 16 rows and the budget follows counted nodes, not rows). Blue star sources recorded for Milestone 7: beating a course, beating a boss, an extra-rare chance in crates or under cracked ground.

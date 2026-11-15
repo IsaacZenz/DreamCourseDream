@@ -377,6 +377,8 @@ id, name, icon id, modifiers while active, effect each turn, duration in turns, 
 
 ### Starter set (Default)
 
+Owner, 2026-11-15: Burning on enemies is built in Milestone 6 (the fire gear needs it); Burning on the ball stays in Milestone 8.
+
 | Status | On an enemy | On the ball | Lasts |
 |---|---|---|---|
 | Poisoned | −1 hit damage and attack damage | −1 hit damage | 2 turns |
@@ -395,7 +397,7 @@ For the ball, one turn is one shot. Build the system and Stunned in Milestone 4;
 | Pickup | Effect | Where it comes from |
 |---|---|---|
 | Yellow star | +1 to the meter and the wallet | Enemies, crates |
-| Blue star | +1 permanent currency | Elites, bosses, hidden spots |
+| Blue star | +1 permanent currency | Owner, 2026-11-15: beating a course, beating a boss, and an extra-rare chance in crates or under cracked ground. Amounts on the Milestone 7 sheet |
 | Heart | +1 health | Crates, rare enemy drop |
 | Shot orb | +1 shot, up to the maximum | Crates, placed on courses |
 | Wild | A random ability (not the one held), replacing the current one | Small chance from secured crates, 10% times drop luck (owner, 2026-11-14) |
@@ -409,6 +411,7 @@ Build in Milestone 3.
 **Default.** All values are first guesses, to be corrected in the Milestone 8 balance pass.
 
 - **Quota:** about 60% of the stars available on a course.
+- **Run budget (owner, 2026-11-15):** 8 + 2 per course, hard course or cache finished (shops do not count), hard courses ×1.5, capped at 30 for now. Running out of naps on a run course ends the run.
 - **Prices:** gear by rarity 10, 15, 25, 35, 50, 70 (owner, 2026-11-15; see `docs/plans/milestone-6.md` section 5.2), stat boost 12 rising by 6, heal 10, first reroll 3.
 - **Budget:** each course has a difficulty budget that rises with each node and jumps after each boss. Enemies, traits, obstacles and hazards each cost budget.
 - **Tier mix by region:** region 1 is mostly tiers 1–2; region 2 adds tier 3; region 3 adds tier 4.

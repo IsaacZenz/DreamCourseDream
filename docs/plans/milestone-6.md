@@ -1,6 +1,6 @@
 # Milestone 6 design sheet — The run
 
-**Status: waiting for the owner's sign-off.** Nothing on this sheet is built yet.
+**Status: signed off by the owner, 2026-11-15**, with changes to questions 2, 3 and 5 (see [section 10](#10-questions-for-the-owner)). Sections 2.1, 2.3, 2.4, 4.1 and 9.2 already show the changes.
 
 How to review: read each section, change any number or rule you want, and answer the numbered questions in [section 10](#10-questions-for-the-owner). Each question has a default, so "use the defaults" is a valid answer. Every number here is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -22,7 +22,7 @@ Same run seed plus the same choices gives the same run, every time (CLAUDE.md ru
 
 | Rule | Starting value |
 |---|---|
-| Rows of normal nodes | 8 (enough for a countdown of 5 plus up to 3 raises, section 2.4) |
+| Rows of normal nodes | 16 (shops do not lower the countdown, so a path with shops needs more rows: a countdown of 5 plus up to 3 raises, with a shop between each) |
 | Nodes per row | 2 to 4 |
 | Lanes (columns) | 4; a node sits in one lane |
 | Links | Each node links to 1 or 2 nodes in the next row, in its own lane or a neighbouring lane. Lines never cross. Every node can be reached from row 1 |
@@ -50,7 +50,7 @@ Rules on top of the chances (DESIGN.md section 10, decided: shops not guaranteed
 ### 2.3 The boss countdown
 
 - Starts at **5** (DESIGN.md open question 1, default: 5, same for every region).
-- Drops by 1 each time you finish a node that is not the boss: courses, shops and caches all count.
+- Drops by 1 each time you finish a **course, hard course or cache**. **Shops do not count** (owner, 2026-11-15).
 - The boss sits just above the row the countdown points to. On the map it is drawn there, with "Boss in N".
 - **When the countdown reaches 0, the next step is the boss**, whatever row you are on. All links from your node lead to it.
 
@@ -58,7 +58,7 @@ Rules on top of the chances (DESIGN.md section 10, decided: shops not guaranteed
 
 - From the countdown's 3rd step onward (countdown 3, 2 or 1 when you choose), each row has a **50% chance** that one of its nodes is a **Boss (early)** node.
 - Fighting the boss early earns **+1 blue star per countdown step left** (DESIGN.md open question 2, default). Blue stars have no wallet until Milestone 7, so in this milestone they are **counted and shown on the run summary only**.
-- A shop service can **raise the countdown by 1, once per shop** (FEATURES.md open question F6, default). At most **3 raises per region**, which is why the map has 8 rows.
+- A shop service can **raise the countdown by 1, once per shop** (FEATURES.md open question F6, default). At most **3 raises per region**.
 
 ### 2.5 Determinism
 
@@ -92,10 +92,10 @@ All map and node randomness comes from the run seed through forks of the seeded 
 
 | Node | Budget |
 |---|---|
-| Course in row r | 8 + 2 × (r − 1): row 1 = 8, row 3 = 12, row 5 = 16, row 8 = 22 |
-| Hard course | 150% of that, rounded down: row 3 = 18, row 5 = 24 |
-| Boss stand-in | A hard course at the budget of the row the boss sits in |
-| Any run course | **Capped at 24** for now (question 3) |
+| Course after n counted nodes (courses, hard courses and caches finished; shops do not count) | 8 + 2 × n: first course = 8, after 2 = 12, after 4 = 16, after 7 = 22 |
+| Hard course | 150% of that, rounded down: after 2 = 18, after 4 = 24 |
+| Boss stand-in | A hard course at the budget it would have as the next node |
+| Any run course | **Capped at 30** for now (owner, question 3). Large courses can take 10–20 s to make; the loading animation covers it |
 
 The Milestone 5 rule "after a win the next budget rises by a random 0 to 4" stays for the free-play generated course (key 6). The run uses this table instead.
 
@@ -128,7 +128,7 @@ Owner, 2026-11-15: when the run exists, the generator's bot should play with the
 
 Picking an item: first roll the rarity from the table for where you are, then pick one item of that rarity and the needed category at random (never one you hold).
 
-| Rarity | Pair | Price | Region 1, rows 1–4 | Region 1, rows 5–8 | Region 2 | Region 3 |
+| Rarity | Pair | Price | Region 1, counted nodes 0–3 | Region 1, counted nodes 4+ | Region 2 | Region 3 |
 |---|---|---|---|---|---|---|
 | Common | 1 | 10 | 70% | 45% | 15% | 5% |
 | Uncommon | 1 | 15 | 25% | 40% | 35% | 15% |
@@ -310,7 +310,7 @@ Same keys as the shop. Taking one finishes the node. Leaving without taking anyt
 - The HUD adds the three gear slots (empty or the item's icon) and the Padded Lining shield when ready.
 - Finishing a course goes to a short "course complete" screen with the reward, then back to the map.
 - Losing all health goes to the run summary.
-- Running out of naps on a course: **costs 2 health and you leave the course** (it still counts as finished, with no reward). If that takes your health to 0, the run ends. (question 2)
+- Running out of shots a third time (no naps left) **fails the course, and that ends the run** (owner, 2026-11-15, question 2). It goes to the run summary.
 
 ### 9.3 How you get into a run
 
@@ -327,15 +327,15 @@ Same keys as the shop. Taking one finishes the node. Leaving without taking anyt
 
 ## 10. Questions for the owner
 
-| # | Question | Default |
-|---|---|---|
-| 1 | The fire weapons (Coat family, Sunfire Crown) need **Burning**, which is planned for Milestone 8. Build it now? | Yes, **on enemies only**: 1 damage at the start of each enemy turn, for 2 turns; a second application resets the time. Burning on the ball stays in Milestone 8 |
-| 2 | What happens when you run out of naps on a run course? (Today it fails the course; in a run that would end the run, which may be harsh.) | Lose 2 health and leave the course with no reward. If health hits 0, the run ends |
-| 3 | Generation at budget 25+ is slow (6–20 s) and fails the bot often. Cap run courses at 24 until upgrades make bigger ones beatable? | Yes, cap at 24. Raise it after playtesting |
-| 4 | Income: a course gives about 4–8 stars plus the +2 finish reward, so by the boss you have about 25–40 stars: roughly two or three common/uncommon gear items, or one item and one upgrade. Is that the right feel, or should shopping be easier? | Keep these prices and tune after you play |
-| 5 | Does the boss countdown also drop when you visit a shop or cache, or only after courses? | All nodes count (as DESIGN.md says) |
-| 6 | Should the run be saved so a page refresh does not lose it? | No, save comes in Milestone 7 with the rest of the save system |
-| 7 | Does health heal at all between courses (for example +1 after each course)? | No. Healing only from shops, caches, hearts and beating the boss (DESIGN.md open question 7) |
+| # | Question | Default | Answer |
+|---|---|---|---|
+| 1 | The fire weapons (Coat family, Sunfire Crown) need **Burning**, which is planned for Milestone 8. Build it now? | Yes, **on enemies only**: 1 damage at the start of each enemy turn, for 2 turns; a second application resets the time. Burning on the ball stays in Milestone 8 | **Owner: yes.** Burning on enemies only, as in the default. |
+| 2 | What happens when you run out of naps on a run course? (Today it fails the course; in a run that would end the run, which may be harsh.) | Lose 2 health and leave the course with no reward. If health hits 0, the run ends | **Owner: keep the loss.** Running out of naps fails the course and ends the run. |
+| 3 | Generation at budget 25+ is slow (6–20 s) and fails the bot often. Cap run courses at 24 until upgrades make bigger ones beatable? | Yes, cap at 24. Raise it after playtesting | **Owner: cap at 30** for now. |
+| 4 | Income: a course gives about 4–8 stars plus the +2 finish reward, so by the boss you have about 25–40 stars: roughly two or three common/uncommon gear items, or one item and one upgrade. Is that the right feel, or should shopping be easier? | Keep these prices and tune after you play | **Owner: default.** |
+| 5 | Does the boss countdown also drop when you visit a shop or cache, or only after courses? | All nodes count (as DESIGN.md says) | **Owner: shops do not count.** Courses, hard courses and caches do. |
+| 6 | Should the run be saved so a page refresh does not lose it? | No, save comes in Milestone 7 with the rest of the save system | **Owner: not yet; address later.** |
+| 7 | Does health heal at all between courses (for example +1 after each course)? | No. Healing only from shops, caches, hearts and beating the boss (DESIGN.md open question 7) | **Owner: default.** |
 
 ---
 

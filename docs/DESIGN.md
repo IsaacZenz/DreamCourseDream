@@ -225,7 +225,7 @@ Gear examples are in `docs/FEATURES.md` section 8.
 
 - The run is a branching map of nodes. The player picks a path.
 - Node types are randomised. A shop is not guaranteed between courses. Sometimes the only choice is another course.
-- **Boss countdown:** a counter (for example "5 until boss") drops by one each time the player completes a node without fighting the boss. The player may fight the boss early when a boss node is offered. At zero the boss is forced.
+- **Boss countdown:** a counter (for example "5 until boss") drops by one each time the player completes a node without fighting the boss. **Owner, 2026-11-15: shops do not count**; courses, hard courses and caches do. The player may fight the boss early when a boss node is offered. At zero the boss is forced.
 - **Yellow stars** are common. They fill the exit meter and are also spent in shops on upgrades that last for the current run.
 - **Blue stars** are rare. They are spent on permanent upgrades.
 - On death the run restarts. Permanent upgrades are kept. Everything else is lost: yellow stars, ability, gear, run upgrades, map position.
@@ -235,7 +235,8 @@ Gear examples are in `docs/FEATURES.md` section 8.
 - Node types: Course, Hard course (tougher, better reward, a blue star chance), Shop, Cache (free gear or healing), Boss.
 - Beating a boss gives blue stars, heals the player, and starts the next region with a harder generator budget and a new biome.
 - Fighting the boss early gives a bonus that scales with the countdown remaining.
-- Blue stars come from bosses, hard courses, and rare hidden spots on normal courses.
+- ~~Blue stars come from bosses, hard courses, and rare hidden spots on normal courses.~~
+- **Decided (owner, 2026-11-15): blue star sources:** beating a course, beating a boss, and an extra-rare chance inside crates or under cracked ground. Amounts and chances go on the Milestone 7 sheet. Until then they are counted on the run summary only.
 - Blue stars earned during a run are kept even if the run ends in death.
 - Permanent upgrades are bought on a hub screen between runs: maximum health, maximum shots, gear slots, starting yellow stars, shop discount, a starting ability.
 
@@ -289,7 +290,7 @@ Opus: use the default and say that you did. The owner can change any of these at
 | 4 | ~~Power input: sweeping meter, or drag distance?~~ | Answered 2026-11-14: sweeping meter (see section 5) |
 | 5 | How many uses does an ability have? | Unlimited uses, one per shot, until replaced |
 | 6 | Can gear be sold? | No. Swapping is covered in FEATURES.md section 8 |
-| 7 | Is there healing outside shops and caches? | Bosses heal fully; nothing else |
+| 7 | Is there healing outside shops and caches? (Owner, 2026-11-15: default kept) | Bosses heal fully; nothing else |
 | 8 | Does the run have an end, or go until death? | Three regions and a final boss, then an endless mode unlocks |
 | 9 | Theme, setting, main character and the game's name | **Partly answered (owner, 2026-11-15), planning only:** the hero is an **armadillo** who stands on two legs, rolls up into a ball when launched, and pops back out when the ball stops. Villains share one theme, not yet chosen: either **reptiles and amphibians with an alligator as the main villain**, or **insects**. Name and setting still undecided; all needed before Milestone 9 |
 | 10 | Do patrollers hurt, or only block and deflect? | Per type; the first patroller built deals 1 damage and knocks the ball back |
