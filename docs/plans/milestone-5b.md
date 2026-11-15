@@ -262,6 +262,7 @@ Built on branch `milestone-5-course-generator`. Where the build differs from or 
 - **Speed:** the unchanging obstacles (rocks, rails) are now built once per course instead of every step, and collisions skip anything far from the ball. That halved the time per simulated shot on big courses.
 - **Loading screen:** generation runs in a background worker (`src/render/genWorker.ts`) while a ball bounces along a strip of checkered tiles.
 - **Overview (O)** and the **areas** debug view (G) as on the sheet.
+- **Batch of 500** (budgets 8, 12, 20, 30): every course passed in the end (no fallbacks). First try: 93% at budget 8, 84% at 12, 58% at 20, 39% at 30 (68% overall). Average time: 0.4 s, 0.8 s, 2.6 s and 6.1 s. **Not met:** 95% first try above budget 12, and the 5-second limit at budget 30. Most rejections are "bot got stuck" on big courses: either the course needs shots the bot cannot find, or the bot gives up too soon. The give-up rule was loosened from 6 to 10 stalled shots afterwards. Next steps, if the owner wants them: a stronger bot (more shot choices near hard spots), or tamer big courses (fewer gaps and steep ramps at high budgets), and smaller maximum sizes if 30+ stays slow.
 - The Milestone 5 chunk files and route layout are removed. Pond-with-island survives as a set piece; the bunker became the sand field.
 
 ## Sign-off

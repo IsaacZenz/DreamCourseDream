@@ -101,7 +101,7 @@ export const GEN = {
     /** Uphill shots get the speed for climbing the height difference times this. */
     climbMargin: 1.4,
     /** Give up (reject the course) after this many shots in a row with no new star and no step closer. */
-    stallShots: 6,
+    stallShots: 10,
     /** Trial shots are first run only until the ball stops; this many of the best then play on through the enemy turns. */
     finishBest: 3,
     /** Give up (reject the course) after trying this many shots in one game; keeps hopeless courses from taking seconds. */
