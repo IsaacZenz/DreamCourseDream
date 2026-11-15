@@ -80,6 +80,8 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 
 **Starter set:** one balanced character with the stats in section 1, no starting ability, no trait. Build in Milestone 3. Built as **Rollo** (working name) in `src/content/characters.ts`.
 
+**Owner idea, 2026-11-15 (planning only, for the Milestone 9 skin):** the hero is an armadillo. It stands on two legs, curls into a ball when launched, and pops back out of ball form when it stops. A ball-to-standing animation on every launch and stop, through the asset manifest like all art. Villains share a theme, still to choose: reptiles and amphibians led by an alligator, or insects. Nothing changes in the rules or the simulation.
+
 **Later examples, Milestone 8:** a heavy ball (more damage, less bounce, shorter shots); a light ball (more bounce, an extra shot, less health).
 
 ---

@@ -123,6 +123,8 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
 - **Decided (owner, 2026-11-15): upgrades keep up with difficulty.** Big, high-budget courses can need more shots than a fresh character has. That is intended for now: as the hero progresses through a run they get upgrades (more shots, more damage and so on; Milestones 6 and 7) that let them keep up with the scaling. Until then, high-budget generated courses are hard to generate and slow (see PLAN.md progress log).
 - **Health:** lost to enemy attacks and hazards. At zero the run ends.
 
+**Decided (owner, 2026-11-15):** falling off the edge also loses the ability you hold. Nothing else is lost (stars, gear, shots and naps stay).
+
 **Default:** recovering (a nap) refills shots to full. Falling in water or out of bounds costs 1 health and returns the ball to its last resting spot.
 
 ## 7. Course objective
@@ -289,5 +291,5 @@ Opus: use the default and say that you did. The owner can change any of these at
 | 6 | Can gear be sold? | No. Swapping is covered in FEATURES.md section 8 |
 | 7 | Is there healing outside shops and caches? | Bosses heal fully; nothing else |
 | 8 | Does the run have an end, or go until death? | Three regions and a final boss, then an endless mode unlocks |
-| 9 | Theme, setting, main character and the game's name | Undecided; needed before Milestone 9 |
+| 9 | Theme, setting, main character and the game's name | **Partly answered (owner, 2026-11-15), planning only:** the hero is an **armadillo** who stands on two legs, rolls up into a ball when launched, and pops back out when the ball stops. Villains share one theme, not yet chosen: either **reptiles and amphibians with an alligator as the main villain**, or **insects**. Name and setting still undecided; all needed before Milestone 9 |
 | 10 | Do patrollers hurt, or only block and deflect? | Per type; the first patroller built deals 1 damage and knocks the ball back |

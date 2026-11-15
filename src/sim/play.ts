@@ -245,7 +245,9 @@ export type PlayEvent =
   /** The ball came to rest in water and stays there (owner, 2026-11-15). */
   | { kind: 'underwater' }
   /** A damaging hit on an enemy: one shot back (owner, 2026-11-15). */
-  | { kind: 'bonusShot' };
+  | { kind: 'bonusShot' }
+  /** Fell off the edge: the held ability is lost (owner, 2026-11-15). */
+  | { kind: 'abilityLost'; ability: string };
 
 export type PlayStatus = 'playing' | 'won' | 'lost';
 
@@ -883,6 +885,11 @@ function finishBallMotion(play: PlayState): void {
   if (outcome === 'out') {
     // DESIGN.md section 6: costs 1 health and returns the ball to its last resting spot.
     damageBall(play, RULES.sinkDamage, outcome);
+    // Owner, 2026-11-15: falling off the edge also loses the ability you hold.
+    if (play.ability) {
+      play.log.push({ kind: 'abilityLost', ability: play.ability });
+      play.ability = null;
+    }
     play.ball = { ...play.restSpot };
     play.log.push({ kind: 'returned', cause: outcome });
   } else if (outcome === 'sunk') {

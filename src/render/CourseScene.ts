@@ -1088,6 +1088,10 @@ export class CourseScene extends Phaser.Scene {
         case 'returned':
           this.queueMessage('BACK TO LAST SPOT', 0x80c8ff);
           break;
+        case 'abilityLost':
+          this.queueMessage(`FELL OFF: ${(ABILITIES.get(e.ability)?.name ?? 'ABILITY').toUpperCase()} LOST`, BAD);
+          this.drawStatusHud();
+          break;
         case 'bonusShot':
           this.queueMessage('+1 SHOT', GOOD);
           break;

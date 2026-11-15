@@ -150,6 +150,26 @@ describe('shots back and naps (owner, 2026-11-15)', () => {
   });
 });
 
+describe('falling off the edge (owner, 2026-11-15)', () => {
+  it('loses the held ability, as well as 1 health and the spot', () => {
+    // An open end: the corridor stops and the ball rolls off it.
+    const c = course(['g1 g1 g1 g1 g1 g1 g1 g1 g1 g1', 'g1 g0 g0 g0 g0 g0 g0 g0 g0 .', 'g1 g1 g1 g1 g1 g1 g1 g1 g1 g1']);
+    const p = play(c);
+    p.ability = 'hop';
+    const log = fire(p, shot({ power: 1 }));
+    expect(log.some((e) => e.kind === 'returned' && e.cause === 'out')).toBe(true);
+    expect(log.some((e) => e.kind === 'abilityLost')).toBe(true);
+    expect(p.ability).toBeNull();
+  });
+
+  it('stopping in water keeps the ability', () => {
+    const p = play(corridor(['g0', '~0', '~0', '~0', '~0', '~0', '~0', 'g0']));
+    p.ability = 'hop';
+    fire(p, shot({ power: 0.25 }));
+    expect(p.ability).toBe('hop');
+  });
+});
+
 describe('course rules: hazards', () => {
   it('spikes deal 1 damage, once per shot', () => {
     const p = play(corridor(['g0', 'x0', 'x0', 'x0', 'g0', 'g0', 'g0', 'g0']));
