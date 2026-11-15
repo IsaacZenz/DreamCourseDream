@@ -102,18 +102,34 @@ docs/
 
 ## Milestone 5 — Course generator **(Gate)**
 
-- [ ] **Plan gate:** design sheet for the first chunk set, the difficulty budget costs, and how enemies, obstacles and hazards are placed. Owner signs it off before the generator is built.
-- [ ] Chunk format and a first set of at least twelve chunks
-- [ ] Generator: seed and difficulty budget in, course data out
-- [ ] Enemy placement in squads that spends the budget (FEATURES.md section 4). Squad themes can be switched on in Milestone 8.
-- [ ] Obstacle and hazard placement that spends the budget
-- [ ] Structure validator
-- [ ] Bot validator that plays the course in the simulation with no display
-- [ ] Reject-and-retry loop with a cap, and a logged count of rejections
-- [ ] Seed viewer tool: type a seed and budget, see the course, see whether it passed
-- [ ] Batch test: generate 500 courses, report pass rate, average generation time, and a contact sheet of screenshots
+- [x] **Plan gate:** design sheet for the first chunk set, the difficulty budget costs, and how enemies, obstacles and hazards are placed. Owner signs it off before the generator is built.
+- [x] Chunk format and a first set of at least twelve chunks
+- [x] Generator: seed and difficulty budget in, course data out
+- [x] Enemy placement in squads that spends the budget (FEATURES.md section 4). Squad themes can be switched on in Milestone 8.
+- [x] Obstacle and hazard placement that spends the budget
+- [x] Structure validator
+- [x] Bot validator that plays the course in the simulation with no display
+- [x] Reject-and-retry loop with a cap, and a logged count of rejections
+- [x] Seed viewer tool: type a seed and budget, see the course, see whether it passed
+- [x] Batch test: generate 500 courses, report pass rate, average generation time, and a contact sheet of screenshots
 
 **Done when:** at least 95% of generated courses pass on the first try, generation takes under one second each, and the owner has played ten generated courses and judged them worth playing.
+
+### Milestone 5b — Rework: journeys, rails, gentle slopes, water (owner, 2026-11-15)
+
+After playing the first generator, the owner asked for larger, more open, much more sloped courses that feel like a journey, a guard rail, and new water rules. The Milestone 5 gate moves to the end of this rework.
+
+- [x] **Plan gate:** design sheet `docs/plans/milestone-5b.md`. Owner signs it off before anything on it is built.
+- [x] Height step halved; course format 3 (base-36 heights); old files load with doubled heights; art regenerated
+- [x] Guard rail: course format, physics for the ball and rolling enemies, rail boost, path and Mole rules, sprite
+- [x] Water: no reset, 1 damage for stopping in it, weaker shots from inside, skipping; lowered water, shimmer, shore, splash
+- [x] Checkerboard grass
+- [x] Journey generator: areas, landforms, passages, set pieces, edges, placement rising along the trail, scaling to large maps
+- [x] Structure check and bot updated (climbing rule, gaps, shot limits)
+- [x] Overview key, areas debug view, loading screen with an animation while a course is made
+- [x] Batch test of 500 across budgets 8, 12, 20 and 30
+
+**Done when:** the Milestone 5 targets hold (95% pass on the first try; time per the sheet), and the owner has played ten generated courses and judged them worth playing.
 
 ## Milestone 6 — The run
 
@@ -206,3 +222,16 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Owner decision: the ball damages enemies only during the player's own shot. A Trundler running into a standing ball hurts the ball but takes no damage; a knocked ball does no damage to anything it rolls into. 1 new test (210 in total).
 - 2026-11-14 — Owner tuning: the Mole jumps faster (10 up, 6 sideways) after a shorter rumble (0.3 s); grace 0.15 s, so rolling over it still does not guarantee a hit.
 - 2026-11-14 — Milestone 4 done: owner played the test build and the test bench, tuned the Mole, and approved. Owner decision recorded in DESIGN.md: keep fine-tuning and adding content easy. Merged to `main`.
+- 2026-11-15 — Milestone 5 design sheet written on branch `milestone-5-course-generator`: `docs/plans/milestone-5.md` (14 chunks, budget presets and costs, squad placement, structure and bot validators, seed viewer). Eight questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-15 — Milestone 5 design sheet signed off by the owner: defaults for all questions except 7 (after a win, the next generated course's budget rises by a random 0 to 4). Recorded in the sheet and FEATURES.md section 14.
+- 2026-11-15 — Milestone 5 built on branch `milestone-5-course-generator`: 14 chunks (`src/content/chunks/`), generator numbers in `src/content/gen.ts`, hazard costs in `surfaces.ts`; `src/gen/` has chunk reading and turning, layout (route, branches, heights, rims), budget spending with squads, the structure check, the bot and the retry loop; `clonePlay` in `src/sim/play.ts`. In the game: key 6 (or `?course=generated&seed=&budget=`), [ and ] for the budget, V seed viewer, B to watch the bot, a "chunks" debug view, and Enter after a win raises the budget by a random 0 to 4 (owner). Tools: `npm run gen`, `npm run gen:batch`. 23 new tests (233 in total). Batch of 500 (budgets 8, 12, 20): **95.0% pass on the first try, 100% overall, average 367 ms, median 156 ms; 91.8% under one second** (budget 20 averages 810 ms, slowest 4.9 s). Differences from the sheet are listed in its "As built" section. **Gate:** waiting for the owner to play ten generated courses and judge them worth playing.
+- 2026-11-15 — Milestone 5 test build published as a private artifact. It opens on a generated course; `#<course id>` in the address picks another course.
+- 2026-11-15 — Owner playtest of the generator: courses too small and flat. Owner decisions recorded in DESIGN.md and FEATURES.md: courses as journeys, guard rail, height step halved, new water rules (no reset, 1 damage, skipping), rail boost, 45° rails, checkerboard grass, much larger maps. Milestone 5b design sheet written: `docs/plans/milestone-5b.md`. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-15 — Milestone 5b design sheet signed off: shots from water at half power, damage every time a shot ends under water, generation up to 5 seconds on large courses with a loading animation, defaults for the rest.
+- 2026-11-15 — Milestone 5b built on branch `milestone-5-course-generator`: height step halved (format 3, base-36 heights; tiles rise one step gentle or two steep; old files load with doubled heights); guard rails (course format, physics for the ball and rolling enemies, rail boost, path and Mole rules, test bench option); water (no reset, 1 damage for stopping in it, half-power shots from inside, skipping; shimmer, deeper tint, shore foam, splashes); checkerboard grass; the journey generator (areas with eight landforms, five passage kinds, set pieces, rails, rims and bare edges, side pockets, enemies busier towards the end) replacing the chunk system; a route-finding bot; generation in a worker behind a loading screen; overview (O); areas debug view. 244 tests. Batch of 500 (budgets 8, 12, 20, 30): **100% pass overall; first try 68% (budget 8: 93%, 12: 84%, 20: 58%, 30: 39%); average 2.5 s (budget 8: 0.4 s, 12: 0.8 s, 20: 2.6 s, 30: 6.1 s)**. Budgets 8 and 12 meet their time target; budget 30 is over the 5-second limit, and the 95% first-try target is not met above budget 12 (most rejections are the bot getting stuck on big courses). The bot's give-up rule was then loosened from 6 to 10 stalled shots (a 30-course check at budget 20: first try 70% to 77%). Differences from the sheet are in its "As built" section. **Gate:** waiting for the owner to play ten generated courses and judge them worth playing.
+- 2026-11-15 — Milestone 5b test build published to the same private artifact link. It opens on a generated course.
+- 2026-11-15 — Owner decisions, built the same day: spin and curve go back to none at the start of each turn (and each course); defeating an enemy gives back 1 shot, 1 per enemy when several fall to one shot, never above the shot allowance. Recorded in DESIGN.md sections 5 and 6. 2 new tests (246 in total).
+- 2026-11-15 — Owner decisions, built the same day: each damaging hit on an enemy gives back 1 shot (replacing "each defeat"); two naps (recover turns) per course, and running out of shots a third time fails the course. The shots panel shows the naps left. Effect on generation (32-course check): budgets 8 and 12 unchanged, budget 20 first try 3/8, budget 30 first try 1/8 and about 21 s on average, because big journeys now run out of shots. Waiting for the owner to choose how to balance big courses.
+- 2026-11-15 — Owner: leave big courses as they are for now and test the feel; the hero's upgrades during a run (Milestones 6 and 7) are meant to keep up with the scaling difficulty. Recorded in DESIGN.md section 6. When the run exists, the generator's bot should play with the upgrades the player would have at that point.
+- 2026-11-15 — Owner decision, built the same day: falling off the edge loses the held ability (water does not). 2 new tests (250 in total). Owner planning notes for Milestone 9 recorded in DESIGN.md open question 9 and FEATURES.md section 3: the hero is a two-legged armadillo that curls into a ball when launched and pops out when it stops; villain theme to choose between reptiles and amphibians (alligator boss) or insects.
+- 2026-11-15 — Milestones 5 and 5b done: the owner approved the generated courses and asked for the merge. Known limits carried forward: first-try pass rate and generation time miss their targets above budget 12, by owner choice for now (run upgrades in Milestones 6 and 7 are meant to keep up with harder courses). Merged to `main`.

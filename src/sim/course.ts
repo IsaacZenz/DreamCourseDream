@@ -5,7 +5,7 @@
  * A course file is JSON:
  *
  *   {
- *     "format": 1,
+ *     "format": 3,
  *     "name": "Flat with walls",
  *     "legend": { "g": "grass", ">": { "surface": "booster", "dir": "se" }, "w": { "surface": "warp", "link": "a" } },
  *     "tiles": [
@@ -21,8 +21,13 @@
  *
  * Each string in "tiles" is one grid row (grid y), with tiles separated by
  * spaces (grid x). A tile is written as a legend letter followed by either one
- * digit (a flat tile at that height) or four digits (the corner heights nw, ne,
- * se, sw; see tileShape.ts). A single "." is an empty spot: out of bounds.
+ * height (a flat tile at that height) or four heights (the corners nw, ne, se,
+ * sw; see tileShape.ts). A single "." is an empty spot: out of bounds.
+ *
+ * Format 3 (Milestone 5b, owner 2026-11-15): one height step is a quarter of a
+ * tile, and each height is one base-36 character: 0-9 then a-z (10 to 35).
+ * Formats 1 and 2 used half-tile steps and digits only; their heights are
+ * doubled when they are read, so old files look and play exactly as before.
  *
  * "objects" is optional: things placed on tiles, by id from
  * src/content/objects.ts (pickups, blockers, moving obstacles, breakables,
@@ -39,6 +44,12 @@
  *   "orient": "x" | "y", which way a gate's bars run (default "x").
  *   "drops":  pickup ids a breakable drops instead of its default.
  *
+ * Optional "rails" (Milestone 5b): guard rails, each a line through tile
+ * centres, [[x, y], [x, y], ...]. Every leg runs along the grid or at exactly
+ * 45 degrees. Rails are not objects, so they may share a tile with one. The
+ * path of a Trundler, a sliding block or a drifting cloud may not cross a rail,
+ * and a Mole may not start on a rail.
+ *
  * `parseCourse` checks everything and returns a list of readable errors
  * instead of a course if anything is wrong.
  */
@@ -46,10 +57,18 @@ import { OBJECTS, RENAMED_OBJECTS } from '../content/objects.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { minCorner, shapeOf, type Corners, type ShapeId } from './tileShape.ts';
 
-export const COURSE_FORMAT_VERSION = 2;
-const FORMATS_READ = [1, 2];
-/** Highest corner height allowed, in steps. Keeps courses on screen. */
-export const MAX_HEIGHT = 9;
+export const COURSE_FORMAT_VERSION = 3;
+const FORMATS_READ = [1, 2, 3];
+/** Highest corner height allowed, in steps (format 3 steps: a quarter of a tile). */
+export const MAX_HEIGHT = 35;
+
+/** Paths may not cross a rise or drop bigger than this, in steps (half a tile). */
+const PATH_MAX_RISE = 2;
+
+/** One height in a tile token: a base-36 character (format 3). */
+export function heightChar(h: number): string {
+  return h.toString(36);
+}
 
 export interface Tile {
   readonly x: number;
@@ -92,6 +111,8 @@ export interface Course {
   readonly exit: GridPoint;
   readonly quota: number;
   readonly objects: readonly CourseObject[];
+  /** Guard rails: lines through tile centres (Milestone 5b). */
+  readonly rails: readonly (readonly GridPoint[])[];
 }
 
 export type ParseResult = { ok: true; course: Course } | { ok: false; errors: string[] };
@@ -107,8 +128,9 @@ interface LegendEntry {
   link?: string;
 }
 
-const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects'];
-const TILE_TOKEN = /^(.)(\d|\d{4})$/u;
+const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects', 'rails'];
+const TILE_TOKEN = /^(.)([0-9a-z]|[0-9a-z]{4})$/u;
+const OLD_TILE_TOKEN = /^(.)(\d|\d{4})$/u;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -182,6 +204,9 @@ export function parseCourse(raw: unknown): ParseResult {
     errors.push('"tiles" must be a non-empty list of row strings.');
   } else {
     height = rows.length;
+    // Formats 1 and 2: digits only, half-tile steps, so heights are doubled.
+    const old = raw.format === 1 || raw.format === 2;
+    const scale = old ? 2 : 1;
     const split = rows.map((r: string) => r.trim().split(/\s+/u));
     width = split[0]?.length ?? 0;
     split.forEach((tokens, y) => {
@@ -195,9 +220,9 @@ export function parseCourse(raw: unknown): ParseResult {
           tiles.push(null);
           continue;
         }
-        const m = TILE_TOKEN.exec(token);
+        const m = (old ? OLD_TILE_TOKEN : TILE_TOKEN).exec(token);
         if (!m) {
-          errors.push(`${where}: expected a legend letter then 1 or 4 digits, or ".".`);
+          errors.push(`${where}: expected a legend letter then 1 or 4 heights${old ? ' (digits)' : ' (0-9, a-z)'}, or ".".`);
           tiles.push(null);
           continue;
         }
@@ -208,7 +233,7 @@ export function parseCourse(raw: unknown): ParseResult {
           tiles.push(null);
           continue;
         }
-        const h = [...digits].map(Number);
+        const h = [...digits].map((c) => parseInt(c, 36) * scale);
         const corners: Corners = h.length === 1 ? [h[0]!, h[0]!, h[0]!, h[0]!] : [h[0]!, h[1]!, h[2]!, h[3]!];
         if (Math.max(...corners) > MAX_HEIGHT) errors.push(`${where}: heights go up to ${MAX_HEIGHT}.`);
         const shape = shapeOf(corners);
@@ -233,7 +258,7 @@ export function parseCourse(raw: unknown): ParseResult {
     if (n !== 2) errors.push(`Warp link "${link}" is used by ${n} tile(s); it must be used by exactly 2.`);
   }
 
-  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number, objects: [] as CourseObject[] };
+  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number, objects: [] as CourseObject[], rails: [] as GridPoint[][] };
   const checkSpot = (p: GridPoint | null, name: string) => {
     if (!p) return;
     const t = tileAt({ ...course, start: p, exit: p }, p.x, p.y);
@@ -247,7 +272,9 @@ export function parseCourse(raw: unknown): ParseResult {
   if (start && exit && start.x === exit.x && start.y === exit.y) errors.push('"start" and "exit" must be different tiles.');
 
 
+  const rails = parseRails(raw.rails, course, errors);
   const objects = parseObjects(raw.objects, course, errors);
+  checkRailCrossings(objects, rails, errors);
   for (const o of objects) {
     if (start && o.x === start.x && o.y === start.y) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the start tile.`);
     if (exit && o.x === exit.x && o.y === exit.y) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the exit tile.`);
@@ -259,7 +286,7 @@ export function parseCourse(raw: unknown): ParseResult {
   }
 
   if (errors.length || !start || !exit) return { ok: false, errors };
-  return { ok: true, course: { ...course, start, exit, objects } };
+  return { ok: true, course: { ...course, start, exit, objects, rails } };
 }
 
 /** Yellow stars a course can give: enemy star values, placed yellow stars and stars inside breakables. */
@@ -287,7 +314,7 @@ function takesPath(id: string): boolean {
 
 /**
  * A path may not leave the course, cross an empty spot, or cross a rise or drop
- * of more than one step. Checked by walking each leg in small steps.
+ * of more than half a tile (two steps). Checked by walking each leg in small steps.
  */
 function checkPath(course: Omit<Course, 'start' | 'exit'>, pts: readonly GridPoint[], where: string, errors: string[]): void {
   const c = { ...course, start: pts[0]!, exit: pts[0]! };
@@ -304,8 +331,8 @@ function checkPath(course: Omit<Course, 'start' | 'exit'>, pts: readonly GridPoi
         errors.push(`${where}: the path from (${a.x}, ${a.y}) to (${b.x}, ${b.y}) leaves the course.`);
         return;
       }
-      if (prev && t !== prev && Math.abs(t.base - prev.base) > 1) {
-        errors.push(`${where}: the path from (${a.x}, ${a.y}) to (${b.x}, ${b.y}) crosses a rise or drop of more than one step.`);
+      if (prev && t !== prev && Math.abs(t.base - prev.base) > PATH_MAX_RISE) {
+        errors.push(`${where}: the path from (${a.x}, ${a.y}) to (${b.x}, ${b.y}) crosses a rise or drop of more than half a tile.`);
         return;
       }
       prev = t;
@@ -407,4 +434,97 @@ function parseObjects(raw: unknown, course: Omit<Course, 'start' | 'exit'>, erro
     out.push({ id: entry.id, x: p.x, y: p.y, path, facing, phase, orient, drops });
   });
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Guard rails (Milestone 5b)
+
+function parseRails(raw: unknown, course: Omit<Course, 'start' | 'exit'>, errors: string[]): GridPoint[][] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) {
+    errors.push('"rails" must be a list of lines, each [[x, y], [x, y], ...].');
+    return [];
+  }
+  const out: GridPoint[][] = [];
+  const c = { ...course, start: { x: 0, y: 0 }, exit: { x: 0, y: 0 } };
+  raw.forEach((line: unknown, i) => {
+    const where = `rails[${i}]`;
+    if (!Array.isArray(line) || line.length < 2) {
+      errors.push(`${where}: a rail needs at least two points.`);
+      return;
+    }
+    const pts = line.map((q: unknown, k: number) => parsePoint(q, `${where}[${k}]`, errors));
+    if (!pts.every((q): q is GridPoint => q !== null)) return;
+    for (let k = 1; k < pts.length; k++) {
+      const a = pts[k - 1]!;
+      const b = pts[k]!;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      if ((dx === 0 && dy === 0) || (dx !== 0 && dy !== 0 && Math.abs(dx) !== Math.abs(dy))) {
+        errors.push(`${where}: the leg from (${a.x}, ${a.y}) to (${b.x}, ${b.y}) must run along the grid or at exactly 45 degrees.`);
+        return;
+      }
+    }
+    for (const t of railTileList(pts)) {
+      if (!tileAt(c, t.x, t.y)) {
+        errors.push(`${where}: passes over (${t.x}, ${t.y}), which is not on a tile.`);
+        return;
+      }
+    }
+    out.push(pts);
+  });
+  return out;
+}
+
+/** Every tile whose centre a rail line passes through, in order. */
+export function railTileList(pts: readonly GridPoint[]): GridPoint[] {
+  const out: GridPoint[] = [];
+  for (let k = 1; k < pts.length; k++) {
+    const a = pts[k - 1]!;
+    const b = pts[k]!;
+    const n = Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+    for (let j = k === 1 ? 0 : 1; j <= n; j++) out.push({ x: a.x + (Math.sign(b.x - a.x) * j), y: a.y + Math.sign(b.y - a.y) * j });
+  }
+  return out;
+}
+
+/** The set of tiles a course's rails pass through, as "x,y". */
+export function railTiles(rails: readonly (readonly GridPoint[])[]): Set<string> {
+  const out = new Set<string>();
+  for (const r of rails) for (const t of railTileList(r)) out.add(`${t.x},${t.y}`);
+  return out;
+}
+
+/** Do segments p1-p2 and q1-q2 touch (including end points and overlapping)? */
+export function segmentsTouch(p1: GridPoint, p2: GridPoint, q1: GridPoint, q2: GridPoint): boolean {
+  const cross = (o: GridPoint, a: GridPoint, b: GridPoint) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const on = (a: GridPoint, b: GridPoint, p: GridPoint) => Math.min(a.x, b.x) <= p.x && p.x <= Math.max(a.x, b.x) && Math.min(a.y, b.y) <= p.y && p.y <= Math.max(a.y, b.y);
+  const d1 = cross(q1, q2, p1);
+  const d2 = cross(q1, q2, p2);
+  const d3 = cross(p1, p2, q1);
+  const d4 = cross(p1, p2, q2);
+  if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true;
+  return (d1 === 0 && on(q1, q2, p1)) || (d2 === 0 && on(q1, q2, p2)) || (d3 === 0 && on(p1, p2, q1)) || (d4 === 0 && on(p1, p2, q2));
+}
+
+/** Moving things may not cross a rail, and a Mole may not start on one. */
+function checkRailCrossings(objects: readonly CourseObject[], rails: readonly (readonly GridPoint[])[], errors: string[]): void {
+  if (!rails.length) return;
+  const onRail = railTiles(rails);
+  objects.forEach((o, i) => {
+    const def = OBJECTS.get(o.id);
+    if (def?.kind === 'enemy' && def.behaviour.kind === 'burrow' && onRail.has(`${o.x},${o.y}`)) {
+      errors.push(`objects[${i}]: "${o.id}" may not start on a tile with a guard rail.`);
+    }
+    for (let k = 1; k < o.path.length; k++) {
+      for (const r of rails) {
+        for (let j = 1; j < r.length; j++) {
+          if (segmentsTouch(o.path[k - 1]!, o.path[k]!, r[j - 1]!, r[j]!)) {
+            errors.push(`objects[${i}]: the path of "${o.id}" crosses a guard rail.`);
+            return;
+          }
+        }
+      }
+    }
+  });
 }

@@ -1,25 +1,31 @@
 {
-  "format": 1,
+  "format": 3,
   "name": "Test: flat with walls",
   "legend": {
     "g": "grass",
     "b": "bumper"
   },
-  "start": [2, 9],
-  "exit": [11, 2],
+  "start": [
+    2,
+    9
+  ],
+  "exit": [
+    11,
+    2
+  ],
   "quota": 0,
   "tiles": [
-    "g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g1    g1    g1    g1    g1    g2    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g2    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g2    g0    g0    g0    g0    g1",
-    "g1    g0    g0    g0    b1    b1    g0    g0    g2    g0    g0    g1    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g2    g0    g0    g1    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1    g0    g1",
-    "g1    g0    g0    g0    g0    g0    g0    g0    g0    g0    g0    g1    g0    g1",
-    "g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1"
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g2 g2 g2 g2 g2 g4 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g4 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g4 g0 g0 g0 g0 g2",
+    "g2 g0 g0 g0 b2 b2 g0 g0 g4 g0 g0 g2 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g4 g0 g0 g2 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2 g0 g2",
+    "g2 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g2 g0 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2"
   ]
 }

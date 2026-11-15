@@ -80,6 +80,8 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 
 **Starter set:** one balanced character with the stats in section 1, no starting ability, no trait. Build in Milestone 3. Built as **Rollo** (working name) in `src/content/characters.ts`.
 
+**Owner idea, 2026-11-15 (planning only, for the Milestone 9 skin):** the hero is an armadillo. It stands on two legs, curls into a ball when launched, and pops back out of ball form when it stops. A ball-to-standing animation on every launch and stop, through the asset manifest like all art. Villains share a theme, still to choose: reptiles and amphibians led by an alligator, or insects. Nothing changes in the rules or the simulation.
+
 **Later examples, Milestone 8:** a heavy ball (more damage, less bounce, shorter shots); a light ball (more bounce, an extra shot, less health).
 
 ---
@@ -196,6 +198,7 @@ id, name, sprite id, size in tiles, whether it blocks the ball, contact effect, 
 | Static blockers | Rock, tree stump (was the post; renamed by the owner 2026-11-14, built in Milestone 4), low wall | 3 |
 | Moving obstacles (not enemies; cannot be defeated) | Sliding block on a path, gate that opens and closes on a timer | 4 |
 | Destructibles | Crate that drops a pickup; secured crate that takes 2 hits (owner, 2026-11-14); cracked tile that breaks under the Anchor ability | 4 |
+| Guard rails (owner, 2026-11-15) | A thin, low, mostly see-through rail through the middle of a tile (straight, corner and 45° pieces) | 5b |
 | Linked objects | Switch that lowers a gate or raises a bridge | 8 |
 
 Moving obstacles run in real time like patrollers, including while the player aims.
@@ -219,6 +222,19 @@ Moving obstacles run in real time like patrollers, including while the player ai
 - It replaces the current rule where the ball carries on through a defeated enemy with a small loss of speed. Contact with the enemy itself is unchanged: the hit that defeats it still counts, and the pole goes up once the ball has moved clear, so it never traps the ball.
 
 Build in Milestone 4, alongside the other contact rules and obstacles.
+
+### Guard rail
+
+**Decided (owner, 2026-11-15):**
+
+- A thin, low rail, mostly see-through, that runs through the middle of a tile. It lines course edges (not always: stacked blocks are no longer the only border) and can form shapes in the middle of the course.
+- The ball bounces off it; a ball in the air above it hops over.
+- Moving enemies bounce off it too.
+- A Mole can never burrow underneath it.
+- Pieces run along the grid and at 45°.
+- Pressing the bounce-boost key at the moment the ball hits a rail gives a stronger bounce.
+
+Numbers and the remaining details are in `docs/plans/milestone-5b.md`.
 
 ### Thunder cloud
 
@@ -403,6 +419,7 @@ Build in Milestone 3.
 - **Prices:** common gear 15, rare 30, epic 60, stat boost 12 rising by 6, heal 10, first reroll 3.
 - **Budget:** each course has a difficulty budget that rises with each node and jumps after each boss. Enemies, traits, obstacles and hazards each cost budget.
 - **Tier mix by region:** region 1 is mostly tiers 1–2; region 2 adds tier 3; region 3 adds tier 4.
+- **Owner, 2026-11-15 (Milestone 5 testing, before the run exists):** after winning a generated course, the next one's budget rises by a random 0 to 4 (seeded), capped at 40. The Milestone 5 generator rules are in `docs/plans/milestone-5.md`.
 - **Hard courses:** 150% of the normal budget, a guaranteed tier-up squad leader, better rewards.
 
 ---

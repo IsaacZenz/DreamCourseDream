@@ -16,8 +16,9 @@
  *
  * Turn order (DESIGN.md section 8): aim, shot (until the ball and anything it
  * set rolling have stopped), rest check, enemy turn (activated sentinels act one
- * after another); when the shots run out, a recover turn (enemies act once
- * more) refills them.
+ * after another); when the shots run out, a recover turn ("nap": enemies act
+ * once more) refills them. Owner, 2026-11-15: two naps per course; running out
+ * a third time fails the course. Each damaging hit on an enemy gives a shot back.
  *
  * The display reads this state and drains `log` for messages and effects.
  */
@@ -33,6 +34,7 @@ import {
   type MoverDef,
   type ObjectShape,
   type PickupDef,
+  RAIL,
 } from '../content/objects.ts';
 import { RULES } from '../content/rules.ts';
 import { STATUSES } from '../content/statuses.ts';
@@ -44,6 +46,7 @@ import {
   endHover,
   endShot,
   groundAt,
+  nearestOnShape,
   predictPath,
   setHeading,
   startBody,
@@ -57,7 +60,7 @@ import {
   type ShotState,
   type ShotWorld,
 } from './ball.ts';
-import { tileAt, type Course, type CourseObject, type GridPoint } from './course.ts';
+import { railTileList, railTiles, tileAt, type Course, type CourseObject, type GridPoint } from './course.ts';
 import { computeHit, isBehind } from './damage.ts';
 import { Rng, type Seed } from './rng.ts';
 import { StatSheet } from './stats.ts';
@@ -238,7 +241,13 @@ export type PlayEvent =
   | { kind: 'crateHit'; uid: string }
   | { kind: 'break'; uid: string; wild: boolean }
   | { kind: 'zap'; target: string }
-  | { kind: 'knocked' };
+  | { kind: 'knocked' }
+  /** The ball came to rest in water and stays there (owner, 2026-11-15). */
+  | { kind: 'underwater' }
+  /** A damaging hit on an enemy: one shot back (owner, 2026-11-15). */
+  | { kind: 'bonusShot' }
+  /** Fell off the edge: the held ability is lost (owner, 2026-11-15). */
+  | { kind: 'abilityLost'; ability: string };
 
 export type PlayStatus = 'playing' | 'won' | 'lost';
 
@@ -273,6 +282,10 @@ export interface PlayState {
   readonly flags: FlagState[];
   seeds: SeedState[];
   status: PlayStatus;
+  /** Why the course was lost: health ran out, or shots ran out with no naps left (owner, 2026-11-15). */
+  lostBy: 'health' | 'shots' | null;
+  /** Naps (recover turns) taken on this course (owner, 2026-11-15: two allowed). */
+  napsUsed: number;
   phase: Phase;
   /** The ball's motion: the player's shot, or a knock while it was resting. */
   shot: ShotState | null;
@@ -301,6 +314,8 @@ export interface PlayState {
   turnActions: string[];
   actionWait: number;
   world: ShotWorld;
+  /** Guard rail pieces, tile centre to tile centre (Milestone 5b). */
+  readonly railPieces: readonly RailPiece[];
   readonly rng: Rng;
   log: PlayEvent[];
 }
@@ -356,6 +371,41 @@ export function pathAt(run: PathRun, dist: number): { x: number; y: number; dx: 
 // ---------------------------------------------------------------------------
 // Setting up
 
+/** One piece of guard rail, from one tile centre to the next along the rail. */
+export interface RailPiece {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly dx: number;
+  readonly dy: number;
+  /** Ground height at its lower end, and the rise to its higher end, in tiles. */
+  readonly base: number;
+  readonly rise: number;
+}
+
+function railPiecesOf(course: Course): RailPiece[] {
+  const out: RailPiece[] = [];
+  course.rails.forEach((line, i) => {
+    const tiles = railTileList(line);
+    for (let k = 1; k < tiles.length; k++) {
+      const a = tiles[k - 1]!;
+      const b = tiles[k]!;
+      const ha = heightAt(course, a.x + 0.5, a.y + 0.5);
+      const hb = heightAt(course, b.x + 0.5, b.y + 0.5);
+      out.push({ id: `rail:${i}:${k}`, x: a.x + 0.5, y: a.y + 0.5, dx: b.x - a.x, dy: b.y - a.y, base: Math.min(ha, hb), rise: Math.abs(ha - hb) });
+    }
+  });
+  return out;
+}
+
+/** Tiles with a guard rail through them, cached per course. */
+const railTileCache = new WeakMap<Course, Set<string>>();
+export function railTileSet(course: Course): Set<string> {
+  let s = railTileCache.get(course);
+  if (!s) railTileCache.set(course, (s = railTiles(course.rails)));
+  return s;
+}
+
 function heightAt(course: Course, x: number, y: number): number {
   return groundAt(course, x, y)?.h ?? 0;
 }
@@ -395,6 +445,8 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     flags: [],
     seeds: [],
     status: 'playing',
+    lostBy: null,
+    napsUsed: 0,
     phase: 'aim',
     shot: null,
     motion: 0,
@@ -413,6 +465,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     turnActions: [],
     actionWait: 0,
     world: { obstacles: [] },
+    railPieces: railPiecesOf(course),
     rng: Rng.fromSeed(opts.seed).fork(`course:${course.name}`),
     log: [],
   };
@@ -533,10 +586,36 @@ function standing(e: EnemyState): boolean {
   return !e.defeated && !e.body && !e.burrowed;
 }
 
+/**
+ * Obstacles that never move or change: blockers and guard rails. Built once
+ * per course (and again only if the rail tuning numbers change), because the
+ * obstacle list is rebuilt every step.
+ */
+const staticCache = new WeakMap<Course, { bounce: number; boost: number; list: Obstacle[] }>();
+function staticObstacles(play: PlayState): Obstacle[] {
+  const c = staticCache.get(play.course);
+  if (c && c.bounce === play.tuning.railBounce && c.boost === play.tuning.railBoost) return c.list;
+  const list: Obstacle[] = [];
+  for (const b of play.blockers) list.push({ id: b.uid, x: b.x, y: b.y, base: b.z, height: b.def.height, shape: b.def.shape, bounce: b.def.bounce });
+  for (const p of play.railPieces) {
+    list.push({
+      id: p.id,
+      x: p.x,
+      y: p.y,
+      base: p.base,
+      height: RAIL.height + p.rise,
+      shape: { kind: 'seg', ax: 0, ay: 0, bx: p.dx, by: p.dy, r: RAIL.halfThickness },
+      bounce: play.tuning.railBounce,
+      boost: play.tuning.railBoost,
+    });
+  }
+  staticCache.set(play.course, { bounce: play.tuning.railBounce, boost: play.tuning.railBoost, list });
+  return list;
+}
+
 /** Everything solid on the course right now. */
 function obstaclesOf(play: PlayState): Obstacle[] {
-  const out: Obstacle[] = [];
-  for (const b of play.blockers) out.push({ id: b.uid, x: b.x, y: b.y, base: b.z, height: b.def.height, shape: b.def.shape, bounce: b.def.bounce });
+  const out: Obstacle[] = staticObstacles(play).slice();
   for (const m of play.movers) {
     if (m.def.motion.kind === 'gate' && m.open) continue;
     out.push({ id: m.uid, x: m.x, y: m.y, base: m.z, height: m.def.height, shape: m.shape, bounce: m.def.bounce, vx: m.vx, vy: m.vy, knock: m.def.knock });
@@ -575,7 +654,13 @@ export function canShoot(play: PlayState): boolean {
 
 /** Shot power and bounce boost from the stat sheet. */
 function scales(play: PlayState) {
-  return { power: play.stats.get('shotPower'), boost: play.stats.get('bounceBoost') };
+  return { power: play.stats.get('shotPower') * (inWater(play) ? play.tuning.waterShotPower : 1), boost: play.stats.get('bounceBoost') };
+}
+
+/** The resting ball is in water: its next shot is weaker (owner, 2026-11-15). */
+export function inWater(play: PlayState): boolean {
+  const g = groundAt(play.course, play.ball.x, play.ball.y);
+  return !!g && !!SURFACES.get(g.tile.surface)?.sinks;
 }
 
 function newMotion(play: PlayState, s: ShotState): void {
@@ -639,6 +724,37 @@ export function runShot(play: PlayState, inputs: readonly TickInput[] = []): voi
   }
 }
 
+/**
+ * An independent copy of the whole course state, so a shot can be tried
+ * without changing the real game (the course generator's bot, Milestone 5).
+ * Definitions, the course and the tuning are shared; everything that changes
+ * during play is copied.
+ */
+export function clonePlay(play: PlayState): PlayState {
+  const shared = new Set<unknown>([play.course, play.tuning, play.character, ...play.course.objects, ...OBJECTS.values(), ...ABILITIES.values(), ...STATUSES.values()]);
+  const memo = new Map<unknown, unknown>();
+  const copy = (v: unknown): unknown => {
+    if (typeof v !== 'object' || v === null || shared.has(v)) return v;
+    const seen = memo.get(v);
+    if (seen !== undefined) return seen;
+    if (v instanceof Rng) return Rng.fromState(v.getState());
+    if (v instanceof StatSheet) return v.clone();
+    if (Array.isArray(v)) {
+      const out: unknown[] = [];
+      memo.set(v, out);
+      for (const x of v) out.push(copy(x));
+      return out;
+    }
+    const out: Record<string, unknown> = {};
+    memo.set(v, out);
+    for (const [k, x] of Object.entries(v)) out[k] = typeof x === 'function' ? x : copy(x);
+    return out;
+  };
+  const out = copy(play) as PlayState;
+  out.world.contact = (o, s) => onBallContact(out, o, s);
+  return out;
+}
+
 /** Let the world run for a number of steps (tests and tools). */
 export function wait(play: PlayState, n: number): void {
   for (let i = 0; i < n && play.status === 'playing'; i++) tick(play);
@@ -691,10 +807,8 @@ function moveThings(play: PlayState): void {
 }
 
 function overlaps(shape: ObjectShape, ox: number, oy: number, x: number, y: number, r: number): boolean {
-  if (shape.kind === 'round') return Math.hypot(x - ox, y - oy) < shape.r + r;
-  const cx = Math.min(ox + shape.hx, Math.max(ox - shape.hx, x));
-  const cy = Math.min(oy + shape.hy, Math.max(oy - shape.hy, y));
-  return Math.hypot(x - cx, y - cy) < r;
+  const n = nearestOnShape(shape, ox, oy, x, y);
+  return Math.hypot(x - n.cx, y - n.cy) < r + n.thick;
 }
 
 function somethingIn(play: PlayState, m: MoverState): boolean {
@@ -768,11 +882,23 @@ function finishBallMotion(play: PlayState): void {
     play.log.push({ kind: 'won' });
     return;
   }
-  if (outcome === 'sunk' || outcome === 'out') {
+  if (outcome === 'out') {
     // DESIGN.md section 6: costs 1 health and returns the ball to its last resting spot.
     damageBall(play, RULES.sinkDamage, outcome);
+    // Owner, 2026-11-15: falling off the edge also loses the ability you hold.
+    if (play.ability) {
+      play.log.push({ kind: 'abilityLost', ability: play.ability });
+      play.ability = null;
+    }
     play.ball = { ...play.restSpot };
     play.log.push({ kind: 'returned', cause: outcome });
+  } else if (outcome === 'sunk') {
+    // Owner, 2026-11-15: a ball that stops in water stays there, under the water, and takes 1 damage.
+    const b = s.ball;
+    const g = groundAt(play.course, b.x, b.y);
+    play.ball = { x: b.x, y: b.y, z: g?.h ?? b.z, vx: 0, vy: 0, vz: 0, grounded: true };
+    damageBall(play, RULES.sinkDamage, 'sunk');
+    play.log.push({ kind: 'underwater' });
   } else {
     const b = s.ball;
     const g = groundAt(play.course, b.x, b.y);
@@ -798,6 +924,13 @@ function checkExit(play: PlayState, s: ShotState): void {
   endShot(s, 'exit');
 }
 
+/** Shots back for a damaging hit, never above the shot allowance. */
+function gainShots(play: PlayState, n: number): void {
+  const before = play.shots;
+  play.shots = Math.min(play.stats.get('maxShots'), play.shots + n);
+  if (play.shots > before) play.log.push({ kind: 'bonusShot' });
+}
+
 /** The ball takes damage. Owner, 2026-11-14: then it is immune for half a second. */
 function damageBall(play: PlayState, amount: number, cause: Extract<PlayEvent, { kind: 'damage' }>['cause']): void {
   if (amount <= 0 || play.status !== 'playing' || play.clock < play.immuneUntil) return;
@@ -806,6 +939,7 @@ function damageBall(play: PlayState, amount: number, cause: Extract<PlayEvent, {
   play.log.push({ kind: 'damage', amount, cause });
   if (play.health <= 0) {
     play.status = 'lost';
+    play.lostBy = 'health';
     play.shot = null;
     play.log.push({ kind: 'lost' });
   }
@@ -863,6 +997,8 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
     if (res.shieldUsed) e.shieldMotion = play.motion;
     e.health = Math.max(0, e.health - res.damage);
     play.log.push({ kind: 'hit', enemy: e.uid, damage: res.damage, blocked: res.blocked });
+    // Owner, 2026-11-15: every hit that does damage gives a shot back, up to the shot allowance.
+    if (res.damage > 0) gainShots(play, RULES.shotsPerHit);
     if (e.health <= 0) defeat(play, e);
     else respond(play, e, 'hit');
   }
@@ -1031,7 +1167,8 @@ function popMoles(play: PlayState): void {
 }
 
 function enemyRadius(e: EnemyState): number {
-  return e.def.shape.kind === 'round' ? e.def.shape.r : Math.max(e.def.shape.hx, e.def.shape.hy);
+  const sh = e.def.shape;
+  return sh.kind === 'round' ? sh.r : sh.kind === 'box' ? Math.max(sh.hx, sh.hy) : sh.r;
 }
 
 function launchEnemy(play: PlayState, e: EnemyState, vx: number, vy: number, vz = 0): void {
@@ -1482,7 +1619,16 @@ function afterShot(play: PlayState): void {
   play.ballStatuses = tickStatuses(play.ballStatuses);
   play.stats.tickTurn();
   play.turnQueue = ['normal'];
-  if (play.shots <= 0) play.turnQueue.push('recover');
+  if (play.shots <= 0) {
+    if (play.napsUsed < RULES.naps) play.turnQueue.push('recover');
+    else {
+      // Owner, 2026-11-15: out of shots with no naps left: the course is failed.
+      play.status = 'lost';
+      play.lostBy = 'shots';
+      play.log.push({ kind: 'lost' });
+      return;
+    }
+  }
   play.turn = null;
   play.phase = 'enemy';
 }
@@ -1532,9 +1678,35 @@ function endTurn(play: PlayState): void {
   if (play.turn === 'recover') {
     // DESIGN.md section 6, open question 3: recovering refills all the shots.
     play.shots = play.stats.get('maxShots');
+    play.napsUsed++;
     play.log.push({ kind: 'recover' });
   }
   play.turn = null;
+}
+
+/** The nearest tile centre with no rail that can hold the ball, searched in growing rings. */
+function moveOffRail(play: PlayState, e: EnemyState): void {
+  const tx = Math.floor(e.x);
+  const ty = Math.floor(e.y);
+  const rails = railTileSet(play.course);
+  for (let ring = 1; ring < 8; ring++) {
+    let best: { x: number; y: number; d: number } | null = null;
+    for (let y = ty - ring; y <= ty + ring; y++) {
+      for (let x = tx - ring; x <= tx + ring; x++) {
+        if (Math.max(Math.abs(x - tx), Math.abs(y - ty)) !== ring) continue;
+        const t = tileAt(play.course, x, y);
+        if (!t || rails.has(`${x},${y}`) || !SURFACES.get(t.surface)?.canHoldBall) continue;
+        const d = Math.hypot(x + 0.5 - e.x, y + 0.5 - e.y);
+        if (!best || d < best.d) best = { x, y, d };
+      }
+    }
+    if (best) {
+      e.x = best.x + 0.5;
+      e.y = best.y + 0.5;
+      e.z = heightAt(play.course, e.x, e.y);
+      return;
+    }
+  }
 }
 
 /**
@@ -1547,6 +1719,8 @@ function burrowMoles(play: PlayState): void {
     if (bh.kind !== 'burrow' || e.defeated || e.burrowed || e.body) continue;
     if (hasStatus(e.statuses, 'stunned')) continue;
     if (play.shotNumber - e.surfacedShot < bh.upShots) continue;
+    // Owner, 2026-11-15: a Mole never burrows under a guard rail. It moves to the nearest tile without one.
+    if (railTileSet(play.course).has(tileKeyOf(e.x, e.y))) moveOffRail(play, e);
     e.burrowed = true;
     e.insideInner = false;
     e.tileKey = tileKeyOf(e.x, e.y);

@@ -1,10 +1,15 @@
 import Phaser from 'phaser';
-import { TEST_COURSES } from '../content/courses';
+import { GENERATED_ID, TEST_COURSES } from '../content/courses';
+import { GEN } from '../content/gen';
+import { generateCourse, type GenResult } from '../gen/validate';
+import type { BotMove } from '../gen/bot';
+import { Rng } from '../sim/rng';
+import { SeedViewer } from '../ui/seedViewer';
 import { BENCH_ID, benchChoices, benchCourse } from '../content/courses/testBench';
 import { SURFACES } from '../content/surfaces';
-import { parseCourse, type Course } from '../sim/course';
+import { parseCourse, railTileList, type Course } from '../sim/course';
 import { STEP_HEIGHT, type Tuning } from '../content/tuning';
-import { DT, groundAt, type BallState, type ShotType } from '../sim/ball';
+import { DT, groundAt, type BallState, type ShotCommand, type ShotType } from '../sim/ball';
 import {
   ballNow,
   canShoot,
@@ -19,7 +24,8 @@ import {
   type PlayState,
   type Preview,
 } from '../sim/play';
-import { OBJECTS } from '../content/objects';
+import { OBJECTS, RAIL } from '../content/objects';
+import { RULES } from '../content/rules';
 import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
 import { loadTuning } from '../save/tuningStore';
@@ -33,7 +39,7 @@ import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 let manifest: Manifest = { version: 1, sprites: {} };
 
 /** Debug overlay modes, cycled with the G key. */
-const DEBUG_MODES = ['off', 'coords', 'heights', 'surfaces'] as const;
+const DEBUG_MODES = ['off', 'coords', 'heights', 'surfaces', 'areas'] as const;
 type DebugMode = (typeof DEBUG_MODES)[number];
 
 const PAN_SPEED = 160; // screen pixels per second
@@ -75,6 +81,15 @@ let panel: TuningPanel | null = null;
 const bench = { object: 'mossback', ability: '' };
 let benchShown = false;
 
+/** Generated courses (Milestone 5): the budget in use, and the last course made (kept so R does not regenerate). */
+let genBudget: number | null = null;
+let lastGen: { result: GenResult; ms: number } | null = null;
+let viewer: SeedViewer | null = null;
+/** How fast the bot replays (B key), as a multiple of real time. */
+const WATCH_SPEED = 2;
+/** The bot's next shot is drawn this long before it is taken, in ms. */
+const WATCH_PREVIEW = 700;
+
 /** Shot settings the player has chosen. Kept across course switches. */
 const settings = { type: 'ground' as ShotType, top: 0, side: 0, quickShot: false, help: true };
 
@@ -94,6 +109,18 @@ export interface CourseSceneData {
   debug?: DebugMode;
   /** Keep this seed (restart). Otherwise the address's ?seed= or a new random one. */
   seed?: string;
+  /** Generated course: the difficulty budget. */
+  budget?: number;
+  /** Generated course: replay the bot's game instead of playing (B key). */
+  watch?: boolean;
+}
+
+/** Six letters and digits from a random stream, for the next generated course's seed. */
+function seedFrom(rng: Rng): string {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let out = '';
+  for (let i = 0; i < 6; i++) out += chars[rng.int(0, 35)];
+  return out;
 }
 
 /** A short random seed for a new course. The display may use Math.random; the simulation never does. */
@@ -158,6 +185,17 @@ export class CourseScene extends Phaser.Scene {
   /** Course objects on screen, by their uid in the simulation. */
   private objectImgs = new Map<string, Phaser.GameObjects.Image>();
   private exitImg: Phaser.GameObjects.Image | null = null;
+  private animated: { img: Phaser.GameObjects.Image; frame: string; entry: Manifest['sprites'][string] }[] = [];
+  private animPhase = -1;
+  private overview = false;
+  private hiddenHud: { setVisible: (v: boolean) => void }[] = [];
+  /** Bot replay (B key): its shots still to take, and when the next one fires. */
+  private watching = false;
+  private botMoves: readonly BotMove[] = [];
+  private botNext = 0;
+  private botAt = 0;
+  /** Thumbnail mode for the contact sheet (?thumb=1): no HUD, whole course in view. */
+  private thumb = false;
 
   constructor() {
     super('course');
@@ -169,7 +207,14 @@ export class CourseScene extends Phaser.Scene {
     const wanted = params.get('course') ?? window.location.hash.slice(1);
     const fromUrl = TEST_COURSES.findIndex((c) => c.id === wanted);
     this.courseIndex = data.courseIndex ?? (fromUrl >= 0 ? fromUrl : 0);
-    this.seed = data.seed ?? params.get('seed') ?? newSeed();
+    this.seed = data.seed ?? params.get('seed')?.toUpperCase() ?? newSeed();
+    if (genBudget === null) genBudget = Number(params.get('budget')) || GEN.defaultBudget;
+    if (data.budget !== undefined) genBudget = data.budget;
+    genBudget = Phaser.Math.Clamp(Math.round(genBudget), GEN.minBudget, GEN.maxBudget);
+    this.watching = data.watch === true;
+    this.thumb = params.get('thumb') === '1';
+    // ?bench=<object id> opens the test bench with that thing at its centre (for example ?course=test-bench&bench=rail).
+    if (!benchShown && params.get('bench') !== null) bench.object = params.get('bench')!;
     const urlDebug = params.get('debug');
     this.debugMode = data.debug ?? (DEBUG_MODES.includes(urlDebug as DebugMode) ? (urlDebug as DebugMode) : urlDebug === '1' ? 'coords' : 'off');
   }
@@ -188,7 +233,22 @@ export class CourseScene extends Phaser.Scene {
 
   create(): void {
     const file = TEST_COURSES[this.courseIndex]!;
-    const parsed = parseCourse(file.id === BENCH_ID ? benchCourse(bench.object) : file.data);
+    if (!tuning) tuning = loadTuning();
+    let data: unknown = file.data;
+    if (file.id === BENCH_ID) data = benchCourse(bench.object);
+    else if (file.id === GENERATED_ID) {
+      const ready = this.cachedGen();
+      if (!ready) {
+        // Not made yet: show the loading screen and make it in the background, then start again.
+        this.course = null;
+        this.setupKeys();
+        this.showLoading();
+        this.requestGen();
+        return;
+      }
+      data = ready.result.raw;
+    }
+    const parsed = parseCourse(data);
     this.setupKeys();
     if (!parsed.ok) {
       this.course = null;
@@ -198,9 +258,12 @@ export class CourseScene extends Phaser.Scene {
     const course = parsed.course;
     this.course = course;
 
+    this.animated = [];
+    this.animPhase = -1;
+    this.overview = false;
+    this.hiddenHud = [];
     for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
 
-    if (!tuning) tuning = loadTuning();
     if (!panel) {
       panel = new TuningPanel(tuning);
       if (new URLSearchParams(window.location.search).get('tune') === '1') panel.toggle(true);
@@ -224,6 +287,9 @@ export class CourseScene extends Phaser.Scene {
       },
     });
     this.phase = 'plan';
+    // Each course starts with no spin or curve (owner, 2026-11-15).
+    settings.top = 0;
+    settings.side = 0;
     this.messageQueue = [];
     this.message = null;
     this.endScreen = null;
@@ -235,6 +301,7 @@ export class CourseScene extends Phaser.Scene {
     this.guide = this.add.graphics().setDepth(OVERLAY_DEPTH - 1);
     this.debugDyn = this.add.graphics().setDepth(OVERLAY_DEPTH - 2);
     this.syncObjects();
+    this.drawRails(course);
     this.accumulator = 0;
     this.boostQueued = false;
     this.abilityQueued = false;
@@ -254,6 +321,143 @@ export class CourseScene extends Phaser.Scene {
     this.drawHud(file.id, course);
     this.drawShotHud();
     this.drawOverlay();
+
+    if (file.id === GENERATED_ID) {
+      this.updateViewer();
+      const bot = lastGen!.result.bot;
+      this.botMoves = this.watching && bot ? bot.moves : [];
+      this.botNext = 0;
+      this.botAt = 0;
+      if (this.watching) this.showMessage(bot ? 'WATCHING THE BOT' : 'NO BOT GAME TO WATCH', 0x80c8ff);
+      if (!bot) this.watching = false;
+    } else this.watching = false;
+    if (this.thumb) this.thumbView(course);
+  }
+
+  /**
+   * Guard rails (Milestone 5b): a post at every tile centre and the bar in
+   * quarter-tile pieces, each at the ground height under it, so it follows slopes.
+   */
+  private drawRails(course: Course): void {
+    for (const line of course.rails) {
+      const tiles = railTileList(line);
+      tiles.forEach((t, k) => {
+        const z = groundAt(course, t.x + 0.5, t.y + 0.5)?.h ?? 0;
+        const p = project(t.x + 0.5, t.y + 0.5, z / STEP_HEIGHT);
+        this.makeSprite(RAIL.postSprite).setPosition(p.x, p.y).setDepth(this.standingDepth(t.x + 0.5, t.y + 0.5));
+        const n = tiles[k + 1];
+        if (!n) return;
+        const dx = n.x - t.x;
+        const dy = n.y - t.y;
+        const frame = dy === 0 ? 'x' : dx === 0 ? 'y' : dx === dy ? 'd1' : 'd2';
+        for (const f of [0.125, 0.375, 0.625, 0.875]) {
+          const x = t.x + 0.5 + dx * f;
+          const y = t.y + 0.5 + dy * f;
+          const h = groundAt(course, x, y)?.h ?? z;
+          const q = project(x, y, h / STEP_HEIGHT);
+          this.makeSprite(RAIL.barSprite, frame).setPosition(q.x, q.y).setDepth(this.standingDepth(x, y));
+        }
+      });
+    }
+  }
+
+  /** The generated course for this seed and budget, if it has been made (kept for restarts). */
+  private cachedGen(): { result: GenResult; ms: number } | null {
+    return lastGen && lastGen.result.seed === this.seed && lastGen.result.budget === genBudget ? lastGen : null;
+  }
+
+  /** Make the course in a background worker (or right here if workers are not available), then start again. */
+  private requestGen(): void {
+    const seed = this.seed;
+    const budget = genBudget!;
+    const done = (result: GenResult, ms: number) => {
+      lastGen = { result, ms };
+      (result.fallback ? console.warn : console.info)(`${result.summary}, ${Math.round(ms)} ms`);
+      // Only if the player has not moved on to something else meanwhile.
+      if (this.seed === seed && genBudget === budget && this.scene.isActive()) this.scene.restart({ courseIndex: this.courseIndex, debug: this.debugMode, seed, budget, watch: this.watching });
+    };
+    try {
+      const worker = new Worker(new URL('./genWorker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e: MessageEvent<{ result: GenResult; ms: number }>) => {
+        worker.terminate();
+        done(e.data.result, e.data.ms);
+      };
+      worker.postMessage({ seed, budget, tuning });
+    } catch {
+      this.time.delayedCall(50, () => {
+        const t0 = performance.now();
+        const result = generateCourse(seed, budget, tuning!);
+        done(result, performance.now() - t0);
+      });
+    }
+  }
+
+  /** Loading screen while a course is made (owner, 2026-11-15): a ball bouncing along a strip of checkered ground. */
+  private showLoading(): void {
+    const cx = VIEW_WIDTH / 2;
+    const cy = VIEW_HEIGHT / 2;
+    this.cameras.main.setScroll(0, 0);
+    const title = pixelText(this, manifest, 0, 0, `GENERATING THE JOURNEY  #${this.seed}  BUDGET ${genBudget}`, { color: UI_TEXT, background: UI_BG }).setScrollFactor(0);
+    title.setPosition(Math.round(cx - title.width / 2), cy - 40);
+    const hint = pixelText(this, manifest, 0, 0, 'BIG COURSES TAKE A FEW SECONDS: THE BOT IS CHECKING IT CAN BE BEATEN', { color: UI_DIM, background: UI_BG }).setScrollFactor(0);
+    hint.setPosition(Math.round(cx - hint.width / 2), cy + 34);
+    // A strip of checkered tiles, drawn from the real tile sprites.
+    const tileEntry = manifest.sprites['tile-grass']!;
+    for (let i = -4; i <= 4; i++) {
+      const p = { x: cx + i * 16, y: cy + 12 + (i % 2 === 0 ? 0 : 0) };
+      this.add
+        .image(p.x, p.y + Math.abs(i) * 0, 'tile-grass', frameIndex(tileEntry, i % 2 === 0 ? '0000' : '0000b'))
+        .setOrigin(tileEntry.anchor[0] / tileEntry.frameWidth, tileEntry.anchor[1] / tileEntry.frameHeight)
+        .setScrollFactor(0);
+    }
+    const ball = this.makeSprite('ball').setScrollFactor(0).setPosition(cx - 64, cy + 8).setDepth(10);
+    const shadow = this.makeSprite('ball-shadow').setScrollFactor(0).setPosition(cx - 64, cy + 12).setDepth(9);
+    this.tweens.add({ targets: [ball, shadow], x: cx + 64, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: ball, y: cy - 6, duration: 230, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
+  }
+
+  /** Thumbnail for the contact sheet: no HUD, zoomed out so the whole course shows. */
+  private thumbView(course: Course): void {
+    const b = courseBounds(course);
+    const cam = this.cameras.main;
+    const zoom = Math.min(1, VIEW_WIDTH / (b.right - b.left + 16), VIEW_HEIGHT / (b.bottom - b.top + 16));
+    cam.removeBounds();
+    cam.setZoom(zoom);
+    cam.centerOn((b.left + b.right) / 2, (b.top + b.bottom) / 2);
+    for (const o of this.children.list) {
+      const hud = o as unknown as { scrollFactorX?: number; setVisible?: (v: boolean) => void };
+      if (hud.scrollFactorX === 0) hud.setVisible?.(false);
+    }
+    this.statusHud?.setVisible(false);
+  }
+
+  private updateViewer(): void {
+    if (!viewer || !lastGen) return;
+    const { result: r, ms } = lastGen;
+    const lines: string[] = [];
+    lines.push(r.fallback ? 'Every attempt failed: this is the fallback course.' : `Accepted on attempt ${r.attempts}.`);
+    const rej = Object.entries(r.rejections);
+    lines.push(rej.length ? `Rejected: ${rej.map(([k, n]) => `${k} x${n}`).join(', ')}` : 'No rejections.');
+    lines.push(`Generated in ${Math.round(ms)} ms.`);
+    if (r.bot) lines.push(`Bot: won in ${r.bot.shots} shots with ${r.bot.health} health (${r.bot.simulated} shots tried).`);
+    if (r.meta) {
+      const s = r.meta.spend;
+      lines.push(`Budget ${r.budget}: terrain ${s.terrain}, enemies ${s.enemies}, obstacles ${s.obstacles}, hazards ${s.hazards}.`);
+      lines.push(`${r.meta.enemies} enemies, ${r.meta.stars} stars on offer, quota ${r.course.quota}.`);
+      const areas = r.meta.terrain.regions.filter((g) => g.kind !== 'pocket').map((g) => `${g.name}${g.steep ? ' (steep)' : ''}`);
+      lines.push(`${r.course.width} x ${r.course.height} tiles. Journey: ${areas.join(' > ')}`);
+      if (r.meta.terrain.setPieces.length) lines.push(`Set pieces: ${r.meta.terrain.setPieces.join(', ')}`);
+    }
+    viewer.show({ seed: r.seed, budget: r.budget, passed: !r.fallback, lines, json: JSON.stringify(r.raw, null, 2) });
+  }
+
+  /** Load a generated course (key 6, the seed viewer, [ and ], Enter after a win). */
+  private loadGenerated(seed: string, budget: number, watch = false): void {
+    this.scene.restart({ courseIndex: TEST_COURSES.findIndex((c) => c.id === GENERATED_ID), debug: this.debugMode, seed, budget, watch });
+  }
+
+  private get isGenerated(): boolean {
+    return TEST_COURSES[this.courseIndex]?.id === GENERATED_ID;
   }
 
   override update(_time: number, deltaMs: number): void {
@@ -266,6 +470,7 @@ export class CourseScene extends Phaser.Scene {
     this.updateHover();
     if (!this.course) return;
     this.updateShot(tuning!, deltaMs / 1000);
+    this.animateTiles();
     this.syncObjects();
     this.drawStatusHud();
     if (this.message && this.time.now > this.messageUntil) {
@@ -283,10 +488,34 @@ export class CourseScene extends Phaser.Scene {
   private place(p: Placement): void {
     const entry = manifest.sprites[p.sprite];
     if (!entry) throw new Error(`Sprite "${p.sprite}" is not in the asset manifest.`);
-    this.add
+    const img = this.add
       .image(p.x, p.y, p.sprite, frameIndex(entry, p.frame))
       .setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight)
       .setDepth(p.depth);
+    // Animated overlays (water shimmer, Milestone 5b) have frames "<shape>~1", "<shape>~2", ...
+    if (entry.frames.includes(`${p.frame}~1`)) this.animated.push({ img, frame: p.frame, entry });
+  }
+
+  /** Step animated tiles (water shimmer) every quarter second. */
+  private animateTiles(): void {
+    const phase = Math.floor(this.time.now / 250);
+    if (phase === this.animPhase) return;
+    this.animPhase = phase;
+    for (const a of this.animated) {
+      const n = a.entry.frames.filter((f) => f.startsWith(`${a.frame}~`)).length + 1;
+      const k = phase % n;
+      a.img.setFrame(frameIndex(a.entry, k === 0 ? a.frame : `${a.frame}~${k}`));
+    }
+  }
+
+  /** A splash where something entered or skipped off water. */
+  private splash(x: number, y: number): void {
+    const g = groundAt(this.course!, x, y);
+    const p = project(x, y, (g?.h ?? 0) / STEP_HEIGHT);
+    const img = this.makeSprite('splash', '0').setPosition(p.x, p.y).setDepth(this.standingDepth(x, y) + 0.3);
+    const entry = manifest.sprites['splash']!;
+    for (let f = 1; f < 4; f++) this.time.delayedCall(f * 90, () => img.setFrame(frameIndex(entry, String(f))));
+    this.time.delayedCall(360, () => img.destroy());
   }
 
   private setupKeys(): void {
@@ -309,11 +538,23 @@ export class CourseScene extends Phaser.Scene {
     };
     kb.on('keydown-G', () => this.cycleDebug());
     kb.on('keydown-C', () => this.centreOnBall());
+    kb.on('keydown-O', () => this.toggleOverview());
     kb.on('keydown-ONE', () => this.switchCourse(0));
     kb.on('keydown-TWO', () => this.switchCourse(1));
     kb.on('keydown-THREE', () => this.switchCourse(2));
     kb.on('keydown-FOUR', () => this.switchCourse(3));
     kb.on('keydown-FIVE', () => this.switchCourse(4));
+    kb.on('keydown-SIX', () => this.loadGenerated(this.isGenerated ? this.seed : newSeed(), genBudget!));
+    // Generated course: [ and ] lower or raise the budget by 2 and make a new course.
+    kb.on('keydown-OPEN_BRACKET', () => this.isGenerated && this.loadGenerated(newSeed(), Math.max(GEN.minBudget, genBudget! - 2)));
+    kb.on('keydown-CLOSED_BRACKET', () => this.isGenerated && this.loadGenerated(newSeed(), Math.min(GEN.maxBudget, genBudget! + 2)));
+    kb.on('keydown-V', () => {
+      if (!viewer) viewer = new SeedViewer({ generate: (seed, budget) => this.loadGenerated(seed, budget), watchBot: () => this.loadGenerated(this.seed, genBudget!, true) });
+      viewer.toggle();
+      if (viewer.visible && !this.isGenerated) this.loadGenerated(newSeed(), genBudget!);
+      else this.updateViewer();
+    });
+    kb.on('keydown-B', () => this.isGenerated && this.loadGenerated(this.seed, genBudget!, !this.watching));
     kb.on('keydown-N', () => this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length));
 
     // Drag with the right or middle mouse button to pan. The left button is for shots.
@@ -333,7 +574,7 @@ export class CourseScene extends Phaser.Scene {
 
   /** Start this course again from the beginning, with the same seed. */
   private restartCourse(): void {
-    this.scene.restart({ courseIndex: this.courseIndex, debug: this.debugMode, seed: this.seed });
+    this.scene.restart({ courseIndex: this.courseIndex, debug: this.debugMode, seed: this.seed, ...(this.isGenerated && { budget: genBudget! }) });
   }
 
   private panBy(dx: number, dy: number): void {
@@ -348,7 +589,31 @@ export class CourseScene extends Phaser.Scene {
     this.applyCamera();
   }
 
+  /** Overview (O key, Milestone 5b): zoom out to the whole course; O again goes back to the ball. */
+  private toggleOverview(): void {
+    if (!this.course) return;
+    const cam = this.cameras.main;
+    const b = courseBounds(this.course);
+    this.overview = !this.overview;
+    const hud = this.children.list.filter((o) => (o as unknown as { scrollFactorX?: number }).scrollFactorX === 0) as unknown as { setVisible: (v: boolean) => void; visible: boolean }[];
+    if (this.overview) {
+      this.hiddenHud = hud.filter((o) => o.visible);
+      for (const o of this.hiddenHud) o.setVisible(false);
+      cam.removeBounds();
+      cam.setZoom(Math.min(1, VIEW_WIDTH / (b.right - b.left + 16), VIEW_HEIGHT / (b.bottom - b.top + 16)));
+      cam.centerOn((b.left + b.right) / 2, (b.top + b.bottom) / 2);
+    } else {
+      cam.setZoom(1);
+      const margin = 48;
+      cam.setBounds(b.left - margin, b.top - margin, b.right - b.left + margin * 2, b.bottom - b.top + margin * 2);
+      for (const o of this.hiddenHud) o.setVisible(true);
+      this.hiddenHud = [];
+      this.centreOnBall();
+    }
+  }
+
   private applyCamera(): void {
+    if (this.overview) return;
     const cam = this.cameras.main;
     // Keep our own position clamped to the bounds so panning stops cleanly at the edges.
     const bx = cam.getBounds();
@@ -519,7 +784,12 @@ export class CourseScene extends Phaser.Scene {
     });
     onKey('R', () => this.restartCourse());
     onKey('ENTER', () => {
-      if (this.play.status === 'won') this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length);
+      if (this.play.status === 'won' && this.isGenerated) {
+        // Owner, 2026-11-15: the next generated course's budget rises by a random 0 to 4, from the seed.
+        const rng = Rng.fromSeed(`next/${this.seed}/${genBudget}`);
+        const budget = Math.min(GEN.maxBudget, genBudget! + rng.int(GEN.climbMin, GEN.climbMax));
+        this.loadGenerated(seedFrom(rng), budget);
+      } else if (this.play.status === 'won') this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length);
       else if (this.play.status === 'lost') this.restartCourse();
     });
     onKey('U', () => panel?.toggle());
@@ -606,9 +876,14 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private shoot(power: number): void {
-    if (!canShoot(this.play)) return;
+    if (!canShoot(this.play) || this.watching) return;
     this.power = power;
-    const shot = takeShot(this.play, this.command(power));
+    this.fire(this.command(power));
+  }
+
+  private fire(cmd: ShotCommand): void {
+    this.power = cmd.power;
+    const shot = takeShot(this.play, cmd);
     this.prevBall = { ...shot.ball };
     this.boostQueued = false;
     this.abilityQueued = false;
@@ -641,7 +916,7 @@ export class CourseScene extends Phaser.Scene {
       );
       if (d.power > 0) this.aim = d.angle;
       this.planPower = d.power;
-    } else if ((this.phase === 'plan' || this.phase === 'set') && canShoot(this.play)) {
+    } else if ((this.phase === 'plan' || this.phase === 'set') && canShoot(this.play) && !this.watching) {
       // Keyboard aiming: Left/Right (A/D) turn the aim, Up/Down (W/S) set the planned power.
       const turn = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
       const pw = (k.up.isDown || k.w.isDown ? 1 : 0) - (k.down.isDown || k.s.isDown ? 1 : 0);
@@ -656,9 +931,28 @@ export class CourseScene extends Phaser.Scene {
 
     // The world runs all the time in fixed steps of 1/120 s: things move while you aim.
     const before = { ...ballNow(this.play) };
-    this.accumulator = Math.min(this.accumulator + dt, 0.25);
+    const speed = this.watching ? WATCH_SPEED : 1;
+    this.accumulator = Math.min(this.accumulator + dt * speed, 0.25 * speed);
     let stepped = false;
     while (this.accumulator >= DT && this.play.status === 'playing') {
+      // Bot replay (B key): take its next shot on exactly the clock step it took it.
+      const move = this.watching && canShoot(this.play) ? this.botMoves[this.botNext] : undefined;
+      if (move) {
+        if (move.clock !== this.play.clock) {
+          this.watching = false;
+          this.showMessage('BOT REPLAY OUT OF STEP', BAD);
+        } else {
+          // Show the shot it chose first; the world waits meanwhile, so the replay stays in step.
+          if (!this.botAt) this.botAt = this.time.now + WATCH_PREVIEW / speed;
+          if (this.time.now < this.botAt) {
+            this.accumulator = 0;
+            break;
+          }
+          this.botAt = 0;
+          this.botNext++;
+          this.fire(move.cmd);
+        }
+      }
       if (!stepped) this.prevBall = { ...ballNow(this.play) };
       stepped = true;
       const steer = this.play.tornado ? (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0) : 0;
@@ -668,7 +962,15 @@ export class CourseScene extends Phaser.Scene {
       const shot = this.play.shot;
       const evBefore = shot?.events.length ?? 0;
       tick(this.play, input);
-      if (shot) for (const e of shot.events.slice(evBefore)) if (e.kind === 'bounce' && e.boosted) this.showMessage('BOOST!', 0xf8e048);
+      if (shot) {
+        for (const e of shot.events.slice(evBefore)) {
+          if ((e.kind === 'bounce' && e.boosted) || e.kind === 'railBoost' || (e.kind === 'splash' && e.boosted)) this.showMessage('BOOST!', 0xf8e048);
+          if (e.kind === 'splash') {
+            this.splash(e.x, e.y);
+            if (e.skip && !e.boosted) this.showMessage('SKIP!', 0x80c8ff);
+          }
+        }
+      }
       this.showEvents(drainLog(this.play));
       this.accumulator -= DT;
     }
@@ -701,6 +1003,9 @@ export class CourseScene extends Phaser.Scene {
         this.camY += (this.ballScreen.y - VIEW_HEIGHT / 2 - this.camY) * Math.min(1, dt * 6);
         this.applyCamera();
       }
+    } else if (this.watching) {
+      const next = this.botAt ? this.botMoves[this.botNext] : undefined;
+      this.drawGuide(next ? previewShot(this.play, next.cmd) : null);
     } else if (this.phase === 'plan' || this.planPower <= 0) this.drawGuide(null);
     else this.drawGuide(previewShot(this.play, this.command(Math.max(t.minPower, this.planPower))));
     this.drawMeter();
@@ -708,6 +1013,9 @@ export class CourseScene extends Phaser.Scene {
 
   /** The simulation finished the shot (and any turns after it). Show the result. */
   private endShot(): void {
+    // Owner, 2026-11-15: spin and curve go back to none at the start of each turn.
+    settings.top = 0;
+    settings.side = 0;
     this.showEvents(drainLog(this.play));
     this.prevBall = null;
     this.phase = 'plan';
@@ -780,8 +1088,18 @@ export class CourseScene extends Phaser.Scene {
         case 'returned':
           this.queueMessage('BACK TO LAST SPOT', 0x80c8ff);
           break;
+        case 'abilityLost':
+          this.queueMessage(`FELL OFF: ${(ABILITIES.get(e.ability)?.name ?? 'ABILITY').toUpperCase()} LOST`, BAD);
+          this.drawStatusHud();
+          break;
+        case 'bonusShot':
+          this.queueMessage('+1 SHOT', GOOD);
+          break;
+        case 'underwater':
+          this.queueMessage('UNDER WATER: NEXT SHOT IS WEAKER', 0x80c8ff);
+          break;
         case 'recover':
-          this.queueMessage('OUT OF SHOTS: RECOVER TURN. SHOTS REFILLED', 0x80c8ff);
+          this.queueMessage(this.play.napsUsed >= RULES.naps ? 'OUT OF SHOTS: NAP. SHOTS REFILLED. THAT WAS YOUR LAST NAP' : 'OUT OF SHOTS: NAP. SHOTS REFILLED', 0x80c8ff);
           break;
         default:
           break;
@@ -930,6 +1248,8 @@ export class CourseScene extends Phaser.Scene {
       `SPIN: ${settings.top === 0 ? 'NONE' : settings.top > 0 ? 'TOP' : 'BACK'} ${sign(settings.top)}`,
       `CURVE: ${settings.side === 0 ? 'NONE' : settings.side > 0 ? 'RIGHT' : 'LEFT'} ${sign(settings.side)}`,
       `STEP: ${this.stepLabel()}`,
+      // Owner, 2026-11-15: two naps per course; running out a third time ends it.
+      `NAPS LEFT: ${this.play ? Math.max(0, RULES.naps - this.play.napsUsed) : RULES.naps}${this.play && this.play.napsUsed >= RULES.naps ? ' (LAST SHOTS!)' : ''}`,
     ].join('\n');
     this.shotHud = pixelText(this, manifest, 2, 30, text, { color: UI_DIM, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
   }
@@ -977,7 +1297,7 @@ export class CourseScene extends Phaser.Scene {
     c.add(pixelText(this, manifest, 104, 2, `HP ${p.health}/${maxHealth}`, { color: UI_TEXT }));
     const starX = 94;
     icon('star-yellow', starX - 2, 9);
-    c.add(pixelText(this, manifest, starX + 10, barY, `${p.wallet}  #${this.seed}`, { color: UI_TEXT }));
+    c.add(pixelText(this, manifest, starX + 10, barY, `${p.wallet}  #${this.seed}${this.isGenerated ? ` B${genBudget}` : ''}`, { color: UI_TEXT }));
     // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
     const slotX = bgW + 4;
     c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -1001,7 +1321,7 @@ export class CourseScene extends Phaser.Scene {
     const won = p.status === 'won';
     const lines = won
       ? ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: NEXT COURSE   R: PLAY AGAIN']
-      : ['RUN OVER', '', 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
+      : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
     const text = pixelText(this, manifest, 0, 0, lines.join('\n'), { color: won ? GOOD : BAD });
     const w = text.width + 16;
     const h = text.height + 14;
@@ -1040,7 +1360,8 @@ export class CourseScene extends Phaser.Scene {
     const lines = [
       'MOUSE: PULL BACK TO PLAN, HOLD TO CHARGE  KEYS: ARROWS/WASD AIM+POWER, HOLD SPACE TO CHARGE',
       'T: GROUND/LOFT  Z/X: SPIN  Q/E: CURVE  SPACE IN FLIGHT: BOOST  F: ABILITY  ESC: RE-PLAN',
-      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  1-5/N: COURSE  R: RESTART  G: DEBUG  U: TUNING+TEST BENCH  H: HELP',
+      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  O: OVERVIEW  1-6/N: COURSE  R: RESTART  G: DEBUG  U: TUNING  H: HELP',
+      ...(TEST_COURSES[this.courseIndex]?.id === GENERATED_ID ? ['GENERATED: BRACKET KEYS: BUDGET -/+2  V: SEED VIEWER  B: WATCH THE BOT  ENTER AFTER A WIN: NEXT'] : []),
     ];
     this.helpHud = lines.map((l, i) =>
       pixelText(this, manifest, 2, VIEW_HEIGHT - 7 * (lines.length - i) - 1, l, { color: UI_DIM, background: UI_BG })
@@ -1084,15 +1405,57 @@ export class CourseScene extends Phaser.Scene {
       } else if (this.debugMode === 'heights') {
         // Flat tiles show one height; sloped tiles show their four corners (nw ne se sw).
         this.label(t.shape === '0000' ? String(t.base) : t.corners.join(''), c.x, c.y);
-      } else {
+      } else if (this.debugMode === 'surfaces') {
         this.label((SURFACES.get(t.surface)?.name ?? t.surface).slice(0, 3), c.x, c.y);
       }
     }
+    if (this.debugMode === 'areas') this.drawAreas(course);
     const mode = pixelText(this, manifest, VIEW_WIDTH - 2, 2, `DEBUG: ${this.debugMode}`, { color: 0xf8e048, background: UI_BG })
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH);
     mode.x -= mode.width;
     this.overlay.push(mode);
+  }
+
+  /**
+   * Debug mode "areas" (generated courses, Milestone 5b): the outline and name of
+   * every area, passage and pocket along the journey, and how the budget was spent.
+   */
+  private drawAreas(course: Course): void {
+    const meta = this.isGenerated ? lastGen?.result.meta : null;
+    if (!meta) {
+      const t = pixelText(this, manifest, 2, 22, 'AREAS: ONLY FOR GENERATED COURSES (KEY 6)', { color: 0xf8e048, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
+      this.overlay.push(t);
+      return;
+    }
+    const g = this.add.graphics().setDepth(OVERLAY_DEPTH + 1);
+    this.overlay.push(g);
+    meta.terrain.regions.forEach((r, i) => {
+      const { x, y, w, h } = r.rect;
+      const mid = course.tiles[Math.floor(y + h / 2) * course.width + Math.floor(x + w / 2)];
+      const z = mid ? Math.min(...mid.corners) : 0;
+      g.lineStyle(1, r.kind === 'area' ? DEBUG_OUTER : r.kind === 'passage' ? DEBUG_PATH : GOOD, 0.9);
+      const pts = [project(x, y, z), project(x + w, y, z), project(x + w, y + h, z), project(x, y + h, z)];
+      g.beginPath();
+      g.moveTo(pts[0]!.x, pts[0]!.y);
+      for (const p of pts.slice(1)) g.lineTo(p.x, p.y);
+      g.closePath();
+      g.strokePath();
+      const c = project(x + w / 2, y + h / 2, z);
+      const name = `${r.kind === 'area' ? `${r.order + 1} ` : ''}${r.name}${r.steep ? ' STEEP' : ''}`.toUpperCase();
+      const t = pixelText(this, manifest, 0, 0, name, { color: r.kind === 'area' ? DEBUG_OUTER : DEBUG_PATH, background: UI_BG, padding: 0 }).setDepth(OVERLAY_DEPTH + 2);
+      t.setPosition(Math.round(c.x - t.width / 2), Math.round(c.y - 4));
+      this.overlay.push(t);
+      void i;
+    });
+    const s = meta.spend;
+    const info = pixelText(this, manifest, 2, 22, `BUDGET ${meta.budget}: TERRAIN ${s.terrain}  ENEMIES ${s.enemies}  OBSTACLES ${s.obstacles}  HAZARDS ${s.hazards}`, {
+      color: 0xf8e048,
+      background: UI_BG,
+    })
+      .setScrollFactor(0)
+      .setDepth(HUD_DEPTH);
+    this.overlay.push(info);
   }
 
   private label(text: string, cx: number, cy: number): void {

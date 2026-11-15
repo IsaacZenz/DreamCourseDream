@@ -16,11 +16,11 @@ function course(tiles: string[]): Course {
 }
 
 describe('project', () => {
-  it('uses 32x16 diamonds and 8-pixel height steps', () => {
+  it('uses 32x16 diamonds and 4-pixel height steps (owner, 2026-11-15)', () => {
     expect(project(0, 0, 0)).toEqual({ x: 0, y: 0 });
     expect(project(1, 0, 0)).toEqual({ x: 16, y: 8 });
     expect(project(0, 1, 0)).toEqual({ x: -16, y: 8 });
-    expect(project(0, 0, 1)).toEqual({ x: 0, y: -8 });
+    expect(project(0, 0, 1)).toEqual({ x: 0, y: -4 });
   });
 });
 
@@ -31,17 +31,24 @@ describe('faceBands', () => {
   });
   it('draws one band per step of drop', () => {
     expect(faceBands(3, 3, 0, 0)).toEqual([
-      { k: 0, frame: 'full' },
-      { k: 1, frame: 'full' },
-      { k: 2, frame: 'full' },
+      { k: 0, size: 1, frame: 'full' },
+      { k: 1, size: 1, frame: 'full' },
+      { k: 2, size: 1, frame: 'full' },
     ]);
   });
   it('adds a triangle cap under a sloped edge', () => {
     expect(faceBands(2, 1, 0, 0)).toEqual([
-      { k: 0, frame: 'full' },
-      { k: 1, frame: 'capA' },
+      { k: 0, size: 1, frame: 'full' },
+      { k: 1, size: 1, frame: 'capA' },
     ]);
-    expect(faceBands(1, 2, 1, 1)).toEqual([{ k: 1, frame: 'capB' }]);
+    expect(faceBands(1, 2, 1, 1)).toEqual([{ k: 1, size: 1, frame: 'capB' }]);
+  });
+  it('uses a two-step cap under a steep edge', () => {
+    expect(faceBands(3, 1, 0, 0)).toEqual([
+      { k: 0, size: 1, frame: 'full' },
+      { k: 1, size: 2, frame: 'capA2' },
+    ]);
+    expect(faceBands(0, 2, 0, 0)).toEqual([{ k: 0, size: 2, frame: 'capB2' }]);
   });
 });
 
@@ -51,7 +58,8 @@ describe('draw list', () => {
     const faces = buildDrawList(c).filter((p) => p.kind === 'face');
     // The raised tile (0,0) gets one face on each front edge; edge tiles get floor skirts.
     const raised = faces.filter((f) => f.tile.x === 0 && f.tile.y === 0);
-    expect(raised.map((f) => f.sprite).sort()).toEqual(['face-earth-left', 'face-earth-right']);
+    // Format 1: the one-step rise is read as two of the new, smaller steps, so two bands per edge.
+    expect(raised.map((f) => f.sprite).sort()).toEqual(['face-earth-left', 'face-earth-left', 'face-earth-right', 'face-earth-right']);
     // No faces between equal-height neighbours inside the course.
     expect(faces.some((f) => f.tile.x === 0 && f.tile.y === 1 && f.sprite.endsWith('right'))).toBe(false);
   });
@@ -87,7 +95,8 @@ describe('draw list', () => {
 describe('manifest', () => {
   it('has every shape for every surface, and both faces', () => {
     for (const s of SURFACES.values()) {
-      expect(manifest.sprites[s.tileSprite]?.frames).toEqual([...SHAPES]);
+      // Checkerboard surfaces (grass) have a second frame per shape, "<shape>b".
+      expect(manifest.sprites[s.tileSprite]?.frames).toEqual(s.checker ? [...SHAPES, ...SHAPES.map((x) => `${x}b`)] : [...SHAPES]);
       expect(manifest.sprites[`${s.faceSprite}-left`]).toBeDefined();
       expect(manifest.sprites[`${s.faceSprite}-right`]).toBeDefined();
     }

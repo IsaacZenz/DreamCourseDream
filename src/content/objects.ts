@@ -16,7 +16,29 @@ import type { BaseStats } from './stats.ts';
  * The footprint the ball collides with, centred on the tile, in tiles.
  * round: a circle (rocks, posts, enemies). box: a square or rectangle.
  */
-export type ObjectShape = { readonly kind: 'round'; readonly r: number } | { readonly kind: 'box'; readonly hx: number; readonly hy: number };
+export type ObjectShape =
+  | { readonly kind: 'round'; readonly r: number }
+  | { readonly kind: 'box'; readonly hx: number; readonly hy: number }
+  /** A thin line from (x + ax, y + ay) to (x + bx, y + by), r thick on each side (guard rails). */
+  | { readonly kind: 'seg'; readonly ax: number; readonly ay: number; readonly bx: number; readonly by: number; readonly r: number };
+
+/**
+ * Guard rail (Milestone 5b, owner 2026-11-15; FEATURES.md section 6). Not an
+ * object on a tile: course files list rails as lines through tile centres
+ * ("rails"). Bounce numbers are in tuning.ts (railBounce, railBoost).
+ */
+export const RAIL = {
+  id: 'rail',
+  name: 'Guard rail',
+  /** A post at every tile centre and a bar drawn in short pieces between them. */
+  postSprite: 'rail-post',
+  barSprite: 'rail-bar',
+  /** Height of the rail, in tiles. A ball whose bottom is higher passes over. */
+  height: 0.3,
+  /** Half the thickness of the bar, in tiles. */
+  halfThickness: 0.04,
+  cost: 0,
+} as const;
 
 /** Elements (FEATURES.md section 2, open question F5 default). */
 export type Element = 'fire' | 'ice' | 'shock';

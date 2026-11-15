@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_TUNING, cloneTuning } from '../src/content/tuning';
-import { TEST_COURSES } from '../src/content/courses';
+import { GENERATED_ID, TEST_COURSES } from '../src/content/courses';
 import { parseCourse, type Course } from '../src/sim/course';
 import { simulateShot, ballAtTile, type ShotCommand } from '../src/sim/ball';
-import { canShoot, createPlay, drainLog, runShot, takeShot, type PlayState } from '../src/sim/play';
+import { canShoot, createPlay, drainLog, runShot, takeShot, wait, type PlayState } from '../src/sim/play';
 
 const T = DEFAULT_TUNING;
 const LEGEND = {
@@ -58,21 +58,115 @@ describe('course rules: shots and health', () => {
     expect(p.shots).toBe(4);
   });
 
-  it('stopping in water costs 1 health and returns the ball to its last resting spot', () => {
+  it('stopping in water costs 1 health and the ball stays there, under the water (owner, 2026-11-15)', () => {
     const p = play(corridor(['g0', '~0', '~0', '~0', '~0', '~0', '~0', 'g0']));
     const start = { ...p.ball };
     const log = fire(p, shot({ power: 0.25 }));
     expect(log.some((e) => e.kind === 'damage' && e.cause === 'sunk')).toBe(true);
+    expect(log.some((e) => e.kind === 'underwater')).toBe(true);
     expect(p.health).toBe(4);
-    expect(p.ball.x).toBeCloseTo(start.x, 5);
+    expect(p.ball.x).toBeGreaterThan(start.x + 0.5);
+  });
+
+  it('a fast, low ball skips off water; a slow one does not (owner, 2026-11-15)', () => {
+    // A bank one (old) step above the water: the ball drops off it onto the surface at a shallow angle.
+    const c = corridor(['g1', 'g1', '~0', '~0', '~0', '~0', 'g1', 'g1']);
+    const skips = (power: number) => {
+      const p = play(c);
+      const s = takeShot(p, shot({ power }));
+      runShot(p);
+      return s.events.filter((e) => e.kind === 'splash' && e.skip).length;
+    };
+    expect(skips(1)).toBeGreaterThan(0);
+    expect(skips(0.3)).toBe(0);
+  });
+
+  it('a shot from inside water is weaker (half power, owner 2026-11-15)', () => {
+    const c = corridor(['g0', 'g0', '~0', '~0', '~0', '~0', '~0', 'g0']);
+    const land = play(c);
+    const wet = play(c);
+    wet.ball = { ...wet.ball, x: wet.ball.x + 2 };
+    const vLand = takeShot(land, shot({ power: 0.6 })).ball.vx;
+    const vWet = takeShot(wet, shot({ power: 0.6 })).ball.vx;
+    expect(vWet).toBeCloseTo(vLand * T.waterShotPower, 5);
   });
 
   it('losing all health ends the run', () => {
     const p = play(corridor(['g0', '~0', '~0', '~0', '~0', '~0', '~0', 'g0']));
-    for (let i = 0; i < 5; i++) fire(p, shot({ power: 0.25 }));
+    // Each shot ends under water and costs 1. Wait a second between shots, as a player aiming would,
+    // so the half-second damage immunity has passed.
+    for (let i = 0; i < 5 && p.status === 'playing'; i++) {
+      fire(p, shot({ power: 0.25 }));
+      wait(p, 120);
+    }
     expect(p.health).toBe(0);
     expect(p.status).toBe('lost');
     expect(canShoot(p)).toBe(false);
+  });
+});
+
+describe('shots back and naps (owner, 2026-11-15)', () => {
+  const two = () => corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0'], { quota: 2, objects: [{ id: 'mossback', at: [3, 1] }, { id: 'mossback', at: [5, 1] }] });
+
+  it('each damaging hit gives one shot back, one per enemy hit in the same shot', () => {
+    const p = play(two());
+    p.shots = 1;
+    const log = fire(p, shot({ power: 0.8 }));
+    expect(p.enemies.every((e) => e.defeated)).toBe(true);
+    expect(log.filter((e) => e.kind === 'bonusShot')).toHaveLength(2);
+    expect(p.shots).toBe(2);
+  });
+
+  it('a hit that does damage but does not defeat still gives a shot back', () => {
+    // A Trundler has 2 health: one hit damages it without defeating it.
+    const p = play(corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0'], { quota: 1, objects: [{ id: 'trundler', at: [4, 1], path: [[4, 1]] }] }));
+    p.shots = 2;
+    fire(p, shot({ power: 0.5 }));
+    const t = p.enemies[0]!;
+    expect(t.health).toBe(1);
+    expect(p.shots).toBe(2);
+  });
+
+  it('never goes above the shot allowance', () => {
+    const p = play(two());
+    fire(p, shot({ power: 0.8 }));
+    expect(p.shots).toBe(p.stats.get('maxShots'));
+  });
+
+  it('two naps refill the shots; running out a third time fails the course', () => {
+    const p = play(corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0']));
+    const tiny = shot({ power: 0.05, angle: Math.PI / 2 });
+    for (let nap = 1; nap <= 2; nap++) {
+      p.shots = 1;
+      const log = fire(p, tiny);
+      expect(log.some((e) => e.kind === 'recover')).toBe(true);
+      expect(p.napsUsed).toBe(nap);
+      expect(p.status).toBe('playing');
+    }
+    p.shots = 1;
+    fire(p, tiny);
+    expect(p.status).toBe('lost');
+    expect(p.lostBy).toBe('shots');
+  });
+});
+
+describe('falling off the edge (owner, 2026-11-15)', () => {
+  it('loses the held ability, as well as 1 health and the spot', () => {
+    // An open end: the corridor stops and the ball rolls off it.
+    const c = course(['g1 g1 g1 g1 g1 g1 g1 g1 g1 g1', 'g1 g0 g0 g0 g0 g0 g0 g0 g0 .', 'g1 g1 g1 g1 g1 g1 g1 g1 g1 g1']);
+    const p = play(c);
+    p.ability = 'hop';
+    const log = fire(p, shot({ power: 1 }));
+    expect(log.some((e) => e.kind === 'returned' && e.cause === 'out')).toBe(true);
+    expect(log.some((e) => e.kind === 'abilityLost')).toBe(true);
+    expect(p.ability).toBeNull();
+  });
+
+  it('stopping in water keeps the ability', () => {
+    const p = play(corridor(['g0', '~0', '~0', '~0', '~0', '~0', '~0', 'g0']));
+    p.ability = 'hop';
+    fire(p, shot({ power: 0.25 }));
+    expect(p.ability).toBe('hop');
   });
 });
 
@@ -247,7 +341,7 @@ describe('course rules: blockers, enemies, stars and the exit', () => {
 
 describe('the test courses', () => {
   it('every hand-built course parses', () => {
-    for (const f of TEST_COURSES) {
+    for (const f of TEST_COURSES.filter((c) => c.id !== GENERATED_ID)) {
       const r = parseCourse(f.data);
       expect(r.ok, `${f.id}: ${r.ok ? '' : r.errors.join('; ')}`).toBe(true);
     }

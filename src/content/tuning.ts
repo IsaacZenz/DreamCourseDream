@@ -106,6 +106,22 @@ export interface Tuning {
   poleThroughSpeed: number;
   /** ...keeping this fraction of its speed. Slower, it bounces off. */
   polePassKeep: number;
+  /** Guard rail (Milestone 5b): fraction of speed kept bouncing off a rail. */
+  railBounce: number;
+  /** Guard rail: speed kept when the bounce-boost key was pressed just before the hit (owner, 2026-11-15: a stronger bounce). */
+  railBoost: number;
+  /** Water (owner, 2026-11-15): a shot from inside water launches at this fraction of its power. */
+  waterShotPower: number;
+  /** Skipping: a ball touching water faster than this (tiles per second) along the ground... */
+  waterSkipSpeed: number;
+  /** ...with vertical speed under this fraction of its ground speed, skips off the surface. */
+  waterSkipAngle: number;
+  /** Speed kept on a skip, and with the bounce-boost key pressed just before. */
+  waterSkipKeep: number;
+  waterSkipBoostKeep: number;
+  /** Fraction of its falling speed the ball bounces back up with on a skip, and the smallest hop. */
+  waterSkipLift: number;
+  waterSkipMinHop: number;
 
   // Safety
   /** Falling this far below height 0 counts as out of bounds, in tiles. */
@@ -117,7 +133,7 @@ export interface Tuning {
 }
 
 /** Height of one course step in tiles. Fixed by the art (8 px step, 32x16 tile), not a tuning number. */
-export const STEP_HEIGHT = 0.5;
+export const STEP_HEIGHT = 0.25;
 
 /** Simulation steps per second. Fixed timestep (DESIGN.md section 5). */
 export const STEPS_PER_SECOND = 120;
@@ -169,6 +185,15 @@ export const DEFAULT_TUNING: Tuning = {
   defeatSpeedKeep: 0.85,
   poleThroughSpeed: 8,
   polePassKeep: 0.25,
+  railBounce: 0.8,
+  railBoost: 1.1,
+  waterShotPower: 0.5,
+  waterSkipSpeed: 6,
+  waterSkipAngle: 0.5,
+  waterSkipKeep: 0.7,
+  waterSkipBoostKeep: 0.9,
+  waterSkipLift: 0.6,
+  waterSkipMinHop: 1.5,
 
   outOfBoundsDepth: 2,
   maxShotTime: 30,
@@ -242,6 +267,15 @@ export const TUNING_CONTROLS: readonly TuningControl[] = [
   top('Hazards', 'defeatSpeedKeep', 0, 1, 0.01),
   top('Flag pole', 'poleThroughSpeed', 0, 20, 0.25),
   top('Flag pole', 'polePassKeep', 0, 1, 0.01),
+  top('Guard rail', 'railBounce', 0, 1.5, 0.01),
+  top('Guard rail', 'railBoost', 0, 2, 0.01),
+  top('Water', 'waterShotPower', 0.1, 1, 0.05),
+  top('Water', 'waterSkipSpeed', 0, 15, 0.25),
+  top('Water', 'waterSkipAngle', 0, 2, 0.05),
+  top('Water', 'waterSkipKeep', 0, 1, 0.01),
+  top('Water', 'waterSkipBoostKeep', 0, 1.2, 0.01),
+  top('Water', 'waterSkipLift', 0, 1, 0.01),
+  top('Water', 'waterSkipMinHop', 0, 5, 0.1),
   ...['grass', 'rough', 'sand', 'ice', 'bumper', 'water'].flatMap((s) => [
     { key: `surfaces.${s}.friction`, min: 0, max: 2, step: 0.01, group: `Surface: ${s}` },
     { key: `surfaces.${s}.bounce`, min: 0, max: 1, step: 0.01, group: `Surface: ${s}` },

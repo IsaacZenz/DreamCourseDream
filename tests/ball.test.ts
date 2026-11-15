@@ -258,7 +258,8 @@ describe('ball physics', () => {
 
   it('ground heights convert steps to tiles', () => {
     const c = course(['g2 g2 g2', 'g2 g2 g2', 'g2 g2 g2']);
-    expect(groundAt(c, 1.5, 1.5)!.h).toBe(2 * STEP_HEIGHT);
+    // The helper writes format 1, whose heights are doubled when read.
+    expect(groundAt(c, 1.5, 1.5)!.h).toBe(4 * STEP_HEIGHT);
     expect(groundAt(c, 5, 5)).toBeNull();
   });
 });

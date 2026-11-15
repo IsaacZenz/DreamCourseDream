@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 3,
   "name": "Test: slopes, ledges and surfaces",
   "legend": {
     "g": "grass",
@@ -8,29 +8,44 @@
     "i": "ice",
     "~": "water",
     "b": "bumper",
-    ">": {"surface": "booster", "dir": "sw"},
-    "c": {"surface": "conveyor", "dir": "se"},
+    ">": {
+      "surface": "booster",
+      "dir": "sw"
+    },
+    "c": {
+      "surface": "conveyor",
+      "dir": "se"
+    },
     "^": "spring",
     "x": "spikes",
-    "w": {"surface": "warp", "link": "a"}
+    "w": {
+      "surface": "warp",
+      "link": "a"
+    }
   },
-  "start": [2, 2],
-  "exit": [1, 12],
+  "start": [
+    2,
+    2
+  ],
+  "exit": [
+    1,
+    12
+  ],
   "quota": 0,
   "tiles": [
-    "g3    g3    g3    g3    g3    g3    g1    g1    i1    i1    i1    i1    i1    i1    i1    i1",
-    "g3    g3    g3    g3    g3    g3    g3223 g2112 g1    g1    g1121 g1122 g1112 g1    g1    g1",
-    "g3    g3    g3    g3    g3    g3    g3223 g2112 g1    g1    g1221 g2    g2112 g1    g1    g1",
-    "g3    g3    g3    g3    g3    g3    g3223 g2112 g1    >1    g1211 g2211 g2111 g1    g1    g1",
-    "g3    g3    g3    g3    g3    g3    g1    g1    g1    g1    g1    g1    g1    g1    g1    g1",
-    "g0    ~0    ~0    g0    g0    g0    g0    g0    g1    g1    g1    g1    r1    r1    r1    g1",
-    "g0    ~0    ~0    g0    g0    g0    g0    g0    g1    s1    s1    g1    r1    r1    r1    g1",
-    "g0    c0    c0    c0    c0    g0    g0    g0    g1    s1    s1    g1    r1    r1    r1    g1",
-    "g0    g0    g0    g0    b1    g0    g0    g0    g1    g1    g1    g1    g1    g1    g1    x1",
-    "g0    g0    g0    g0    g0    g0    g0    g0    g1    g1    g1    g1101 g1100 g1110 g1    g1",
-    "g0    g0    ^0    g0    g0    .     g0    g0    g1    g1    g1    g1001 ~0    g0110 g1    g1",
-    "g0    g0    g0    g0    g0    .     g0    g0    g1    g1    g1    g1011 g0011 g0111 g1    g1",
-    "g0    g0    g0    g0    g0    g0    w0    g0    g0110 g1    g1    g1    g1    g1    w1    g1",
-    "g0    g0    g0    g0    g0    g0    g0    g0    g0110 g1    g1    g1    g1    g1    g1    g1"
+    "g6 g6 g6 g6 g6 g6 g2 g2 i2 i2 i2 i2 i2 i2 i2 i2",
+    "g6 g6 g6 g6 g6 g6 g6446 g4224 g2 g2 g2242 g2244 g2224 g2 g2 g2",
+    "g6 g6 g6 g6 g6 g6 g6446 g4224 g2 g2 g2442 g4 g4224 g2 g2 g2",
+    "g6 g6 g6 g6 g6 g6 g6446 g4224 g2 >2 g2422 g4422 g4222 g2 g2 g2",
+    "g6 g6 g6 g6 g6 g6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g0 ~0 ~0 g0 g0 g0 g0 g0 g2 g2 g2 g2 r2 r2 r2 g2",
+    "g0 ~0 ~0 g0 g0 g0 g0 g0 g2 s2 s2 g2 r2 r2 r2 g2",
+    "g0 c0 c0 c0 c0 g0 g0 g0 g2 s2 s2 g2 r2 r2 r2 g2",
+    "g0 g0 g0 g0 b2 g0 g0 g0 g2 g2 g2 g2 g2 g2 g2 x2",
+    "g0 g0 g0 g0 g0 g0 g0 g0 g2 g2 g2 g2202 g2200 g2220 g2 g2",
+    "g0 g0 ^0 g0 g0 . g0 g0 g2 g2 g2 g2002 ~0 g0220 g2 g2",
+    "g0 g0 g0 g0 g0 . g0 g0 g2 g2 g2 g2022 g0022 g0222 g2 g2",
+    "g0 g0 g0 g0 g0 g0 w0 g0 g0220 g2 g2 g2 g2 g2 w2 g2",
+    "g0 g0 g0 g0 g0 g0 g0 g0 g0220 g2 g2 g2 g2 g2 g2 g2"
   ]
 }
