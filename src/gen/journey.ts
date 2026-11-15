@@ -327,7 +327,7 @@ export function buildTerrain(rng: Rng, budget: number): TerrainResult {
   // Where this area is entered: a tile on its side, and the height there.
   let entryTile: Point = sideTile(rect, opposite(dir), Math.floor(sideRange(rect, opposite(dir)).from + (sideRange(rect, opposite(dir)).to - sideRange(rect, opposite(dir)).from) / 2));
   let entryHeight = 0;
-  let start: Point = inward(entryTile, dir, 2);
+  const start: Point = inward(entryTile, dir, 2);
   let exitTileFinal: Point = start;
   waypoints.push(start);
 

@@ -67,7 +67,7 @@ export function generateCourse(seed: string, budget: number, tuning: Tuning, opt
         reject(extra);
         continue;
       }
-      const bot = opts.noBot ? null : playBot(r.course, tuning, seed, { waypoints: r.meta.terrain.waypoints, maxShots: journeyRow(b).botShots });
+      const bot = opts.noBot ? null : playBot(r.course, tuning, seed, { maxShots: journeyRow(b).botShots });
       if (bot && !bot.passed) {
         reject(bot.reason);
         continue;

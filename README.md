@@ -29,11 +29,11 @@ Then open the address it prints (usually http://localhost:5173).
 | `npm run check` | Type check, lint and test in one go |
 | `npm run art` | Regenerate the placeholder sprites and `assets/manifest.json` |
 | `npm run gen -- ABC123 12` | Print one generated course (seed, budget) as text, with pass or fail |
-| `npm run gen:batch` | Generate 500 courses, report the pass rate and times, and draw a contact sheet in `tools/out/` (the pictures need Playwright) |
+| `npm run gen:batch` | Generate 500 courses (budgets 8, 12, 20, 30), report the pass rate and times, and draw a contact sheet in `tools/out/` (the pictures need Playwright) |
 | `npm run build` | Build the site into `dist/` |
 | `npm run preview` | Serve the built site locally |
 
-## Controls (Milestone 5)
+## Controls (Milestone 5b)
 
 Every mechanic works from the keyboard alone; the mouse is optional (owner decision).
 
@@ -42,7 +42,7 @@ Every mechanic works from the keyboard alone; the mouse is optional (owner decis
 | Left / Right (or A / D) | Turn the aim around the ball. Hold Shift for fine turning. While a Tornado is active: steer it. |
 | Up / Down (or W / S) | Raise or lower the planned power (the dotted preview) |
 | Space (aiming) | Hold to charge the meter (up, down, up, down), release to shoot. Release at the very top for a PERFECT shot. |
-| Space (ball moving) | Bounce boost: press just before the ball lands |
+| Space (ball moving) | Bounce boost: press just before the ball lands, just before it skips on water, or just before it hits a guard rail |
 | F | Use your ability (once per shot, while the ball moves) |
 | Esc | Drop the plan and aim again |
 | Mouse: press, pull back, release; then hold and release | The same two-step shot with the mouse (slingshot pull to plan, hold to charge) |
@@ -55,13 +55,14 @@ Every mechanic works from the keyboard alone; the mouse is optional (owner decis
 | Enter | On the end screen: next course after a win, restart after a loss |
 | I / J / K / L, or drag with the right mouse button | Pan the camera (moved from the arrows and WASD, which now aim) |
 | C | Centre the camera on the ball |
+| O | Overview: zoom out to see the whole course; O again goes back to the ball |
 | 1, 2, 3, 4, 5, N | Switch test course (4 is the enemies and abilities course, 5 the test bench) |
-| 6 | A generated course (Milestone 5). Same seed and budget always give the same course |
+| 6 | A generated course: a journey across one landmass (Milestones 5 and 5b). Same seed and budget always give the same course. Bigger budgets make bigger courses; a loading screen shows while it is made |
 | [ / ] | Generated course: lower or raise the budget by 2 and make a new course |
 | V | Seed viewer: type a seed and a budget, see the course and whether it passed the checks |
 | B | Generated course: watch the bot play it (press again to stop) |
 | Enter (after winning a generated course) | The next generated course: new seed, budget up by a random 0 to 4 |
-| G | Cycle the debug overlay: coordinates, heights, surfaces, chunks (generated courses: chunk outlines and names, spots, budget spend), off. Shows sentinel radii (outer solid, inner dashed), paths and cloud danger zones. |
+| G | Cycle the debug overlay: coordinates, heights, surfaces, areas (generated courses: the journey's areas, passages and pockets, and the budget spend), off. Shows sentinel radii (outer solid, inner dashed), paths and cloud danger zones. |
 | U | Tuning panel (debug) |
 | H | Show or hide the help lines |
 
@@ -69,7 +70,7 @@ Every mechanic works from the keyboard alone; the mouse is optional (owner decis
 
 Top left: health (hearts), shots left (blue orbs), the star meter (stars towards the course's quota; it turns green and says OPEN when the exit opens), yellow stars held, and the seed (`#ABC123`). Each shot uses one orb. When they run out you get a recover turn and they refill. Next to it: the ability slot (the ability you hold; greyed once used this shot).
 
-You can also open a course directly: `?course=course-rules`, `?course=flat-walls`, `?course=slopes-surfaces` or `?course=enemies-abilities` or `?course=generated` (add `&budget=12` for the budget), and add `&seed=ABC123` to replay a seed, `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
+You can also open a course directly: `?course=course-rules`, `?course=flat-walls`, `?course=slopes-surfaces` or `?course=enemies-abilities` or `?course=generated` (add `&budget=12` for the budget), or `?course=test-bench&bench=rail` for the test bench with something chosen (any object id, or `rail`), and add `&seed=ABC123` to replay a seed, `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
 
 ## Folder layout
 

@@ -4,10 +4,15 @@
  * not a clever player: it never uses abilities, the bounce boost or perfect
  * shots, so a person always has more tools than it did.
  *
- * Each turn it picks the nearest few targets (enemies, crates, loose stars,
- * lowered flags; the exit once open), tries a handful of shots at each on a
- * copy of the game, scores what happened, and keeps the best copy as the real
- * game. Deterministic: same course, seed and settings give the same game.
+ * Each turn it picks its next target (awake attackers first, then the target
+ * nearest by walking distance over the real ground; the exit once open). If
+ * the target is far, it aims a few tiles along the walking route instead,
+ * stopping at the edge before a gap. It tries a handful of shots on a copy of
+ * the game, scores what happened (stars, damage, route left to walk), and
+ * keeps the best copy as the real game. Milestone 5b added the route finding,
+ * extra speed for uphill shots, backspin lofts, a ring of safe shots when
+ * everything else goes wrong, and giving up early when stuck.
+ * Deterministic: same course, seed and settings give the same game.
  */
 import { GEN } from '../content/gen.ts';
 import type { Tuning } from '../content/tuning.ts';
@@ -59,8 +64,6 @@ function targets(play: PlayState): Target[] {
 
 
 export interface BotHints {
-  /** Points along the trail, start to exit: the bot heads for the next one when nothing worth hitting is near. */
-  readonly waypoints?: readonly (readonly [number, number])[];
   /** Shot limit (the journey table sets it by budget). */
   readonly maxShots?: number;
 }

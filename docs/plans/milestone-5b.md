@@ -241,6 +241,29 @@ Answered by the owner, 2026-11-15: 1 yes, 2 yes, 3 yes with up to 5 seconds and 
 
 ---
 
+## As built (2026-11-15)
+
+Built on branch `milestone-5-course-generator`. Where the build differs from or adds to the sheet:
+
+- **Gentle and steep tiles.** Doubling old heights turned every old slope into a two-step rise, which the 13 tile shapes did not allow. So a tile may now rise **one step (gentle, about 14°) or two (steep, about 27°, the old slope)**, in the same 12 patterns: 25 shapes in all (`src/sim/tileShape.ts`). Old courses look and play as before, and the generator can make both gentle and steep ground. Faces got a two-step cap sprite for steep edges.
+- **Paths of moving things** may not cross a rise of more than half a tile (two new steps), the same limit as before in the old units.
+- **Guard rail** as on the sheet. The rail boost uses the same 0.15 s window as the landing boost; on the ground, Space arms it. Rails are drawn as a post at every tile centre and the bar in quarter-tile pieces, so they follow slopes. The test bench has a "Guard rail" choice, and `?course=test-bench&bench=rail` opens it directly.
+- **Water** as on the sheet: skip at more than 6 tiles per second with vertical speed under half the ground speed. Splashes show where the ball lands in or skips off water. "UNDER WATER: NEXT SHOT IS WEAKER" shows when it stops in water. Shimmer, deep water and the shore foam are display only.
+- **Checkerboard** on grass only, as on the sheet.
+- **Generator** (`src/gen/journey.ts` for the ground, `src/gen/generate.ts` for placing things):
+  - Each area's way out (direction, passage, next area) is planned before its ground is built, with up to 8 tries if it does not fit.
+  - Landforms cost nothing; passages, set pieces and bare edges spend the terrain budget.
+  - Edges facing a gap are always left bare, since jumping is the point.
+  - Nothing is placed within two tiles of a passage, so ramps, causeways and landings stay clear.
+  - Loot in side pockets is free (outside the budget).
+  - Enemies are placed from the end of the journey back, so the last areas get their share before the 10-enemy cap.
+  - The start and exit tiles are flattened if they land on a slope.
+- **Bot:** it finds its way by walking distance over the real ground (`distancesTo` in `src/gen/structure.ts`, using the same climbing and gap-jumping rules as the structure check), aiming a few tiles along the route when its target is far. It adds speed for uphill shots, tries lofted shots with backspin when looking harder, tries a ring of safe shots in all directions when every aimed shot hurts, and gives up after 6 shots in a row with no progress ("bot got stuck"). Its shot cap is 30 trial shots per allowed shot, at least 1,200.
+- **Speed:** the unchanging obstacles (rocks, rails) are now built once per course instead of every step, and collisions skip anything far from the ball. That halved the time per simulated shot on big courses.
+- **Loading screen:** generation runs in a background worker (`src/render/genWorker.ts`) while a ball bounces along a strip of checkered tiles.
+- **Overview (O)** and the **areas** debug view (G) as on the sheet.
+- The Milestone 5 chunk files and route layout are removed. Pond-with-island survives as a set piece; the bunker became the sand field.
+
 ## Sign-off
 
 - [x] Owner sign-off, 2026-11-15. Changes: generation may take up to 5 seconds above budget 14, with a loading screen animation.
