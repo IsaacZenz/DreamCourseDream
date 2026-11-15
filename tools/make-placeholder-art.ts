@@ -13,6 +13,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { GEAR_LIST, type GearDef } from '../src/content/gear.ts';
+import { UPGRADE_LIST } from '../src/content/run.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../src/content/surfaces.ts';
 import type { Manifest, SpriteEntry } from '../src/render/manifest.ts';
 import { SHAPES, triangles, type ShapeId } from '../src/sim/tileShape.ts';
@@ -1043,6 +1045,174 @@ emit('wild', drawIcon('wild'), 10, 10, ['idle'], [5, 9]);
 for (const k of ['anchor', 'burner', 'hop', 'tornado', 'stunned']) emit(`icon-${k}`, drawIcon(k), 10, 10, ['idle'], [5, 5]);
 emit('alert', drawAlert(), 5, 9, ['idle'], [2, 9]);
 emit('ball-tornado', sheet([0, 1, 2, 3].map(drawTornadoBall)), 12, 14, ['0', '1', '2', '3'], [6, 13]);
+
+// ---------------------------------------------------------------------------
+// Milestone 6: gear, map nodes, run upgrades, the town.
+
+/** Border colour by rarity: grey, green, blue, purple, orange, gold. */
+const RARITY_EDGE: Record<string, string> = {
+  common: '#7a7a8a', uncommon: '#38a838', rare: '#3870e0', doubleRare: '#9840e0', specialRare: '#e88020', legendary: '#f8d020',
+};
+const FAMILY_FILL: Record<string, string> = {
+  Shell: '#a8a8b8', Coat: '#e05828', Knob: '#a87848', Lining: '#e0d0a0', Guard: '#48a048', Hide: '#8a6040', Magnet: '#d83838', Sight: '#48a8e8', Pebble: '#58c878',
+};
+const UNIQUE_FILL: Record<string, string> = {
+  'thunder-knuckle': '#f0e040', 'wrecking-shell': '#606878', 'leech-fang': '#c02848', 'sunfire-crown': '#f8a020', 'giants-knuckle': '#b08060', 'echo-shell': '#a080f0',
+  'mirror-plate': '#c8e8f8', 'cork-plate': '#c89858', 'moss-plate': '#589838', 'phoenix-plate': '#f86020', 'bastion-plate': '#8890a8', 'storm-cloak': '#5868b8',
+  'pocket-pillow': '#e8b8d8', 'golden-tooth': '#f0d048', 'feather-charm': '#f0f0f8', 'crown-of-plenty': '#f8c828', 'pocket-watch': '#d8b060', 'four-leaf-clover': '#38c048',
+};
+/** Shape masks, 12x12: weapon a spiked ball, armour a shield, bauble a gem. */
+const GEAR_SHAPES: Record<string, readonly string[]> = {
+  weapon: ['.....x......', '....xxx.....', '..x.xxx.x...', '...xxxxx....', '.xxxxxxxxx..', 'xxxxxxxxxxx.', '.xxxxxxxxx..', '...xxxxx....', '..x.xxx.x...', '....xxx.....', '.....x......', '............'],
+  armour: ['............', '.xxxxxxxxx..', '.xxxxxxxxx..', '.xxxxxxxxx..', '.xxxxxxxxx..', '.xxxxxxxxx..', '..xxxxxxx...', '..xxxxxxx...', '...xxxxx....', '....xxx.....', '.....x......', '............'],
+  bauble: ['............', '...xxxxx....', '..xxxxxxx...', '.xxxxxxxxx..', 'xxxxxxxxxxx.', '.xxxxxxxxx..', '..xxxxxxx...', '...xxxxx....', '....xxx.....', '.....x......', '............', '............'],
+};
+/** A small white mark per family or unique item, so items in one category are told apart. */
+const GEAR_MARKS: Record<string, P[]> = {
+  Shell: [[4, 5], [6, 5], [5, 4], [5, 6]], Coat: [[5, 3], [4, 4], [6, 5], [5, 6], [4, 6], [6, 6]], Knob: [[4, 4], [5, 4], [4, 5], [5, 5]],
+  Lining: [[3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [3, 5], [4, 5], [5, 5], [6, 5], [7, 5]], Guard: [[3, 3], [7, 3], [4, 4], [6, 4], [5, 5]], Hide: [[5, 3], [4, 4], [6, 4], [5, 5], [5, 6]],
+  Magnet: [[3, 3], [3, 4], [3, 5], [7, 3], [7, 4], [7, 5], [4, 6], [5, 6], [6, 6]], Sight: [[3, 4], [4, 3], [5, 3], [6, 3], [7, 4], [5, 4]], Pebble: [[5, 3], [4, 4], [6, 4], [5, 5]],
+};
+function uniqueMark(id: string): P[] {
+  // A star-shaped mark, turned a little differently for each item.
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  const pts: P[] = [[5, 4], [5, 5], [4, 5], [6, 5], [5, 6]];
+  const extra: P[] = [[4, 3], [6, 3], [3, 6], [7, 6], [4, 7], [6, 7], [3, 4], [7, 4]];
+  pts.push(extra[h % extra.length]!, extra[(h >> 3) % extra.length]!);
+  return pts;
+}
+function drawGear(g: GearDef): Image {
+  const img = new Image(12, 12);
+  const mask = GEAR_SHAPES[g.category]!;
+  const fill = ramp(g.family ? FAMILY_FILL[g.family]! : UNIQUE_FILL[g.id] ?? '#c0c0c0');
+  const edge = hex2(RARITY_EDGE[g.rarity]!);
+  const at = (x: number, y: number) => mask[y]?.[x] === 'x';
+  for (let y = 0; y < 12; y++) {
+    for (let x = 0; x < 12; x++) {
+      if (!at(x, y)) continue;
+      const border = !at(x - 1, y) || !at(x + 1, y) || !at(x, y - 1) || !at(x, y + 1);
+      img.set(x, y, border ? edge : fill[x + y < 8 ? 4 : x + y < 12 ? 3 : 2]!);
+    }
+  }
+  // Higher pairs get a second ring of the rarity colour inside the border.
+  const w = hex2('#f8f8f8');
+  for (const [x, y] of g.family ? GEAR_MARKS[g.family]! : uniqueMark(g.id)) if (at(x, y)) img.set(x, y, w);
+  return img;
+}
+
+/** Map node icons, 14x14. */
+function drawNode(kind: string): Image {
+  const img = new Image(14, 14);
+  const base = { course: '#58b858', hard: '#d84838', shop: '#d8a048', cache: '#a878d8', boss: '#702030', done: '#606070' }[kind] ?? '#808080';
+  blob(img, 7, 7, 7, 7, base, '#101018');
+  const w = hex2('#f8f8f8');
+  const marks: Record<string, P[]> = {
+    // A flag on a pole.
+    course: [[5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [5, 8], [5, 9], [5, 10], [6, 3], [7, 3], [8, 4], [6, 4], [7, 4], [6, 5]],
+    hard: [[5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [5, 8], [5, 9], [5, 10], [6, 3], [7, 3], [8, 4], [6, 4], [7, 4], [6, 5], [9, 8], [9, 9], [9, 11]],
+    // A little house.
+    shop: [[7, 3], [6, 4], [8, 4], [5, 5], [9, 5], [4, 6], [10, 6], [5, 7], [9, 7], [5, 8], [9, 8], [5, 9], [9, 9], [7, 8], [7, 9], [5, 10], [6, 10], [7, 10], [8, 10], [9, 10]],
+    // A chest.
+    cache: [[4, 5], [5, 5], [6, 5], [7, 5], [8, 5], [9, 5], [4, 6], [9, 6], [4, 7], [5, 7], [6, 7], [7, 7], [8, 7], [9, 7], [4, 8], [9, 8], [6, 8], [7, 8], [4, 9], [9, 9], [4, 10], [5, 10], [6, 10], [7, 10], [8, 10], [9, 10]],
+    // A face with a crown.
+    boss: [[4, 3], [6, 3], [8, 3], [10, 3], [4, 4], [5, 4], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [5, 7], [9, 7], [5, 10], [6, 9], [7, 9], [8, 9], [9, 10]],
+    done: [[4, 7], [5, 8], [6, 9], [7, 8], [8, 7], [9, 6], [10, 5]],
+  };
+  for (const [x, y] of marks[kind] ?? []) img.set(x, y, w);
+  return img;
+}
+
+function drawUpgrade(kind: string): Image {
+  const img = new Image(12, 12);
+  const base = { health: '#e83c50', shots: '#40c8e8', power: '#f8a030', reach: '#f8d030', luck: '#40c060' }[kind] ?? '#808080';
+  blob(img, 6, 6, 6, 6, base, '#101018');
+  const w = hex2('#f8f8f8');
+  // An up arrow: "more".
+  for (const [x, y] of [[6, 2], [5, 3], [6, 3], [7, 3], [4, 4], [6, 4], [8, 4], [6, 5], [6, 6], [6, 7], [6, 8], [6, 9]] as P[]) img.set(x, y, w);
+  return img;
+}
+
+function drawShieldIcon(): Image {
+  const img = new Image(10, 10);
+  rows(img, 0, 0, ['.oooooooo.', '.o444433o.', '.o444333o.', '.o443332o.', '.o433322o.', '..o3322o..', '..o3322o..', '...o22o...', '....oo....', '..........'], '#c8d8f0', {}, '#203048');
+  return img;
+}
+
+/** The town (owner, 2026-11-15): a shop, the Burrow, and a signpost to carry on. Drawn in the game's pixel style. */
+function drawShopBuilding(): Image {
+  const img = new Image(56, 52);
+  const wall = ramp('#d8c090');
+  const roof = ramp('#b04830');
+  const wood = ramp('#7a4a28');
+  const edge = hex2('#281810');
+  // Roof: a triangle.
+  for (let y = 0; y < 20; y++) {
+    const half = 4 + y * 1.35;
+    for (let x = 0; x < 56; x++) {
+      const dx = Math.abs(x + 0.5 - 28);
+      if (dx > half) continue;
+      img.set(x, y, dx > half - 1 || y === 19 ? edge : roof[(x + y) % 5 === 0 ? 2 : x < 28 ? 4 : 3]!);
+    }
+  }
+  // Walls.
+  for (let y = 20; y < 50; y++) for (let x = 4; x < 52; x++) img.set(x, y, x === 4 || x === 51 || y === 49 ? edge : wall[x < 28 ? 4 : 3]!);
+  // Door and a window with goods.
+  for (let y = 32; y < 49; y++) for (let x = 22; x < 34; x++) img.set(x, y, x === 22 || x === 33 || y === 32 ? edge : wood[y % 4 === 0 ? 2 : 3]!);
+  img.set(31, 41, hex2('#f8e048'));
+  for (let y = 25; y < 33; y++) for (let x = 8; x < 18; x++) img.set(x, y, x === 8 || x === 17 || y === 25 || y === 32 ? edge : hex2('#80c8f0'));
+  for (let y = 25; y < 33; y++) for (let x = 38; x < 48; x++) img.set(x, y, x === 38 || x === 47 || y === 25 || y === 32 ? edge : hex2('#80c8f0'));
+  // A star on the sign above the door.
+  for (const [x, y] of [[28, 22], [27, 23], [28, 23], [29, 23], [26, 24], [27, 24], [28, 24], [29, 24], [30, 24], [27, 25], [29, 25]] as P[]) img.set(x, y, hex2('#f8d030'));
+  return img;
+}
+
+function drawBurrow(): Image {
+  const img = new Image(56, 36);
+  // A grassy mound with a round door in it.
+  blob(img, 28, 26, 27, 18, '#58a048', '#183010');
+  for (let y = 0; y < 36; y++) for (let x = 0; x < 56; x++) if (y >= 33) img.set(x, y, [0, 0, 0, 0]);
+  blob(img, 28, 26, 9, 9, '#3a2410', '#140c04');
+  for (let y = 19; y < 33; y++) for (let x = 22; x < 35; x++) if (Math.hypot(x + 0.5 - 28, y + 0.5 - 27) < 6.5) img.set(x, y, hex2('#100804'));
+  // A little lamp by the door.
+  for (const [x, y] of [[40, 18], [40, 19], [41, 18], [41, 19]] as P[]) img.set(x, y, hex2('#f8e048'));
+  for (let y = 20; y < 30; y++) img.set(40, y, hex2('#403020'));
+  return img;
+}
+
+function drawSignpost(): Image {
+  const img = new Image(28, 32);
+  const wood = ramp('#a06a38');
+  const edge = hex2('#281810');
+  for (let y = 8; y < 32; y++) for (let x = 12; x < 16; x++) img.set(x, y, x === 12 || x === 15 ? edge : wood[3]!);
+  // An arrow-shaped board pointing right.
+  for (let y = 2; y < 14; y++) {
+    for (let x = 1; x < 27; x++) {
+      const tip = x >= 21 ? Math.abs(y + 0.5 - 8) <= 27 - x : true;
+      if (!tip || y < 3 || y > 12) continue;
+      const border = y === 3 || y === 12 || x === 1 || (x >= 21 && Math.abs(y + 0.5 - 8) > 26 - x);
+      img.set(x, y, border ? edge : wood[4]!);
+    }
+  }
+  return img;
+}
+
+function drawCursor(): Image {
+  const img = new Image(9, 7);
+  rows(img, 0, 0, ['ooooooooo', 'o4444444o', '.o44444o.', '..o444o..', '...o4o...', '....o....', '.........'], '#f8f8f8', {}, '#202030');
+  return img;
+}
+
+for (const g of GEAR_LIST) emit(g.icon, drawGear(g), 12, 12, ['idle'], [6, 11]);
+for (const k of ['course', 'hard', 'shop', 'cache', 'boss', 'done']) emit(`node-${k}`, drawNode(k), 14, 14, ['idle'], [7, 7]);
+for (const u of UPGRADE_LIST) emit(u.icon, drawUpgrade(u.icon.replace('upgrade-', '')), 12, 12, ['idle'], [6, 6]);
+emit('icon-burning', drawIcon('burner'), 10, 10, ['idle'], [5, 5]);
+emit('icon-shield', drawShieldIcon(), 10, 10, ['idle'], [5, 5]);
+emit('town-shop', drawShopBuilding(), 56, 52, ['idle'], [28, 51]);
+emit('town-burrow', drawBurrow(), 56, 36, ['idle'], [28, 33]);
+emit('town-sign', drawSignpost(), 28, 32, ['idle'], [14, 31]);
+emit('cursor', drawCursor(), 9, 7, ['idle'], [4, 6]);
+
 const font = drawFont();
 emit('font', font.img, 4, 6, font.frames, [0, 0]);
 

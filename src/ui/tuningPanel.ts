@@ -31,12 +31,27 @@ export interface BenchOptions {
   readonly onLoad: (object: string, ability: string) => void;
 }
 
+/** Testing aids for a run (Milestone 6 design sheet, section 9.4). */
+export interface RunOptions {
+  readonly gear: readonly { id: string; label: string }[];
+  readonly upgrades: readonly { id: string; label: string }[];
+  readonly countdown: number;
+  /** A course is being played, so "win this course" works. */
+  readonly canWin: boolean;
+  readonly onStars: () => void;
+  readonly onGear: (id: string) => void;
+  readonly onUpgrade: (id: string) => void;
+  readonly onCountdown: (n: number) => void;
+  readonly onWin: () => void;
+}
+
 export class TuningPanel {
   private readonly root: HTMLDivElement;
   private readonly rows = new Map<string, { input: HTMLInputElement; value: HTMLSpanElement; name: HTMLSpanElement }>();
 
   private readonly tuning: Tuning;
   private benchBox: HTMLDivElement | null = null;
+  private runBox: HTMLDivElement | null = null;
 
   constructor(tuning: Tuning) {
     this.tuning = tuning;
@@ -89,6 +104,10 @@ export class TuningPanel {
     this.benchBox.className = 'bench';
     this.benchBox.style.display = 'none';
     this.root.appendChild(this.benchBox);
+    this.runBox = document.createElement('div');
+    this.runBox.className = 'bench';
+    this.runBox.style.display = 'none';
+    this.root.insertBefore(this.runBox, this.benchBox);
 
     let group = '';
     for (const c of TUNING_CONTROLS) {
@@ -157,10 +176,67 @@ export class TuningPanel {
     box.append(h, hint, objLabel, obj, abLabel, ab, load);
   }
 
+  /** Show the run's testing aids, or hide them (null) when no run is going. */
+  setRun(opts: RunOptions | null): void {
+    const box = this.runBox;
+    if (!box) return;
+    box.replaceChildren();
+    box.style.display = opts ? 'block' : 'none';
+    if (!opts) return;
+    const h = document.createElement('h3');
+    h.textContent = 'Run testing aids (key 7)';
+    const select = (items: readonly { id: string; label: string }[]) => {
+      const el = document.createElement('select');
+      for (const it of items) {
+        const o = document.createElement('option');
+        o.value = it.id;
+        o.textContent = it.label;
+        el.appendChild(o);
+      }
+      return el;
+    };
+    const gear = select(opts.gear);
+    const ups = select(opts.upgrades);
+    const count = document.createElement('input');
+    count.type = 'number';
+    count.min = '0';
+    count.max = '9';
+    count.value = String(opts.countdown);
+    count.style.width = '48px';
+    const done = (el: HTMLElement) => el.blur();
+    box.append(
+      h,
+      this.button('+20 yellow stars', () => opts.onStars()),
+      ...(opts.canWin ? [this.button('Win this course', () => opts.onWin())] : []),
+      document.createElement('br'),
+      gear,
+      this.button('Give gear', () => {
+        done(gear);
+        opts.onGear(gear.value);
+      }),
+      ups,
+      this.button('Give upgrade', () => {
+        done(ups);
+        opts.onUpgrade(ups.value);
+      }),
+      document.createElement('br'),
+      document.createTextNode('Boss countdown '),
+      count,
+      this.button('Set', () => {
+        done(count);
+        opts.onCountdown(Number(count.value));
+      }),
+    );
+  }
+
   private button(text: string, onClick: () => void): HTMLButtonElement {
     const b = document.createElement('button');
     b.textContent = text;
-    b.addEventListener('click', onClick);
+    b.addEventListener('click', () => {
+      onClick();
+      // Give the keys back to the game (the panel keeps key presses to itself).
+      b.blur();
+    });
     return b;
   }
 

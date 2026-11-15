@@ -68,12 +68,8 @@ function widen(from: Draft[]): void {
 
 function rollType(rng: Rng, row: number, courseOnly: boolean): NodeType {
   const o = RUN.map.odds;
-  let r = rng.float(0, o.course + o.hard + o.shop + o.cache);
-  let t: NodeType = 'course';
-  if ((r -= o.course) < 0) t = 'course';
-  else if ((r -= o.hard) < 0) t = 'hard';
-  else if ((r -= o.shop) < 0) t = 'shop';
-  else t = 'cache';
+  const r = rng.float(0, o.course + o.hard + o.shop + o.cache);
+  let t: NodeType = r < o.course ? 'course' : r < o.course + o.hard ? 'hard' : r < o.course + o.hard + o.shop ? 'shop' : 'cache';
   if (t === 'hard' && row < RUN.map.firstHardRow) t = 'course';
   if (t === 'shop' && row < RUN.map.firstShopRow) t = 'course';
   if (courseOnly && (t === 'shop' || t === 'cache')) t = 'course';

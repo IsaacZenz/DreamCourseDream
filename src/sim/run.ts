@@ -391,6 +391,7 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   }
   run.totals.courses++;
   run.wallet += rewardFor(cur.type);
+  run.totals.stars += rewardFor(cur.type);
   // Granite Hide: heal after each course.
   for (const c of GEAR_CATEGORIES) {
     for (const fx of (run.gear[c] && GEAR.get(run.gear[c]!)?.effects) || []) if (fx.kind === 'healAfterCourse') run.health += fx.amount;
