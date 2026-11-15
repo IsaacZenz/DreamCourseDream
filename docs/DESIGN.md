@@ -16,7 +16,7 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 | 2 | Everything is built from an asset pack: courses are assembled from tiles and objects, never drawn as one-off pictures. | Decided |
 | 3 | Courses and the run map are procedurally generated from rules. | Decided |
 | 4 | Golf-style shot mechanics, enemy-granted abilities, obstacles and enemies, in the spirit of 16-bit isometric golf games. All names, characters and art are original. | Decided |
-| 5 | A single-player dungeon crawler, not a versus game. | Decided |
+| 5 | A single-player dungeon crawler, not a versus game. **Owner, 2026-11-15:** each course is a journey the hero takes, a character on a mission travelling through a landscape. It should feel like a dungeon crawl, not a golf hole; the mechanics just happen to be golf-like. | Decided |
 | 6 | Function first. Placeholder art until the game plays well; the final look is applied later as a skin. | Decided |
 
 **Decided (owner, 2026-11-14): keep it easy to fine-tune and to extend.** As the game grows, small number changes (speeds, delays, damage, radii) must stay a one-line data edit, and new enemies, obstacles and abilities must be addable as data entries plus a placeholder sprite, with no rewrites. In practice: every number lives in `src/content/` (physics feel in `tuning.ts`, also live in the U panel); enemies, obstacles and pickups in `objects.ts`; abilities in `abilities.ts`; statuses in `statuses.ts`. A new thing that reuses an existing behaviour needs no logic changes (tested by a test-only enemy in `tests/enemies.test.ts`); a truly new kind of behaviour needs code once. The test bench (course 5) tries any of them alone.
@@ -43,7 +43,7 @@ You are a ball. Each course is a small isometric landscape of slopes, ledges, ha
 ## 4. View and world model
 
 - **Decided:** isometric view with real height. Slopes, ledges, and a ball that can leave the ground, fly and bounce.
-- **Default:** internal resolution 384×216, scaled up by whole numbers with no smoothing. Tiles are 32×16 pixel diamonds; one height step is 8 pixels.
+- **Default:** internal resolution 384×216, scaled up by whole numbers with no smoothing. Tiles are 32×16 pixel diamonds; one height step is 8 pixels. **Decided (owner, 2026-11-15): the height step is halved** (4 pixels, a quarter of a tile), so a slope tile is about 14° instead of 27° and long gentle hills are possible. Being built in Milestone 5b (`docs/plans/milestone-5b.md`).
 - **Default:** a course is a grid of tiles. Each tile stores:
   - four corner heights in whole steps (this one rule gives flat tiles, straight slopes and corner slopes),
   - a surface type (see below),
@@ -108,7 +108,8 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
 - **Decided (owner, 2026-11-14):** shot speed across the whole bar is 20% above the first tuning (ground top 13.2, lofted top 12 tiles per second). A **perfect shot**, released in the top 2% of the bar (`perfectWindow` 0.02, owner round 2), launches 35% faster than the first tuning's top, which is 12.5% above the new top (`perfectBonus` 1.125). The meter shows the perfect zone at its top and the game says "PERFECT!".
 - **Decided (owner, 2026-11-14, tuning round 2):** meter sweep takes 1.5 s (`meterPeriod`); bumpers keep all their falling speed on a bounce (`surfaces.bumper.bounce` 1).
 - **Decided (owner, 2026-11-14, tuning round 3):** the ball is 10% bouncier on every surface (gravity unchanged): grass 0.495, rough 0.33, sand 0.055, ice 0.55. Bumper bounce stays at 1, because above 1 the ball would gain height on every bounce.
-- **Decided (owner, 2026-11-14): water.** The ball only resets if it comes to rest (or the shot times out) in water. Passing through, it is slowed hard (`surfaces.water`: friction 0.4, drag 2.5 per second, bounce 0.2, landing grip 0.5; Default values, tune with the panel). With enough speed or bounce it can escape: rolling across, up a slope in the water, or bouncing off it. Water is drawn see-through, with the ball visible inside it. Water tiles may now be sloped (it was flat-only).
+- **Decided (owner, 2026-11-15): water, replacing the 2026-11-14 rule below.** A ball that comes to rest in water is **not** sent back. It stays where it stopped, under the water, and takes 1 damage. **Skipping:** a fast, low ball can skip off the surface, and the bounce-boost key helps. Details and numbers in `docs/plans/milestone-5b.md`.
+- ~~**Decided (owner, 2026-11-14): water.**~~ Replaced on 2026-11-15 (above). The ball only resets if it comes to rest (or the shot times out) in water. Passing through, it is slowed hard (`surfaces.water`: friction 0.4, drag 2.5 per second, bounce 0.2, landing grip 0.5; Default values, tune with the panel). With enough speed or bounce it can escape: rolling across, up a slope in the water, or bouncing off it. Water is drawn see-through, with the ball visible inside it. Water tiles may now be sloped (it was flat-only).
 
 ## 6. Shots and health
 
@@ -238,7 +239,8 @@ Gear examples are in `docs/FEATURES.md` section 8.
 **Default approach:**
 
 - **Course format first.** A course is a data file (grid, tiles, objects, quota, exit). The hand-built test courses and the generator's output use the same format. The game never knows which one it is loading.
-- **Built from chunks.** The generator joins small hand-designed pieces (a ramp, a bowl, a bridge, a pit with an island) on a grid, then adjusts heights and surfaces. Pure noise terrain makes poor golf holes; chunks keep every piece playable while the combinations stay varied.
+- **Decided (owner, 2026-11-15): a course is a journey.** The generator builds one solid landmass the hero travels across, area by area, towards the exit, with much more slope and open ground and much larger maps at higher budgets. Rails line some edges; many edges are bare drops. Plan in `docs/plans/milestone-5b.md`. The chunk approach below was built in Milestone 5 and is being replaced.
+- ~~**Built from chunks.**~~ (Milestone 5; being replaced.) The generator joins small hand-designed pieces (a ramp, a bowl, a bridge, a pit with an island) on a grid, then adjusts heights and surfaces. Pure noise terrain makes poor golf holes; chunks keep every piece playable while the combinations stay varied.
 - **Difficulty budget.** Each course gets a budget from its position in the run. Enemies and hazards each have a cost. The generator spends the budget.
 - **Biomes.** A biome is a data entry: tile skin, which surfaces and enemies may appear, and the chunk set.
 - **Seeded.** A run has one seed. Every course and the map come from it. The same seed gives the same run. Show the seed on screen so a bug or a great course can be reproduced.
@@ -251,6 +253,7 @@ The bot does not need to be clever. It tries many shots in the simulation and ke
 ## 12. Art and audio
 
 - **Decided:** placeholder art first; the real look comes later.
+- **Decided (owner, 2026-11-15):** grass uses a two-tone checkerboard (our own colours), so the shape of every slope is easy to read.
 - **Default:** placeholder tiles and sprites are generated by a script as simple shaded shapes at the correct sizes, so the final art can replace them file for file.
 - **Default:** an asset manifest maps each sprite ID to a file, frame size and anchor point. Game code only uses IDs.
 - **Default:** sound is added in Milestone 9. Until then the game is silent apart from simple generated blips.

@@ -196,6 +196,7 @@ id, name, sprite id, size in tiles, whether it blocks the ball, contact effect, 
 | Static blockers | Rock, tree stump (was the post; renamed by the owner 2026-11-14, built in Milestone 4), low wall | 3 |
 | Moving obstacles (not enemies; cannot be defeated) | Sliding block on a path, gate that opens and closes on a timer | 4 |
 | Destructibles | Crate that drops a pickup; secured crate that takes 2 hits (owner, 2026-11-14); cracked tile that breaks under the Anchor ability | 4 |
+| Guard rails (owner, 2026-11-15) | A thin, low, mostly see-through rail through the middle of a tile (straight, corner and 45° pieces) | 5b |
 | Linked objects | Switch that lowers a gate or raises a bridge | 8 |
 
 Moving obstacles run in real time like patrollers, including while the player aims.
@@ -219,6 +220,19 @@ Moving obstacles run in real time like patrollers, including while the player ai
 - It replaces the current rule where the ball carries on through a defeated enemy with a small loss of speed. Contact with the enemy itself is unchanged: the hit that defeats it still counts, and the pole goes up once the ball has moved clear, so it never traps the ball.
 
 Build in Milestone 4, alongside the other contact rules and obstacles.
+
+### Guard rail
+
+**Decided (owner, 2026-11-15):**
+
+- A thin, low rail, mostly see-through, that runs through the middle of a tile. It lines course edges (not always: stacked blocks are no longer the only border) and can form shapes in the middle of the course.
+- The ball bounces off it; a ball in the air above it hops over.
+- Moving enemies bounce off it too.
+- A Mole can never burrow underneath it.
+- Pieces run along the grid and at 45°.
+- Pressing the bounce-boost key at the moment the ball hits a rail gives a stronger bounce.
+
+Numbers and the remaining details are in `docs/plans/milestone-5b.md`.
 
 ### Thunder cloud
 
