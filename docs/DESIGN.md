@@ -225,6 +225,7 @@ Gear examples are in `docs/FEATURES.md` section 8.
 
 - The run is a branching map of nodes. The player picks a path.
 - Node types are randomised. A shop is not guaranteed between courses. Sometimes the only choice is another course.
+- **Decided (owner, 2026-11-15):** the countdown starts at **7**, and the player always gets at least one optional town right before the forced boss (a "last town"), on top of any towns on the way. An early boss may still be offered.
 - **Boss countdown:** a counter (for example "5 until boss") drops by one each time the player completes a node without fighting the boss. **Owner, 2026-11-15: shops do not count**; courses, hard courses and caches do. The player may fight the boss early when a boss node is offered. At zero the boss is forced.
 - **Yellow stars** are common. They fill the exit meter and are also spent in shops on upgrades that last for the current run.
 - **Blue stars** are rare. They are spent on permanent upgrades.
@@ -285,7 +286,7 @@ Opus: use the default and say that you did. The owner can change any of these at
 
 | # | Question | Default until answered |
 |---|---|---|
-| 1 | Boss countdown length, and whether it varies by region | 5, same for every region, stored as a tuning number |
+| 1 | Boss countdown length, and whether it varies by region | **Answered (owner, 2026-11-15): 7**, same for every region, stored as a tuning number. The boss may still be offered earlier. Before the forced boss there is always an optional last town |
 | 2 | Reward for fighting the boss early | +1 blue star per countdown step remaining |
 | 3 | Does recovering refill all shots or only some? | All |
 | 4 | ~~Power input: sweeping meter, or drag distance?~~ | Answered 2026-11-14: sweeping meter (see section 5) |

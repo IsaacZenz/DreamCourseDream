@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { RUN, UPGRADE_LIST, UPGRADES, type NodeType } from '../content/run';
-import { addUpgrade, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
+import { LAST_TOWN, addUpgrade, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
 import { newRunSeed, session, startRun } from './runSession';
@@ -144,9 +144,19 @@ export class MapScene extends Phaser.Scene {
     if (this.options.some((o) => o.id === 'boss')) {
       boss.setInteractive({ useHandCursor: true });
       boss.on('pointerdown', () => {
-        this.sel = 0;
+        this.sel = this.options.findIndex((o) => o.id === 'boss');
         this.go(run);
       });
+    }
+    // Owner, 2026-11-15: before the forced boss there is always an optional last town.
+    if (this.options.some((o) => o.id === LAST_TOWN)) {
+      const tp = this.lastTownXY(bossRow);
+      const town = this.add.image(tp.x, tp.y, 'node-shop', 0).setInteractive({ useHandCursor: true });
+      town.on('pointerdown', () => {
+        this.sel = this.options.findIndex((o) => o.id === LAST_TOWN);
+        this.go(run);
+      });
+      pixelText(this, m, 0, 0, 'LAST TOWN', { color: GOOD, background: UI_BG }).setPosition(tp.x - 17, tp.y + 9);
     }
     const label = pixelText(this, m, 0, 0, run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS!', { color: 0xff8080, background: UI_BG });
     label.setPosition(bp.x - label.width - 9, bp.y - 9);
@@ -158,10 +168,15 @@ export class MapScene extends Phaser.Scene {
     this.refreshSelection(run);
   }
 
+  /** Where the optional last town sits: on the boss line, left of centre. */
+  private lastTownXY(row: number): { x: number; y: number } {
+    return { x: MAP_X + LANE_W, y: -(row - 0.5) * ROW_H };
+  }
+
   private refreshSelection(run: RunState): void {
     const n = this.options[this.sel];
     if (!n || !this.cursor) return;
-    const p = n.id === 'boss' ? { x: MAP_X + LANE_W * 3 + 26, y: -(n.row - 0.5) * ROW_H } : this.nodeXY(n.row, n.lane);
+    const p = n.id === 'boss' ? { x: MAP_X + LANE_W * 3 + 26, y: -(n.row - 0.5) * ROW_H } : n.id === LAST_TOWN ? this.lastTownXY(n.row) : this.nodeXY(n.row, n.lane);
     this.cursor.setPosition(p.x, p.y - 11);
     this.drawPanel(run);
   }
@@ -208,8 +223,8 @@ export class MapScene extends Phaser.Scene {
     const n = this.options[this.sel];
     if (n && run.status === 'map') {
       const type = typeOf(run, n);
-      line(`NEXT: ${NODE_NAME[type]}`, GOOD);
-      for (const l of nodeInfo(run, type)) line(l, UI_DIM);
+      line(n.id === LAST_TOWN ? 'NEXT: LAST TOWN' : `NEXT: ${NODE_NAME[type]}`, GOOD);
+      for (const l of n.id === LAST_TOWN ? ['OPTIONAL: SHOP AND BURROW', 'BEFORE THE BOSS'] : nodeInfo(run, type)) line(l, UI_DIM);
     }
     const help = run.status === 'map' ? ['ARROWS: CHOOSE  ENTER: GO', 'UP/DOWN: LOOK AHEAD', 'U: TEST PANEL  1-6: TEST COURSES'] : ['N: NEW RUN  S: SAME SEED'];
     help.forEach((h, i) => c.add(pixelText(this, m, 4, VIEW_HEIGHT - 7 * (help.length - i) - 2, h, { color: UI_DIM })));

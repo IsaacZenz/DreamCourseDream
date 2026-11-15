@@ -12,8 +12,8 @@ export type NodeType = (typeof NODE_TYPES)[number];
 
 export const RUN = {
   map: {
-    /** Owner, 2026-11-15: shops do not lower the countdown, so the map has room for a shop between each counted node. */
-    rows: 16,
+    /** Owner, 2026-11-15: shops do not lower the countdown, so the map has room for a shop between each counted node (countdown 7 plus 3 raises). */
+    rows: 20,
     lanes: 4,
     nodesPerRow: [2, 4] as const,
     firstRowNodes: 3,
@@ -32,8 +32,8 @@ export const RUN = {
     earlyBossFromRow: 3,
     earlyBossChance: 0.5,
   },
-  /** Boss countdown (DESIGN.md open question 1, default 5). */
-  countdown: 5,
+  /** Boss countdown. Owner, 2026-11-15: 7 (was the default 5, DESIGN.md open question 1). */
+  countdown: 7,
   /** An early boss node is offered only when the countdown is at or below this. */
   earlyBossAt: 3,
   /** Shop service: raise the countdown by 1, once per shop, at most this many times per region (FEATURES.md F6). */

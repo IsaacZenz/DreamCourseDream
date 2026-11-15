@@ -12,6 +12,7 @@ import type { ShotCommand } from '../src/sim/ball';
 import { generateRunMap } from '../src/gen/runMap';
 import { placeGear } from '../src/gen/placeGear';
 import {
+  LAST_TOWN,
   addUpgrade,
   budgetFor,
   burrowSwap,
@@ -147,11 +148,11 @@ describe('run map', () => {
 });
 
 describe('run rules', () => {
-  it('starts below row 1 with full health, no stars, countdown 5', () => {
+  it('starts below row 1 with full health, no stars, countdown 7 (owner)', () => {
     const run = newRun();
     expect(run.health).toBe(5);
     expect(run.wallet).toBe(0);
-    expect(run.countdown).toBe(5);
+    expect(run.countdown).toBe(7);
     expect(choices(run).map((n) => n.row)).toEqual([1, 1, 1]);
   });
 
@@ -172,7 +173,7 @@ describe('run rules', () => {
     enterNode(run, choices(run)[0]!.id);
     run.wallet = 0;
     finishCourse(run, { won: true, lostBy: null, health: 4, wallet: 5, ability: null, gear: run.gear });
-    expect(run.countdown).toBe(4);
+    expect(run.countdown).toBe(6);
     expect(run.counted).toBe(1);
     expect(run.wallet).toBe(5 + RUN.reward.course);
     expect(run.health).toBe(4);
@@ -183,24 +184,54 @@ describe('run rules', () => {
     enterNode(run, 'r2l0');
     expect(run.status).toBe('shop');
     leaveShop(run);
-    expect(run.countdown).toBe(4);
+    expect(run.countdown).toBe(6);
     expect(run.counted).toBe(1);
   });
 
-  it('at countdown zero only the boss is offered; beating it wins the run', () => {
+  it('at countdown zero the boss is forced, with an optional last town first (owner); beating it wins the run', () => {
     const run = newRun();
     for (let i = 0; i < 40 && run.countdown > 0; i++) {
-      enterNode(run, choices(run)[0]!.id);
+      const next = choices(run).find((n) => n.type !== 'boss' && n.type !== 'shop') ?? choices(run)[0]!;
+      enterNode(run, next.id);
       if (run.status === 'course' && run.current!.type === 'boss') break;
       finishNode(run);
     }
     if (run.status === 'map') {
+      expect(choices(run).map((n) => n.id)).toEqual([LAST_TOWN, 'boss']);
+      const at = run.at;
+      enterNode(run, LAST_TOWN);
+      expect(run.status).toBe('shop');
+      leaveShop(run);
+      expect(run.at).toBe(at);
       expect(choices(run).map((n) => n.id)).toEqual(['boss']);
       enterNode(run, 'boss');
     }
     expect(run.current!.type).toBe('boss');
     winCourse(run);
     expect(run.status).toBe('won');
+  });
+
+  it('no last town is offered straight after leaving a town', () => {
+    const run = newRun();
+    const town: MapNode = { id: 'r3l0', row: 3, lane: 0, type: 'shop', links: [] };
+    (run.map.rows[2] as MapNode[]).splice(0, 1, town);
+    run.at = 'r3l0';
+    run.countdown = 0;
+    expect(choices(run).map((n) => n.id)).toEqual(['boss']);
+  });
+
+  it('a raise bought in the last town gives another chance at a town after the next course', () => {
+    const run = newRun();
+    run.countdown = 0;
+    enterNode(run, LAST_TOWN);
+    run.wallet = 50;
+    run.shop!.offers[4] = { kind: 'raise', id: 'raise', sold: false };
+    expect(buy(run, 4)).toBeNull();
+    leaveShop(run);
+    expect(run.countdown).toBe(1);
+    enterNode(run, choices(run).find((n) => n.type === 'course')!.id);
+    winCourse(run);
+    expect(choices(run).map((n) => n.id)).toEqual([LAST_TOWN, 'boss']);
   });
 
   it('an early-boss node is a course until the countdown is 3 or less, and counts blue stars', () => {
@@ -329,7 +360,7 @@ describe('shop and cache', () => {
     const run = shopRun();
     run.wallet = 100;
     expect(buy(run, 4)).toBeNull();
-    expect(run.countdown).toBe(6);
+    expect(run.countdown).toBe(RUN.countdown + 1);
     expect(run.raises).toBe(1);
   });
 
@@ -360,7 +391,7 @@ describe('shop and cache', () => {
     expect(run.wallet).toBe(0);
     expect(run.upgrades['long-arms']).toBe(1);
     expect(run.bought['long-arms']).toBeUndefined();
-    expect(run.countdown).toBe(4);
+    expect(run.countdown).toBe(RUN.countdown - 1);
     expect(run.status).toBe('map');
   });
 

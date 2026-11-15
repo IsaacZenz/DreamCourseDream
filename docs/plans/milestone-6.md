@@ -22,7 +22,7 @@ Same run seed plus the same choices gives the same run, every time (CLAUDE.md ru
 
 | Rule | Starting value |
 |---|---|
-| Rows of normal nodes | 16 (shops do not lower the countdown, so a path with shops needs more rows: a countdown of 5 plus up to 3 raises, with a shop between each) |
+| Rows of normal nodes | 20 (shops do not lower the countdown, so a path with shops needs more rows: a countdown of 7 plus up to 3 raises, with a shop between each) |
 | Nodes per row | 2 to 4 |
 | Lanes (columns) | 4; a node sits in one lane |
 | Links | Each node links to 1 or 2 nodes in the next row, in its own lane or a neighbouring lane. Lines never cross. Every node can be reached from row 1 |
@@ -49,10 +49,11 @@ Rules on top of the chances (DESIGN.md section 10, decided: shops not guaranteed
 
 ### 2.3 The boss countdown
 
-- Starts at **5** (DESIGN.md open question 1, default: 5, same for every region).
+- Starts at **7** (owner, 2026-11-15; was the default 5), the same for every region.
 - Drops by 1 each time you finish a **course, hard course or cache**. **Shops do not count** (owner, 2026-11-15).
 - The boss sits just above the row the countdown points to. On the map it is drawn there, with "Boss in N".
 - **When the countdown reaches 0, the next step is the boss**, whatever row you are on. All links from your node lead to it.
+- **Owner, 2026-11-15: a last town before the boss.** When the boss is forced, an optional **last town** (shop and Burrow) is offered beside it, unless the player has just left a town. Visiting it does not lower the countdown. If the countdown is raised there, the next course earns another chance at a last town.
 
 ### 2.4 Early boss and raising the countdown
 

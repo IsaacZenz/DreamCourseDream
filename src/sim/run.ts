@@ -123,6 +123,8 @@ export interface RunState {
   readonly totals: { courses: number; stars: number };
   /** What ended the run. */
   endedBy: 'health' | 'shots' | 'boss' | null;
+  /** The last town before the forced boss has been offered and visited (owner, 2026-11-15). */
+  lastTownVisited: boolean;
 }
 
 export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR): RunState {
@@ -148,6 +150,7 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     cache: null,
     totals: { courses: 0, stars: 0 },
     endedBy: null,
+    lastTownVisited: false,
   };
   run.health = runStats(run).get('maxHealth');
   return run;
@@ -234,6 +237,12 @@ function bossNode(row: number): MapNode {
   return { id: 'boss', row, lane: -1, type: 'boss', links: [] };
 }
 
+/** Owner, 2026-11-15: the last town, always offered (and optional) before the forced boss. */
+export const LAST_TOWN = 'lasttown';
+function lastTownNode(row: number): MapNode {
+  return { id: LAST_TOWN, row, lane: -1, type: 'shop', links: [] };
+}
+
 /** The row the player stands below: 0 before the first node. */
 export function rowOf(run: RunState): number {
   return run.at ? (nodeById(run.map, run.at)?.row ?? 0) : 0;
@@ -253,7 +262,11 @@ export function typeOf(run: RunState, node: MapNode): NodeType {
 export function choices(run: RunState): MapNode[] {
   if (run.status !== 'map') return [];
   const row = rowOf(run);
-  if (run.countdown <= 0 || row >= run.map.rows.length) return [bossNode(row + 1)];
+  if (run.countdown <= 0 || row >= run.map.rows.length) {
+    // Owner, 2026-11-15: before the forced boss there is always the chance of a town, unless the player has just left one.
+    const justLeftTown = run.lastTownVisited || (!!run.at && nodeById(run.map, run.at)?.type === 'shop');
+    return justLeftTown ? [bossNode(row + 1)] : [lastTownNode(row + 1), bossNode(row + 1)];
+  }
   if (!run.at) return [...run.map.rows[0]!];
   const here = nodeById(run.map, run.at)!;
   return here.links.map((id) => nodeById(run.map, id)!).filter(Boolean);
@@ -327,7 +340,7 @@ export function enterNode(run: RunState, id: string): CurrentNode {
     type,
     early: type === 'boss' && run.countdown > 0,
     budget: isCourse ? budgetFor(run, type) : 0,
-    courseSeed: `${run.seed}-${id === 'boss' ? `BOSS${node.row}` : id.toUpperCase()}`,
+    courseSeed: `${run.seed}-${id === 'boss' ? `BOSS${node.row}` : id === LAST_TOWN ? 'LASTTOWN' : id.toUpperCase()}`,
     gear,
   };
   if (type === 'shop') {
@@ -344,13 +357,16 @@ export function enterNode(run: RunState, id: string): CurrentNode {
 /** A node is done: the player now stands on it. */
 function arrive(run: RunState, counts: boolean): void {
   const cur = run.current!;
-  if (cur.id !== 'boss') {
+  if (cur.id === LAST_TOWN) run.lastTownVisited = true;
+  else if (cur.id !== 'boss') {
     run.at = cur.id;
     run.path.push(cur.id);
   }
   if (counts) {
     run.counted++;
     run.countdown = Math.max(0, run.countdown - 1);
+    // A course after the last town (its countdown was raised there) earns another chance at a town before the boss.
+    run.lastTownVisited = false;
   }
   run.current = null;
   run.status = 'map';
