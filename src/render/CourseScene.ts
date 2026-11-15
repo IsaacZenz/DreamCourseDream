@@ -7,7 +7,7 @@ import { Rng } from '../sim/rng';
 import { SeedViewer } from '../ui/seedViewer';
 import { BENCH_ID, benchChoices, benchCourse } from '../content/courses/testBench';
 import { SURFACES } from '../content/surfaces';
-import { parseCourse, type Course } from '../sim/course';
+import { parseCourse, railTileList, type Course } from '../sim/course';
 import { STEP_HEIGHT, type Tuning } from '../content/tuning';
 import { DT, groundAt, type BallState, type ShotCommand, type ShotType } from '../sim/ball';
 import {
@@ -24,7 +24,7 @@ import {
   type PlayState,
   type Preview,
 } from '../sim/play';
-import { OBJECTS } from '../content/objects';
+import { OBJECTS, RAIL } from '../content/objects';
 import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
 import { loadTuning } from '../save/tuningStore';
@@ -208,6 +208,8 @@ export class CourseScene extends Phaser.Scene {
     genBudget = Phaser.Math.Clamp(Math.round(genBudget), GEN.minBudget, GEN.maxBudget);
     this.watching = data.watch === true;
     this.thumb = params.get('thumb') === '1';
+    // ?bench=<object id> opens the test bench with that thing at its centre (for example ?course=test-bench&bench=rail).
+    if (!benchShown && params.get('bench') !== null) bench.object = params.get('bench')!;
     const urlDebug = params.get('debug');
     this.debugMode = data.debug ?? (DEBUG_MODES.includes(urlDebug as DebugMode) ? (urlDebug as DebugMode) : urlDebug === '1' ? 'coords' : 'off');
   }
@@ -276,6 +278,7 @@ export class CourseScene extends Phaser.Scene {
     this.guide = this.add.graphics().setDepth(OVERLAY_DEPTH - 1);
     this.debugDyn = this.add.graphics().setDepth(OVERLAY_DEPTH - 2);
     this.syncObjects();
+    this.drawRails(course);
     this.accumulator = 0;
     this.boostQueued = false;
     this.abilityQueued = false;
@@ -306,6 +309,33 @@ export class CourseScene extends Phaser.Scene {
       if (!bot) this.watching = false;
     } else this.watching = false;
     if (this.thumb) this.thumbView(course);
+  }
+
+  /**
+   * Guard rails (Milestone 5b): a post at every tile centre and the bar in
+   * quarter-tile pieces, each at the ground height under it, so it follows slopes.
+   */
+  private drawRails(course: Course): void {
+    for (const line of course.rails) {
+      const tiles = railTileList(line);
+      tiles.forEach((t, k) => {
+        const z = groundAt(course, t.x + 0.5, t.y + 0.5)?.h ?? 0;
+        const p = project(t.x + 0.5, t.y + 0.5, z / STEP_HEIGHT);
+        this.makeSprite(RAIL.postSprite).setPosition(p.x, p.y).setDepth(this.standingDepth(t.x + 0.5, t.y + 0.5));
+        const n = tiles[k + 1];
+        if (!n) return;
+        const dx = n.x - t.x;
+        const dy = n.y - t.y;
+        const frame = dy === 0 ? 'x' : dx === 0 ? 'y' : dx === dy ? 'd1' : 'd2';
+        for (const f of [0.125, 0.375, 0.625, 0.875]) {
+          const x = t.x + 0.5 + dx * f;
+          const y = t.y + 0.5 + dy * f;
+          const h = groundAt(course, x, y)?.h ?? z;
+          const q = project(x, y, h / STEP_HEIGHT);
+          this.makeSprite(RAIL.barSprite, frame).setPosition(q.x, q.y).setDepth(this.standingDepth(x, y));
+        }
+      });
+    }
   }
 
   /** The generated course for this seed and budget, made once and kept for restarts. */
@@ -813,7 +843,7 @@ export class CourseScene extends Phaser.Scene {
       const shot = this.play.shot;
       const evBefore = shot?.events.length ?? 0;
       tick(this.play, input);
-      if (shot) for (const e of shot.events.slice(evBefore)) if (e.kind === 'bounce' && e.boosted) this.showMessage('BOOST!', 0xf8e048);
+      if (shot) for (const e of shot.events.slice(evBefore)) if ((e.kind === 'bounce' && e.boosted) || e.kind === 'railBoost') this.showMessage('BOOST!', 0xf8e048);
       this.showEvents(drainLog(this.play));
       this.accumulator -= DT;
     }

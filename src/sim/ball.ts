@@ -79,6 +79,7 @@ export type ShotEvent =
   | { kind: 'warp'; step: number; from: GridTile; to: GridTile }
   | { kind: 'contact'; step: number; obstacle: string; result: ContactResult }
   | { kind: 'anchorStop'; step: number; x: number; y: number }
+  | { kind: 'railBoost'; step: number }
   | { kind: 'exit'; step: number };
 
 export type ShotOutcome = 'rest' | 'sunk' | 'out' | 'timeout' | 'exit';
@@ -115,6 +116,8 @@ export interface Obstacle {
   readonly vy?: number;
   /** Extra push-away speed when the result is 'knock'. */
   readonly knock?: number;
+  /** Guard rails: the bounce when the boost key was pressed just before the hit. */
+  readonly boost?: number;
 }
 
 /**
@@ -160,6 +163,8 @@ export interface ShotState {
   boostArmed: number;
   /** One boost press per flight. Cleared on each landing. */
   boostSpent: boolean;
+  /** Rolling: steps left in which hitting a guard rail gets the rail boost. */
+  railArmed: number;
   /** Set once the shot is over. */
   outcome: ShotOutcome | null;
   events: ShotEvent[];
@@ -257,6 +262,7 @@ export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand, sca
     restSteps: 0,
     boostArmed: 0,
     boostSpent: false,
+    railArmed: 0,
     outcome: null,
     events: [],
     boostScale: scales.boost ?? 1,
@@ -308,6 +314,9 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
 
   // Bounce boost: one press per flight, counts for a short window.
   if (s.boostArmed > 0) s.boostArmed--;
+  if (s.railArmed > 0) s.railArmed--;
+  // On the ground the boost key arms the rail boost instead (owner, 2026-11-15). One press per window.
+  if (input.boost && b.grounded && s.railArmed === 0) s.railArmed = Math.max(1, Math.round(tuning.boostWindow * STEPS_PER_SECOND));
   if (input.boost && !b.grounded && !s.boostSpent) {
     s.boostSpent = true;
     s.boostArmed = Math.max(1, Math.round(tuning.boostWindow * STEPS_PER_SECOND));
@@ -573,6 +582,24 @@ function touchTile(course: Course, tuning: Tuning, s: ShotState, landedNow: bool
 }
 
 /**
+ * The point of a shape's core nearest to (px, py), seen from above, and how
+ * far the core's own thickness reaches beyond that point.
+ */
+export function nearestOnShape(shape: ObjectShape, ox: number, oy: number, px: number, py: number): { cx: number; cy: number; thick: number } {
+  if (shape.kind === 'round') return { cx: ox, cy: oy, thick: shape.r };
+  if (shape.kind === 'box') {
+    return { cx: Math.min(ox + shape.hx, Math.max(ox - shape.hx, px)), cy: Math.min(oy + shape.hy, Math.max(oy - shape.hy, py)), thick: 0 };
+  }
+  const ax = ox + shape.ax;
+  const ay = oy + shape.ay;
+  const dx = shape.bx - shape.ax;
+  const dy = shape.by - shape.ay;
+  const len2 = dx * dx + dy * dy || 1;
+  const t = Math.min(1, Math.max(0, ((px - ax) * dx + (py - ay) * dy) / len2));
+  return { cx: ax + dx * t, cy: ay + dy * t, thick: shape.r };
+}
+
+/**
  * Bounce off, or pass through, obstacles. Seen from above, the ball is a
  * circle; obstacles are circles or boxes. A ball coming down onto an
  * obstacle's top is thrown back up and off its side: nothing rests on top.
@@ -591,14 +618,10 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
       continue;
     }
     // Closest point of the obstacle's core to the ball, seen from above.
-    let cx = o.x;
-    let cy = o.y;
-    let reach = r;
-    if (o.shape.kind === 'round') reach += o.shape.r;
-    else {
-      cx = Math.min(o.x + o.shape.hx, Math.max(o.x - o.shape.hx, b.x));
-      cy = Math.min(o.y + o.shape.hy, Math.max(o.y - o.shape.hy, b.y));
-    }
+    const near = nearestOnShape(o.shape, o.x, o.y, b.x, b.y);
+    const cx = near.cx;
+    const cy = near.cy;
+    const reach = r + near.thick;
     let nx = b.x - cx;
     let ny = b.y - cy;
     const d = Math.hypot(nx, ny);
@@ -639,19 +662,33 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
       continue;
     }
     // Side hit: step back out and mirror the speed into the obstacle (seen from the obstacle, if it moves).
-    if (o.shape.kind === 'round') {
-      b.x = o.x + nx * (reach + 1e-4);
-      b.y = o.y + ny * (reach + 1e-4);
-    } else {
-      b.x = cx + nx * (r + 1e-4);
-      b.y = cy + ny * (r + 1e-4);
-    }
+    b.x = cx + nx * (reach + 1e-4);
+    b.y = cy + ny * (reach + 1e-4);
     const ovx = o.vx ?? 0;
     const ovy = o.vy ?? 0;
     const vn = (b.vx - ovx) * nx + (b.vy - ovy) * ny;
     if (vn < 0) {
-      b.vx -= (1 + o.bounce) * vn * nx;
-      b.vy -= (1 + o.bounce) * vn * ny;
+      // Guard rail boost (owner, 2026-11-15): the key pressed just before the hit gives a stronger bounce.
+      let bounce = o.bounce;
+      if (o.boost !== undefined && (s.railArmed > 0 || s.boostArmed > 0)) {
+        bounce = o.boost;
+        s.railArmed = 0;
+        s.boostArmed = 0;
+        s.events.push({ kind: 'railBoost', step: s.step });
+      }
+      const sp0 = Math.hypot(b.vx, b.vy);
+      b.vx -= (1 + bounce) * vn * nx;
+      b.vy -= (1 + bounce) * vn * ny;
+      if (o.boost !== undefined) {
+        // A rail turns the ball: the part of its speed along the rail is kept, the part into it bounces back.
+        // Keep the overall speed at bounce times what it was, and never above a full ground shot.
+        const want = Math.min(sp0 * bounce, Math.max(sp0, tuning.groundMaxSpeed));
+        const sp1 = Math.hypot(b.vx, b.vy);
+        if (sp1 > 1e-6) {
+          b.vx *= want / sp1;
+          b.vy *= want / sp1;
+        }
+      }
     }
     if (result === 'knock') {
       // Pushed out of the way at the obstacle's speed plus the knock.

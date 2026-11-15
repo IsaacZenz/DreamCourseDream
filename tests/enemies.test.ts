@@ -959,7 +959,10 @@ describe('test bench (owner request, 2026-11-14)', () => {
     for (const c of benchChoices()) {
       const r = parseCourse(benchCourse(c.id));
       expect(r.ok, `${c.id}: ${r.ok ? '' : r.errors.join('; ')}`).toBe(true);
-      if (r.ok && c.id) {
+      if (r.ok && c.id === 'rail') {
+        // Guard rails (Milestone 5b) are rails, not an object.
+        expect(r.course.rails.length).toBeGreaterThan(0);
+      } else if (r.ok && c.id) {
         const p = createPlay(r.course, T, { seed: 'bench' });
         expect(p.course.objects).toHaveLength(1);
       }

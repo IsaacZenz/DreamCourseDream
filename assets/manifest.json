@@ -923,6 +923,33 @@
         8
       ]
     },
+    "rail-post": {
+      "file": "sprites/rail-post.png",
+      "frameWidth": 3,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        1,
+        7
+      ]
+    },
+    "rail-bar": {
+      "file": "sprites/rail-bar.png",
+      "frameWidth": 16,
+      "frameHeight": 12,
+      "frames": [
+        "x",
+        "y",
+        "d1",
+        "d2"
+      ],
+      "anchor": [
+        8,
+        8
+      ]
+    },
     "flag-pole": {
       "file": "sprites/flag-pole.png",
       "frameWidth": 14,

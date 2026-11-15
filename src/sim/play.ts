@@ -33,6 +33,7 @@ import {
   type MoverDef,
   type ObjectShape,
   type PickupDef,
+  RAIL,
 } from '../content/objects.ts';
 import { RULES } from '../content/rules.ts';
 import { STATUSES } from '../content/statuses.ts';
@@ -44,6 +45,7 @@ import {
   endHover,
   endShot,
   groundAt,
+  nearestOnShape,
   predictPath,
   setHeading,
   startBody,
@@ -57,7 +59,7 @@ import {
   type ShotState,
   type ShotWorld,
 } from './ball.ts';
-import { tileAt, type Course, type CourseObject, type GridPoint } from './course.ts';
+import { railTileList, railTiles, tileAt, type Course, type CourseObject, type GridPoint } from './course.ts';
 import { computeHit, isBehind } from './damage.ts';
 import { Rng, type Seed } from './rng.ts';
 import { StatSheet } from './stats.ts';
@@ -301,6 +303,8 @@ export interface PlayState {
   turnActions: string[];
   actionWait: number;
   world: ShotWorld;
+  /** Guard rail pieces, tile centre to tile centre (Milestone 5b). */
+  readonly railPieces: readonly RailPiece[];
   readonly rng: Rng;
   log: PlayEvent[];
 }
@@ -355,6 +359,41 @@ export function pathAt(run: PathRun, dist: number): { x: number; y: number; dx: 
 
 // ---------------------------------------------------------------------------
 // Setting up
+
+/** One piece of guard rail, from one tile centre to the next along the rail. */
+export interface RailPiece {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly dx: number;
+  readonly dy: number;
+  /** Ground height at its lower end, and the rise to its higher end, in tiles. */
+  readonly base: number;
+  readonly rise: number;
+}
+
+function railPiecesOf(course: Course): RailPiece[] {
+  const out: RailPiece[] = [];
+  course.rails.forEach((line, i) => {
+    const tiles = railTileList(line);
+    for (let k = 1; k < tiles.length; k++) {
+      const a = tiles[k - 1]!;
+      const b = tiles[k]!;
+      const ha = heightAt(course, a.x + 0.5, a.y + 0.5);
+      const hb = heightAt(course, b.x + 0.5, b.y + 0.5);
+      out.push({ id: `rail:${i}:${k}`, x: a.x + 0.5, y: a.y + 0.5, dx: b.x - a.x, dy: b.y - a.y, base: Math.min(ha, hb), rise: Math.abs(ha - hb) });
+    }
+  });
+  return out;
+}
+
+/** Tiles with a guard rail through them, cached per course. */
+const railTileCache = new WeakMap<Course, Set<string>>();
+export function railTileSet(course: Course): Set<string> {
+  let s = railTileCache.get(course);
+  if (!s) railTileCache.set(course, (s = railTiles(course.rails)));
+  return s;
+}
 
 function heightAt(course: Course, x: number, y: number): number {
   return groundAt(course, x, y)?.h ?? 0;
@@ -413,6 +452,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     turnActions: [],
     actionWait: 0,
     world: { obstacles: [] },
+    railPieces: railPiecesOf(course),
     rng: Rng.fromSeed(opts.seed).fork(`course:${course.name}`),
     log: [],
   };
@@ -548,6 +588,18 @@ function obstaclesOf(play: PlayState): Obstacle[] {
     if (!standing(e)) continue;
     const knock = e.def.behaviour.kind === 'patrol' ? e.def.behaviour.knock : 0;
     out.push({ id: e.uid, x: e.x, y: e.y, base: e.z, height: e.def.height, shape: e.def.shape, bounce: e.def.bounce, vx: e.vx, vy: e.vy, knock });
+  }
+  for (const p of play.railPieces) {
+    out.push({
+      id: p.id,
+      x: p.x,
+      y: p.y,
+      base: p.base,
+      height: RAIL.height + p.rise,
+      shape: { kind: 'seg', ax: 0, ay: 0, bx: p.dx, by: p.dy, r: RAIL.halfThickness },
+      bounce: play.tuning.railBounce,
+      boost: play.tuning.railBoost,
+    });
   }
   for (const f of play.flags) {
     if (f.raised && f.solid) out.push({ id: f.uid, x: f.x, y: f.y, base: f.z, height: f.def.height, shape: f.def.shape, bounce: f.def.bounce });
@@ -722,10 +774,8 @@ function moveThings(play: PlayState): void {
 }
 
 function overlaps(shape: ObjectShape, ox: number, oy: number, x: number, y: number, r: number): boolean {
-  if (shape.kind === 'round') return Math.hypot(x - ox, y - oy) < shape.r + r;
-  const cx = Math.min(ox + shape.hx, Math.max(ox - shape.hx, x));
-  const cy = Math.min(oy + shape.hy, Math.max(oy - shape.hy, y));
-  return Math.hypot(x - cx, y - cy) < r;
+  const n = nearestOnShape(shape, ox, oy, x, y);
+  return Math.hypot(x - n.cx, y - n.cy) < r + n.thick;
 }
 
 function somethingIn(play: PlayState, m: MoverState): boolean {
@@ -1062,7 +1112,8 @@ function popMoles(play: PlayState): void {
 }
 
 function enemyRadius(e: EnemyState): number {
-  return e.def.shape.kind === 'round' ? e.def.shape.r : Math.max(e.def.shape.hx, e.def.shape.hy);
+  const sh = e.def.shape;
+  return sh.kind === 'round' ? sh.r : sh.kind === 'box' ? Math.max(sh.hx, sh.hy) : sh.r;
 }
 
 function launchEnemy(play: PlayState, e: EnemyState, vx: number, vy: number, vz = 0): void {
@@ -1568,6 +1619,31 @@ function endTurn(play: PlayState): void {
   play.turn = null;
 }
 
+/** The nearest tile centre with no rail that can hold the ball, searched in growing rings. */
+function moveOffRail(play: PlayState, e: EnemyState): void {
+  const tx = Math.floor(e.x);
+  const ty = Math.floor(e.y);
+  const rails = railTileSet(play.course);
+  for (let ring = 1; ring < 8; ring++) {
+    let best: { x: number; y: number; d: number } | null = null;
+    for (let y = ty - ring; y <= ty + ring; y++) {
+      for (let x = tx - ring; x <= tx + ring; x++) {
+        if (Math.max(Math.abs(x - tx), Math.abs(y - ty)) !== ring) continue;
+        const t = tileAt(play.course, x, y);
+        if (!t || rails.has(`${x},${y}`) || !SURFACES.get(t.surface)?.canHoldBall) continue;
+        const d = Math.hypot(x + 0.5 - e.x, y + 0.5 - e.y);
+        if (!best || d < best.d) best = { x, y, d };
+      }
+    }
+    if (best) {
+      e.x = best.x + 0.5;
+      e.y = best.y + 0.5;
+      e.z = heightAt(play.course, e.x, e.y);
+      return;
+    }
+  }
+}
+
 /**
  * A surfaced Mole stays up for the player's next shot, then burrows where it
  * stopped, leaving a new hill there (owner, 2026-11-14). Stunned, it stays up a turn longer.
@@ -1578,6 +1654,8 @@ function burrowMoles(play: PlayState): void {
     if (bh.kind !== 'burrow' || e.defeated || e.burrowed || e.body) continue;
     if (hasStatus(e.statuses, 'stunned')) continue;
     if (play.shotNumber - e.surfacedShot < bh.upShots) continue;
+    // Owner, 2026-11-15: a Mole never burrows under a guard rail. It moves to the nearest tile without one.
+    if (railTileSet(play.course).has(tileKeyOf(e.x, e.y))) moveOffRail(play, e);
     e.burrowed = true;
     e.insideInner = false;
     e.tileKey = tileKeyOf(e.x, e.y);

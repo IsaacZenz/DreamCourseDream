@@ -17,7 +17,7 @@ export interface BenchChoice {
 
 /** Everything that can stand at the centre: enemies first, then obstacles. */
 export function benchChoices(): BenchChoice[] {
-  const out: BenchChoice[] = [{ id: '', label: '(nothing)' }];
+  const out: BenchChoice[] = [{ id: '', label: '(nothing)' }, { id: 'rail', label: 'Obstacle: Guard rail' }];
   const defs = [...OBJECTS.values()].filter((d) => !d.id.startsWith('t-'));
   for (const d of defs) if (d.kind === 'enemy') out.push({ id: d.id, label: `Enemy: ${d.name}` });
   for (const d of defs) {
@@ -47,15 +47,18 @@ export function benchCourse(choice: string): unknown {
     if (moves) objects.push({ id, at: [CENTRE - 3, CENTRE], path: [[CENTRE + 3, CENTRE]] });
     else objects.push({ id, at: [CENTRE, CENTRE] });
   }
+  // Guard rails (Milestone 5b): a straight run, a corner and a 45-degree piece around the centre.
+  const rails = id === 'rail' ? [[[3, 4], [11, 4]], [[4, 10], [4, 7], [7, 7]], [[9, 7], [11, 9]]] : undefined;
   const stars = def?.kind === 'enemy' ? def.starValue : 0;
   return {
     format: 2,
-    name: `Test bench: ${def?.name ?? 'empty'}`,
+    name: `Test bench: ${id === 'rail' ? 'Guard rail' : (def?.name ?? 'empty')}`,
     legend: { g: 'grass' },
     tiles,
     start: [CENTRE, CENTRE + 4],
     exit: [SIZE - 2, 1],
     quota: stars > 0 ? 1 : 0,
     objects,
+    ...(rails && { rails }),
   };
 }

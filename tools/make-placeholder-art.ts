@@ -725,6 +725,44 @@ function drawCrackedTile(): Image {
   return img;
 }
 
+// Guard rail (Milestone 5b): a post at each tile centre and a thin bar drawn in
+// short pieces, so the bar follows slopes. Mostly see-through: just lines.
+const RAIL_LIGHT = '#e8f0f8';
+const RAIL_DARK = '#4a6078';
+/** Bar height above the ground, in pixels (0.3 tiles is about 5 px). */
+const RAIL_BAR_Y = 4;
+
+function drawRailPost(): Image {
+  const img = new Image(3, 8);
+  for (let y = 1; y < 8; y++) {
+    img.set(0, y, hex2(RAIL_DARK));
+    img.set(1, y, hex2(RAIL_LIGHT));
+    img.set(2, y, hex2(RAIL_DARK));
+  }
+  img.set(1, 0, hex2(RAIL_LIGHT));
+  return img;
+}
+
+/** One piece of bar a quarter of a tile long, along a direction given in screen pixels per quarter tile. */
+function drawRailBar(vx: number, vy: number): Image {
+  const img = new Image(16, 12);
+  const cx = 8;
+  const cy = 8 - RAIL_BAR_Y;
+  // A little longer than a quarter tile so neighbouring pieces overlap.
+  const steps = 24;
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps - 0.5) * 1.3;
+    const x = Math.round(cx + vx * t);
+    const y = Math.round(cy + vy * t);
+    img.set(x, y + 1, hex2(RAIL_DARK));
+  }
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps - 0.5) * 1.3;
+    img.set(Math.round(cx + vx * t), Math.round(cy + vy * t), hex2(RAIL_LIGHT));
+  }
+  return img;
+}
+
 function drawFlag(raised: boolean): Image {
   // 1.5 tiles tall = 24 px of pole, with a pennant; lowered, it is sunk into its hole.
   const img = new Image(14, 30);
@@ -923,6 +961,9 @@ emit('gate', sheet([drawGate(true), drawGate(false)]), 32, 26, ['open', 'closed'
 emit('crate', drawCrate(false, false), 26, 22, ['idle'], [13, 15]);
 emit('secured-crate', sheet([drawCrate(true, false), drawCrate(true, true)]), 26, 22, ['whole', 'cracked'], [13, 15]);
 emit('cracked-tile', drawCrackedTile(), 32, 16, ['idle'], [16, 8]);
+emit('rail-post', drawRailPost(), 3, 8, ['idle'], [1, 7]);
+// Bar pieces: along grid x, along grid y, and the two 45-degree directions (x+y and x-y).
+emit('rail-bar', sheet([drawRailBar(4, 2), drawRailBar(-4, 2), drawRailBar(0, 4), drawRailBar(8, 0)]), 16, 12, ['x', 'y', 'd1', 'd2'], [8, 8]);
 emit('flag-pole', sheet([drawFlag(true), drawFlag(false)]), 14, 30, ['raised', 'lowered'], [5, 28]);
 emit('star-marker', drawStar('#f8d030'), 11, 11, ['idle'], [5, 10]);
 emit('thunder-cloud', sheet([drawCloud(false), drawCloud(true)]), 30, 22, ['idle', 'flash'], [15, 21]);

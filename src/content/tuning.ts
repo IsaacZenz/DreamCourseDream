@@ -106,6 +106,10 @@ export interface Tuning {
   poleThroughSpeed: number;
   /** ...keeping this fraction of its speed. Slower, it bounces off. */
   polePassKeep: number;
+  /** Guard rail (Milestone 5b): fraction of speed kept bouncing off a rail. */
+  railBounce: number;
+  /** Guard rail: speed kept when the bounce-boost key was pressed just before the hit (owner, 2026-11-15: a stronger bounce). */
+  railBoost: number;
 
   // Safety
   /** Falling this far below height 0 counts as out of bounds, in tiles. */
@@ -169,6 +173,8 @@ export const DEFAULT_TUNING: Tuning = {
   defeatSpeedKeep: 0.85,
   poleThroughSpeed: 8,
   polePassKeep: 0.25,
+  railBounce: 0.8,
+  railBoost: 1.1,
 
   outOfBoundsDepth: 2,
   maxShotTime: 30,
@@ -242,6 +248,8 @@ export const TUNING_CONTROLS: readonly TuningControl[] = [
   top('Hazards', 'defeatSpeedKeep', 0, 1, 0.01),
   top('Flag pole', 'poleThroughSpeed', 0, 20, 0.25),
   top('Flag pole', 'polePassKeep', 0, 1, 0.01),
+  top('Guard rail', 'railBounce', 0, 1.5, 0.01),
+  top('Guard rail', 'railBoost', 0, 2, 0.01),
   ...['grass', 'rough', 'sand', 'ice', 'bumper', 'water'].flatMap((s) => [
     { key: `surfaces.${s}.friction`, min: 0, max: 2, step: 0.01, group: `Surface: ${s}` },
     { key: `surfaces.${s}.bounce`, min: 0, max: 1, step: 0.01, group: `Surface: ${s}` },
