@@ -65,6 +65,10 @@ export const GEN = {
     groundReach: [1.0, 1.25],
     loftReach: [1.0],
     rollThrough: 1.2,
+    /** Trial shots are first run only until the ball stops; this many of the best then play on through the enemy turns. */
+    finishBest: 3,
+    /** Give up (reject the course) after trying this many shots in one game; keeps hopeless courses from taking seconds. */
+    maxSimulated: 1500,
     /** When no clean shot is found: try this many targets, with these wider angles and powers. */
     wideTargets: 5,
     wideOffsets: [-16, -10, 10, 16],

@@ -92,6 +92,7 @@ export function playBot(course: Course, tuning: Tuning, seed: string): BotResult
 
   while (play.status === 'playing') {
     if (play.shotNumber >= cfg.maxShots) return done('bot ran out of shots');
+    if (simulated >= cfg.maxSimulated) return done('bot took too long');
     for (let g = 0; !canShoot(play) && play.status === 'playing' && g < 20_000; g++) tick(play);
     if (play.status !== 'playing') break;
     if (!canShoot(play)) return done('bot got stuck');
@@ -103,6 +104,16 @@ export function playBot(course: Course, tuning: Tuning, seed: string): BotResult
     const power = play.stats.get('shotPower');
     const startHealth = play.health;
     const startMeter = play.meter;
+    const scoreOf = (trial: PlayState, logFrom: number) => {
+      const s = cfg.score;
+      const lostHealth = startHealth - trial.health;
+      const sunk = trial.log.slice(logFrom).filter((e) => e.kind === 'returned').length;
+      let score = (trial.meter - startMeter) * s.star - lostHealth * s.health - sunk * s.sunk;
+      if (trial.status === 'won') score += s.win;
+      else if (trial.status === 'lost') score -= s.lost;
+      else score -= nearestTargetDistance(trial) * s.distance;
+      return score;
+    };
     let best = null as { score: number; state: PlayState; cmd: ShotCommand; clean: boolean } | null;
 
     const tryShots = (list: readonly Target[], offsets: readonly number[], reaches: readonly number[], lofts: readonly number[]) => {
@@ -120,21 +131,24 @@ export function playBot(course: Course, tuning: Tuning, seed: string): BotResult
             cmds.push({ angle, power: lob(d * reach) / (tuning.loftMaxSpeed * power), type: 'lofted', topSpin: t.exit ? -1 : 0, sideSpin: 0 });
           }
         }
+        // Stage 1: run each shot only until the ball stops (no enemy turn yet), and score it.
+        const stage1: { trial: PlayState; cmd: ShotCommand; score: number; logFrom: number }[] = [];
         for (const raw of cmds) {
           const cmd = { ...raw, power: Math.min(1, Math.max(0, raw.power)) };
           const trial = clonePlay(play);
           const logFrom = trial.log.length;
           takeShot(trial, cmd);
-          runShot(trial);
+          for (let g = 0; trial.phase === 'shot' && trial.status === 'playing' && g < 200_000; g++) tick(trial);
           simulated++;
-          const s = cfg.score;
-          const lostHealth = startHealth - trial.health;
-          const sunk = trial.log.slice(logFrom).filter((e) => e.kind === 'returned').length;
-          let score = (trial.meter - startMeter) * s.star - lostHealth * s.health - sunk * s.sunk;
-          if (trial.status === 'won') score += s.win;
-          else if (trial.status === 'lost') score -= s.lost;
-          else score -= nearestTargetDistance(trial) * s.distance;
-          const clean = trial.status === 'won' || (trial.meter > startMeter && lostHealth === 0);
+          stage1.push({ trial, cmd, score: scoreOf(trial, logFrom), logFrom });
+          if (trial.status === 'won') break;
+        }
+        // Stage 2: the best few play on through the enemy turns, which can still hurt.
+        stage1.sort((p, q) => q.score - p.score);
+        for (const { trial, cmd, logFrom } of stage1.slice(0, cfg.finishBest)) {
+          runShot(trial);
+          const score = scoreOf(trial, logFrom);
+          const clean = trial.status === 'won' || (trial.meter > startMeter && startHealth - trial.health === 0);
           if (!best || score > best.score) best = { score, state: trial, cmd, clean };
           if (trial.status === 'won') return;
         }

@@ -103,15 +103,15 @@ docs/
 ## Milestone 5 — Course generator **(Gate)**
 
 - [x] **Plan gate:** design sheet for the first chunk set, the difficulty budget costs, and how enemies, obstacles and hazards are placed. Owner signs it off before the generator is built.
-- [ ] Chunk format and a first set of at least twelve chunks
-- [ ] Generator: seed and difficulty budget in, course data out
-- [ ] Enemy placement in squads that spends the budget (FEATURES.md section 4). Squad themes can be switched on in Milestone 8.
-- [ ] Obstacle and hazard placement that spends the budget
-- [ ] Structure validator
-- [ ] Bot validator that plays the course in the simulation with no display
-- [ ] Reject-and-retry loop with a cap, and a logged count of rejections
-- [ ] Seed viewer tool: type a seed and budget, see the course, see whether it passed
-- [ ] Batch test: generate 500 courses, report pass rate, average generation time, and a contact sheet of screenshots
+- [x] Chunk format and a first set of at least twelve chunks
+- [x] Generator: seed and difficulty budget in, course data out
+- [x] Enemy placement in squads that spends the budget (FEATURES.md section 4). Squad themes can be switched on in Milestone 8.
+- [x] Obstacle and hazard placement that spends the budget
+- [x] Structure validator
+- [x] Bot validator that plays the course in the simulation with no display
+- [x] Reject-and-retry loop with a cap, and a logged count of rejections
+- [x] Seed viewer tool: type a seed and budget, see the course, see whether it passed
+- [x] Batch test: generate 500 courses, report pass rate, average generation time, and a contact sheet of screenshots
 
 **Done when:** at least 95% of generated courses pass on the first try, generation takes under one second each, and the owner has played ten generated courses and judged them worth playing.
 
@@ -208,3 +208,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-14 — Milestone 4 done: owner played the test build and the test bench, tuned the Mole, and approved. Owner decision recorded in DESIGN.md: keep fine-tuning and adding content easy. Merged to `main`.
 - 2026-11-15 — Milestone 5 design sheet written on branch `milestone-5-course-generator`: `docs/plans/milestone-5.md` (14 chunks, budget presets and costs, squad placement, structure and bot validators, seed viewer). Eight questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
 - 2026-11-15 — Milestone 5 design sheet signed off by the owner: defaults for all questions except 7 (after a win, the next generated course's budget rises by a random 0 to 4). Recorded in the sheet and FEATURES.md section 14.
+- 2026-11-15 — Milestone 5 built on branch `milestone-5-course-generator`: 14 chunks (`src/content/chunks/`), generator numbers in `src/content/gen.ts`, hazard costs in `surfaces.ts`; `src/gen/` has chunk reading and turning, layout (route, branches, heights, rims), budget spending with squads, the structure check, the bot and the retry loop; `clonePlay` in `src/sim/play.ts`. In the game: key 6 (or `?course=generated&seed=&budget=`), [ and ] for the budget, V seed viewer, B to watch the bot, a "chunks" debug view, and Enter after a win raises the budget by a random 0 to 4 (owner). Tools: `npm run gen`, `npm run gen:batch`. 23 new tests (233 in total). Batch of 500 (budgets 8, 12, 20): **95.0% pass on the first try, 100% overall, average 367 ms, median 156 ms; 91.8% under one second** (budget 20 averages 810 ms, slowest 4.9 s). Differences from the sheet are listed in its "As built" section. **Gate:** waiting for the owner to play ten generated courses and judge them worth playing.
