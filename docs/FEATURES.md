@@ -283,7 +283,7 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 
 **Decided:**
 
-- Three categories: **weapon**, **armour**, **accessory**.
+- Three categories: **weapon**, **armour**, **bauble** (renamed from accessory by the owner, 2026-11-15).
 - The ball holds one of each. An upgrade may later allow two of a category.
 - Rolling over gear of a category already held drops the current item and equips the new one automatically.
 - Gear never needs a button. Weapon effects are automatic and trigger only on contact with an enemy.
@@ -295,27 +295,20 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 |---|---|
 | Weapon | On contact with an enemy |
 | Armour | When the ball takes damage or touches a hazard |
-| Accessory | Always on |
+| Bauble | Always on |
 
 - A swapped-out item stays on the ground where it was dropped, so an accidental swap can be undone by rolling back over it. It is lost when the player leaves the course.
 - Buying gear in a shop for a filled category shows both items side by side and asks to confirm.
-- Rarity: common, rare, epic. Rarity sets price, drop weight and strength.
+- Rarity (owner, 2026-11-15): common, uncommon, rare, double rare, special rare, legendary, thought of in three pairs. Rarity sets price, how often it appears at each point in the run, and strength.
 - Sources: placed on courses, shops, caches, boss rewards, and the small enemy drop chance.
 
 ### Template (Default)
 
 id, name, icon id, category, rarity, element (weapons only, or none), modifiers while equipped, triggered effect (if any) and its trigger, price.
 
-### Starter set, Milestone 6
+### Gear list, Milestone 6 (owner, 2026-11-15)
 
-| Working name | Category | Rarity | Effect |
-|---|---|---|---|
-| Studded Shell | Weapon | Common | +1 hit damage |
-| Ember Coat | Weapon | Rare | Hits are fire and set the enemy burning |
-| Padded Lining | Armour | Common | The first damage taken each course is ignored |
-| Thorn Guard | Armour | Rare | An enemy that damages the ball takes 1 damage |
-| Star Magnet | Accessory | Common | +2 star reach |
-| Long Sight | Accessory | Common | Guide length ×2 |
+Replaces the six-item starter set. **Six rarities in three pairs**: (common, uncommon), (rare, double rare), (special rare, legendary). **Three items per rarity per category**, 54 in total, all built in Milestone 6. Common to double rare are families (one effect, stronger versions); special rare and legendary each have their own effect. The third category is called **Bauble** (was accessory). Shops, caches and course drops pick from the full list; better rarities get likelier as the run goes on. The full list, prices and rarity odds are in `docs/plans/milestone-6.md` section 5.
 
 ---
 
@@ -352,7 +345,7 @@ Cost rises with each level.
 | Unlock | Milestone |
 |---|---|
 | Start each run with a chosen ability | 7 |
-| Second weapon, armour or accessory slot (one unlock per category) | 8 |
+| Second weapon, armour or bauble slot (one unlock per category) | 8 |
 | New gear and abilities added to the pool of things that can appear | 8 |
 | New characters | 8 |
 
@@ -416,7 +409,7 @@ Build in Milestone 3.
 **Default.** All values are first guesses, to be corrected in the Milestone 8 balance pass.
 
 - **Quota:** about 60% of the stars available on a course.
-- **Prices:** common gear 15, rare 30, epic 60, stat boost 12 rising by 6, heal 10, first reroll 3.
+- **Prices:** gear by rarity 10, 15, 25, 35, 50, 70 (owner, 2026-11-15; see `docs/plans/milestone-6.md` section 5.2), stat boost 12 rising by 6, heal 10, first reroll 3.
 - **Budget:** each course has a difficulty budget that rises with each node and jumps after each boss. Enemies, traits, obstacles and hazards each cost budget.
 - **Tier mix by region:** region 1 is mostly tiers 1–2; region 2 adds tier 3; region 3 adds tier 4.
 - **Owner, 2026-11-15 (Milestone 5 testing, before the run exists):** after winning a generated course, the next one's budget rises by a random 0 to 4 (seeded), capped at 40. The Milestone 5 generator rules are in `docs/plans/milestone-5.md`.

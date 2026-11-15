@@ -138,8 +138,8 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] Map rules: shops not guaranteed, forced course-only stretches possible, every path reaches a boss
 - [ ] Boss countdown, early boss choice, forced boss at zero (boss is a stand-in hard course until Milestone 7)
 - [ ] Map screen
-- [ ] Gear: three categories, one of each, automatic swap on pickup, dropped item stays on the ground (FEATURES.md section 8)
-- [ ] The six starter gear items and five starter run upgrades
+- [ ] Gear: three categories (weapon, armour, bauble), one of each, automatic swap on pickup, dropped item stays on the ground (FEATURES.md section 8)
+- [ ] The 54 gear items (owner, 2026-11-15: six rarities, three per rarity per category) and five starter run upgrades
 - [ ] Shop: five random offers, reroll, services (FEATURES.md section 11)
 - [ ] Difficulty budget rises along the run
 - [ ] One seed drives the whole run
@@ -236,3 +236,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-15 — Owner decision, built the same day: falling off the edge loses the held ability (water does not). 2 new tests (250 in total). Owner planning notes for Milestone 9 recorded in DESIGN.md open question 9 and FEATURES.md section 3: the hero is a two-legged armadillo that curls into a ball when launched and pops out when it stops; villain theme to choose between reptiles and amphibians (alligator boss) or insects.
 - 2026-11-15 — Milestones 5 and 5b done: the owner approved the generated courses and asked for the merge. Known limits carried forward: first-try pass rate and generation time miss their targets above budget 12, by owner choice for now (run upgrades in Milestones 6 and 7 are meant to keep up with harder courses). Merged to `main`.
 - 2026-11-15 — Milestone 6 design sheet written on branch `milestone-6-the-run`: `docs/plans/milestone-6.md` (map shape and node odds, boss countdown and early boss, budget per row, the six gear items, five run upgrades, shop and cache). Seven questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-15 — Owner decision: 54 gear items instead of six. Six rarities in three pairs (common/uncommon, rare/double rare, special rare/legendary), three items per rarity per category, families for the first four rarities and unique effects for the top two, rarity odds rising through the run, accessory renamed Bauble. All 54 in Milestone 6. Sheet section 5 rewritten; FEATURES.md section 8 updated.

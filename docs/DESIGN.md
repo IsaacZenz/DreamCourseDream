@@ -193,7 +193,7 @@ Each enemy type is a definition file entry: family, health, star value, radii, t
 **Decided:** one ability slot plus gear slots.
 
 - **Abilities:** defeating an ability-carrying enemy gives you its ability, replacing the one you hold. It is triggered with a key during a shot.
-- **Gear:** passive items in three categories: weapon, armour, accessory. The ball holds one of each. Rolling over gear of a held category swaps it automatically. Gear never needs a button; weapon effects trigger only on contact with an enemy.
+- **Gear:** passive items in three categories: weapon, armour, bauble. The ball holds one of each. Rolling over gear of a held category swaps it automatically. Gear never needs a button; weapon effects trigger only on contact with an enemy.
 - **Run upgrades:** plain stackable stat boosts, separate from gear, with no slot limit.
 
 Full detail for gear, run upgrades, damage, enemy tiers, statuses, shops and permanent upgrades is in `docs/FEATURES.md`.

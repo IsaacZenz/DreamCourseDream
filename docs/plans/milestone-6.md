@@ -114,30 +114,123 @@ Owner, 2026-11-15: when the run exists, the generator's bot should play with the
 
 ## 5. Gear
 
+**Owner, 2026-11-15:** a large gear list instead of the six starter items. **Six rarities in three pairs**: (common, uncommon), (rare, double rare), (special rare, legendary). **Three items per rarity in each category**: 3 × 6 × 3 = **54 items**, all built in this milestone. The first four rarities are built as **families** (one base effect, stronger versions with new names); special rare and legendary items each have **their own effect**. The third category is renamed from accessory to **Bauble**. The shop, caches and course drops all pick from the full list, and better rarities become likelier as the run goes on.
+
 ### 5.1 Rules (FEATURES.md section 8; decided parts unchanged)
 
-- Three categories: weapon, armour, accessory. One of each.
+- Three categories: **weapon**, **armour**, **bauble**. One of each.
 - **On a course:** gear lies on a tile like a pickup. Rolling over it equips it. If you already hold one of that category, yours drops on that tile and the new one is equipped. Rolling back over the dropped one swaps again. You cannot pick up an item for 0.5 s after dropping it, so a ball that stops on the tile does not swap back and forth.
 - **In a shop or cache:** if the category is already filled, both items are shown side by side and you confirm. The old item is **lost** (there is no ground to drop it on).
 - Gear is lost on death. Gear cannot be sold (DESIGN.md open question 6).
-- Rarity sets price and how often it shows up: **common weight 3, rare weight 1** (epic exists in the template; there are no epic starter items).
+- Each item is a data entry: id, name, icon id, category, rarity, element, modifiers while equipped, triggered effect and its trigger, price.
 
-### 5.2 The six starter items
+### 5.2 Rarity: price and how often it shows up
 
-Each item is a data entry: id, name, icon id, category, rarity, element, modifiers while equipped, triggered effect and its trigger, price.
+Picking an item: first roll the rarity from the table for where you are, then pick one item of that rarity and the needed category at random (never one you hold).
 
-| Item | Category | Rarity | Price | Modifiers while equipped | Triggered effect |
-|---|---|---|---|---|---|
-| Studded Shell | Weapon | Common | 15 | hit damage +1 | none |
-| Ember Coat | Weapon | Rare | 30 | none | Element **fire**. On a hit that does damage: the enemy gets **Burning** (question 1) |
-| Padded Lining | Armour | Common | 15 | none | The **first damage** the ball would take on each course is ignored, from any source (enemies, spikes, water, falling). A small shield icon shows while it is ready |
-| Thorn Guard | Armour | Rare | 30 | none | When an enemy damages the ball (its contact or its attack, including a Spitter's seed), that enemy takes 1 damage. Hazards and falling do not trigger it |
-| Star Magnet | Accessory | Common | 15 | star reach +2 | none |
-| Long Sight | Accessory | Common | 15 | guide length ×2 | none |
+| Rarity | Pair | Price | Region 1, rows 1–4 | Region 1, rows 5–8 | Region 2 | Region 3 |
+|---|---|---|---|---|---|---|
+| Common | 1 | 10 | 70% | 45% | 15% | 5% |
+| Uncommon | 1 | 15 | 25% | 40% | 35% | 15% |
+| Rare | 2 | 25 | 5% | 13% | 30% | 25% |
+| Double rare | 2 | 35 | – | 2% | 15% | 30% |
+| Special rare | 3 | 50 | – | – | 5% | 18% |
+| Legendary | 3 | 70 | – | – | – | 7% |
 
-Element step: the damage calculation already has the element step. No starter enemy is weak or resistant to fire yet, so for now fire matters only through Burning.
+- Regions 2 and 3 arrive in Milestones 7 and 8; their columns are written now so the table is ready.
+- A **hard course** and a **boss** roll on the next column to the right (better odds).
+- **Drop luck** shifts odds up: each +25% drop luck moves 5 points from the lowest rarity on offer to the next one up.
+- In this milestone the top pair can only be seen through the test panel ("give gear", section 9.4).
 
-### 5.3 Where gear comes from in this milestone
+### 5.3 Weapons (on contact with an enemy)
+
+**Families (common to double rare).**
+
+| Family | Common | Uncommon | Rare | Double rare |
+|---|---|---|---|---|
+| **Shell** (more damage) | Studded Shell: hit damage +1 | Spiked Shell: hit damage +1, shot power +5% | Iron Shell: hit damage +2 | Steel Shell: hit damage +2, shot power +10% |
+| **Coat** (fire) | Ember Coat: hits are fire; burn 1 turn | Cinder Coat: burn 2 turns | Blaze Coat: burn 2 turns, hit damage +1 | Inferno Coat: burn 3 turns, hit damage +1 |
+| **Knob** (stun) | Bonk Knob: 20% chance a hit stuns | Thump Knob: 35% | Clang Knob: 50% | Gong Knob: 50%, and stunned enemies take +1 damage |
+
+**Special rare.**
+
+| Item | Effect |
+|---|---|
+| Thunder Knuckle | Hits are shock. Each damaging hit also zaps the nearest other enemy within 3 tiles for 1 damage |
+| Wrecking Shell | Hit damage +2. Defeating an enemy does not slow the ball; it rolls on through |
+| Leech Fang | The first damaging hit each shot heals 1 health |
+
+**Legendary.**
+
+| Item | Effect |
+|---|---|
+| Sunfire Crown | Hits are fire, burn 3 turns. A burning enemy that is defeated bursts and deals 1 damage to enemies within 1.5 tiles |
+| Giant's Knuckle | Hit damage +3. Hits knock the enemy 2 tiles away from the ball |
+| Echo Shell | The first hit each shot counts twice: double damage and 2 shots back |
+
+### 5.4 Armour (when the ball takes damage or touches a hazard)
+
+**Families (common to double rare).**
+
+| Family | Common | Uncommon | Rare | Double rare |
+|---|---|---|---|---|
+| **Lining** (ignore damage) | Padded Lining: the first damage each course is ignored | Quilted Lining: first damage ignored, max health +1 | Double Lining: first 2 damages ignored | Plated Lining: first 2 ignored, max health +1 |
+| **Guard** (hit back) | Thorn Guard: an enemy that damages the ball takes 1 damage | Bramble Guard: 1 damage and the enemy is stunned | Briar Guard: 2 damage | Thicket Guard: 2 damage and stunned |
+| **Hide** (more health) | Thick Hide: max health +1 | Tough Hide: max health +2 | Stone Hide: max health +3 | Granite Hide: max health +3, heal 1 after each course |
+
+"Ignored" covers every source: enemies, spikes, water, falling. A small shield icon shows how many are left this course. Guard items trigger only on enemy damage (contact or attack, including a Spitter's seed), not hazards.
+
+**Special rare.**
+
+| Item | Effect |
+|---|---|
+| Mirror Plate | An enemy's thrown attack (a Spitter's seed) that hits the ball bounces back and hits the thrower for the same damage. The ball still takes it |
+| Cork Plate | Stopping in water and falling off the edge cost no health (falling still loses the ability) |
+| Moss Plate | Heal 1 at the start of each course |
+
+**Legendary.**
+
+| Item | Effect |
+|---|---|
+| Phoenix Plate | Once: when health would drop to 0, you stay at 3 health instead. The plate then crumbles (it is lost) |
+| Bastion Plate | Max health +3, and the first 2 damages each course are ignored |
+| Storm Cloak | Thunder clouds and spikes cannot hurt the ball; max health +1 |
+
+### 5.5 Baubles (always on)
+
+**Families (common to double rare).**
+
+| Family | Common | Uncommon | Rare | Double rare |
+|---|---|---|---|---|
+| **Magnet** (star reach) | Star Magnet: star reach +1 | Star Lodestone: +2 | Star Anchor: +3 | Star Heart: +3, drop luck +10% |
+| **Sight** (aim guide) | Long Sight: guide length ×1.5 | Far Sight: ×2 | Eagle Sight: ×2.5 | Hawk Sight: ×3 |
+| **Pebble** (luck and prices) | Lucky Pebble: drop luck +25% | Lucky Stone: drop luck +50% | Lucky Gem: drop luck +50%, shop prices −10% | Lucky Jewel: drop luck +75%, shop prices −15% |
+
+**Special rare.**
+
+| Item | Effect |
+|---|---|
+| Pocket Pillow | One extra nap each course (3 instead of 2) |
+| Golden Tooth | +1 yellow star (wallet only, not the meter) for every enemy defeated |
+| Feather Charm | Bounce boost +100% |
+
+**Legendary.**
+
+| Item | Effect |
+|---|---|
+| Crown of Plenty | Every yellow star picked up counts twice in the wallet (the meter counts it once) |
+| Pocket Watch | Max shots +2 and one extra nap each course |
+| Four-Leaf Clover | Drop luck ×2, shop prices −25%, and the first reroll in each shop is free |
+
+### 5.6 New pieces this list needs
+
+- **Burning on enemies** (question 1): fire weapons need it now, not in Milestone 8.
+- **Shock element**: already listed as a default element (FEATURES.md open question F5); no enemy is weak or resistant yet.
+- **Naps become a stat** (`naps`, base 2) so Pocket Pillow and Pocket Watch change it through the modifier system.
+- **Ignore-damage counter** per course (Lining family, Bastion Plate).
+- Item names are working names; rename any of them.
+
+### 5.7 Where gear comes from in this milestone
 
 | Source | Rule |
 |---|---|
@@ -147,7 +240,7 @@ Element step: the damage calculation already has the element step. No starter en
 | Cache | 1 of the 3 choices (section 8) |
 | Enemy drop | Not yet (Milestone 8, FEATURES.md open question F3) |
 
-Gear on a course costs **no budget**. The game never offers an item you already hold.
+Gear on a course costs **no budget**. Category is random (equal chance), then rarity by section 5.2.
 
 ---
 
@@ -173,7 +266,7 @@ Names are working names. The price rises by 6 each time **that same** upgrade is
 
 | Slot | Count | Rule |
 |---|---|---|
-| Gear | 2 | Two different items you do not hold, by rarity weight |
+| Gear | 2 | Two different items you do not hold, rarity by section 5.2 |
 | Run upgrade | 2 | Two different upgrades |
 | Service | 1 | Heal 2 (price 10) or raise the boss countdown by 1 (price 8), 50/50. If no raises are left in this region, always Heal 2 |
 
@@ -195,7 +288,7 @@ Five cards in a row with name, icon, price and a one-line effect. Left/right to 
 
 A free pick of **one** from three:
 
-1. One random gear item you do not hold (by rarity weight).
+1. One random gear item you do not hold (rarity by section 5.2).
 2. One random run upgrade (free, does not raise its shop price).
 3. Heal 2.
 
@@ -236,10 +329,10 @@ Same keys as the shop. Taking one finishes the node. Leaving without taking anyt
 
 | # | Question | Default |
 |---|---|---|
-| 1 | Ember Coat needs **Burning**, which is planned for Milestone 8. Build it now? | Yes, **on enemies only**: 1 damage at the start of each enemy turn, for 2 turns; a second application resets the time. Burning on the ball stays in Milestone 8 |
+| 1 | The fire weapons (Coat family, Sunfire Crown) need **Burning**, which is planned for Milestone 8. Build it now? | Yes, **on enemies only**: 1 damage at the start of each enemy turn, for 2 turns; a second application resets the time. Burning on the ball stays in Milestone 8 |
 | 2 | What happens when you run out of naps on a run course? (Today it fails the course; in a run that would end the run, which may be harsh.) | Lose 2 health and leave the course with no reward. If health hits 0, the run ends |
 | 3 | Generation at budget 25+ is slow (6–20 s) and fails the bot often. Cap run courses at 24 until upgrades make bigger ones beatable? | Yes, cap at 24. Raise it after playtesting |
-| 4 | Income: a course gives about 4–8 stars plus the +2 finish reward, so by the boss you have about 25–40 stars: roughly one gear item and one upgrade. Is that the right feel, or should shopping be easier? | Keep the FEATURES.md prices and tune after you play |
+| 4 | Income: a course gives about 4–8 stars plus the +2 finish reward, so by the boss you have about 25–40 stars: roughly two or three common/uncommon gear items, or one item and one upgrade. Is that the right feel, or should shopping be easier? | Keep these prices and tune after you play |
 | 5 | Does the boss countdown also drop when you visit a shop or cache, or only after courses? | All nodes count (as DESIGN.md says) |
 | 6 | Should the run be saved so a page refresh does not lose it? | No, save comes in Milestone 7 with the rest of the save system |
 | 7 | Does health heal at all between courses (for example +1 after each course)? | No. Healing only from shops, caches, hearts and beating the boss (DESIGN.md open question 7) |
@@ -258,4 +351,6 @@ Things to check on purpose while playtesting:
 - Swap gear on a course, then roll back over the dropped item.
 - Buy the same upgrade twice and see the price rise by 6.
 - Get hit with Padded Lining and Thorn Guard equipped.
+- Use the test panel to try a few special rare and legendary items (Echo Shell, Phoenix Plate, Pocket Watch).
+- Over several shops, check that commons dominate early and uncommons grow later in the map.
 - Play the same seed twice with the same choices and get the same courses.
