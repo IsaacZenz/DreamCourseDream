@@ -244,8 +244,9 @@ export class CourseScene extends Phaser.Scene {
     manifest = shared.manifest;
     tuning = getTuning();
     if (this.runMode) this.seed = session.run!.current!.courseSeed;
-    // ?run=<seed> in the address starts a run on that seed (Milestone 6), once.
-    const runParam = new URLSearchParams(window.location.search).get('run');
+    // ?run=<seed> (or #run, #run=<seed> where the address cannot carry a query) starts a run (Milestone 6), once.
+    const hash = window.location.hash.slice(1);
+    const runParam = new URLSearchParams(window.location.search).get('run') ?? (hash === 'run' || hash.startsWith('run=') ? hash.slice(4) : null);
     if (runParam !== null && !runStartedFromUrl) {
       runStartedFromUrl = true;
       startRun(runParam.toUpperCase() || newRunSeed());
