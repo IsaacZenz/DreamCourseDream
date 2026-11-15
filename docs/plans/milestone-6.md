@@ -1,6 +1,6 @@
 # Milestone 6 design sheet — The run
 
-**Status: signed off by the owner, 2026-11-15**, with changes to questions 2, 3 and 5 (see [section 10](#10-questions-for-the-owner)). Sections 2.1, 2.3, 2.4, 4.1 and 9.2 already show the changes. **Built 2026-11-15**, with the town and the Burrow added by the owner during the build (section 10b); differences in section 12.
+**Status: signed off by the owner, 2026-11-15**, with changes to questions 2, 3 and 5 (see [section 10](#10-questions-for-the-owner)). Sections 2.1, 2.3, 2.4, 4.1 and 9.2 already show the changes. **Built 2026-11-15**, with the town and the Burrow added by the owner during the build (section 10b); differences in section 12. **Approved by the owner, 2026-11-15**, after the countdown of 7 and the last town were added; merged to `main`.
 
 How to review: read each section, change any number or rule you want, and answer the numbered questions in [section 10](#10-questions-for-the-owner). Each question has a default, so "use the defaults" is a valid answer. Every number here is a starting value and goes into `src/content/` so it can be tuned later.
 
