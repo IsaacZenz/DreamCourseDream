@@ -575,10 +575,36 @@ function standing(e: EnemyState): boolean {
   return !e.defeated && !e.body && !e.burrowed;
 }
 
+/**
+ * Obstacles that never move or change: blockers and guard rails. Built once
+ * per course (and again only if the rail tuning numbers change), because the
+ * obstacle list is rebuilt every step.
+ */
+const staticCache = new WeakMap<Course, { bounce: number; boost: number; list: Obstacle[] }>();
+function staticObstacles(play: PlayState): Obstacle[] {
+  const c = staticCache.get(play.course);
+  if (c && c.bounce === play.tuning.railBounce && c.boost === play.tuning.railBoost) return c.list;
+  const list: Obstacle[] = [];
+  for (const b of play.blockers) list.push({ id: b.uid, x: b.x, y: b.y, base: b.z, height: b.def.height, shape: b.def.shape, bounce: b.def.bounce });
+  for (const p of play.railPieces) {
+    list.push({
+      id: p.id,
+      x: p.x,
+      y: p.y,
+      base: p.base,
+      height: RAIL.height + p.rise,
+      shape: { kind: 'seg', ax: 0, ay: 0, bx: p.dx, by: p.dy, r: RAIL.halfThickness },
+      bounce: play.tuning.railBounce,
+      boost: play.tuning.railBoost,
+    });
+  }
+  staticCache.set(play.course, { bounce: play.tuning.railBounce, boost: play.tuning.railBoost, list });
+  return list;
+}
+
 /** Everything solid on the course right now. */
 function obstaclesOf(play: PlayState): Obstacle[] {
-  const out: Obstacle[] = [];
-  for (const b of play.blockers) out.push({ id: b.uid, x: b.x, y: b.y, base: b.z, height: b.def.height, shape: b.def.shape, bounce: b.def.bounce });
+  const out: Obstacle[] = staticObstacles(play).slice();
   for (const m of play.movers) {
     if (m.def.motion.kind === 'gate' && m.open) continue;
     out.push({ id: m.uid, x: m.x, y: m.y, base: m.z, height: m.def.height, shape: m.shape, bounce: m.def.bounce, vx: m.vx, vy: m.vy, knock: m.def.knock });
@@ -590,18 +616,6 @@ function obstaclesOf(play: PlayState): Obstacle[] {
     if (!standing(e)) continue;
     const knock = e.def.behaviour.kind === 'patrol' ? e.def.behaviour.knock : 0;
     out.push({ id: e.uid, x: e.x, y: e.y, base: e.z, height: e.def.height, shape: e.def.shape, bounce: e.def.bounce, vx: e.vx, vy: e.vy, knock });
-  }
-  for (const p of play.railPieces) {
-    out.push({
-      id: p.id,
-      x: p.x,
-      y: p.y,
-      base: p.base,
-      height: RAIL.height + p.rise,
-      shape: { kind: 'seg', ax: 0, ay: 0, bx: p.dx, by: p.dy, r: RAIL.halfThickness },
-      bounce: play.tuning.railBounce,
-      boost: play.tuning.railBoost,
-    });
   }
   for (const f of play.flags) {
     if (f.raised && f.solid) out.push({ id: f.uid, x: f.x, y: f.y, base: f.z, height: f.def.height, shape: f.def.shape, bounce: f.def.bounce });

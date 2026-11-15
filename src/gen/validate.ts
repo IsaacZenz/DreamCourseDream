@@ -11,6 +11,7 @@ import type { Tuning } from '../content/tuning.ts';
 import { parseCourse, type Course } from '../sim/course.ts';
 import { playBot, type BotResult } from './bot.ts';
 import { generateAttempt, type GenMeta } from './generate.ts';
+import { journeyRow } from './journey.ts';
 import { checkStructure } from './structure.ts';
 
 export interface GenResult {
@@ -66,7 +67,7 @@ export function generateCourse(seed: string, budget: number, tuning: Tuning, opt
         reject(extra);
         continue;
       }
-      const bot = opts.noBot ? null : playBot(r.course, tuning, seed);
+      const bot = opts.noBot ? null : playBot(r.course, tuning, seed, { waypoints: r.meta.terrain.waypoints, maxShots: journeyRow(b).botShots });
       if (bot && !bot.passed) {
         reject(bot.reason);
         continue;

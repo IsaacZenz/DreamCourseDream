@@ -5,7 +5,7 @@
  *   npm run gen:batch -- 100 0        100 courses, no contact sheet
  *
  * Seeds come from a fixed list (B0000, B0001, ...) and budgets cycle through
- * 8, 12 and 20, so every run tests the same courses. Reports the pass rate on
+ * 8, 12, 20 and 30, so every run tests the same courses. Reports the pass rate on
  * the first try, the overall pass rate, generation times and rejection
  * reasons. The contact sheet is drawn by the real renderer in a headless
  * browser. Everything is written to tools/out/ (not committed).
@@ -17,7 +17,7 @@ import { generateCourse } from '../src/gen/validate.ts';
 
 const COUNT = Number(process.argv[2] ?? 500);
 const SHEET = Number(process.argv[3] ?? 48);
-const BUDGETS = [8, 12, 20];
+const BUDGETS = [8, 12, 20, 30];
 const OUT = new URL('./out/', import.meta.url);
 mkdirSync(OUT, { recursive: true });
 
@@ -53,8 +53,8 @@ const lines = [
   `Generated ${rows.length} courses in ${(total / 1000).toFixed(1)} s.`,
   `Passed on the first try: ${pct(rows.filter((r) => r.firstTry).length)} (target 95%).`,
   `Passed overall (no fallback): ${pct(rows.filter((r) => r.passed).length)}.`,
-  `Generation time: average ${Math.round(total / rows.length)} ms, median ${Math.round(times[Math.floor(times.length / 2)]!)} ms, 95th percentile ${Math.round(times[Math.floor(times.length * 0.95)]!)} ms, slowest ${Math.round(times[times.length - 1]!)} ms (target under 1000 ms).`,
-  `Under one second: ${pct(rows.filter((r) => r.ms < 1000).length)}.`,
+  `Generation time: average ${Math.round(total / rows.length)} ms, median ${Math.round(times[Math.floor(times.length / 2)]!)} ms, 95th percentile ${Math.round(times[Math.floor(times.length * 0.95)]!)} ms, slowest ${Math.round(times[times.length - 1]!)} ms.`,
+  `Targets (5b sheet): average under 1 s up to budget 14, up to 5 s above. Under 1 s: ${pct(rows.filter((r) => r.ms < 1000).length)}; under 5 s: ${pct(rows.filter((r) => r.ms < 5000).length)}.`,
 ];
 for (const b of BUDGETS) {
   const rs = rows.filter((r) => r.budget === b);

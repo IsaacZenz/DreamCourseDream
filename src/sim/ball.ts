@@ -610,6 +610,8 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
   const b = s.ball;
   const r = s.radius;
   for (const o of world.obstacles) {
+    // Quick skip for anything far away (no obstacle reaches 2.5 tiles from its centre point).
+    if ((b.x - o.x > 2.5 || o.x - b.x > 2.5 || b.y - o.y > 2.5 || o.y - b.y > 2.5) && !s.passing.length) continue;
     const top = o.base + o.height;
     const leave = () => {
       const k = s.passing.indexOf(o.id);

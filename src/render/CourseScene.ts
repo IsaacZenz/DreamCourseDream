@@ -38,7 +38,7 @@ import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 let manifest: Manifest = { version: 1, sprites: {} };
 
 /** Debug overlay modes, cycled with the G key. */
-const DEBUG_MODES = ['off', 'coords', 'heights', 'surfaces', 'chunks'] as const;
+const DEBUG_MODES = ['off', 'coords', 'heights', 'surfaces', 'areas'] as const;
 type DebugMode = (typeof DEBUG_MODES)[number];
 
 const PAN_SPEED = 160; // screen pixels per second
@@ -186,6 +186,8 @@ export class CourseScene extends Phaser.Scene {
   private exitImg: Phaser.GameObjects.Image | null = null;
   private animated: { img: Phaser.GameObjects.Image; frame: string; entry: Manifest['sprites'][string] }[] = [];
   private animPhase = -1;
+  private overview = false;
+  private hiddenHud: { setVisible: (v: boolean) => void }[] = [];
   /** Bot replay (B key): its shots still to take, and when the next one fires. */
   private watching = false;
   private botMoves: readonly BotMove[] = [];
@@ -233,7 +235,18 @@ export class CourseScene extends Phaser.Scene {
     if (!tuning) tuning = loadTuning();
     let data: unknown = file.data;
     if (file.id === BENCH_ID) data = benchCourse(bench.object);
-    else if (file.id === GENERATED_ID) data = this.generated().result.raw;
+    else if (file.id === GENERATED_ID) {
+      const ready = this.cachedGen();
+      if (!ready) {
+        // Not made yet: show the loading screen and make it in the background, then start again.
+        this.course = null;
+        this.setupKeys();
+        this.showLoading();
+        this.requestGen();
+        return;
+      }
+      data = ready.result.raw;
+    }
     const parsed = parseCourse(data);
     this.setupKeys();
     if (!parsed.ok) {
@@ -246,6 +259,8 @@ export class CourseScene extends Phaser.Scene {
 
     this.animated = [];
     this.animPhase = -1;
+    this.overview = false;
+    this.hiddenHud = [];
     for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
 
     if (!panel) {
@@ -342,15 +357,59 @@ export class CourseScene extends Phaser.Scene {
     }
   }
 
-  /** The generated course for this seed and budget, made once and kept for restarts. */
-  private generated(): { result: GenResult; ms: number } {
-    if (lastGen && lastGen.result.seed === this.seed && lastGen.result.budget === genBudget) return lastGen;
-    const t0 = performance.now();
-    const result = generateCourse(this.seed, genBudget!, tuning!);
-    const ms = performance.now() - t0;
-    lastGen = { result, ms };
-    (result.fallback ? console.warn : console.info)(`${result.summary}, ${Math.round(ms)} ms`);
-    return lastGen;
+  /** The generated course for this seed and budget, if it has been made (kept for restarts). */
+  private cachedGen(): { result: GenResult; ms: number } | null {
+    return lastGen && lastGen.result.seed === this.seed && lastGen.result.budget === genBudget ? lastGen : null;
+  }
+
+  /** Make the course in a background worker (or right here if workers are not available), then start again. */
+  private requestGen(): void {
+    const seed = this.seed;
+    const budget = genBudget!;
+    const done = (result: GenResult, ms: number) => {
+      lastGen = { result, ms };
+      (result.fallback ? console.warn : console.info)(`${result.summary}, ${Math.round(ms)} ms`);
+      // Only if the player has not moved on to something else meanwhile.
+      if (this.seed === seed && genBudget === budget && this.scene.isActive()) this.scene.restart({ courseIndex: this.courseIndex, debug: this.debugMode, seed, budget, watch: this.watching });
+    };
+    try {
+      const worker = new Worker(new URL('./genWorker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e: MessageEvent<{ result: GenResult; ms: number }>) => {
+        worker.terminate();
+        done(e.data.result, e.data.ms);
+      };
+      worker.postMessage({ seed, budget, tuning });
+    } catch {
+      this.time.delayedCall(50, () => {
+        const t0 = performance.now();
+        const result = generateCourse(seed, budget, tuning!);
+        done(result, performance.now() - t0);
+      });
+    }
+  }
+
+  /** Loading screen while a course is made (owner, 2026-11-15): a ball bouncing along a strip of checkered ground. */
+  private showLoading(): void {
+    const cx = VIEW_WIDTH / 2;
+    const cy = VIEW_HEIGHT / 2;
+    this.cameras.main.setScroll(0, 0);
+    const title = pixelText(this, manifest, 0, 0, `GENERATING THE JOURNEY  #${this.seed}  BUDGET ${genBudget}`, { color: UI_TEXT, background: UI_BG }).setScrollFactor(0);
+    title.setPosition(Math.round(cx - title.width / 2), cy - 40);
+    const hint = pixelText(this, manifest, 0, 0, 'BIG COURSES TAKE A FEW SECONDS: THE BOT IS CHECKING IT CAN BE BEATEN', { color: UI_DIM, background: UI_BG }).setScrollFactor(0);
+    hint.setPosition(Math.round(cx - hint.width / 2), cy + 34);
+    // A strip of checkered tiles, drawn from the real tile sprites.
+    const tileEntry = manifest.sprites['tile-grass']!;
+    for (let i = -4; i <= 4; i++) {
+      const p = { x: cx + i * 16, y: cy + 12 + (i % 2 === 0 ? 0 : 0) };
+      this.add
+        .image(p.x, p.y + Math.abs(i) * 0, 'tile-grass', frameIndex(tileEntry, i % 2 === 0 ? '0000' : '0000b'))
+        .setOrigin(tileEntry.anchor[0] / tileEntry.frameWidth, tileEntry.anchor[1] / tileEntry.frameHeight)
+        .setScrollFactor(0);
+    }
+    const ball = this.makeSprite('ball').setScrollFactor(0).setPosition(cx - 64, cy + 8).setDepth(10);
+    const shadow = this.makeSprite('ball-shadow').setScrollFactor(0).setPosition(cx - 64, cy + 12).setDepth(9);
+    this.tweens.add({ targets: [ball, shadow], x: cx + 64, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: ball, y: cy - 6, duration: 230, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
   }
 
   /** Thumbnail for the contact sheet: no HUD, zoomed out so the whole course shows. */
@@ -381,7 +440,9 @@ export class CourseScene extends Phaser.Scene {
       const s = r.meta.spend;
       lines.push(`Budget ${r.budget}: terrain ${s.terrain}, enemies ${s.enemies}, obstacles ${s.obstacles}, hazards ${s.hazards}.`);
       lines.push(`${r.meta.enemies} enemies, ${r.meta.stars} stars on offer, quota ${r.course.quota}.`);
-      lines.push(`Chunks: ${r.meta.layout.chunks.map((c) => c.chunk.id).join(', ')}`);
+      const areas = r.meta.terrain.regions.filter((g) => g.kind !== 'pocket').map((g) => `${g.name}${g.steep ? ' (steep)' : ''}`);
+      lines.push(`${r.course.width} x ${r.course.height} tiles. Journey: ${areas.join(' > ')}`);
+      if (r.meta.terrain.setPieces.length) lines.push(`Set pieces: ${r.meta.terrain.setPieces.join(', ')}`);
     }
     viewer.show({ seed: r.seed, budget: r.budget, passed: !r.fallback, lines, json: JSON.stringify(r.raw, null, 2) });
   }
@@ -473,6 +534,7 @@ export class CourseScene extends Phaser.Scene {
     };
     kb.on('keydown-G', () => this.cycleDebug());
     kb.on('keydown-C', () => this.centreOnBall());
+    kb.on('keydown-O', () => this.toggleOverview());
     kb.on('keydown-ONE', () => this.switchCourse(0));
     kb.on('keydown-TWO', () => this.switchCourse(1));
     kb.on('keydown-THREE', () => this.switchCourse(2));
@@ -523,7 +585,31 @@ export class CourseScene extends Phaser.Scene {
     this.applyCamera();
   }
 
+  /** Overview (O key, Milestone 5b): zoom out to the whole course; O again goes back to the ball. */
+  private toggleOverview(): void {
+    if (!this.course) return;
+    const cam = this.cameras.main;
+    const b = courseBounds(this.course);
+    this.overview = !this.overview;
+    const hud = this.children.list.filter((o) => (o as unknown as { scrollFactorX?: number }).scrollFactorX === 0) as unknown as { setVisible: (v: boolean) => void; visible: boolean }[];
+    if (this.overview) {
+      this.hiddenHud = hud.filter((o) => o.visible);
+      for (const o of this.hiddenHud) o.setVisible(false);
+      cam.removeBounds();
+      cam.setZoom(Math.min(1, VIEW_WIDTH / (b.right - b.left + 16), VIEW_HEIGHT / (b.bottom - b.top + 16)));
+      cam.centerOn((b.left + b.right) / 2, (b.top + b.bottom) / 2);
+    } else {
+      cam.setZoom(1);
+      const margin = 48;
+      cam.setBounds(b.left - margin, b.top - margin, b.right - b.left + margin * 2, b.bottom - b.top + margin * 2);
+      for (const o of this.hiddenHud) o.setVisible(true);
+      this.hiddenHud = [];
+      this.centreOnBall();
+    }
+  }
+
   private applyCamera(): void {
+    if (this.overview) return;
     const cam = this.cameras.main;
     // Keep our own position clamped to the bounds so panning stops cleanly at the edges.
     const bx = cam.getBounds();
@@ -1258,7 +1344,7 @@ export class CourseScene extends Phaser.Scene {
     const lines = [
       'MOUSE: PULL BACK TO PLAN, HOLD TO CHARGE  KEYS: ARROWS/WASD AIM+POWER, HOLD SPACE TO CHARGE',
       'T: GROUND/LOFT  Z/X: SPIN  Q/E: CURVE  SPACE IN FLIGHT: BOOST  F: ABILITY  ESC: RE-PLAN',
-      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  1-6/N: COURSE  R: RESTART  G: DEBUG  U: TUNING+TEST BENCH  H: HELP',
+      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  O: OVERVIEW  1-6/N: COURSE  R: RESTART  G: DEBUG  U: TUNING  H: HELP',
       ...(TEST_COURSES[this.courseIndex]?.id === GENERATED_ID ? ['GENERATED: BRACKET KEYS: BUDGET -/+2  V: SEED VIEWER  B: WATCH THE BOT  ENTER AFTER A WIN: NEXT'] : []),
     ];
     this.helpHud = lines.map((l, i) =>
@@ -1307,7 +1393,7 @@ export class CourseScene extends Phaser.Scene {
         this.label((SURFACES.get(t.surface)?.name ?? t.surface).slice(0, 3), c.x, c.y);
       }
     }
-    if (this.debugMode === 'chunks') this.drawChunks(course);
+    if (this.debugMode === 'areas') this.drawAreas(course);
     const mode = pixelText(this, manifest, VIEW_WIDTH - 2, 2, `DEBUG: ${this.debugMode}`, { color: 0xf8e048, background: UI_BG })
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH);
@@ -1316,46 +1402,36 @@ export class CourseScene extends Phaser.Scene {
   }
 
   /**
-   * Debug mode "chunks" (generated courses): each chunk's outline and id (with
-   * its turn and flip), the spots it offered (bright: used, dim: not used), and
-   * how the budget was spent.
+   * Debug mode "areas" (generated courses, Milestone 5b): the outline and name of
+   * every area, passage and pocket along the journey, and how the budget was spent.
    */
-  private drawChunks(course: Course): void {
+  private drawAreas(course: Course): void {
     const meta = this.isGenerated ? lastGen?.result.meta : null;
     if (!meta) {
-      const t = pixelText(this, manifest, 2, 22, 'CHUNKS: ONLY FOR GENERATED COURSES (KEY 6)', { color: 0xf8e048, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
+      const t = pixelText(this, manifest, 2, 22, 'AREAS: ONLY FOR GENERATED COURSES (KEY 6)', { color: 0xf8e048, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
       this.overlay.push(t);
       return;
     }
-    const n = GEN.chunkSize;
     const g = this.add.graphics().setDepth(OVERLAY_DEPTH + 1);
-    g.lineStyle(1, DEBUG_OUTER, 0.9);
     this.overlay.push(g);
-    for (const pc of meta.layout.chunks) {
-      const x0 = pc.sx * n;
-      const y0 = pc.sy * n;
-      const h = pc.offset;
-      const pts = [project(x0, y0, h), project(x0 + n, y0, h), project(x0 + n, y0 + n, h), project(x0, y0 + n, h)];
+    meta.terrain.regions.forEach((r, i) => {
+      const { x, y, w, h } = r.rect;
+      const mid = course.tiles[Math.floor(y + h / 2) * course.width + Math.floor(x + w / 2)];
+      const z = mid ? Math.min(...mid.corners) : 0;
+      g.lineStyle(1, r.kind === 'area' ? DEBUG_OUTER : r.kind === 'passage' ? DEBUG_PATH : GOOD, 0.9);
+      const pts = [project(x, y, z), project(x + w, y, z), project(x + w, y + h, z), project(x, y + h, z)];
       g.beginPath();
       g.moveTo(pts[0]!.x, pts[0]!.y);
       for (const p of pts.slice(1)) g.lineTo(p.x, p.y);
       g.closePath();
       g.strokePath();
-      const c = project(x0 + n / 2, y0 + n / 2, h);
-      const name = `${pc.chunk.id}${pc.chunk.rot ? ` R${pc.chunk.rot}` : ''}${pc.chunk.mirror ? ' M' : ''}`;
-      const t = pixelText(this, manifest, 0, 0, name.toUpperCase(), { color: DEBUG_OUTER, background: UI_BG, padding: 0 }).setDepth(OVERLAY_DEPTH + 2);
-      t.setPosition(Math.round(c.x - t.width / 2), Math.round(c.y - 20));
+      const c = project(x + w / 2, y + h / 2, z);
+      const name = `${r.kind === 'area' ? `${r.order + 1} ` : ''}${r.name}${r.steep ? ' STEEP' : ''}`.toUpperCase();
+      const t = pixelText(this, manifest, 0, 0, name, { color: r.kind === 'area' ? DEBUG_OUTER : DEBUG_PATH, background: UI_BG, padding: 0 }).setDepth(OVERLAY_DEPTH + 2);
+      t.setPosition(Math.round(c.x - t.width / 2), Math.round(c.y - 4));
       this.overlay.push(t);
-    }
-    const letter: Record<string, string> = { enemy: 'E', lane: 'L', blocker: 'B', cloud: 'C', gate: 'G', hazard: 'H', pickup: 'P', crack: 'K' };
-    for (const sp of meta.spots) {
-      const tile = course.tiles[sp.y * course.width + sp.x];
-      const z = tile ? Math.max(...tile.corners) : 0;
-      const c = project(sp.x + 0.5, sp.y + 0.5, z);
-      const t = pixelText(this, manifest, 0, 0, letter[sp.kind] ?? '?', { color: sp.used ? 0xf8e048 : UI_DIM, background: UI_BG, padding: 0 }).setDepth(OVERLAY_DEPTH + 2);
-      t.setPosition(Math.round(c.x - t.width / 2), Math.round(c.y - t.height / 2));
-      this.overlay.push(t);
-    }
+      void i;
+    });
     const s = meta.spend;
     const info = pixelText(this, manifest, 2, 22, `BUDGET ${meta.budget}: TERRAIN ${s.terrain}  ENEMIES ${s.enemies}  OBSTACLES ${s.obstacles}  HAZARDS ${s.hazards}`, {
       color: 0xf8e048,

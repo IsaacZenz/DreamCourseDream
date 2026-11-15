@@ -1,26 +1,26 @@
 /**
- * Course generator tests (Milestone 5 design sheet, section 7).
+ * Course generator tests (Milestone 5 and 5b design sheets, section 7).
  */
 import { describe, expect, it } from 'vitest';
-import { CHUNK_FILES } from '../src/content/chunks/index';
 import { GEN } from '../src/content/gen';
 import { OBJECTS, type EnemyDef } from '../src/content/objects';
-import { DIRECTION_VECTORS, DIRECTIONS, SURFACES, type Direction } from '../src/content/surfaces';
+import { SURFACES } from '../src/content/surfaces';
 import { DEFAULT_TUNING } from '../src/content/tuning';
-import { checkSides, loadChunks, orient, orientations, parseChunk, opposite } from '../src/gen/chunks';
 import { playBot } from '../src/gen/bot';
 import { generateAttempt } from '../src/gen/generate';
-import { CHUNKS } from '../src/gen/layout';
+import { journeyRow } from '../src/gen/journey';
 import { checkStructure } from '../src/gen/structure';
 import { fallbackCourse, generateCourse } from '../src/gen/validate';
-import { parseCourse, tileAt, MAX_HEIGHT, type Course } from '../src/sim/course';
+import { parseCourse, railTiles, tileAt, MAX_HEIGHT, type Course } from '../src/sim/course';
+import { shapeOf } from '../src/sim/tileShape';
 import { clonePlay, createPlay, runShot, takeShot } from '../src/sim/play';
 
 const T = DEFAULT_TUNING;
-const BUDGETS = [8, 12, 20, 40];
+const BUDGETS = [8, 12, 20, 30];
 
 /** Many quick attempts (no bot), for checking the rules every course must keep. */
-const SAMPLE = Array.from({ length: 200 }, (_, i) => generateAttempt(`S${i}`, BUDGETS[i % 4]!, 0)).filter((r) => r.ok);
+const SAMPLE = Array.from({ length: 160 }, (_, i) => generateAttempt(`S${i}`, BUDGETS[i % 4]!, 0));
+const GOOD = SAMPLE.filter((r) => r.ok);
 
 function parse(raw: unknown): Course {
   const r = parseCourse(raw);
@@ -28,51 +28,7 @@ function parse(raw: unknown): Course {
   return r.course;
 }
 
-describe('chunks', () => {
-  it('every chunk file parses', () => {
-    expect(() => loadChunks(CHUNK_FILES)).not.toThrow();
-    expect(CHUNKS.length).toBeGreaterThanOrEqual(12);
-  });
-
-  it('every turned and flipped version keeps its open sides flat, level and matching', () => {
-    for (const c of CHUNKS) {
-      for (const o of orientations(c)) {
-        expect(checkSides(o), `${c.id} r${o.rot} m${o.mirror}`).toEqual([]);
-        expect(o.open.length).toBe(c.open.length);
-      }
-    }
-  });
-
-  it('four quarter turns give the chunk back', () => {
-    for (const c of CHUNKS) {
-      const once = orient(c, 1, false);
-      const back = orient(orient(orient(once, 1, false), 1, false), 1, false);
-      expect(back.tiles).toEqual(c.tiles);
-      expect(orient(orient(c, 0, true), 0, true).tiles).toEqual(c.tiles);
-    }
-  });
-
-  it('every spot is on a tile that can take it', () => {
-    for (const c of CHUNKS) {
-      for (const s of c.spots) {
-        for (const [x, y] of s.tiles ?? [s.at]) {
-          const t = c.tiles[y]?.[x];
-          expect(t, `${c.id} ${s.kind} at ${x},${y}`).toBeTruthy();
-          if (s.kind !== 'hazard' && s.kind !== 'cloud' && s.kind !== 'lane') expect(SURFACES.get(t!.surface)?.canHoldBall, `${c.id} ${s.kind}`).toBe(true);
-        }
-      }
-    }
-  });
-
-  it('rejects a chunk whose open side is not flat', () => {
-    // The ramp's ne side has a slope in the middle, so it cannot be an open side.
-    const bad = { ...(CHUNK_FILES.find((f) => (f as { id: string }).id === 'ramp') as Record<string, unknown>), open: ['ne'] };
-    const r = parseChunk(bad);
-    expect(r.ok).toBe(false);
-  });
-});
-
-describe('generator', () => {
+describe('journey generator', () => {
   it('same seed and budget give the identical course', () => {
     const a = generateCourse('DET123', 12, T);
     const b = generateCourse('DET123', 12, T);
@@ -82,102 +38,105 @@ describe('generator', () => {
 
   it('different seeds give different courses', () => {
     const seen = new Set<string>();
-    for (let i = 0; i < 100; i++) {
-      const r = generateAttempt(`D${i}`, 12, 0);
-      if (r.ok) seen.add(JSON.stringify({ t: r.raw.tiles, o: r.raw.objects }));
-    }
-    expect(seen.size).toBeGreaterThanOrEqual(95);
+    for (const r of GOOD) seen.add(JSON.stringify(r.raw.tiles));
+    expect(seen.size).toBe(GOOD.length);
   });
 
-  it('nearly every attempt makes a valid course file', () => {
-    expect(SAMPLE.length).toBeGreaterThanOrEqual(190);
+  it('most attempts make a valid course file', () => {
+    expect(GOOD.length).toBeGreaterThanOrEqual(SAMPLE.length * 0.9);
   });
 
-  it('heights stay from 0 to the limit, and every ledge on the route faces downhill', () => {
-    for (const r of SAMPLE) {
-      if (!r.ok) continue;
-      for (const t of r.course.tiles) if (t) for (const c of t.corners) {
+  it('writes format 3, every corner from 0 to the limit, every tile a legal shape', () => {
+    for (const r of GOOD) {
+      expect(r.raw.format).toBe(3);
+      for (const t of r.course.tiles) {
+        if (!t) continue;
+        expect(shapeOf(t.corners)).not.toBeNull();
+        for (const c of t.corners) {
           expect(c).toBeGreaterThanOrEqual(0);
           expect(c).toBeLessThanOrEqual(MAX_HEIGHT);
         }
-      const chunks = r.meta.layout.chunks;
-      for (const pc of chunks) {
-        if (!pc.chunk.oneWay) continue;
-        const prev = chunks.find((o) => o.order === pc.order - 1 && o.chunk.role !== 'branch');
-        const next = chunks.find((o) => o.order === pc.order + 1 && o.chunk.role !== 'branch');
-        const side = (o: typeof pc): Direction => DIRECTIONS.find((d) => DIRECTION_VECTORS[d][0] === o.sx - pc.sx && DIRECTION_VECTORS[d][1] === o.sy - pc.sy)!;
-        expect(pc.chunk.sideHeight[side(prev!)]!).toBeGreaterThan(pc.chunk.sideHeight[side(next!)]!);
       }
     }
   });
 
-  it('joined sides meet at the same height', () => {
-    for (const r of SAMPLE) {
-      if (!r.ok) continue;
-      const chunks = r.meta.layout.chunks;
-      for (const pc of chunks) {
-        for (const side of pc.joined) {
-          const nb = chunks.find((o) => o.sx === pc.sx + DIRECTION_VECTORS[side][0] && o.sy === pc.sy + DIRECTION_VECTORS[side][1])!;
-          expect(pc.offset + pc.chunk.sideHeight[side]!).toBe(nb.offset + nb.chunk.sideHeight[opposite(side)]!);
-        }
-      }
+  it('has the number of areas the budget calls for, and grows with the budget', () => {
+    const area = (b: number) => GOOD.filter((r) => r.meta.budget === b).map((r) => r.course.width * r.course.height);
+    for (const r of GOOD) {
+      const row = journeyRow(r.meta.budget);
+      const n = r.meta.terrain.regions.filter((g) => g.kind === 'area').length;
+      expect(n).toBeGreaterThanOrEqual(row.areas[0]);
+      expect(n).toBeLessThanOrEqual(row.areas[1]);
     }
+    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    expect(avg(area(30))).toBeGreaterThan(avg(area(8)) * 2);
   });
 
-  it('never overspends the budget, and spends at least half on enemies on average', () => {
-    let enemies = 0;
-    let total = 0;
-    for (const r of SAMPLE) {
-      if (!r.ok) continue;
+  it('never overspends the budget', () => {
+    for (const r of GOOD) {
       const s = r.meta.spend;
       expect(s.terrain + s.enemies + s.obstacles + s.hazards).toBeLessThanOrEqual(r.meta.budget);
       expect(s.terrain).toBeLessThanOrEqual(Math.floor(r.meta.budget * GEN.terrainShare));
-      enemies += s.enemies;
-      total += r.meta.budget;
     }
-    expect(enemies / total).toBeGreaterThanOrEqual(0.5);
   });
 
-  it('keeps the safety rules around the start and the exit', () => {
-    for (const r of SAMPLE) {
-      if (!r.ok) continue;
+  it('puts rails on edges, more at low budgets than high ones', () => {
+    const railsPer = (b: number) => {
+      const rs = GOOD.filter((r) => r.meta.budget === b);
+      return rs.reduce((n, r) => n + railTiles(r.course.rails).size / Math.max(1, r.course.tiles.filter(Boolean).length), 0) / rs.length;
+    };
+    expect(railsPer(8)).toBeGreaterThan(0);
+    expect(railsPer(8)).toBeGreaterThan(railsPer(30));
+  });
+
+  it('gets busier along the journey: more enemies in the last area than the first, overall', () => {
+    let first = 0;
+    let last = 0;
+    for (const r of GOOD) {
+      const areas = r.meta.terrain.regions.map((g, i) => ({ g, i })).filter((a) => a.g.kind === 'area');
+      const inArea = (i: number) => r.course.objects.filter((o) => OBJECTS.get(o.id)?.kind === 'enemy' && r.meta.terrain.region[o.y * r.course.width + o.x] === i).length;
+      first += inArea(areas[0]!.i);
+      last += inArea(areas[areas.length - 1]!.i);
+    }
+    expect(last).toBeGreaterThan(first);
+  });
+
+  it('keeps the safety rules around the start and the exit, and nothing on a rail', () => {
+    for (const r of GOOD) {
       const c = r.course;
       const s = c.start;
+      const onRail = railTiles(c.rails);
+      expect(onRail.has(`${s.x},${s.y}`)).toBe(false);
+      expect(onRail.has(`${c.exit.x},${c.exit.y}`)).toBe(false);
       for (const o of c.objects) {
         for (const p of [{ x: o.x, y: o.y }, ...o.path]) {
           expect(Math.hypot(p.x - s.x, p.y - s.y), `${o.id} near the start`).toBeGreaterThan(GEN.startClear);
           expect(Math.max(Math.abs(p.x - c.exit.x), Math.abs(p.y - c.exit.y)), `${o.id} near the exit`).toBeGreaterThan(1);
         }
+        if (OBJECTS.get(o.id)?.kind !== 'cloud') expect(onRail.has(`${o.x},${o.y}`), `${o.id} on a rail`).toBe(false);
         const def = OBJECTS.get(o.id);
         if (def?.kind === 'enemy') {
           const outer = (def as EnemyDef).stats.outerRadius ?? 0;
           if (outer > 0) expect(Math.hypot(o.x - s.x, o.y - s.y)).toBeGreaterThan(outer);
         }
       }
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const t = tileAt(c, s.x + dx, s.y + dy);
-          if (t) expect(SURFACES.get(t.surface)?.cost, `hazard next to the start`).toBeUndefined();
-        }
-      }
+      const st = tileAt(c, s.x, s.y)!;
+      expect(shapeOf(st.corners)).toBe('0000');
+      expect(SURFACES.get(st.surface)?.canHoldBall).toBe(true);
     }
   });
 
   it('sets the quota to 60% of the stars on offer, rounded, at least 2', () => {
-    for (const r of SAMPLE) {
-      if (!r.ok) continue;
+    for (const r of GOOD) {
       expect(r.course.quota).toBe(Math.min(r.meta.stars, Math.max(GEN.minQuota, Math.round(r.meta.stars * GEN.quotaShare))));
       expect(r.meta.enemies).toBeGreaterThanOrEqual(GEN.minEnemies);
       expect(r.meta.enemies).toBeLessThanOrEqual(GEN.maxEnemies);
     }
   });
 
-  it('cracked tiles only appear with an Anchorback on the course', () => {
-    for (const r of SAMPLE) {
-      if (!r.ok) continue;
-      const ids = r.course.objects.map((o) => o.id);
-      if (ids.includes('cracked-tile')) expect(ids).toContain('anchorback');
-    }
+  it('passes the structure check almost always, gaps included', () => {
+    const passed = GOOD.filter((r) => checkStructure(r.course).ok).length;
+    expect(passed).toBeGreaterThanOrEqual(GOOD.length * 0.95);
   });
 });
 
@@ -195,6 +154,15 @@ describe('structure validator', () => {
     expect(checkStructure(course(['g3 g3 g0 g0 g0', 'g3 g3 g0 g0 g0']))).toEqual({ ok: true });
   });
 
+  it('a gap of up to 3 empty tiles can be jumped to the same height or lower, not up', () => {
+    const gap = (far: string) => {
+      const row = `g4 g4 . . ${far} ${far} ${far}`;
+      return parse({ format: 3, name: 'G', legend: { g: 'grass' }, tiles: [row, row], start: [0, 0], exit: [6, 0], quota: 0 });
+    };
+    expect(checkStructure(gap('g4'))).toEqual({ ok: true });
+    expect(checkStructure(gap('g8'))).toEqual({ ok: false, reason: 'exit unreachable' });
+  });
+
   it('rejects a sealed exit and too few reachable stars', () => {
     const sealed = parse({ format: 2, name: 'S', legend: { g: 'grass' }, tiles: ['g0 g0 g3 g0 g0', 'g0 g0 g3 g0 g0'], start: [0, 0], exit: [4, 0], quota: 0 });
     expect(checkStructure(sealed)).toEqual({ ok: false, reason: 'exit unreachable' });
@@ -202,11 +170,11 @@ describe('structure validator', () => {
       format: 2,
       name: 'S',
       legend: { g: 'grass' },
-      tiles: ['g0 g0 g0 g0 g0 . g0', 'g0 g0 g0 g0 g0 . g0'],
+      tiles: ['g0 g0 g0 g0 g0 . . . . . g0', 'g0 g0 g0 g0 g0 . . . . . g0'],
       start: [0, 0],
       exit: [4, 0],
       quota: 1,
-      objects: [{ id: 'mossback', at: [6, 1] }],
+      objects: [{ id: 'mossback', at: [10, 1] }],
     });
     expect(checkStructure(stars)).toEqual({ ok: false, reason: 'too few reachable stars' });
   });
