@@ -193,7 +193,7 @@ Each enemy type is a definition file entry: family, health, star value, radii, t
 **Decided:** one ability slot plus gear slots.
 
 - **Abilities:** defeating an ability-carrying enemy gives you its ability, replacing the one you hold. It is triggered with a key during a shot.
-- **Gear:** passive items in three categories: weapon, armour, accessory. The ball holds one of each. Rolling over gear of a held category swaps it automatically. Gear never needs a button; weapon effects trigger only on contact with an enemy.
+- **Gear:** passive items in three categories: weapon, armour, bauble. The ball holds one of each. Rolling over gear of a held category swaps it automatically. Gear never needs a button; weapon effects trigger only on contact with an enemy.
 - **Run upgrades:** plain stackable stat boosts, separate from gear, with no slot limit.
 
 Full detail for gear, run upgrades, damage, enemy tiers, statuses, shops and permanent upgrades is in `docs/FEATURES.md`.
@@ -225,17 +225,20 @@ Gear examples are in `docs/FEATURES.md` section 8.
 
 - The run is a branching map of nodes. The player picks a path.
 - Node types are randomised. A shop is not guaranteed between courses. Sometimes the only choice is another course.
-- **Boss countdown:** a counter (for example "5 until boss") drops by one each time the player completes a node without fighting the boss. The player may fight the boss early when a boss node is offered. At zero the boss is forced.
+- **Decided (owner, 2026-11-15):** the countdown starts at **7**, and the player always gets at least one optional town right before the forced boss (a "last town"), on top of any towns on the way. An early boss may still be offered.
+- **Boss countdown:** a counter (for example "5 until boss") drops by one each time the player completes a node without fighting the boss. **Owner, 2026-11-15: shops do not count**; courses, hard courses and caches do. The player may fight the boss early when a boss node is offered. At zero the boss is forced.
 - **Yellow stars** are common. They fill the exit meter and are also spent in shops on upgrades that last for the current run.
 - **Blue stars** are rare. They are spent on permanent upgrades.
-- On death the run restarts. Permanent upgrades are kept. Everything else is lost: yellow stars, ability, gear, run upgrades, map position.
+- On death the run restarts. Permanent upgrades are kept. Everything else is lost: yellow stars, ability, gear, run upgrades, map position. **Owner, 2026-11-15:** gear stored in the Burrow is kept.
+- **Decided (owner, 2026-11-15): towns and the Burrow.** A shop node is a little town with the shop and the player's Burrow (home base, one stored gear item per category, safe from death). See FEATURES.md section 11. **Planned for Milestone 7:** a town is the save point for a run in progress, so the player can stop at a town and carry on another day.
 
 **Default:**
 
 - Node types: Course, Hard course (tougher, better reward, a blue star chance), Shop, Cache (free gear or healing), Boss.
 - Beating a boss gives blue stars, heals the player, and starts the next region with a harder generator budget and a new biome.
 - Fighting the boss early gives a bonus that scales with the countdown remaining.
-- Blue stars come from bosses, hard courses, and rare hidden spots on normal courses.
+- ~~Blue stars come from bosses, hard courses, and rare hidden spots on normal courses.~~
+- **Decided (owner, 2026-11-15): blue star sources:** beating a course, beating a boss, and an extra-rare chance inside crates or under cracked ground. Amounts and chances go on the Milestone 7 sheet. Until then they are counted on the run summary only.
 - Blue stars earned during a run are kept even if the run ends in death.
 - Permanent upgrades are bought on a hub screen between runs: maximum health, maximum shots, gear slots, starting yellow stars, shop discount, a starting ability.
 
@@ -283,13 +286,13 @@ Opus: use the default and say that you did. The owner can change any of these at
 
 | # | Question | Default until answered |
 |---|---|---|
-| 1 | Boss countdown length, and whether it varies by region | 5, same for every region, stored as a tuning number |
+| 1 | Boss countdown length, and whether it varies by region | **Answered (owner, 2026-11-15): 7**, same for every region, stored as a tuning number. The boss may still be offered earlier. Before the forced boss there is always an optional last town |
 | 2 | Reward for fighting the boss early | +1 blue star per countdown step remaining |
 | 3 | Does recovering refill all shots or only some? | All |
 | 4 | ~~Power input: sweeping meter, or drag distance?~~ | Answered 2026-11-14: sweeping meter (see section 5) |
 | 5 | How many uses does an ability have? | Unlimited uses, one per shot, until replaced |
 | 6 | Can gear be sold? | No. Swapping is covered in FEATURES.md section 8 |
-| 7 | Is there healing outside shops and caches? | Bosses heal fully; nothing else |
+| 7 | Is there healing outside shops and caches? (Owner, 2026-11-15: default kept) | Bosses heal fully; nothing else |
 | 8 | Does the run have an end, or go until death? | Three regions and a final boss, then an endless mode unlocks |
 | 9 | Theme, setting, main character and the game's name | **Partly answered (owner, 2026-11-15), planning only:** the hero is an **armadillo** who stands on two legs, rolls up into a ball when launched, and pops back out when the ball stops. Villains share one theme, not yet chosen: either **reptiles and amphibians with an alligator as the main villain**, or **insects**. Name and setting still undecided; all needed before Milestone 9 |
 | 10 | Do patrollers hurt, or only block and deflect? | Per type; the first patroller built deals 1 damage and knocks the ball back |

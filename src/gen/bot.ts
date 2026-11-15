@@ -19,7 +19,7 @@ import type { Tuning } from '../content/tuning.ts';
 import { groundAt, type ShotCommand } from '../sim/ball.ts';
 import type { Course } from '../sim/course.ts';
 import { distancesTo } from './structure.ts';
-import { ballNow, canShoot, clonePlay, createPlay, inWater, lobSpeedFor, rollSpeedFor, runShot, takeShot, tick, type PlayState } from '../sim/play.ts';
+import { ballNow, canShoot, clonePlay, createPlay, inWater, lobSpeedFor, rollSpeedFor, runShot, takeShot, tick, type Loadout, type PlayState } from '../sim/play.ts';
 
 export interface BotMove {
   /** World clock step the shot was taken on. */
@@ -66,6 +66,8 @@ function targets(play: PlayState): Target[] {
 export interface BotHints {
   /** Shot limit (the journey table sets it by budget). */
   readonly maxShots?: number;
+  /** Milestone 6: play with the player's run upgrades, gear and ability (owner, 2026-11-15). */
+  readonly loadout?: Loadout;
 }
 
 export function playBot(course: Course, tuning: Tuning, seed: string, hints: BotHints = {}): BotResult {
@@ -90,7 +92,7 @@ export function playBot(course: Course, tuning: Tuning, seed: string, hints: Bot
     return v;
   };
 
-  let play = createPlay(course, tuning, { seed });
+  let play = createPlay(course, tuning, { seed, ...(hints.loadout && { loadout: hints.loadout }) });
   const moves: BotMove[] = [];
   let simulated = 0;
   const done = (reason: string): BotResult => {

@@ -15,9 +15,12 @@ import {
   canShoot,
   canUseAbility,
   createPlay,
+  debugWin,
   drainLog,
+  equipGear,
   isImmune,
   previewShot,
+  shieldsLeft,
   takeShot,
   tick,
   type PlayEvent,
@@ -28,8 +31,13 @@ import { OBJECTS, RAIL } from '../content/objects';
 import { RULES } from '../content/rules';
 import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
-import { loadTuning } from '../save/tuningStore';
-import { TuningPanel } from '../ui/tuningPanel';
+import type { TuningPanel } from '../ui/tuningPanel';
+import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
+import { UPGRADE_LIST } from '../content/run';
+import { placeGear } from '../gen/placeGear';
+import { addUpgrade, botLoadoutOf, debugSetCountdown, finishCourse, loadoutOf, rewardFor } from '../sim/run';
+import { activeRun, newRunSeed, session, startRun, type RunCourse } from './runSession';
+import { getPanel, getTuning, preloadAssets, shared } from './shared';
 import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
 import { frameIndex, type Manifest } from './manifest';
 import { pixelText } from './pixelText';
@@ -37,6 +45,8 @@ import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 
 /** Loaded from assets/manifest.json on first boot. */
 let manifest: Manifest = { version: 1, sprites: {} };
+/** The ?run= address starts a run only once, not on every restart. */
+let runStartedFromUrl = false;
 
 /** Debug overlay modes, cycled with the G key. */
 const DEBUG_MODES = ['off', 'coords', 'heights', 'surfaces', 'areas'] as const;
@@ -113,6 +123,8 @@ export interface CourseSceneData {
   budget?: number;
   /** Generated course: replay the bot's game instead of playing (B key). */
   watch?: boolean;
+  /** Milestone 6: play the run's current course node. */
+  run?: boolean;
 }
 
 /** Six letters and digits from a random stream, for the next generated course's seed. */
@@ -196,6 +208,10 @@ export class CourseScene extends Phaser.Scene {
   private botAt = 0;
   /** Thumbnail mode for the contact sheet (?thumb=1): no HUD, whole course in view. */
   private thumb = false;
+  /** Milestone 6: playing the run's current course node. */
+  private runMode = false;
+  /** The course result has been given to the run (only once). */
+  private runReported = false;
 
   constructor() {
     super('course');
@@ -212,6 +228,7 @@ export class CourseScene extends Phaser.Scene {
     if (data.budget !== undefined) genBudget = data.budget;
     genBudget = Phaser.Math.Clamp(Math.round(genBudget), GEN.minBudget, GEN.maxBudget);
     this.watching = data.watch === true;
+    this.runMode = data.run === true && !!session.run?.current;
     this.thumb = params.get('thumb') === '1';
     // ?bench=<object id> opens the test bench with that thing at its centre (for example ?course=test-bench&bench=rail).
     if (!benchShown && params.get('bench') !== null) bench.object = params.get('bench')!;
@@ -220,22 +237,35 @@ export class CourseScene extends Phaser.Scene {
   }
 
   preload(): void {
-    if (this.cache.json.exists('manifest')) return;
-    // Load the manifest first, then every sprite it lists.
-    this.load.json('manifest', 'manifest.json');
-    this.load.once('filecomplete-json-manifest', () => {
-      manifest = this.cache.json.get('manifest') as Manifest;
-      for (const [id, entry] of Object.entries(manifest.sprites)) {
-        this.load.spritesheet(id, entry.file, { frameWidth: entry.frameWidth, frameHeight: entry.frameHeight });
-      }
-    });
+    preloadAssets(this);
   }
 
   create(): void {
+    manifest = shared.manifest;
+    tuning = getTuning();
+    if (this.runMode) this.seed = session.run!.current!.courseSeed;
+    // ?run=<seed> (or #run, #run=<seed> where the address cannot carry a query) starts a run (Milestone 6), once.
+    const hash = window.location.hash.slice(1);
+    const runParam = new URLSearchParams(window.location.search).get('run') ?? (hash === 'run' || hash.startsWith('run=') ? hash.slice(4) : null);
+    if (runParam !== null && !runStartedFromUrl) {
+      runStartedFromUrl = true;
+      startRun(runParam.toUpperCase() || newRunSeed());
+      this.scene.start('map');
+      return;
+    }
     const file = TEST_COURSES[this.courseIndex]!;
-    if (!tuning) tuning = loadTuning();
     let data: unknown = file.data;
-    if (file.id === BENCH_ID) data = benchCourse(bench.object);
+    if (this.runMode) {
+      const ready = this.runCourse();
+      if (!ready) {
+        this.course = null;
+        this.setupKeys();
+        this.showLoading();
+        this.requestRunGen();
+        return;
+      }
+      data = ready.raw;
+    } else if (file.id === BENCH_ID) data = benchCourse(bench.object);
     else if (file.id === GENERATED_ID) {
       const ready = this.cachedGen();
       if (!ready) {
@@ -264,12 +294,12 @@ export class CourseScene extends Phaser.Scene {
     this.hiddenHud = [];
     for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
 
-    if (!panel) {
-      panel = new TuningPanel(tuning);
-      if (new URLSearchParams(window.location.search).get('tune') === '1') panel.toggle(true);
-    }
+    panel = getPanel();
 
-    this.play = createPlay(course, tuning, { seed: this.seed });
+    const run = this.runMode ? session.run : null;
+    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run) }) });
+    this.runReported = false;
+    this.setRunPanel();
     if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
     // The first visit to the bench opens the panel, so the choices are easy to find.
     if (file.id === BENCH_ID && !benchShown) {
@@ -366,6 +396,114 @@ export class CourseScene extends Phaser.Scene {
     return lastGen && lastGen.result.seed === this.seed && lastGen.result.budget === genBudget ? lastGen : null;
   }
 
+  /** The run's current course: seed, budget and the bot's loadout. A different key means it must be made again. */
+  private runKey(): string {
+    const run = session.run!;
+    const cur = run.current!;
+    return `${cur.courseSeed}|${cur.budget}|${JSON.stringify(botLoadoutOf(run))}`;
+  }
+
+  private runCourse(): RunCourse | null {
+    return session.course && session.course.key === this.runKey() ? session.course : null;
+  }
+
+  /**
+   * Make the run's current course in a background worker, with the bot playing
+   * the player's upgrades, gear and ability (sheet section 4.3), place its gear
+   * item if it has one, then start again.
+   */
+  private requestRunGen(): void {
+    const run = session.run!;
+    const cur = run.current!;
+    const key = this.runKey();
+    if (session.pending === key) return;
+    session.pending = key;
+    const loadout = botLoadoutOf(run);
+    const done = (result: GenResult, ms: number) => {
+      if (session.pending !== key) return;
+      session.pending = null;
+      let raw = result.raw;
+      let course = result.course;
+      if (cur.gear) ({ raw, course } = placeGear(raw, course, cur.gear, cur.courseSeed));
+      session.course = { key, raw, course, result, ms };
+      (result.fallback ? console.warn : console.info)(`${result.summary}, ${Math.round(ms)} ms${cur.gear ? `, gear: ${cur.gear}` : ''}`);
+      if (this.scene.isActive()) this.scene.restart({ run: true, debug: this.debugMode });
+    };
+    try {
+      const worker = new Worker(new URL('./genWorker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e: MessageEvent<{ result: GenResult; ms: number }>) => {
+        worker.terminate();
+        done(e.data.result, e.data.ms);
+      };
+      worker.postMessage({ seed: cur.courseSeed, budget: cur.budget, tuning, loadout });
+    } catch {
+      this.time.delayedCall(50, () => {
+        const t0 = performance.now();
+        const result = generateCourse(cur.courseSeed, cur.budget, tuning!, { loadout });
+        done(result, performance.now() - t0);
+      });
+    }
+  }
+
+  /** The course result goes back to the run, once. */
+  private reportRun(): void {
+    const run = session.run;
+    if (!this.runMode || this.runReported || !run || run.status !== 'course') return;
+    this.runReported = true;
+    const p = this.play;
+    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear });
+    session.course = null;
+  }
+
+  /** Key 7: start a run, or go back to the one in progress. */
+  private openRun(): void {
+    const run = activeRun();
+    if (!run) {
+      startRun(newRunSeed());
+      this.scene.start('map');
+    } else if (run.status === 'course') {
+      if (!this.runMode) this.scene.restart({ run: true, debug: this.debugMode });
+    } else if (run.status === 'shop' || run.status === 'cache') this.scene.start('town');
+    else this.scene.start('map');
+  }
+
+  /** The run section of the U panel (testing aids). */
+  private setRunPanel(): void {
+    const run = activeRun();
+    const p = panel;
+    if (!p) return;
+    if (!run) {
+      p.setRun(null);
+      return;
+    }
+    p.setRun({
+      gear: GEAR_LIST.map((g) => ({ id: g.id, label: `${g.name} (${g.rarity})` })),
+      upgrades: UPGRADE_LIST.map((u) => ({ id: u.id, label: u.name })),
+      countdown: run.countdown,
+      canWin: this.runMode,
+      onStars: () => {
+        if (this.runMode) this.play.wallet += 20;
+        else run.wallet += 20;
+        this.statusKey = '';
+      },
+      onGear: (id) => {
+        if (this.runMode) equipGear(this.play, id);
+        this.statusKey = '';
+        this.showMessage(`GOT ${GEAR.get(id)!.name.toUpperCase()}`, GOOD);
+      },
+      onUpgrade: (id) => {
+        addUpgrade(run, id);
+        this.showMessage(this.runMode ? 'UPGRADE ADDED: IT APPLIES FROM THE NEXT COURSE' : 'UPGRADE ADDED', GOOD);
+      },
+      onCountdown: (n) => debugSetCountdown(run, n),
+      onWin: () => {
+        if (!this.runMode || this.play.status !== 'playing') return;
+        debugWin(this.play);
+        this.endShot();
+      },
+    });
+  }
+
   /** Make the course in a background worker (or right here if workers are not available), then start again. */
   private requestGen(): void {
     const seed = this.seed;
@@ -397,7 +535,9 @@ export class CourseScene extends Phaser.Scene {
     const cx = VIEW_WIDTH / 2;
     const cy = VIEW_HEIGHT / 2;
     this.cameras.main.setScroll(0, 0);
-    const title = pixelText(this, manifest, 0, 0, `GENERATING THE JOURNEY  #${this.seed}  BUDGET ${genBudget}`, { color: UI_TEXT, background: UI_BG }).setScrollFactor(0);
+    const cur = this.runMode ? session.run?.current : null;
+    const what = cur ? `MAKING THE NEXT COURSE  ${cur.type === 'boss' ? 'BOSS (STAND-IN)' : cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  BUDGET ${cur.budget}` : `GENERATING THE JOURNEY  #${this.seed}  BUDGET ${genBudget}`;
+    const title = pixelText(this, manifest, 0, 0, what, { color: UI_TEXT, background: UI_BG }).setScrollFactor(0);
     title.setPosition(Math.round(cx - title.width / 2), cy - 40);
     const hint = pixelText(this, manifest, 0, 0, 'BIG COURSES TAKE A FEW SECONDS: THE BOT IS CHECKING IT CAN BE BEATEN', { color: UI_DIM, background: UI_BG }).setScrollFactor(0);
     hint.setPosition(Math.round(cx - hint.width / 2), cy + 34);
@@ -556,6 +696,7 @@ export class CourseScene extends Phaser.Scene {
     });
     kb.on('keydown-B', () => this.isGenerated && this.loadGenerated(this.seed, genBudget!, !this.watching));
     kb.on('keydown-N', () => this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length));
+    kb.on('keydown-SEVEN', () => this.openRun());
 
     // Drag with the right or middle mouse button to pan. The left button is for shots.
     this.input.mouse?.disableContextMenu();
@@ -691,6 +832,7 @@ export class CourseScene extends Phaser.Scene {
       show(e.uid, e.def.sprite, e.x, e.y, e.z, { alpha: near && Math.floor(now / 80) % 2 ? 0.45 : 1 });
       if (e.activated) show(`${e.uid}:alert`, 'alert', e.x, e.y, e.z, { lift: 18 + bob, depth: HUD_DEPTH - 10 });
       if (e.statuses.some((st) => st.id === 'stunned')) show(`${e.uid}:stun`, 'icon-stunned', e.x, e.y, e.z, { lift: 20, depth: HUD_DEPTH - 10 });
+      if (e.statuses.some((st) => st.id === 'burning')) show(`${e.uid}:burn`, 'icon-burning', e.x, e.y, e.z, { lift: 31, depth: HUD_DEPTH - 10 });
       if (e.lobTarget) {
         const z = groundAt(play.course, e.lobTarget.x, e.lobTarget.y)?.h ?? 0;
         show(`${e.uid}:ring`, 'target-ring', e.lobTarget.x, e.lobTarget.y, z, {
@@ -713,6 +855,8 @@ export class CourseScene extends Phaser.Scene {
       show(c.uid, c.def.sprite, c.x, c.y, g, { frame: flash ? 'flash' : 'idle', lift: 20 + bob, depth: OVERLAY_DEPTH - 20 });
     }
     for (const p of play.pickups) if (!p.taken) show(p.uid, p.def.sprite, p.x, p.y, p.z, { lift: 2 + bob });
+    // Gear on the ground (Milestone 6): a dropped item shows faded while it cannot be picked up yet.
+    for (const g of play.gearItems) if (!g.taken) show(g.uid, GEAR.get(g.item)!.icon, g.x, g.y, g.z, { lift: 3 + bob, alpha: play.clock < g.lockUntil ? 0.5 : 1 });
     for (const [uid, img] of this.objectImgs) if (!seen.has(uid)) img.setVisible(false);
 
     if (this.exitImg) {
@@ -782,8 +926,17 @@ export class CourseScene extends Phaser.Scene {
       this.cancelCharge();
       this.drawShotHud();
     });
-    onKey('R', () => this.restartCourse());
+    onKey('R', () => {
+      if (this.runMode) this.showMessage('NO RESTARTS IN A RUN', BAD);
+      else this.restartCourse();
+    });
     onKey('ENTER', () => {
+      if (this.runMode) {
+        if (this.play.status === 'playing') return;
+        this.reportRun();
+        this.scene.start('map');
+        return;
+      }
       if (this.play.status === 'won' && this.isGenerated) {
         // Owner, 2026-11-15: the next generated course's budget rises by a random 0 to 4, from the seed.
         const rng = Rng.fromSeed(`next/${this.seed}/${genBudget}`);
@@ -1095,11 +1248,46 @@ export class CourseScene extends Phaser.Scene {
         case 'bonusShot':
           this.queueMessage('+1 SHOT', GOOD);
           break;
+        case 'gearEquipped': {
+          const name = GEAR.get(e.item)?.name.toUpperCase() ?? e.item;
+          this.queueMessage(e.dropped ? `GOT ${name}! (${GEAR.get(e.dropped)?.name.toUpperCase()} LEFT ON THE GROUND)` : `GOT ${name}!`, GOOD);
+          break;
+        }
+        case 'shielded':
+          this.queueMessage(`${GEAR.get(e.item)?.name.toUpperCase() ?? 'ARMOUR'}: DAMAGE IGNORED`, 0x80c8ff);
+          break;
+        case 'resisted':
+          this.queueMessage(`${GEAR.get(e.item)?.name.toUpperCase() ?? 'ARMOUR'}: NO DAMAGE`, 0x80c8ff);
+          break;
+        case 'thorns':
+          this.queueMessage(`HIT BACK! ${this.nameOf(e.enemy)} TAKES ${e.damage}`, GOOD);
+          break;
+        case 'phoenix':
+          this.queueMessage(`PHOENIX PLATE! BACK TO ${e.health} HEALTH. IT CRUMBLES`, 0xf8a020);
+          break;
+        case 'status':
+          if (e.status === 'burning') this.queueMessage(`${this.nameOf(e.target)} IS BURNING`, 0xf8a020);
+          break;
+        case 'statusDamage':
+          this.queueMessage(`${this.nameOf(e.enemy)} BURNS: -${e.damage}`, 0xf8a020);
+          break;
+        case 'chainZap':
+          this.queueMessage(`ZAP! ${this.nameOf(e.enemy)} -1`, 0xf8f040);
+          break;
+        case 'burst':
+          this.queueMessage('FIRE BURST!', 0xf8a020);
+          break;
+        case 'healed':
+          this.queueMessage(`+${e.amount} HEALTH (${GEAR.get(e.item)?.name.toUpperCase() ?? 'GEAR'})`, GOOD);
+          break;
+        case 'echo':
+          this.queueMessage('ECHO! THAT HIT COUNTS TWICE', 0xa080f0);
+          break;
         case 'underwater':
           this.queueMessage('UNDER WATER: NEXT SHOT IS WEAKER', 0x80c8ff);
           break;
         case 'recover':
-          this.queueMessage(this.play.napsUsed >= RULES.naps ? 'OUT OF SHOTS: NAP. SHOTS REFILLED. THAT WAS YOUR LAST NAP' : 'OUT OF SHOTS: NAP. SHOTS REFILLED', 0x80c8ff);
+          this.queueMessage(this.play.napsUsed >= this.play.stats.get('naps') ? 'OUT OF SHOTS: NAP. SHOTS REFILLED. THAT WAS YOUR LAST NAP' : 'OUT OF SHOTS: NAP. SHOTS REFILLED', 0x80c8ff);
           break;
         default:
           break;
@@ -1249,7 +1437,7 @@ export class CourseScene extends Phaser.Scene {
       `CURVE: ${settings.side === 0 ? 'NONE' : settings.side > 0 ? 'RIGHT' : 'LEFT'} ${sign(settings.side)}`,
       `STEP: ${this.stepLabel()}`,
       // Owner, 2026-11-15: two naps per course; running out a third time ends it.
-      `NAPS LEFT: ${this.play ? Math.max(0, RULES.naps - this.play.napsUsed) : RULES.naps}${this.play && this.play.napsUsed >= RULES.naps ? ' (LAST SHOTS!)' : ''}`,
+      `NAPS LEFT: ${this.play ? Math.max(0, this.play.stats.get('naps') - this.play.napsUsed) : RULES.naps}${this.play && this.play.napsUsed >= this.play.stats.get('naps') ? ' (LAST SHOTS!)' : ''}`,
     ].join('\n');
     this.shotHud = pixelText(this, manifest, 2, 30, text, { color: UI_DIM, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
   }
@@ -1264,7 +1452,8 @@ export class CourseScene extends Phaser.Scene {
     const maxShots = p.stats.get('maxShots');
     const wild = this.time.now < this.wildUntil ? Math.floor(this.time.now / 90) % ABILITY_IDS.length : -1;
     const usedUp = p.abilityUsed && !!p.shot;
-    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length].join(',');
+    const shields = shieldsLeft(p);
+    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, shields].join(',');
     if (key === this.statusKey) return;
     this.statusKey = key;
     this.statusHud?.destroy();
@@ -1297,7 +1486,7 @@ export class CourseScene extends Phaser.Scene {
     c.add(pixelText(this, manifest, 104, 2, `HP ${p.health}/${maxHealth}`, { color: UI_TEXT }));
     const starX = 94;
     icon('star-yellow', starX - 2, 9);
-    c.add(pixelText(this, manifest, starX + 10, barY, `${p.wallet}  #${this.seed}${this.isGenerated ? ` B${genBudget}` : ''}`, { color: UI_TEXT }));
+    c.add(pixelText(this, manifest, starX + 10, barY, this.runMode ? `${p.wallet}` : `${p.wallet}  #${this.seed}${this.isGenerated ? ` B${genBudget}` : ''}`, { color: UI_TEXT }));
     // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
     const slotX = bgW + 4;
     c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -1311,6 +1500,20 @@ export class CourseScene extends Phaser.Scene {
       c.add(pixelText(this, manifest, slotX + 14, 11, usedUp ? 'USED' : 'F: USE', { color: UI_DIM }));
     } else c.add(pixelText(this, manifest, slotX + 3, 7, 'NO ABILITY', { color: UI_DIM }));
     if (p.ballStatuses.some((st) => st.id === 'stunned')) c.add(this.add.image(x + 2, 0, 'icon-stunned', 0).setOrigin(0, 0));
+    // Gear slots (Milestone 6): weapon, armour, bauble; then the armour's ignored damages left this course.
+    const gearX = slotX + 66;
+    c.add(this.add.rectangle(gearX, 0, shields > 0 ? 58 : 44, 19, UI_BG, 0.85).setOrigin(0, 0));
+    GEAR_CATEGORIES.forEach((cat, i) => {
+      const id = p.gear[cat];
+      const gx = gearX + 2 + i * 14;
+      if (id) c.add(this.add.image(gx, 1, GEAR.get(id)!.icon, 0).setOrigin(0, 0));
+      else c.add(this.add.rectangle(gx + 1, 2, 10, 10, 0x000000, 0).setOrigin(0, 0).setStrokeStyle(1, 0x404058));
+    });
+    c.add(pixelText(this, manifest, gearX + 3, 13, 'W  A  B', { color: UI_DIM }));
+    if (shields > 0) {
+      c.add(this.add.image(gearX + 44, 1, 'icon-shield', 0).setOrigin(0, 0));
+      c.add(pixelText(this, manifest, gearX + 47, 12, String(shields), { color: UI_TEXT }));
+    }
     this.statusHud = c;
   }
 
@@ -1319,7 +1522,14 @@ export class CourseScene extends Phaser.Scene {
     this.endScreen?.destroy();
     const p = this.play;
     const won = p.status === 'won';
-    const lines = won
+    const cur = this.runMode ? session.run?.current : null;
+    const lines = cur
+      ? won
+        ? cur.type === 'boss'
+          ? ['BOSS BEATEN! (STAND-IN HARD COURSE)', '', 'THE RUN IS COMPLETE.', `SHOTS TAKEN: ${p.shotNumber}`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: RUN SUMMARY']
+          : ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `FINISH REWARD: +${rewardFor(cur.type)} STARS`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: BACK TO THE MAP']
+        : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', 'GEAR IN YOUR BURROW IS SAFE.', '', 'ENTER: RUN SUMMARY']
+      : won
       ? ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: NEXT COURSE   R: PLAY AGAIN']
       : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
     const text = pixelText(this, manifest, 0, 0, lines.join('\n'), { color: won ? GOOD : BAD });
@@ -1330,6 +1540,8 @@ export class CourseScene extends Phaser.Scene {
     text.setPosition(8, 7);
     c.add(text);
     this.endScreen = c;
+    // The run learns the result straight away, so leaving with another key cannot lose it.
+    this.reportRun();
     this.messageQueue = [];
     this.message?.destroy();
     this.message = null;
@@ -1353,15 +1565,21 @@ export class CourseScene extends Phaser.Scene {
   private drawHud(id: string, course: Course): void {
     const n = `${this.courseIndex + 1}/${TEST_COURSES.length}`;
     this.drawStatusHud();
-    pixelText(this, manifest, 2, 2, `${n} ${course.name}`, { color: UI_TEXT, background: UI_BG })
+    const cur = this.runMode ? session.run?.current : null;
+    const label = cur
+      ? `RUN #${session.run!.seed}  ${cur.type === 'boss' ? 'BOSS (STAND-IN)' : cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  ROW ${cur.row}  BUDGET ${cur.budget}`
+      : `${n} ${course.name}`;
+    pixelText(this, manifest, 2, 2, label, { color: UI_TEXT, background: UI_BG })
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH)
       .setName(`hud-${id}`);
     const lines = [
       'MOUSE: PULL BACK TO PLAN, HOLD TO CHARGE  KEYS: ARROWS/WASD AIM+POWER, HOLD SPACE TO CHARGE',
       'T: GROUND/LOFT  Z/X: SPIN  Q/E: CURVE  SPACE IN FLIGHT: BOOST  F: ABILITY  ESC: RE-PLAN',
-      'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  O: OVERVIEW  1-6/N: COURSE  R: RESTART  G: DEBUG  U: TUNING  H: HELP',
-      ...(TEST_COURSES[this.courseIndex]?.id === GENERATED_ID ? ['GENERATED: BRACKET KEYS: BUDGET -/+2  V: SEED VIEWER  B: WATCH THE BOT  ENTER AFTER A WIN: NEXT'] : []),
+      this.runMode
+        ? 'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  O: OVERVIEW  G: DEBUG  U: TUNING AND TEST PANEL  H: HELP'
+        : 'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  O: OVERVIEW  1-6/N: COURSE  7: RUN  R: RESTART  G: DEBUG  U: TUNING  H: HELP',
+      ...(!this.runMode && TEST_COURSES[this.courseIndex]?.id === GENERATED_ID ? ['GENERATED: BRACKET KEYS: BUDGET -/+2  V: SEED VIEWER  B: WATCH THE BOT  ENTER AFTER A WIN: NEXT'] : []),
     ];
     this.helpHud = lines.map((l, i) =>
       pixelText(this, manifest, 2, VIEW_HEIGHT - 7 * (lines.length - i) - 1, l, { color: UI_DIM, background: UI_BG })

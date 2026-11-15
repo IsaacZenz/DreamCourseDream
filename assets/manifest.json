@@ -1340,6 +1340,858 @@
         13
       ]
     },
+    "gear-studded-shell": {
+      "file": "sprites/gear-studded-shell.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-spiked-shell": {
+      "file": "sprites/gear-spiked-shell.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-iron-shell": {
+      "file": "sprites/gear-iron-shell.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-steel-shell": {
+      "file": "sprites/gear-steel-shell.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-ember-coat": {
+      "file": "sprites/gear-ember-coat.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-cinder-coat": {
+      "file": "sprites/gear-cinder-coat.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-blaze-coat": {
+      "file": "sprites/gear-blaze-coat.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-inferno-coat": {
+      "file": "sprites/gear-inferno-coat.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-bonk-knob": {
+      "file": "sprites/gear-bonk-knob.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-thump-knob": {
+      "file": "sprites/gear-thump-knob.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-clang-knob": {
+      "file": "sprites/gear-clang-knob.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-gong-knob": {
+      "file": "sprites/gear-gong-knob.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-thunder-knuckle": {
+      "file": "sprites/gear-thunder-knuckle.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-wrecking-shell": {
+      "file": "sprites/gear-wrecking-shell.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-leech-fang": {
+      "file": "sprites/gear-leech-fang.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-sunfire-crown": {
+      "file": "sprites/gear-sunfire-crown.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-giants-knuckle": {
+      "file": "sprites/gear-giants-knuckle.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-echo-shell": {
+      "file": "sprites/gear-echo-shell.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-padded-lining": {
+      "file": "sprites/gear-padded-lining.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-quilted-lining": {
+      "file": "sprites/gear-quilted-lining.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-double-lining": {
+      "file": "sprites/gear-double-lining.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-plated-lining": {
+      "file": "sprites/gear-plated-lining.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-thorn-guard": {
+      "file": "sprites/gear-thorn-guard.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-bramble-guard": {
+      "file": "sprites/gear-bramble-guard.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-briar-guard": {
+      "file": "sprites/gear-briar-guard.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-thicket-guard": {
+      "file": "sprites/gear-thicket-guard.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-thick-hide": {
+      "file": "sprites/gear-thick-hide.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-tough-hide": {
+      "file": "sprites/gear-tough-hide.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-stone-hide": {
+      "file": "sprites/gear-stone-hide.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-granite-hide": {
+      "file": "sprites/gear-granite-hide.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-mirror-plate": {
+      "file": "sprites/gear-mirror-plate.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-cork-plate": {
+      "file": "sprites/gear-cork-plate.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-moss-plate": {
+      "file": "sprites/gear-moss-plate.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-phoenix-plate": {
+      "file": "sprites/gear-phoenix-plate.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-bastion-plate": {
+      "file": "sprites/gear-bastion-plate.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-storm-cloak": {
+      "file": "sprites/gear-storm-cloak.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-star-magnet": {
+      "file": "sprites/gear-star-magnet.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-star-lodestone": {
+      "file": "sprites/gear-star-lodestone.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-star-anchor": {
+      "file": "sprites/gear-star-anchor.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-star-heart": {
+      "file": "sprites/gear-star-heart.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-long-sight": {
+      "file": "sprites/gear-long-sight.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-far-sight": {
+      "file": "sprites/gear-far-sight.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-eagle-sight": {
+      "file": "sprites/gear-eagle-sight.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-hawk-sight": {
+      "file": "sprites/gear-hawk-sight.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-lucky-pebble": {
+      "file": "sprites/gear-lucky-pebble.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-lucky-stone": {
+      "file": "sprites/gear-lucky-stone.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-lucky-gem": {
+      "file": "sprites/gear-lucky-gem.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-lucky-jewel": {
+      "file": "sprites/gear-lucky-jewel.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-pocket-pillow": {
+      "file": "sprites/gear-pocket-pillow.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-golden-tooth": {
+      "file": "sprites/gear-golden-tooth.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-feather-charm": {
+      "file": "sprites/gear-feather-charm.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-crown-of-plenty": {
+      "file": "sprites/gear-crown-of-plenty.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-pocket-watch": {
+      "file": "sprites/gear-pocket-watch.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-four-leaf-clover": {
+      "file": "sprites/gear-four-leaf-clover.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "node-course": {
+      "file": "sprites/node-course.png",
+      "frameWidth": 14,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        7,
+        7
+      ]
+    },
+    "node-hard": {
+      "file": "sprites/node-hard.png",
+      "frameWidth": 14,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        7,
+        7
+      ]
+    },
+    "node-shop": {
+      "file": "sprites/node-shop.png",
+      "frameWidth": 14,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        7,
+        7
+      ]
+    },
+    "node-cache": {
+      "file": "sprites/node-cache.png",
+      "frameWidth": 14,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        7,
+        7
+      ]
+    },
+    "node-boss": {
+      "file": "sprites/node-boss.png",
+      "frameWidth": 14,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        7,
+        7
+      ]
+    },
+    "node-done": {
+      "file": "sprites/node-done.png",
+      "frameWidth": 14,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        7,
+        7
+      ]
+    },
+    "upgrade-health": {
+      "file": "sprites/upgrade-health.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "upgrade-shots": {
+      "file": "sprites/upgrade-shots.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "upgrade-power": {
+      "file": "sprites/upgrade-power.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "upgrade-reach": {
+      "file": "sprites/upgrade-reach.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "upgrade-luck": {
+      "file": "sprites/upgrade-luck.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "icon-burning": {
+      "file": "sprites/icon-burning.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-shield": {
+      "file": "sprites/icon-shield.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "town-shop": {
+      "file": "sprites/town-shop.png",
+      "frameWidth": 56,
+      "frameHeight": 52,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        28,
+        51
+      ]
+    },
+    "town-burrow": {
+      "file": "sprites/town-burrow.png",
+      "frameWidth": 56,
+      "frameHeight": 36,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        28,
+        33
+      ]
+    },
+    "town-sign": {
+      "file": "sprites/town-sign.png",
+      "frameWidth": 28,
+      "frameHeight": 32,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        14,
+        31
+      ]
+    },
+    "cursor": {
+      "file": "sprites/cursor.png",
+      "frameWidth": 9,
+      "frameHeight": 7,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        6
+      ]
+    },
     "font": {
       "file": "sprites/font.png",
       "frameWidth": 4,

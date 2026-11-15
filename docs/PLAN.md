@@ -133,16 +133,17 @@ After playing the first generator, the owner asked for larger, more open, much m
 
 ## Milestone 6 — The run
 
-- [ ] **Plan gate:** design sheet for the map node types and rules, the starter gear, the run upgrades, the shop and its prices. Owner signs it off before any of them is built.
-- [ ] Branching map generator with node types: Course, Hard course, Shop, Cache, Boss
-- [ ] Map rules: shops not guaranteed, forced course-only stretches possible, every path reaches a boss
-- [ ] Boss countdown, early boss choice, forced boss at zero (boss is a stand-in hard course until Milestone 7)
-- [ ] Map screen
-- [ ] Gear: three categories, one of each, automatic swap on pickup, dropped item stays on the ground (FEATURES.md section 8)
-- [ ] The six starter gear items and five starter run upgrades
-- [ ] Shop: five random offers, reroll, services (FEATURES.md section 11)
-- [ ] Difficulty budget rises along the run
-- [ ] One seed drives the whole run
+- [x] **Plan gate:** design sheet for the map node types and rules, the starter gear, the run upgrades, the shop and its prices. Owner signs it off before any of them is built.
+- [x] Branching map generator with node types: Course, Hard course, Shop, Cache, Boss
+- [x] Map rules: shops not guaranteed, forced course-only stretches possible, every path reaches a boss
+- [x] Boss countdown, early boss choice, forced boss at zero (boss is a stand-in hard course until Milestone 7)
+- [x] Map screen
+- [x] Gear: three categories (weapon, armour, bauble), one of each, automatic swap on pickup, dropped item stays on the ground (FEATURES.md section 8)
+- [x] The 54 gear items (owner, 2026-11-15: six rarities, three per rarity per category) and five starter run upgrades
+- [x] Shop: five random offers, reroll, services (FEATURES.md section 11)
+- [x] Difficulty budget rises along the run
+- [x] Towns and the Burrow (owner, 2026-11-15): a shop node is a town with the shop and the Burrow; the Burrow stores one gear item per category, safe from death, saved in the browser
+- [x] One seed drives the whole run
 
 **Done when:** the owner can play a full run from the first node to the stand-in boss, with shop visits and path choices.
 
@@ -154,6 +155,7 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] Hub screen between runs with the levelled list and the starting-ability unlock (FEATURES.md section 10)
 - [ ] Death flow: lose run items, keep permanent upgrades and blue stars
 - [ ] Save and load with a version number and a safe fallback if the save is unreadable
+- [ ] Owner, 2026-11-15: a town is the save point for a run in progress. Leaving the game at a town and coming back carries on from there; death still starts over
 - [ ] Region two starts after the boss with a higher budget
 
 **Done when:** the owner can die, buy a permanent upgrade, start again, and see the upgrade applied; and can beat the boss.
@@ -235,3 +237,10 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-15 — Owner: leave big courses as they are for now and test the feel; the hero's upgrades during a run (Milestones 6 and 7) are meant to keep up with the scaling difficulty. Recorded in DESIGN.md section 6. When the run exists, the generator's bot should play with the upgrades the player would have at that point.
 - 2026-11-15 — Owner decision, built the same day: falling off the edge loses the held ability (water does not). 2 new tests (250 in total). Owner planning notes for Milestone 9 recorded in DESIGN.md open question 9 and FEATURES.md section 3: the hero is a two-legged armadillo that curls into a ball when launched and pops out when it stops; villain theme to choose between reptiles and amphibians (alligator boss) or insects.
 - 2026-11-15 — Milestones 5 and 5b done: the owner approved the generated courses and asked for the merge. Known limits carried forward: first-try pass rate and generation time miss their targets above budget 12, by owner choice for now (run upgrades in Milestones 6 and 7 are meant to keep up with harder courses). Merged to `main`.
+- 2026-11-15 — Milestone 6 design sheet written on branch `milestone-6-the-run`: `docs/plans/milestone-6.md` (map shape and node odds, boss countdown and early boss, budget per row, the six gear items, five run upgrades, shop and cache). Seven questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-15 — Owner decision: 54 gear items instead of six. Six rarities in three pairs (common/uncommon, rare/double rare, special rare/legendary), three items per rarity per category, families for the first four rarities and unique effects for the top two, rarity odds rising through the run, accessory renamed Bauble. All 54 in Milestone 6. Sheet section 5 rewritten; FEATURES.md section 8 updated.
+- 2026-11-15 — Milestone 6 design sheet signed off by the owner. Changes from the defaults: running out of naps still fails the course, which ends the run; run courses capped at budget 30; shops do not lower the boss countdown (so the map has 16 rows and the budget follows counted nodes, not rows). Blue star sources recorded for Milestone 7: beating a course, beating a boss, an extra-rare chance in crates or under cracked ground.
+- 2026-11-15 — Owner decision during the build: a shop node is a little town with the shop and the player's Burrow (home base). The Burrow stores one gear item per category, safe from death, saved in the browser now; the town becomes the save point for a run in Milestone 7. Recorded in DESIGN.md section 10, FEATURES.md sections 8 and 11, and the sheet (section 10b).
+- 2026-11-15 — Milestone 6 built on branch `milestone-6-the-run`. Simulation: the run rules in `src/sim/run.ts` (countdown, budget per counted node, rewards, shop, cache, Burrow, rarity odds and drop luck), the map generator in `src/gen/runMap.ts`, gear on courses in `src/gen/placeGear.ts`; 54 gear items in `src/content/gear.ts`, run numbers and the five upgrades in `src/content/run.ts`; gear effects, Burning on enemies and the naps stat in `src/sim/play.ts`; the bot plays with the player's loadout. Display: map screen (`MapScene`), town with shop, Burrow and cache (`TownScene`), run mode on courses with gear slots on the HUD and gear lying on the ground, run summary, testing aids in the U panel; placeholder art for the gear (border colour shows rarity), map nodes, upgrades and the town. Key 7 or `?run=<seed>` starts a run. 36 new tests (286 in total). Played in a browser: map, courses, town, shop (buy, reroll, replace prompt), Burrow (store, take out, saved), cache, run summary; screenshots checked. Differences from the sheet in its section 12. **Waiting for the owner** to play a full run from the first node to the stand-in boss.
+- 2026-11-15 — Owner changes after the first Milestone 6 build: boss countdown 7 (was 5), map 20 rows; an optional last town is always offered before the forced boss (unless the player has just left a town). The early boss stays. 2 new tests (288 in total). Recorded in DESIGN.md section 10 and open question 1, and the sheet section 2.3.
+- 2026-11-15 — Milestone 6 done: the owner played the run build, asked for the countdown of 7 and the last town, and approved. Merged to `main`. Known limits carried forward: the boss is a stand-in hard course, blue stars are counted but not spent, and saving a run at a town come in Milestone 7.

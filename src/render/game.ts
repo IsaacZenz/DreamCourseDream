@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { CourseScene } from './CourseScene';
+import { MapScene } from './MapScene';
+import { TownScene } from './TownScene';
 import { VIEW_HEIGHT, VIEW_WIDTH, integerScale } from './config';
 
 export function startGame(parent: HTMLElement): Phaser.Game {
@@ -15,7 +17,7 @@ export function startGame(parent: HTMLElement): Phaser.Game {
       autoCenter: Phaser.Scale.CENTER_BOTH,
       zoom: integerScale(window.innerWidth, window.innerHeight),
     },
-    scene: [CourseScene],
+    scene: [CourseScene, MapScene, TownScene],
   });
 
   window.addEventListener('resize', () => {

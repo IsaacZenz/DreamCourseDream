@@ -2,6 +2,7 @@
  * Playable characters (FEATURES.md section 3). One for now; the template allows
  * more later (Milestone 8). Names are working names.
  */
+import { RULES } from './rules.ts';
 import type { BaseStats } from './stats.ts';
 
 export interface CharacterDef {
@@ -29,6 +30,7 @@ export const BALL_BASE_STATS: BaseStats = {
   dropLuck: 1,
   shopPrices: 1,
   gearCapacity: 1,
+  naps: RULES.naps,
 };
 
 const defs: readonly CharacterDef[] = [
