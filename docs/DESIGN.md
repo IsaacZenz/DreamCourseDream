@@ -228,7 +228,8 @@ Gear examples are in `docs/FEATURES.md` section 8.
 - **Boss countdown:** a counter (for example "5 until boss") drops by one each time the player completes a node without fighting the boss. **Owner, 2026-11-15: shops do not count**; courses, hard courses and caches do. The player may fight the boss early when a boss node is offered. At zero the boss is forced.
 - **Yellow stars** are common. They fill the exit meter and are also spent in shops on upgrades that last for the current run.
 - **Blue stars** are rare. They are spent on permanent upgrades.
-- On death the run restarts. Permanent upgrades are kept. Everything else is lost: yellow stars, ability, gear, run upgrades, map position.
+- On death the run restarts. Permanent upgrades are kept. Everything else is lost: yellow stars, ability, gear, run upgrades, map position. **Owner, 2026-11-15:** gear stored in the Burrow is kept.
+- **Decided (owner, 2026-11-15): towns and the Burrow.** A shop node is a little town with the shop and the player's Burrow (home base, one stored gear item per category, safe from death). See FEATURES.md section 11. **Planned for Milestone 7:** a town is the save point for a run in progress, so the player can stop at a town and carry on another day.
 
 **Default:**
 

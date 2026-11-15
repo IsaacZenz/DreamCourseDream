@@ -287,7 +287,7 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 - The ball holds one of each. An upgrade may later allow two of a category.
 - Rolling over gear of a category already held drops the current item and equips the new one automatically.
 - Gear never needs a button. Weapon effects are automatic and trigger only on contact with an enemy.
-- Gear is lost on death.
+- Gear is lost on death, except gear stored in the Burrow (owner, 2026-11-15; section 11).
 
 **Default:**
 
@@ -352,6 +352,10 @@ Cost rises with each level.
 ---
 
 ## 11. Shops
+
+**Decided (owner, 2026-11-15): a shop node is a little town** with the shop and the player's **Burrow** (home base), entered and left as often as wanted, and a Continue signpost to carry on. Drawn in the game's pixel style.
+
+**Decided (owner, 2026-11-15): the Burrow** stores one gear item per category. Stored gear is safe from death and waits there for later runs. In a town the player can store the item worn, take a stored one out, or swap them. The Burrow is saved in the browser (Milestone 6). In Milestone 7 the town also becomes the save point for a run in progress (leave at a town, carry on later; death still starts over).
 
 **Decided:** each shop sells a random handful. Stock can be rerolled for yellow stars.
 

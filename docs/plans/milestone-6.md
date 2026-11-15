@@ -1,6 +1,6 @@
 # Milestone 6 design sheet — The run
 
-**Status: signed off by the owner, 2026-11-15**, with changes to questions 2, 3 and 5 (see [section 10](#10-questions-for-the-owner)). Sections 2.1, 2.3, 2.4, 4.1 and 9.2 already show the changes.
+**Status: signed off by the owner, 2026-11-15**, with changes to questions 2, 3 and 5 (see [section 10](#10-questions-for-the-owner)). Sections 2.1, 2.3, 2.4, 4.1 and 9.2 already show the changes. **Built 2026-11-15**, with the town and the Burrow added by the owner during the build (section 10b); differences in section 12.
 
 How to review: read each section, change any number or rule you want, and answer the numbered questions in [section 10](#10-questions-for-the-owner). Each question has a default, so "use the defaults" is a valid answer. Every number here is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -339,13 +339,45 @@ Same keys as the shop. Taking one finishes the node. Leaving without taking anyt
 
 ---
 
+## 10b. Owner addition during the build: the town and the Burrow (2026-11-15)
+
+- **A shop node is a little town.** It has the **shop** and the player's **Burrow** (home base). Walk between them; enter and leave each as often as you like; a **Continue** signpost carries on with the journey. Drawn in the game's pixel style (owner).
+- **The Burrow stores one gear item per category.** Stored gear is **safe from death**: it stays in the Burrow and is there at the start of every later run. In a town you can store the item you wear, take a stored item out and wear it, or swap the two.
+- **Saving the Burrow:** its contents are saved in the browser now, so they also survive closing the page (owner chose this).
+- **Planned for Milestone 7:** the town is also the **save point** for a run in progress: leave the game at a town and carry on later. Death still starts the run over.
+
+Defaults chosen while building (owner may change): storing and taking out are free; the Burrow is only reachable in a town (there are none in rows 1 and 2, so gear from a previous run is first reachable at the first town); taking off an item that raised max health lowers max health and any health above the new maximum is lost.
+
+---
+
+## 12. As built (2026-11-15)
+
+Differences from the sheet above, and choices the sheet left open:
+
+- **Early boss:** an early-boss node is shown and played as a normal course until the countdown is 3 or less; then it is the boss.
+- **Boss marker:** a red dashed line across the map just above the row the countdown points to, with the boss icon and "BOSS IN N" at its end. Towns do not lower the countdown, so a path through towns climbs past the line before the boss comes.
+- **Hard course extras:** only the bigger budget, the reward and the gear item. The tier-up squad leader waits for tiers 3 and 4 (Milestone 8).
+- **Gear on a course** is placed after the course passes its checks (it costs no budget, so the bot does not see it).
+- **The bot** plays with the player's stats, gear and ability, at full health (section 4.3). A different loadout makes a different course for the same node.
+- **Guard family and Mirror Plate** hurt the enemy back even when a Lining ignores the damage.
+- **Giant's Knuckle** throws sentinels; patrollers keep to their path and just take the damage.
+- **Burning** applied again keeps whichever time is longer.
+- **Rerolls** keep sold slots and replace the rest. If no gear is left to offer, a gear slot offers Patch Up instead.
+- **No restarts in a run:** R does nothing on a run course. Keys 1 to 6 still go to the test courses; key 7 goes back to the run.
+- **Testing aids** in the U panel (map, town and course): +20 yellow stars, give any gear item, give any upgrade, set the countdown, win this course.
+- **Course seed:** `<run seed>-<node>` (for example `TOWN4-R3L1`); the boss is `<run seed>-BOSS<row>`.
+- Rarity colours on borders and text: common grey, uncommon green, rare blue, double rare purple, special rare orange, legendary gold.
+
+---
+
 ## 11. Done when (from PLAN.md)
 
 The owner can play a full run from the first node to the stand-in boss, with shop visits and path choices.
 
 Things to check on purpose while playtesting:
 
-- Pick a path through a shop and one that avoids it; confirm a course-only stretch appears on some seeds.
+- Pick a path through a town and one that avoids it; confirm a course-only stretch appears on some seeds.
+- In a town: visit the shop and the Burrow several times, store an item, die on purpose, start a new run, and find the item waiting in the Burrow at the first town.
 - Raise the countdown in a shop and see the boss marker move up a row.
 - Take an early boss and see the blue stars counted on the summary.
 - Swap gear on a course, then roll back over the dropped item.
