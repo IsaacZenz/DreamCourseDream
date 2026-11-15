@@ -1,6 +1,6 @@
 # Milestone 5b design sheet — Journeys, rails, gentle slopes and water
 
-**Status: waiting for the owner's sign-off.** Nothing on this sheet is built yet.
+**Status: signed off by the owner, 2026-11-15.** Being built on branch `milestone-5-course-generator`.
 
 This reworks the Milestone 5 course generator before its gate. Your playtest verdict was that courses are too small, too flat and not interesting enough, so the Milestone 5 gate ("ten generated courses worth playing") moves to the end of this sheet.
 
@@ -194,7 +194,7 @@ Reusing the Milestone 5 chunk ideas as stamps placed inside areas, not as rooms:
 
 - Structure check as in Milestone 5, with the new climbing rule (section 1) and gaps (crossable only if the gap has a spring or is at most 3 tiles and lower on the far side).
 - The bot as in Milestone 5, with the shot limit from 5.2, and it knows to use springs and lofted shots at gaps.
-- **Speed:** bigger courses take the bot longer. Targets: **95% pass on the first try; average under 1 second up to budget 14, under 3 seconds above.** Question 3. While a course is being made, the screen shows "GENERATING…".
+- **Speed:** bigger courses take the bot longer. Targets: **95% pass on the first try; average under 1 second up to budget 14, and up to 5 seconds above that (owner, 2026-11-15: "anything up to 5 seconds is acceptable for now as long as it is worth it").** While a course is being made, a **loading screen with an animation** shows (owner, 2026-11-15).
 
 ### 5.9 What happens to the Milestone 5 chunks
 
@@ -206,7 +206,7 @@ The 14 chunk files and the route layout are retired once the new generator passe
 
 - **Overview key (O):** zooms the camera out to fit the whole course, and O again zooms back to the ball. Needed for large maps.
 - The **chunks** debug view becomes **areas**: area outlines with their landform names, passage names, and the budget spend.
-- "GENERATING…" message while a course is made.
+- **Loading screen (owner, 2026-11-15):** while a course is made, a full-screen loading card with a small animation (a ball rolling and bouncing across a strip of checkered ground) and the seed and budget. Generation runs in a background worker so the animation keeps moving.
 
 ---
 
@@ -228,7 +228,7 @@ Story beats or a narrative for the journey (Milestone 9, with the theme and char
 
 ## 9. Questions for the owner
 
-Each has a default.
+Answered by the owner, 2026-11-15: 1 yes, 2 yes, 3 yes with up to 5 seconds and a loading animation; defaults for 4–8.
 
 1. **Shots from water:** the next shot from inside water launches at half power, so you usually need a lofted shot to get out. Keep it, change the amount, or make shots from water normal? *Default: half power.*
 2. **Repeated water damage:** each shot that ends under water costs 1 health, so getting stuck can be costly. Or should only the first stop in a given pond cost health? *Default: every time.*
@@ -243,4 +243,4 @@ Each has a default.
 
 ## Sign-off
 
-- [ ] Owner sign-off. Changes the owner makes during review will be marked "owner, date" in this sheet and recorded in FEATURES.md and DESIGN.md.
+- [x] Owner sign-off, 2026-11-15. Changes: generation may take up to 5 seconds above budget 14, with a loading screen animation.
