@@ -1,6 +1,6 @@
 # Milestone 7 design sheet — Boss and permanent progress
 
-**Status: all questions answered by the owner (2026-11-16); waiting for the owner's sign-off to build.** Nothing on this sheet is built yet.
+**Status: signed off by the owner, 2026-11-16**, with the answers recorded in section 9 and the changes in sections 2, 4.3, 5.0, 7.2 and 7b.
 
 **Owner, 2026-11-16:** the single Warden is replaced by **bug bosses generated from parts** (bug type × colour and power × base skill). Section 2 is rewritten with the owner's answers; items marked **(proposal)** there still need review.
 
