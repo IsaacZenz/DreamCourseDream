@@ -157,7 +157,8 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] Hub screen between runs with the levelled list and the starting-ability unlock (FEATURES.md section 10)
 - [ ] Death flow: lose run items, keep permanent upgrades and blue stars
 - [ ] Save and load with a version number and a safe fallback if the save is unreadable
-- [ ] Owner, 2026-11-15: a town is the save point for a run in progress. Leaving the game at a town and coming back carries on from there; death still starts over
+- [ ] Owner, 2026-11-15: a town is the save point for a run in progress. Leaving the game at a town and coming back carries on from there; death still starts over. Owner, 2026-11-16: leaving anywhere else loses the run
+- [ ] Burrow additions (owner, 2026-11-16): sell the housed item for 25%, the hold and its sorting screen, stashing blue stars
 - [ ] Region two starts after the boss with a higher budget
 
 **Done when:** the owner can die, buy a permanent upgrade, start again, and see the upgrade applied; and can beat the boss.
@@ -172,6 +173,7 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] Linked objects (switches, gates, bridges); optional course modifiers
 - [ ] Second gear slot unlocks; extra characters
 - [ ] Three biomes with their own chunk sets
+- [ ] Several boss arenas, picked at random for each boss fight (owner, 2026-11-16: one arena in Milestone 7, more to cycle through before the game is complete); a biome may bring its own
 - [ ] Theme switch after each boss (day, night, jungle, underground, spooky): same objects, different art set through the manifest (owner, 2026-11-14)
 - [ ] More gear and shop variety
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
@@ -249,3 +251,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-16 — Milestone 7 design sheet written: `docs/plans/milestone-7.md` (The Warden with its slam and summon actions and three phases, the arena, blue star sources and wallet, the hub and permanent upgrade costs, the starting ability unlock, the death flow, region two, the save format with its fallback, and the town save point). Ten questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
 - 2026-11-16 — Owner decisions: villains are insects; bosses are generated from three random parts (bug type, colour with its power, base skill), and every boss summons. Recorded in DESIGN.md (section 8, open question 9) and FEATURES.md section 5. The planner's proposal for six bug types, five colours and five skills is in `docs/plans/milestone-7.md` section 2b, **waiting for the owner's review**.
 - 2026-11-16 — Owner answers on the bug bosses: five bug types (bumblebee dropped); lightning and poison weak to each other; hit damage never below 1 unless a gimmick blocks the hit (FEATURES.md F1); poison becomes a fourth element (F5); icons as well as colours; no repeat bug in a run; every combination bot-tested with a list for the owner before any ban; the Milestone 7 / 8 split; names from parts; each colour gets its own simple attack and also flavours the skill. Recorded in DESIGN.md, FEATURES.md and this plan. `docs/plans/milestone-7.md` section 2 rewritten; new proposals (the colour attacks, bug and skill numbers, poison's shot-power cut) are questions 11 to 15. **Waiting for the owner's sign-off.**
+- 2026-11-16 — Owner answers to the Milestone 7 sheet questions 1–3, 5, 8, 10–15: blue star amounts and upgrade costs kept; leaving the game away from a town loses the run and everything in it; one arena now, more in Milestone 8; a defeated helper gives a star and a flag pole only half the time; the gear a boss reward replaces goes to the Burrow; new Burrow rules (sell the housed item for 25%, a hold for overflow sorted on the next visit, carried blue stars stashed on each visit); the map shows only an icon of the boss's bug in its colour, with the name shown when the battle starts; the colour attacks, bug and skill numbers and poison's shot-power cut accepted. Recorded in DESIGN.md, FEATURES.md (F7 answered) and the sheet. Open: questions 7, 9, 16, 17.

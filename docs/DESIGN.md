@@ -241,7 +241,7 @@ Gear examples are in `docs/FEATURES.md` section 8.
 - Fighting the boss early gives a bonus that scales with the countdown remaining.
 - ~~Blue stars come from bosses, hard courses, and rare hidden spots on normal courses.~~
 - **Decided (owner, 2026-11-15): blue star sources:** beating a course, beating a boss, and an extra-rare chance inside crates or under cracked ground. Amounts and chances go on the Milestone 7 sheet. Until then they are counted on the run summary only.
-- Blue stars earned during a run are kept even if the run ends in death.
+- ~~Blue stars earned during a run are kept even if the run ends in death.~~ **Owner, 2026-11-16:** blue stars earned during a run are carried, and are safe only once stashed by visiting the Burrow. Carried ones are lost on death or when the game is left away from a town. Leaving the game anywhere but a town loses the run and everything in it; permanent upgrades are never affected.
 - Permanent upgrades are bought on a hub screen between runs: maximum health, maximum shots, gear slots, starting yellow stars, shop discount, a starting ability.
 
 ## 11. Procedural generation

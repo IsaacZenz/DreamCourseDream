@@ -117,7 +117,8 @@ Bosses that move (grasshopper, butterfly, centipede) mark from where they stand 
 | Enemies per summon | 2 (one of each list) in phase 2; 1 (alternating attacker and carrier) in phase 3 |
 | Most helpers alive at once | 4, counting hatched pods. At 4, a summon or a hatch is skipped |
 | Where they appear | A free summon pad, chosen at random. A pad is free if no ball, enemy or flag pole is within 0.6 tiles of its centre. No free pad: that helper is skipped |
-| Colour | Helpers take the boss's colour: their element is the boss's (shown by tint). Their contact and attacks give that colour's status. They give 1 yellow star, leave a flag pole, and carriers give their ability |
+| Colour | Helpers take the boss's colour: their element is the boss's (shown by tint). Their contact and attacks give that colour's status |
+| When one is defeated (owner, 2026-11-16) | **50% chance** it secures 1 yellow star and leaves a flag pole, as a normal enemy does. Otherwise it just dies: no star, no pole. A carrier gives its ability either way **(proposal)**, so the player's tools keep flowing |
 
 Patrollers (Trundler) are not summoned: they need a path drawn for them.
 
@@ -125,7 +126,8 @@ Patrollers (Trundler) are not summoned: they need a path drawn for them.
 
 - With the boss seed (`<run seed>-BOSS<region>`): a bug at equal odds among the Milestone 7 bugs, **never one already met in this run**; a colour by the odds in section 2.3; a skill at equal odds. Combinations on the banned list (section 2.8, empty to start) are re-rolled.
 - **Name** = colour word + bug + skill title. Colour words: Ember (red), Frost (blue), Storm (yellow), Blight (green), Prism (rainbow). Example: "Storm Mantis the Sower". **(proposal)** for the words.
-- The map shows the boss's name and three small icons (bug, colour, skill) on the boss marker, so the player knows what is coming and can prepare (for example buy a fire weapon for a blue boss).
+- **Owner, 2026-11-16:** the map shows **an icon of the boss's bug, in the boss's colour**, on the boss marker. No name and no skill, so the player knows the bug and its power (for example, buy a fire weapon for a blue boss) but not the whole boss.
+- **The name is shown when the boss battle starts**: a short title card ("Storm Mantis the Sower"), then on the health bar.
 
 ### 2.7 Phases and the turn pattern
 
@@ -151,7 +153,7 @@ Thresholds round down to whole health (Goliath 12: phase 2 from 8, phase 3 from 
 - **No star quota.** The star meter is replaced by the boss's health bar and name, with notches at the phase thresholds.
 - The exit opens on the boss's centre tile when it is defeated. Its marks and summons stop; helpers left alive stay (you may still beat them for yellow stars).
 - Naps as everywhere: two; running out of shots a third time fails the course and ends the run.
-- **Rewards:** **5** blue stars (**+2** for a rainbow boss; +1 per countdown step left for an early boss), a **full heal**, and a **choice of one of three gear items** or skip (one weapon, one armour, one bauble, rarities from the run's late column moved up one rarity; the replaced item is lost). 0 yellow stars (helpers already give some).
+- **Rewards:** **5** blue stars (**+2** for a rainbow boss; +1 per countdown step left for an early boss), a **full heal**, and a **choice of one of three gear items** or skip (one weapon, one armour, one bauble, rarities from the run's late column moved up one rarity). **Owner, 2026-11-16: the item it replaces goes to the Burrow**, or to the Burrow's **hold** if that Burrow slot is full (section 7b), so the reward can always be taken. 0 yellow stars (helpers already give some).
 
 ### 2.10 What waits for Milestone 8
 
@@ -215,10 +217,14 @@ A rough count: a run that dies before the boss earns about 1 to 4; a run that be
 
 ### 4.3 The wallet
 
-- One blue star wallet, kept forever (saved, section 7).
-- **Blue stars go into the wallet the moment they are earned**, so they are kept on death (FEATURES.md open question F7, default) and saved straight away.
-- Blue stars are spent only on the hub (FEATURES.md section 11).
-- Shown on the map screen, the town, the run summary and the hub.
+**Owner, 2026-11-16: blue stars are stashed in the Burrow.** This replaces "kept the moment they are earned" (FEATURES.md F7).
+
+- Blue stars earned during a run are **carried**. Carried blue stars are at risk: they are lost if the run ends by death or by leaving the game away from a town.
+- **Visiting the Burrow stashes every carried blue star** in the **stash**, automatically. The stash is safe forever (saved, section 7).
+- The hub spends from the stash. Blue stars are spent only on the hub (FEATURES.md section 11).
+- **(proposal)** Completing the whole run (beating the region-two boss) stashes carried blue stars automatically, since the hero has made it home.
+- The HUD, map and town show both: "Blue: 3 carried, 21 stashed".
+- Worth knowing: there are no towns in rows 1 and 2, and a boss's 5 blue stars are carried into region two until its first town. Question 16 checks this is what the owner means.
 
 ---
 
@@ -267,13 +273,13 @@ Permanent upgrades are applied when a run starts (and to the bot, which already 
 
 ### 5.4 Death flow (DESIGN.md section 10)
 
-When the run ends (health at 0, or no naps left):
+When the run ends (health at 0, no naps left, or the game was left away from a town; owner, 2026-11-16):
 
 | Lost | Kept |
 |---|---|
-| Yellow stars, ability, gear worn, run upgrades, map position, the saved run | Blue stars (already in the wallet), permanent upgrades, the starting ability unlock, the Burrow |
+| Yellow stars, ability, gear worn, run upgrades, map position, the saved run, **carried blue stars** | **Stashed blue stars**, permanent upgrades, the starting ability unlock, the Burrow and its hold |
 
-Then the **run summary** (as now, plus blue stars earned this run), then the **hub**.
+Then the **run summary** (as now, plus blue stars stashed and lost this run), then the **hub**.
 
 A won run (both bosses beaten, section 6) goes the same way, with a "Run complete" summary.
 
@@ -326,9 +332,26 @@ Everything lives under one browser storage key, `dreamcoursedream.save`:
 
 - **Entering a town saves the run**: the run seed, the region, the path taken, countdown and raises, health, wallet, ability, gear, run upgrades (and their price counts), totals, and the town's shop as it stands (offers, what is sold, reroll price), so coming back does not give a free reroll. The map is rebuilt from the seed.
 - **Coming back:** the hub shows **Continue run**; it puts you back in that town, exactly as saved.
-- **Leaving the town clears the run save** (pressing Continue on the signpost). Default for question 3: if you close the game anywhere other than a town, the run is lost when you come back (the hub says "Your run ended when you left the game away from a town"). Blue stars already earned are kept. This stops "close the page and retry the course".
+- **Leaving the town clears the run save** (pressing Continue on the signpost). **Owner, 2026-11-16 (question 3):** if you close the game anywhere other than a town, the run and everything in it is lost: yellow stars, gear worn, ability, run upgrades and carried blue stars. Only saving and leaving from a town keeps them. Permanent upgrades, the stash and the Burrow are never affected. The hub says "Your run ended when you left the game away from a town". This stops "close the page and retry the course".
 - **Death or a completed run** clears the run save.
 - Starting a new run while a run is saved asks to confirm: "Abandon your saved run?"
+
+---
+
+## 7b. The Burrow: selling, the hold and the blue star stash (owner, 2026-11-16)
+
+- **At most one worn and one housed item per category**, as before.
+- **Selling:** in the Burrow you can sell the housed item for **25% of its price, rounded down**, in yellow stars. **(proposal)** The price used is the rarity price before discounts (Haggler does not lower it):
+
+  | Rarity | Common | Uncommon | Rare | Double rare | Special rare | Legendary |
+  |---|---|---|---|---|---|---|
+  | Price | 10 | 15 | 25 | 35 | 50 | 70 |
+  | Sells for | 2 | 3 | 6 | 8 | 12 | 17 |
+
+- **The hold:** an item sent to the Burrow while its slot there is already full waits in the **hold** (today only a boss reward does this). The **next time you enter the Burrow**, a sorting screen opens first: for each category with an item in the hold, you choose which item to wear, which to house, and sell the rest. You cannot leave the screen until every category is down to one worn and one housed.
+- **(proposal)** Items in the hold are safe from death, like the Burrow, and wait for the next run's first Burrow visit (question 17).
+- **Blue stars:** entering the Burrow stashes all carried blue stars (section 4.3).
+- Burrow keys as in Milestone 6, plus **S** to sell the housed item (asks to confirm, showing the yellow stars it gives).
 
 ---
 
@@ -347,21 +370,23 @@ Everything lives under one browser storage key, `dreamcoursedream.save`:
 
 | # | Question | Default | Answer |
 |---|---|---|---|
-| 1 | Blue star amounts (section 4.1): 50% chance of 1 per course, 2 per hard course, 5 per boss, small chances in crates and cracked tiles. Rare enough? | As in section 4.1 | |
-| 2 | Permanent upgrade costs (section 5.2): first levels cost 2, about ten good runs to buy everything. Too slow or too fast? | As in section 5.2 | |
-| 3 | Closing the game outside a town: lose the run (blue stars kept), or carry on from the last town you visited? The second is friendlier but lets you close the page to retry a course that went badly | Lose the run | |
+| 1 | Blue star amounts (section 4.1): 50% chance of 1 per course, 2 per hard course, 5 per boss, small chances in crates and cracked tiles. Rare enough? | As in section 4.1 | **Owner, 2026-11-16: keep.** |
+| 2 | Permanent upgrade costs (section 5.2): first levels cost 2, about ten good runs to buy everything. Too slow or too fast? | As in section 5.2 | **Owner, 2026-11-16: keep.** |
+| 3 | Closing the game outside a town: lose the run (blue stars kept), or carry on from the last town you visited? The second is friendlier but lets you close the page to retry a course that went badly | Lose the run | **Owner, 2026-11-16: lose the run and everything in it.** Only saving and leaving from a town keeps yellow stars and gear worn. Permanent upgrades unaffected. Blue stars are stashed in the Burrow (section 4.3) |
 | 4 | ~~The Warden's numbers~~ | | **Owner, 2026-11-16: replaced by generated bug bosses (section 2).** |
-| 5 | Arena: one hand-built arena now (section 3), or generate it from the seed? | One hand-built arena; more can be added as files | |
+| 5 | Arena: one hand-built arena now (section 3), or generate it from the seed? | One hand-built arena; more can be added as files | **Owner, 2026-11-16: one for now.** More arenas to cycle through before the game is complete (PLAN.md Milestone 8) |
 | 6 | ~~Region two's boss~~ | | **Owner, 2026-11-16: a generated boss with a different bug** (section 6). |
 | 7 | Starting ability: any of the four built abilities, or only abilities you have picked up in an earlier run? | Any of the four | |
-| 8 | Should summoned enemies leave flag poles and give yellow stars like normal enemies (more clutter in the arena, but more stars)? | Yes, normal enemies | |
+| 8 | Should summoned enemies leave flag poles and give yellow stars like normal enemies (more clutter in the arena, but more stars)? | Yes, normal enemies | **Owner, 2026-11-16: 50% chance** of a star and a flag pole when one dies; otherwise it just dies |
 | 9 | Should the game now open on the hub? (Keys 1 to 6 would still go to the test courses; key 7 would open the hub instead of starting a run straight away.) | Yes, open on the hub | |
-| 10 | Gear reward after a boss (section 2.9): choose one of three or skip; the replaced item is lost. Or should the replaced item go to the Burrow if its slot is empty? | Lost | |
-| 11 | Poison and the damage floor (section 2.3): with a floor of 1, poison's −1 hit damage does nothing to a fresh character. Add −20% shot power to Poisoned so it always matters? | Yes, add −20% shot power | |
-| 12 | The colour attacks (section 2.3): Fireball, Frost breath, Bolts, Spore burst. Keep, change or replace? | As in section 2.3 | |
-| 13 | Bug numbers and rules marked (proposal) in section 2.2 (mantis 10 health, grasshopper 11, and so on). | As in section 2.2 | |
-| 14 | Skill numbers and the pod-hatching idea (section 2.4). | As in section 2.4 | |
-| 15 | Should the map show the boss's name and part icons ahead of time, so you can prepare (section 2.6)? | Yes | |
+| 10 | Gear reward after a boss (section 2.9): choose one of three or skip; the replaced item is lost. Or should the replaced item go to the Burrow if its slot is empty? | Lost | **Owner, 2026-11-16: it goes to the Burrow**, or the hold if full. Burrow items can be sold for 25% (section 7b) |
+| 11 | Poison and the damage floor (section 2.3): with a floor of 1, poison's −1 hit damage does nothing to a fresh character. Add −20% shot power to Poisoned so it always matters? | Yes, add −20% shot power | **Owner, 2026-11-16: yes.** |
+| 12 | The colour attacks (section 2.3): Fireball, Frost breath, Bolts, Spore burst. Keep, change or replace? | As in section 2.3 | **Owner, 2026-11-16: yes.** |
+| 13 | Bug numbers and rules marked (proposal) in section 2.2 (mantis 10 health, grasshopper 11, and so on). | As in section 2.2 | **Owner, 2026-11-16: yes.** |
+| 14 | Skill numbers and the pod-hatching idea (section 2.4). | As in section 2.4 | **Owner, 2026-11-16: yes.** |
+| 15 | Should the map show the boss's name and part icons ahead of time, so you can prepare (section 2.6)? | Yes | **Owner, 2026-11-16: no name.** An icon of the boss's bug in its colour; the name shows when the battle starts |
+| 16 | Blue stars (section 4.3): carried blue stars are lost on death or leaving away from a town, and only become safe when you visit a Burrow. Is that the meaning? | Yes, as written in section 4.3 | |
+| 17 | Items in the hold: safe from death and kept for the next run, or lost on death? | Safe, kept | |
 
 ---
 

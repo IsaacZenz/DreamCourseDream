@@ -182,7 +182,7 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 | Second boss | Shield that only drops after it attacks | 8 |
 | Third and final boss | Decide with the owner | 8 |
 
-**Decided (owner, 2026-11-16): bug bosses from random parts.** Villains are insects. A boss level picks at random a **bug type** (each its own skin, base stats and movement), a **colour tied to a power** (red: fire, blue: ice, yellow: lightning, green: poison, rainbow: all four, one at random per attack), and a **base skill**. Every boss summons. **Five bug types:** Goliath beetle (12 health, higher damage), praying mantis (attacks slightly faster), butterfly (floats above the map so it can move), centipede, grasshopper; the bumblebee was dropped. **Each colour has its own simple attack, and also flavours the base skill with its effect.** **Five base skills**, including Slam and a pod barrage that marks where its pods will land (owner); the planner proposed Charge, Gust and Web snare. Each power has its own icon and particle shape as well as its colour. No repeat bug in one run. Names are made from the parts. The bot tests every combination, and the ones it cannot beat are listed for the owner before any is banned. Milestone 7 builds the generator, all five colours, three skills (Slam, Pod barrage, Charge) and three bugs (Goliath beetle, Praying mantis, Grasshopper); the rest come in Milestone 8. Details: `docs/plans/milestone-7.md` section 2.
+**Decided (owner, 2026-11-16): bug bosses from random parts.** Villains are insects. A boss level picks at random a **bug type** (each its own skin, base stats and movement), a **colour tied to a power** (red: fire, blue: ice, yellow: lightning, green: poison, rainbow: all four, one at random per attack), and a **base skill**. Every boss summons. **Five bug types:** Goliath beetle (12 health, higher damage), praying mantis (attacks slightly faster), butterfly (floats above the map so it can move), centipede, grasshopper; the bumblebee was dropped. **Each colour has its own simple attack, and also flavours the base skill with its effect.** **Five base skills**, including Slam and a pod barrage that marks where its pods will land (owner); the planner proposed Charge, Gust and Web snare. Each power has its own icon and particle shape as well as its colour. No repeat bug in one run. Names are made from the parts. **Owner, 2026-11-16:** the map shows only an icon of the boss's bug in its colour; the name appears when the battle starts. A defeated helper has a 50% chance to give a star and leave a flag pole; otherwise it just dies. The gear item replaced by a boss reward goes to the Burrow (or its hold). One arena for now; more arenas to cycle through come before the game is complete. The bot tests every combination, and the ones it cannot beat are listed for the owner before any is banned. Milestone 7 builds the generator, all five colours, three skills (Slam, Pod barrage, Charge) and three bugs (Goliath beetle, Praying mantis, Grasshopper); the rest come in Milestone 8. Details: `docs/plans/milestone-7.md` section 2.
 
 ---
 
@@ -358,7 +358,7 @@ Cost rises with each level.
 
 **Decided (owner, 2026-11-15): a shop node is a little town** with the shop and the player's **Burrow** (home base), entered and left as often as wanted, and a Continue signpost to carry on. Drawn in the game's pixel style.
 
-**Decided (owner, 2026-11-15): the Burrow** stores one gear item per category. Stored gear is safe from death and waits there for later runs. In a town the player can store the item worn, take a stored one out, or swap them. The Burrow is saved in the browser (Milestone 6). In Milestone 7 the town also becomes the save point for a run in progress (leave at a town, carry on later; death still starts over).
+**Decided (owner, 2026-11-15): the Burrow** stores one gear item per category. Stored gear is safe from death and waits there for later runs. In a town the player can store the item worn, take a stored one out, or swap them. The Burrow is saved in the browser (Milestone 6). In Milestone 7 the town also becomes the save point for a run in progress (leave at a town, carry on later; death still starts over). **Owner, 2026-11-16:** leaving the game anywhere else loses the run and everything in it. **Owner, 2026-11-16, more Burrow rules:** the housed item can be **sold for 25% of its price** (rounded down) in yellow stars; an item sent to a full Burrow slot (the one replaced by a boss reward) waits in a **hold**, and the next Burrow visit makes you choose what to wear, house and sell, so there is never more than one worn and one housed per category; visiting the Burrow **stashes your carried blue stars**, which keeps them safe. Details in `docs/plans/milestone-7.md` section 7b.
 
 **Decided:** each shop sells a random handful. Stock can be rerolled for yellow stars.
 
@@ -404,7 +404,7 @@ For the ball, one turn is one shot. Build the system and Stunned in Milestone 4;
 | Pickup | Effect | Where it comes from |
 |---|---|---|
 | Yellow star | +1 to the meter and the wallet | Enemies, crates |
-| Blue star | +1 permanent currency | Owner, 2026-11-15: beating a course, beating a boss, and an extra-rare chance in crates or under cracked ground. Amounts on the Milestone 7 sheet |
+| Blue star | +1 permanent currency. Owner, 2026-11-16: carried during the run and safe only once stashed in the Burrow | Owner, 2026-11-15: beating a course, beating a boss, and an extra-rare chance in crates or under cracked ground. Amounts on the Milestone 7 sheet |
 | Heart | +1 health | Crates, rare enemy drop |
 | Shot orb | +1 shot, up to the maximum | Crates, placed on courses |
 | Wild | A random ability (not the one held), replacing the current one | Small chance from secured crates, 10% times drop luck (owner, 2026-11-14) |
@@ -449,5 +449,5 @@ Opus: use the default and say that you did.
 | F4 | Squad theme share chance | 70% |
 | F5 | Which elements exist | **Answered (owner, 2026-11-16):** fire, ice, shock, poison |
 | F6 | Can the boss countdown be bought back up in a shop? | Yes, +1, once per shop |
-| F7 | Do blue stars found during a run survive death? | Yes |
+| F7 | ~~Do blue stars found during a run survive death?~~ | **Answered (owner, 2026-11-16): only once stashed.** Visiting the Burrow stashes carried blue stars; carried ones are lost on death or leaving the game away from a town |
 | F8 | Third boss and its gimmick | Decide in Milestone 8 |
