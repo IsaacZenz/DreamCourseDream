@@ -41,8 +41,8 @@ export const RAIL = {
   cost: 0,
 } as const;
 
-/** Elements (FEATURES.md section 2, open question F5 default). */
-export type Element = 'fire' | 'ice' | 'shock';
+/** Elements (FEATURES.md section 2). Owner, 2026-11-16: poison is the fourth (open question F5). */
+export type Element = 'fire' | 'ice' | 'shock' | 'poison';
 
 /** Where a hit lands, for weak spots and guarded sides (FEATURES.md section 2). */
 export type Side = 'above' | 'behind' | 'front';
@@ -53,7 +53,7 @@ export interface PickupDef {
   readonly name: string;
   readonly sprite: string;
   /** What touching it gives. A wild gives a random ability (owner, 2026-11-14). */
-  readonly effect: 'yellowStar' | 'heart' | 'shotOrb' | 'wild';
+  readonly effect: 'yellowStar' | 'blueStar' | 'heart' | 'shotOrb' | 'wild';
   /** Stars are gathered from further away (the "star reach" stat); others need a touch. */
   readonly usesStarReach: boolean;
 }
@@ -108,6 +108,8 @@ export interface BreakableDef {
   readonly drops: readonly string[];
   /** Chance of also dropping a Wild, times the ball's drop luck (owner, 2026-11-14: secured crates). */
   readonly wildChance: number;
+  /** Milestone 7: chance of also dropping a blue star, times the ball's drop luck (sheet section 4.1). */
+  readonly blueChance: number;
   /** Null: flat on the floor, nothing to bump (cracked tile). */
   readonly shape: ObjectShape | null;
   readonly height: number;
@@ -187,7 +189,9 @@ export type Behaviour =
       readonly grace: number;
       readonly upShots: number;
       readonly hitWhileMoving: boolean;
-    };
+    }
+  /** A bug boss (Milestone 7): its turn is run by src/sim/boss.ts. Built from its parts, never placed in a course file. */
+  | { readonly kind: 'boss' };
 
 /**
  * When touching the ball hurts it (the enemy's attack damage).
@@ -245,7 +249,19 @@ export interface GearObjectDef {
   readonly item: string;
 }
 
-export type ObjectDef = PickupDef | BlockerDef | MoverDef | BreakableDef | CloudDef | FlagDef | EnemyDef | GearObjectDef;
+/**
+ * A spot on the course that does nothing by itself (Milestone 7): a summon pad
+ * in a boss arena, where the boss's helpers appear. Flat, not solid.
+ */
+export interface MarkerDef {
+  readonly kind: 'marker';
+  readonly id: string;
+  readonly name: string;
+  readonly sprite: string;
+  readonly role: 'summonPad';
+}
+
+export type ObjectDef = PickupDef | BlockerDef | MoverDef | BreakableDef | CloudDef | FlagDef | EnemyDef | GearObjectDef | MarkerDef;
 
 /** Template fields that are mostly unused until Milestone 8. */
 const PLAIN = {
@@ -286,8 +302,12 @@ function carrier(id: string, name: string, ability: string): EnemyDef {
 }
 
 const defs: readonly ObjectDef[] = [
-  // Pickups (section 13). Blue stars come with permanent progress in Milestone 7.
+  // Pickups (section 13).
   { kind: 'pickup', id: 'yellow-star', name: 'Yellow star', sprite: 'star-yellow', effect: 'yellowStar', usesStarReach: true },
+  // Milestone 7: a blue star, carried until stashed in the Burrow (owner, 2026-11-16). Not counted towards the quota.
+  { kind: 'pickup', id: 'blue-star', name: 'Blue star', sprite: 'star-blue', effect: 'blueStar', usesStarReach: true },
+  // Milestone 7: where a boss's helpers appear.
+  { kind: 'marker', id: 'summon-pad', name: 'Summon pad', sprite: 'summon-pad', role: 'summonPad' },
   { kind: 'pickup', id: 'heart', name: 'Heart', sprite: 'heart', effect: 'heart', usesStarReach: false },
   { kind: 'pickup', id: 'shot-orb', name: 'Shot orb', sprite: 'shot-orb', effect: 'shotOrb', usesStarReach: false },
   { kind: 'pickup', id: 'wild', name: 'Wild', sprite: 'wild', effect: 'wild', usesStarReach: false },
@@ -324,7 +344,7 @@ const defs: readonly ObjectDef[] = [
   },
 
   // Destructibles (section 6). Secured crate: owner, 2026-11-14.
-  { kind: 'breakable', id: 'crate', name: 'Crate', sprite: 'crate', health: 1, breakBy: 'hit', drops: ['yellow-star'], wildChance: 0, shape: { kind: 'box', hx: 0.4, hy: 0.4 }, height: 0.5, bounce: 0.6, cost: 1 },
+  { kind: 'breakable', id: 'crate', name: 'Crate', sprite: 'crate', health: 1, breakBy: 'hit', drops: ['yellow-star'], wildChance: 0, blueChance: 0.02, shape: { kind: 'box', hx: 0.4, hy: 0.4 }, height: 0.5, bounce: 0.6, cost: 1 },
   {
     kind: 'breakable',
     id: 'secured-crate',
@@ -334,12 +354,13 @@ const defs: readonly ObjectDef[] = [
     breakBy: 'hit',
     drops: ['yellow-star', 'yellow-star'],
     wildChance: 0.1,
+    blueChance: 0.05,
     shape: { kind: 'box', hx: 0.4, hy: 0.4 },
     height: 0.5,
     bounce: 0.6,
     cost: 2,
   },
-  { kind: 'breakable', id: 'cracked-tile', name: 'Cracked tile', sprite: 'cracked-tile', health: 1, breakBy: 'anchor', drops: ['yellow-star', 'yellow-star'], wildChance: 0, shape: null, height: 0, bounce: 0, cost: 1 },
+  { kind: 'breakable', id: 'cracked-tile', name: 'Cracked tile', sprite: 'cracked-tile', health: 1, breakBy: 'anchor', drops: ['yellow-star', 'yellow-star'], wildChance: 0, blueChance: 0.08, shape: null, height: 0, bounce: 0, cost: 1 },
 
   // Thunder cloud (section 6, owner decisions 2026-11-14).
   { kind: 'cloud', id: 'thunder-cloud', name: 'Thunder cloud', sprite: 'thunder-cloud', half: 0.5, zapHeight: 0.5, damage: 1, throwSpeed: 6, throwHop: 2, driftSpeed: 1, cost: 2, driftCost: 3 },

@@ -21,6 +21,8 @@ export const STAT_IDS = [
   'gearCapacity',
   /** Owner, 2026-11-15: naps (recover turns) per course. A stat from Milestone 6 so gear can change it. */
   'naps',
+  /** Milestone 7: yellow stars in the wallet when a run starts (Head Start). */
+  'startingStars',
   // Enemies
   'health',
   'moveRange',
@@ -42,8 +44,8 @@ export interface StatDef {
 export const STAT_DEFS: Readonly<Record<StatId, StatDef>> = {
   maxHealth: { name: 'Max health', min: 1, max: 99, whole: true },
   maxShots: { name: 'Max shots', min: 1, max: 99, whole: true },
-  // FEATURES.md open question F1 (default): damage may drop to 0, never below.
-  hitDamage: { name: 'Hit damage', min: 0, max: 99, whole: true },
+  // Owner, 2026-11-16 (FEATURES.md open question F1): hit damage never drops below 1.
+  hitDamage: { name: 'Hit damage', min: 1, max: 99, whole: true },
   shotPower: { name: 'Shot power', min: 0.1, max: 5, whole: false },
   guideLength: { name: 'Guide length', min: 0, max: 10, whole: false },
   bounceBoost: { name: 'Bounce boost', min: 0, max: 5, whole: false },
@@ -52,6 +54,7 @@ export const STAT_DEFS: Readonly<Record<StatId, StatDef>> = {
   shopPrices: { name: 'Shop prices', min: 0.1, max: 10, whole: false },
   gearCapacity: { name: 'Gear capacity', min: 1, max: 3, whole: true },
   naps: { name: 'Naps', min: 0, max: 9, whole: true },
+  startingStars: { name: 'Starting yellow stars', min: 0, max: 99, whole: true },
   health: { name: 'Health', min: 1, max: 999, whole: true },
   moveRange: { name: 'Move range', min: 0, max: 20, whole: false },
   attackDamage: { name: 'Attack damage', min: 0, max: 99, whole: true },

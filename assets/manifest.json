@@ -2192,6 +2192,498 @@
         6
       ]
     },
+    "boss-goliath-red": {
+      "file": "sprites/boss-goliath-red.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-goliath-blue": {
+      "file": "sprites/boss-goliath-blue.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-goliath-yellow": {
+      "file": "sprites/boss-goliath-yellow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-goliath-green": {
+      "file": "sprites/boss-goliath-green.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-goliath-rainbow": {
+      "file": "sprites/boss-goliath-rainbow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "icon-boss-goliath": {
+      "file": "sprites/icon-boss-goliath.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        8,
+        8
+      ]
+    },
+    "boss-mantis-red": {
+      "file": "sprites/boss-mantis-red.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-mantis-blue": {
+      "file": "sprites/boss-mantis-blue.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-mantis-yellow": {
+      "file": "sprites/boss-mantis-yellow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-mantis-green": {
+      "file": "sprites/boss-mantis-green.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-mantis-rainbow": {
+      "file": "sprites/boss-mantis-rainbow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "icon-boss-mantis": {
+      "file": "sprites/icon-boss-mantis.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        8,
+        8
+      ]
+    },
+    "boss-grasshopper-red": {
+      "file": "sprites/boss-grasshopper-red.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-grasshopper-blue": {
+      "file": "sprites/boss-grasshopper-blue.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-grasshopper-yellow": {
+      "file": "sprites/boss-grasshopper-yellow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-grasshopper-green": {
+      "file": "sprites/boss-grasshopper-green.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-grasshopper-rainbow": {
+      "file": "sprites/boss-grasshopper-rainbow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "icon-boss-grasshopper": {
+      "file": "sprites/icon-boss-grasshopper.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        8,
+        8
+      ]
+    },
+    "boss-butterfly-red": {
+      "file": "sprites/boss-butterfly-red.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-butterfly-blue": {
+      "file": "sprites/boss-butterfly-blue.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-butterfly-yellow": {
+      "file": "sprites/boss-butterfly-yellow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-butterfly-green": {
+      "file": "sprites/boss-butterfly-green.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-butterfly-rainbow": {
+      "file": "sprites/boss-butterfly-rainbow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "icon-boss-butterfly": {
+      "file": "sprites/icon-boss-butterfly.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        8,
+        8
+      ]
+    },
+    "boss-centipede-red": {
+      "file": "sprites/boss-centipede-red.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-centipede-blue": {
+      "file": "sprites/boss-centipede-blue.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-centipede-yellow": {
+      "file": "sprites/boss-centipede-yellow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-centipede-green": {
+      "file": "sprites/boss-centipede-green.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "boss-centipede-rainbow": {
+      "file": "sprites/boss-centipede-rainbow.png",
+      "frameWidth": 44,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        22,
+        36
+      ]
+    },
+    "icon-boss-centipede": {
+      "file": "sprites/icon-boss-centipede.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        8,
+        8
+      ]
+    },
+    "star-blue": {
+      "file": "sprites/star-blue.png",
+      "frameWidth": 11,
+      "frameHeight": 11,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        10
+      ]
+    },
+    "summon-pad": {
+      "file": "sprites/summon-pad.png",
+      "frameWidth": 32,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        8
+      ]
+    },
+    "pod": {
+      "file": "sprites/pod.png",
+      "frameWidth": 8,
+      "frameHeight": 9,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        8
+      ]
+    },
+    "icon-chilled": {
+      "file": "sprites/icon-chilled.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-poisoned": {
+      "file": "sprites/icon-poisoned.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "perm-vitality": {
+      "file": "sprites/perm-vitality.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-stamina": {
+      "file": "sprites/perm-stamina.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-head-start": {
+      "file": "sprites/perm-head-start.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-haggler": {
+      "file": "sprites/perm-haggler.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-fortune": {
+      "file": "sprites/perm-fortune.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-ability": {
+      "file": "sprites/perm-ability.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
     "font": {
       "file": "sprites/font.png",
       "frameWidth": 4,

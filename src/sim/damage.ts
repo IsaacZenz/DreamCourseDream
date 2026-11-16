@@ -10,6 +10,10 @@
  *   5. the result is taken from the enemy's health (by the caller)
  *
  * A blocked hit does no damage, but still counts as a hit for triggers.
+ *
+ * Owner, 2026-11-16: a hit that is not blocked always does at least 1 damage,
+ * whatever modifiers, poison and resistance do. Only a gimmick that blocks the
+ * hit (a guarded side, a shield) takes it to 0.
  */
 import type { Element, Side } from '../content/objects.ts';
 
@@ -59,7 +63,7 @@ export function computeHit(hit: HitInfo, target: HitTarget): HitResult {
   if (sides.some((s) => target.weakSpots.includes(s))) dmg *= 2;
   // 4. Shield
   if (target.shieldUp) return { damage: 0, blocked: true, shieldUsed: true };
-  return { damage: dmg, blocked: false, shieldUsed: false };
+  return { damage: Math.max(1, dmg), blocked: false, shieldUsed: false };
 }
 
 /** Is a point behind something facing (fx, fy)? Behind = in the half opposite its facing. */

@@ -1,0 +1,116 @@
+{
+  "format": 3,
+  "name": "Boss arena",
+  "legend": {
+    "g": "grass",
+    "s": "sand"
+  },
+  "start": [
+    7,
+    13
+  ],
+  "exit": [
+    7,
+    7
+  ],
+  "quota": 0,
+  "objects": [
+    {
+      "id": "summon-pad",
+      "at": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "summon-pad",
+      "at": [
+        13,
+        1
+      ]
+    },
+    {
+      "id": "summon-pad",
+      "at": [
+        1,
+        13
+      ]
+    },
+    {
+      "id": "summon-pad",
+      "at": [
+        13,
+        13
+      ]
+    },
+    {
+      "id": "rock",
+      "at": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "rock",
+      "at": [
+        9,
+        5
+      ]
+    },
+    {
+      "id": "rock",
+      "at": [
+        5,
+        9
+      ]
+    },
+    {
+      "id": "rock",
+      "at": [
+        9,
+        9
+      ]
+    }
+  ],
+  "rails": [
+    [
+      [
+        0,
+        0
+      ],
+      [
+        14,
+        0
+      ],
+      [
+        14,
+        14
+      ],
+      [
+        0,
+        14
+      ],
+      [
+        0,
+        0
+      ]
+    ]
+  ],
+  "tiles": [
+    "g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1",
+    "g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1",
+    "g1 g1 g1101 g1100 g1100 g1100 g1100 g1100 g1100 g1100 g1100 g1100 g1110 g1 g1",
+    "g1 g1 g1001 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0110 g1 g1",
+    "g1 g1 g1001 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0110 g1 g1",
+    "g1 g1 g1001 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0110 g1 g1",
+    "g1 g1 g1001 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0110 g1 g1",
+    "g1 g1 g1001 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0110 g1 g1",
+    "g1 g1 g1001 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0110 g1 g1",
+    "g1 g1 g1001 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0110 g1 g1",
+    "g1 g1 g1001 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0110 g1 g1",
+    "g1 g1 g1001 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0110 g1 g1",
+    "g1 g1 g1011 g0011 g0011 s0011 g0011 g0011 g0011 s0011 g0011 g0011 g0111 g1 g1",
+    "g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1",
+    "g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1 g1"
+  ]
+}

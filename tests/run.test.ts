@@ -2,6 +2,7 @@
  * Milestone 6: the run map, the run rules, the shop, the cache, the Burrow,
  * and gear on a course (docs/plans/milestone-6.md).
  */
+import { newProfile } from '../src/sim/profile.ts';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_TUNING } from '../src/content/tuning';
 import { GEAR, GEAR_LIST, RARITIES, RARITY_INFO } from '../src/content/gear';
@@ -18,6 +19,7 @@ import {
   burrowSwap,
   buy,
   choices,
+  chooseReward,
   createRun,
   enterNode,
   finishCourse,
@@ -188,7 +190,7 @@ describe('run rules', () => {
     expect(run.counted).toBe(1);
   });
 
-  it('at countdown zero the boss is forced, with an optional last town first (owner); beating it wins the run', () => {
+  it('at countdown zero the boss is forced, with an optional last town first (owner); beating it leads to the prize and region two', () => {
     const run = newRun();
     for (let i = 0; i < 40 && run.countdown > 0; i++) {
       const next = choices(run).find((n) => n.type !== 'boss' && n.type !== 'shop') ?? choices(run)[0]!;
@@ -208,7 +210,10 @@ describe('run rules', () => {
     }
     expect(run.current!.type).toBe('boss');
     winCourse(run);
-    expect(run.status).toBe('won');
+    // Milestone 7: a choice of gear, then the next region.
+    expect(run.status).toBe('reward');
+    expect(chooseReward(run, null)).toBeNull();
+    expect(run.status).toBe('region');
   });
 
   it('no last town is offered straight after leaving a town', () => {
@@ -242,9 +247,12 @@ describe('run rules', () => {
     run.countdown = 3;
     expect(typeOf(run, node)).toBe('boss');
     run.status = 'course';
-    run.current = { id: 'r9l1', row: 9, type: 'boss', early: true, budget: 20, courseSeed: 'X', gear: null };
+    run.current = { id: 'r9l1', row: 9, type: 'boss', early: true, budget: 20, courseSeed: 'X', gear: null, boss: run.boss };
     winCourse(run);
-    expect(run.blueStars).toBe(3);
+    // Milestone 7: 3 for the countdown left plus 5 for the boss, stashed at once (owner, 2026-11-16).
+    expect(run.blueStars).toBe(0);
+    expect(run.profile.stash).toBe(8);
+    expect(run.status).toBe('reward');
   });
 
   it('losing a course ends the run (owner: also when out of naps)', () => {
@@ -317,7 +325,7 @@ describe('shop and cache', () => {
   function shopRun(): RunState {
     const run = newRun('SHOP');
     run.status = 'shop';
-    run.current = { id: 'r3l0', row: 3, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null };
+    run.current = { id: 'r3l0', row: 3, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, boss: null };
     run.shop = { node: 'r3l0', offers: [], rerolls: 0, freeRerolls: 0, raised: false };
     run.shop.offers = [
       { kind: 'gear', id: 'studded-shell', sold: false },
@@ -385,7 +393,7 @@ describe('shop and cache', () => {
   it('cache: take one for free, which finishes the node and counts', () => {
     const run = newRun();
     run.status = 'cache';
-    run.current = { id: 'r2l1', row: 2, type: 'cache', early: false, budget: 0, courseSeed: '', gear: null };
+    run.current = { id: 'r2l1', row: 2, type: 'cache', early: false, budget: 0, courseSeed: '', gear: null, boss: null };
     run.cache = { node: 'r2l1', offers: [{ kind: 'upgrade', id: 'long-arms', sold: false }] };
     expect(takeFromCache(run, 0)).toBeNull();
     expect(run.wallet).toBe(0);
@@ -406,7 +414,7 @@ describe('shop and cache', () => {
 
 describe('the Burrow (owner, 2026-11-15)', () => {
   it('stores, takes out and swaps one item per category, only in a town', () => {
-    const run = createRun('B', generateRunMap('B'), { weapon: null, armour: 'thick-hide', bauble: null });
+    const run = createRun('B', generateRunMap('B'), { ...newProfile(), burrow: { weapon: null, armour: 'thick-hide', bauble: null } });
     setGear(run, 'studded-shell');
     expect(burrowSwap(run, 'weapon')).toBe(false);
     run.status = 'shop';
@@ -420,7 +428,7 @@ describe('the Burrow (owner, 2026-11-15)', () => {
   });
 
   it('ignores saved ids that are not gear of that slot', () => {
-    const run = createRun('B', generateRunMap('B'), { weapon: 'thick-hide', armour: 'no-such-thing', bauble: 'star-magnet' });
+    const run = createRun('B', generateRunMap('B'), { ...newProfile(), burrow: { weapon: 'thick-hide', armour: 'no-such-thing', bauble: 'star-magnet' } });
     expect(run.burrow).toEqual({ weapon: null, armour: null, bauble: 'star-magnet' });
   });
 });

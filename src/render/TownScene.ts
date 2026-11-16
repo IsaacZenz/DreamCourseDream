@@ -15,13 +15,19 @@ import {
   rerollPrice,
   runStats,
   setGear,
+  holdCategories,
+  sellHoused,
+  settleCategory,
+  sortCandidates,
   takeFromCache,
+  visitBurrow,
   type Offer,
   type RunState,
 } from '../sim/run';
+import { sellValue } from '../sim/profile';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
-import { session, storeBurrow } from './runSession';
+import { persist, session } from './runSession';
 import { getPanel, preloadAssets, shared } from './shared';
 
 const UI_TEXT = 0xf0f0f0;
@@ -42,7 +48,9 @@ const RARITY_COLOR: Record<string, number> = {
   legendary: 0xf8e040,
 };
 
-type Mode = 'town' | 'shop' | 'burrow' | 'cache';
+/** sort: the hold must be sorted before the Burrow can be used (owner, 2026-11-16). */
+type Mode = 'town' | 'shop' | 'burrow' | 'sort' | 'cache';
+type SortTag = 'wear' | 'house' | 'sell';
 const SPOTS = [
   { id: 'shop', label: 'SHOP', x: 86 },
   { id: 'burrow', label: 'BURROW', x: 196 },
@@ -75,6 +83,9 @@ export class TownScene extends Phaser.Scene {
   private message = '';
   private messageColor = UI_TEXT;
   private confirm: { lines: string[]; yes: () => void } | null = null;
+  /** Sorting the hold: the category, its candidates and what each will become. */
+  private sortCat: GearCategory = 'weapon';
+  private sortTags: SortTag[] = [];
 
   constructor() {
     super('town');
@@ -97,6 +108,8 @@ export class TownScene extends Phaser.Scene {
     this.message = '';
     this.setupKeys(run);
     this.setRunPanel(run);
+    // Owner, 2026-11-15: the town is the save point for a run in progress.
+    persist();
     this.redraw(run);
   }
 
@@ -113,6 +126,7 @@ export class TownScene extends Phaser.Scene {
     if (this.mode === 'town') this.drawTown(run);
     else if (this.mode === 'shop') this.drawShop(run);
     else if (this.mode === 'burrow') this.drawBurrow(run);
+    else if (this.mode === 'sort') this.drawSort(run);
     else this.drawCache(run);
     this.drawTopBar(run);
     if (this.message) {
@@ -134,11 +148,13 @@ export class TownScene extends Phaser.Scene {
   private drawTopBar(run: RunState): void {
     this.add.rectangle(0, 0, VIEW_WIDTH, 15, UI_BG, 0.9).setOrigin(0, 0).setDepth(40);
     const stats = runStats(run);
-    const title = this.mode === 'cache' ? 'CACHE' : this.mode === 'shop' ? 'TOWN: SHOP' : this.mode === 'burrow' ? 'TOWN: YOUR BURROW' : 'TOWN';
+    const title = this.mode === 'cache' ? 'CACHE' : this.mode === 'shop' ? 'TOWN: SHOP' : this.mode === 'burrow' || this.mode === 'sort' ? 'TOWN: YOUR BURROW' : 'TOWN';
     this.text(3, 2, title, GOOD).setDepth(41);
     this.text(3, 8, `HP ${run.health}/${stats.get('maxHealth')}`, run.health <= 2 ? BAD : UI_TEXT).setDepth(41);
     this.text(46, 8, `STARS ${run.wallet}`, STAR).setDepth(41);
     this.text(100, 8, run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS NEXT', 0xff8080).setDepth(41);
+    // Milestone 7: blue stars carried (at risk) and stashed (safe).
+    this.text(150, 8, `BLUE ${run.blueStars} CARRIED, ${run.profile.stash} STASHED`, 0x80c0ff).setDepth(41);
     let x = VIEW_WIDTH - 3 * 14 - 2;
     for (const c of GEAR_CATEGORIES) {
       const id = run.gear[c];
@@ -190,11 +206,97 @@ export class TownScene extends Phaser.Scene {
     this.message = '';
     if (s.id === 'continue') {
       leaveShop(run);
+      // Leaving the town clears the run's save (owner, 2026-11-16: only a town is a save point).
+      persist();
       this.scene.start('map');
       return;
     }
     this.mode = s.id;
     this.sel = 0;
+    if (s.id === 'burrow') {
+      // Owner, 2026-11-16: visiting the Burrow stashes the blue stars carried.
+      const n = visitBurrow(run);
+      if (n > 0) this.say(`STASHED ${n} BLUE STAR${n === 1 ? '' : 'S'}. THEY ARE SAFE NOW`, 0x80c0ff);
+      this.startSort(run);
+      persist();
+    }
+    this.redraw(run);
+  }
+
+  // -------------------------------------------------------------------------
+  // The hold (owner, 2026-11-16): items sent to a full Burrow wait here; the next visit sorts them.
+
+  /** If anything waits in the hold, sort its first category before the Burrow can be used. */
+  private startSort(run: RunState): void {
+    const cats = holdCategories(run);
+    if (!cats.length) {
+      if (this.mode === 'sort') this.mode = 'burrow';
+      return;
+    }
+    this.mode = 'sort';
+    this.sortCat = cats[0]!;
+    const list = sortCandidates(run, this.sortCat);
+    const hasWorn = !!run.gear[this.sortCat];
+    const hasHoused = !!run.burrow[this.sortCat];
+    this.sortTags = list.map(() => 'sell' as SortTag);
+    // Start from what is there now: the worn item stays worn, the housed one housed; a new item fills an empty place.
+    let i = 0;
+    if (hasWorn) this.sortTags[i++] = 'wear';
+    if (hasHoused) this.sortTags[i++] = 'house';
+    for (; i < list.length; i++) {
+      if (!this.sortTags.includes('wear')) this.sortTags[i] = 'wear';
+      else if (!this.sortTags.includes('house')) this.sortTags[i] = 'house';
+    }
+    this.sel = 0;
+  }
+
+  private cycleTag(i: number): void {
+    const order: SortTag[] = ['wear', 'house', 'sell'];
+    const next = order[(order.indexOf(this.sortTags[i]!) + 1) % 3]!;
+    // Only one item can be worn and one housed: the item that had that place is sold instead.
+    if (next !== 'sell') this.sortTags = this.sortTags.map((t) => (t === next ? 'sell' : t));
+    this.sortTags[i] = next;
+  }
+
+  private drawSort(run: RunState): void {
+    this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, 0x2a1c10, 1).setOrigin(0, 0);
+    const list = sortCandidates(run, this.sortCat);
+    this.text(6, 19, `SOMETHING WAITS IN YOUR HOLD (${this.sortCat.toUpperCase()}).`, GOOD);
+    this.text(6, 26, 'KEEP ONE TO WEAR AND ONE TO HOUSE. THE REST ARE SOLD FOR 25%.', GOOD);
+    list.forEach((id, i) => {
+      const y = 38 + i * 30;
+      const gd = GEAR.get(id)!;
+      const sel = i === this.sel;
+      this.add.rectangle(4, y, VIEW_WIDTH - 8, 27, CARD_BG, 0.95).setOrigin(0, 0).setStrokeStyle(sel ? 2 : 1, sel ? SELECT : 0x5a4030);
+      const hit = this.add.rectangle(4, y, VIEW_WIDTH - 8, 27, 0, 0).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+      hit.on('pointerdown', () => {
+        this.sel = i;
+        this.cycleTag(i);
+        this.redraw(run);
+      });
+      this.add.image(16, y + 14, gd.icon, 0).setScale(2);
+      this.text(30, y + 4, gd.name, UI_TEXT);
+      this.text(30, y + 11, RARITY_INFO[gd.rarity].name, RARITY_COLOR[gd.rarity]!);
+      this.text(30, y + 18, gd.desc, UI_DIM);
+      const tag = this.sortTags[i]!;
+      const label = tag === 'wear' ? 'WEAR IT' : tag === 'house' ? 'HOUSE IT' : `SELL +${sellValue(id)}`;
+      this.text(VIEW_WIDTH - 66, y + 11, label, tag === 'sell' ? STAR : GOOD);
+    });
+    this.help(['UP/DOWN: CHOOSE   ENTER: WEAR / HOUSE / SELL   C: CONFIRM']);
+  }
+
+  private confirmSort(run: RunState): void {
+    const wear = this.sortTags.indexOf('wear');
+    const house = this.sortTags.indexOf('house');
+    const res = settleCategory(run, this.sortCat, wear < 0 ? null : wear, house < 0 ? null : house);
+    if (typeof res === 'string') {
+      this.say(res, BAD);
+    } else {
+      this.say(res > 0 ? `SORTED. SOLD FOR ${res} YELLOW STARS` : 'SORTED', GOOD);
+      persist();
+      this.startSort(run);
+      this.sel = 0;
+    }
     this.redraw(run);
   }
 
@@ -297,6 +399,7 @@ export class TownScene extends Phaser.Scene {
     this.withGearCheck(run, o, () => {
       const err = buy(run, this.sel);
       this.say(err ?? `BOUGHT ${this.offerLines(run, o).name.toUpperCase()}`, err ? BAD : GOOD);
+      persist();
       this.redraw(run);
     });
   }
@@ -327,6 +430,7 @@ export class TownScene extends Phaser.Scene {
     }
     this.withGearCheck(run, o, () => {
       takeFromCache(run, this.sel);
+      persist();
       this.scene.start('map');
     });
   }
@@ -344,7 +448,7 @@ export class TownScene extends Phaser.Scene {
     this.text(66, 38, 'WEARING', UI_DIM);
     this.text(248, 38, 'STORED', UI_DIM);
     GEAR_CATEGORIES.forEach((c, i) => this.drawBurrowRow(run, c, 46 + i * 44, i === this.sel));
-    this.help(['UP/DOWN: CHOOSE   ENTER: SWAP (STORE, TAKE OUT, OR BOTH)   ESC: BACK TO TOWN']);
+    this.help(['UP/DOWN: CHOOSE   ENTER: SWAP (STORE, TAKE OUT, OR BOTH)   X: SELL THE STORED ITEM   ESC: BACK TO TOWN']);
   }
 
   private drawBurrowRow(run: RunState, c: GearCategory, y: number, selected: boolean): void {
@@ -369,6 +473,7 @@ export class TownScene extends Phaser.Scene {
     item(run.gear[c], 54);
     this.text(184, y + 17, '<>', selected ? SELECT : UI_DIM);
     item(run.burrow[c], 236);
+    if (run.burrow[c]) this.text(VIEW_WIDTH - 50, y + 31, `SELLS FOR ${sellValue(run.burrow[c]!)}`, STAR);
   }
 
   private swapSelected(run: RunState): void {
@@ -378,7 +483,7 @@ export class TownScene extends Phaser.Scene {
     if (!burrowSwap(run, c)) {
       this.say('NOTHING TO SWAP', BAD);
     } else {
-      storeBurrow(run);
+      persist();
       const name = (id: string | null) => (id ? GEAR.get(id)!.name.toUpperCase() : '');
       this.say(worn && stored ? `SWAPPED: WEARING ${name(stored)}` : worn ? `${name(worn)} STORED SAFELY` : `NOW WEARING ${name(stored)}`, GOOD);
     }
@@ -401,13 +506,22 @@ export class TownScene extends Phaser.Scene {
     const kb = this.input.keyboard!;
     const move = (d: number) => () => {
       if (this.confirm) return;
-      const n = this.mode === 'town' ? SPOTS.length : this.mode === 'shop' ? run.shop!.offers.length : this.mode === 'cache' ? run.cache!.offers.length : GEAR_CATEGORIES.length;
+      const n =
+        this.mode === 'town'
+          ? SPOTS.length
+          : this.mode === 'shop'
+            ? run.shop!.offers.length
+            : this.mode === 'cache'
+              ? run.cache!.offers.length
+              : this.mode === 'sort'
+                ? Math.max(1, this.sortTags.length)
+                : GEAR_CATEGORIES.length;
       this.sel = (this.sel + d + n) % n;
       this.message = '';
       this.redraw(run);
     };
-    const horizontal = (d: number) => () => this.mode !== 'burrow' && move(d)();
-    const vertical = (d: number) => () => this.mode === 'burrow' && move(d)();
+    const horizontal = (d: number) => () => this.mode !== 'burrow' && this.mode !== 'sort' && move(d)();
+    const vertical = (d: number) => () => (this.mode === 'burrow' || this.mode === 'sort') && move(d)();
     kb.on('keydown-LEFT', horizontal(-1));
     kb.on('keydown-A', horizontal(-1));
     kb.on('keydown-RIGHT', horizontal(1));
@@ -426,8 +540,32 @@ export class TownScene extends Phaser.Scene {
       if (this.mode === 'town') this.enterSpot(run);
       else if (this.mode === 'shop') this.buySelected(run);
       else if (this.mode === 'cache') this.takeSelected(run);
-      else this.swapSelected(run);
+      else if (this.mode === 'sort') {
+        this.cycleTag(this.sel);
+        this.redraw(run);
+      } else this.swapSelected(run);
     };
+    kb.on('keydown-C', () => this.mode === 'sort' && !this.confirm && this.confirmSort(run));
+    kb.on('keydown-X', () => {
+      if (this.mode !== 'burrow' || this.confirm) return;
+      const c = GEAR_CATEGORIES[this.sel]!;
+      const id = run.burrow[c];
+      if (!id) {
+        this.say('NOTHING STORED TO SELL', BAD);
+        this.redraw(run);
+        return;
+      }
+      this.confirm = {
+        lines: [`SELL ${GEAR.get(id)!.name.toUpperCase()} FOR ${sellValue(id)} YELLOW STARS?`, '', 'ENTER: SELL   ESC: KEEP IT'],
+        yes: () => {
+          const n = sellHoused(run, c);
+          this.say(`SOLD FOR ${n} YELLOW STARS`, STAR);
+          persist();
+          this.redraw(run);
+        },
+      };
+      this.redraw(run);
+    });
     kb.on('keydown-ENTER', ok);
     kb.on('keydown-SPACE', ok);
     kb.on('keydown-ESC', () => {
@@ -437,6 +575,7 @@ export class TownScene extends Phaser.Scene {
         return;
       }
       this.message = '';
+      if (this.mode === 'sort') return;
       if (this.mode === 'shop' || this.mode === 'burrow') {
         this.sel = this.mode === 'shop' ? 0 : 1;
         this.mode = 'town';
@@ -446,6 +585,7 @@ export class TownScene extends Phaser.Scene {
           lines: ['LEAVE WITHOUT TAKING ANYTHING?', '', 'ENTER: LEAVE   ESC: STAY'],
           yes: () => {
             leaveCache(run);
+            persist();
             this.scene.start('map');
           },
         };
@@ -456,6 +596,7 @@ export class TownScene extends Phaser.Scene {
       if (this.mode !== 'shop' || this.confirm) return;
       const err = reroll(run);
       this.say(err ?? 'NEW STOCK!', err ? BAD : GOOD);
+      persist();
       this.redraw(run);
     });
     kb.on('keydown-U', () => getPanel().toggle());

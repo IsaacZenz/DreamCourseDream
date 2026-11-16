@@ -19,6 +19,7 @@ import type { Tuning } from '../content/tuning.ts';
 import { groundAt, type ShotCommand } from '../sim/ball.ts';
 import type { Course } from '../sim/course.ts';
 import { distancesTo } from './structure.ts';
+import type { BossSpec } from '../sim/boss.ts';
 import { ballNow, canShoot, clonePlay, createPlay, inWater, lobSpeedFor, rollSpeedFor, runShot, takeShot, tick, type Loadout, type PlayState } from '../sim/play.ts';
 
 export interface BotMove {
@@ -68,6 +69,15 @@ export interface BotHints {
   readonly maxShots?: number;
   /** Milestone 6: play with the player's run upgrades, gear and ability (owner, 2026-11-15). */
   readonly loadout?: Loadout;
+  /** Milestone 7: fight this boss (the course is its arena). Damage to the boss counts as progress, like stars. */
+  readonly boss?: BossSpec;
+}
+
+/** Health the boss has lost so far (0 on a course without one). */
+function bossDamage(play: PlayState): number {
+  if (!play.boss) return 0;
+  const e = play.enemies.find((x) => x.uid === play.boss!.uid);
+  return e ? play.boss.maxHealth - e.health : 0;
 }
 
 export function playBot(course: Course, tuning: Tuning, seed: string, hints: BotHints = {}): BotResult {
@@ -92,7 +102,7 @@ export function playBot(course: Course, tuning: Tuning, seed: string, hints: Bot
     return v;
   };
 
-  let play = createPlay(course, tuning, { seed, ...(hints.loadout && { loadout: hints.loadout }) });
+  let play = createPlay(course, tuning, { seed, ...(hints.loadout && { loadout: hints.loadout }), ...(hints.boss && { boss: hints.boss }) });
   const moves: BotMove[] = [];
   let simulated = 0;
   const done = (reason: string): BotResult => {
@@ -166,13 +176,14 @@ export function playBot(course: Course, tuning: Tuning, seed: string, hints: Bot
     const power = play.stats.get('shotPower');
     const startHealth = play.health;
     const startMeter = play.meter;
+    const startBoss = bossDamage(play);
     // Progress is measured towards the goal of this turn (the first target), so the bot follows the trail.
     const goal = ts[0]!;
     const scoreOf = (trial: PlayState, logFrom: number) => {
       const s = cfg.score;
       const lostHealth = startHealth - trial.health;
       const sunk = trial.log.slice(logFrom).filter((e) => e.kind === 'returned' || e.kind === 'underwater').length;
-      let score = (trial.meter - startMeter) * s.star - lostHealth * s.health - sunk * s.sunk;
+      let score = (trial.meter - startMeter + bossDamage(trial) - startBoss) * s.star - lostHealth * s.health - sunk * s.sunk;
       if (trial.status === 'won') score += s.win;
       else if (trial.status === 'lost') score -= s.lost;
       else {
@@ -223,7 +234,7 @@ export function playBot(course: Course, tuning: Tuning, seed: string, hints: Bot
         for (const { trial, cmd, logFrom } of stage1.slice(0, cfg.finishBest)) {
           runShot(trial);
           const score = scoreOf(trial, logFrom);
-          const clean = trial.status === 'won' || (trial.meter > startMeter && startHealth - trial.health === 0);
+          const clean = trial.status === 'won' || ((trial.meter > startMeter || bossDamage(trial) > startBoss) && startHealth - trial.health === 0);
           if (!best || score > best.score) best = { score, state: trial, cmd, clean };
           if (trial.status === 'won') return;
         }
@@ -252,7 +263,7 @@ export function playBot(course: Course, tuning: Tuning, seed: string, hints: Bot
     // Progress: stars first, then walking distance to this turn's goal. No progress for a while: give up early.
     const nb = ballNow(play);
     const walk = goalField ? (goalField[tileOf(nb.x, nb.y)] ?? 99) : 0;
-    const progress = play.meter * 1000 - (Number.isFinite(walk) ? walk : 99) + (play.exitOpen ? 500 : 0);
+    const progress = (play.meter + bossDamage(play)) * 1000 - (Number.isFinite(walk) ? walk : 99) + (play.exitOpen ? 500 : 0);
     if (progress > bestProgress + 0.5) {
       bestProgress = progress;
       stall = 0;

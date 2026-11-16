@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { CourseScene } from './CourseScene';
+import { HubScene } from './HubScene';
 import { MapScene } from './MapScene';
+import { MenuScene } from './MenuScene';
+import { RewardScene } from './RewardScene';
 import { TownScene } from './TownScene';
 import { VIEW_HEIGHT, VIEW_WIDTH, integerScale } from './config';
 
@@ -17,7 +20,8 @@ export function startGame(parent: HTMLElement): Phaser.Game {
       autoCenter: Phaser.Scale.CENTER_BOTH,
       zoom: integerScale(window.innerWidth, window.innerHeight),
     },
-    scene: [CourseScene, MapScene, TownScene],
+    // Owner, 2026-11-16: the game opens on the start menu.
+    scene: [MenuScene, CourseScene, MapScene, TownScene, HubScene, RewardScene],
   });
 
   window.addEventListener('resize', () => {

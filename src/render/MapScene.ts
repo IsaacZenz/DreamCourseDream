@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { RUN, UPGRADE_LIST, UPGRADES, type NodeType } from '../content/run';
-import { LAST_TOWN, addUpgrade, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
+import { LAST_TOWN, addUpgrade, budgetFor, choices, debugAddBlue, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
+import { breakSave } from '../save/save';
+import { BOSS_TINT } from './bossLook';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
-import { newRunSeed, session, startRun } from './runSession';
+import { nextRegion, persist, session, startRun } from './runSession';
 import { getPanel, preloadAssets, shared } from './shared';
 
 const ROW_H = 26;
@@ -35,7 +37,8 @@ function nodeInfo(run: RunState, type: NodeType): string[] {
     case 'cache':
       return ['TAKE ONE OF THREE, FREE'];
     case 'boss':
-      return [`STAND-IN: HARD COURSE`, `BUDGET ${budgetFor(run, 'boss')}`, ...(run.countdown > 0 ? [`EARLY: +${run.countdown * RUN.earlyBossBluePerStep} BLUE STARS`] : [])];
+      // Owner, 2026-11-16: the map shows the bug and its colour (the icon), not the name.
+      return [`A BUG BOSS (SEE ITS ICON)`, 'BEAT IT: BLUE STARS, FULL HEAL,', 'A PRIZE, THEN THE NEXT REGION', ...(run.countdown > 0 ? [`EARLY: +${run.countdown * RUN.earlyBossBluePerStep} BLUE STARS`] : [])];
   }
 }
 
@@ -64,10 +67,19 @@ export class MapScene extends Phaser.Scene {
     const run = session.run;
     this.cameras.main.setBackgroundColor('#1d2b53');
     if (!run) {
-      startRun(newRunSeed());
-      this.scene.restart();
+      this.scene.start('menu');
       return;
     }
+    // Milestone 7: after a boss, choose the prize; then the next region starts here.
+    if (run.status === 'reward') {
+      this.scene.start('reward');
+      return;
+    }
+    if (run.status === 'region') {
+      nextRegion(run);
+      this.sel = 0;
+    }
+    if (run.status === 'won' || run.status === 'lost') persist();
     this.options = choices(run);
     this.sel = Math.min(this.sel, Math.max(0, this.options.length - 1));
     this.drawMap(run);
@@ -140,7 +152,13 @@ export class MapScene extends Phaser.Scene {
     g.lineStyle(1, 0xd04050, 1);
     for (let x = MAP_X - 14; x < MAP_X + LANE_W * 3 + 14; x += 6) g.lineBetween(x, lineY, x + 3, lineY);
     const bp = { x: MAP_X + LANE_W * 3 + 26, y: lineY };
-    const boss = this.add.image(bp.x, bp.y, 'node-boss', 0);
+    // Owner, 2026-11-16: the boss's bug, in its colour (a rainbow boss flickers through the colours).
+    const boss = this.add.image(bp.x, bp.y, `icon-boss-${run.boss.bug}`, 0).setTint(BOSS_TINT[run.boss.colour]);
+    if (run.boss.colour === 'rainbow') {
+      const tints = [BOSS_TINT.red, BOSS_TINT.yellow, BOSS_TINT.green, BOSS_TINT.blue];
+      let k = 0;
+      this.time.addEvent({ delay: 300, loop: true, callback: () => boss.setTint(tints[k++ % tints.length]!) });
+    }
     if (this.options.some((o) => o.id === 'boss')) {
       boss.setInteractive({ useHandCursor: true });
       boss.on('pointerdown', () => {
@@ -192,11 +210,13 @@ export class MapScene extends Phaser.Scene {
       c.add(pixelText(this, m, 4, y, text, { color }));
       y += 7;
     };
-    line(`RUN #${run.seed}`, UI_DIM);
+    line(`RUN #${run.seed}  REGION ${run.region}`, UI_DIM);
     y += 2;
     line(`HEALTH ${run.health}/${stats.get('maxHealth')}`, run.health <= 2 ? BAD : UI_TEXT);
     line(`STARS ${run.wallet}`, STAR);
     line(run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS NEXT!', 0xff8080);
+    line(`BLUE ${run.blueStars} CARRIED`, 0x80c0ff);
+    line(`  ${run.profile.stash} STASHED`, 0x80c0ff);
     line(`COURSES DONE ${run.totals.courses}`, UI_DIM);
     y += 3;
     // Gear: icon and name per slot.
@@ -226,7 +246,7 @@ export class MapScene extends Phaser.Scene {
       line(n.id === LAST_TOWN ? 'NEXT: LAST TOWN' : `NEXT: ${NODE_NAME[type]}`, GOOD);
       for (const l of n.id === LAST_TOWN ? ['OPTIONAL: SHOP AND BURROW', 'BEFORE THE BOSS'] : nodeInfo(run, type)) line(l, UI_DIM);
     }
-    const help = run.status === 'map' ? ['ARROWS: CHOOSE  ENTER: GO', 'UP/DOWN: LOOK AHEAD', 'U: TEST PANEL  1-6: TEST COURSES'] : ['N: NEW RUN  S: SAME SEED'];
+    const help = run.status === 'map' ? ['ARROWS: CHOOSE  ENTER: GO', 'UP/DOWN: LOOK AHEAD', 'U: TEST PANEL  1-6: TEST COURSES'] : ['ENTER: START MENU'];
     help.forEach((h, i) => c.add(pixelText(this, m, 4, VIEW_HEIGHT - 7 * (help.length - i) - 2, h, { color: UI_DIM })));
     this.panelBox = c;
   }
@@ -257,16 +277,16 @@ export class MapScene extends Phaser.Scene {
     kb.on('keydown-UP', look(-1));
     kb.on('keydown-W', look(-1));
     kb.on('keydown-DOWN', look(1));
-    kb.on('keydown-ENTER', () => this.go(run));
+    kb.on('keydown-ENTER', () => {
+      if (run.status === 'won' || run.status === 'lost') {
+        session.run = null;
+        this.scene.start('menu');
+      } else this.go(run);
+    });
     kb.on('keydown-SPACE', () => this.go(run));
     kb.on('keydown-U', () => getPanel().toggle());
     const course = (i: number) => () => this.scene.start('course', { courseIndex: i });
     ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'].forEach((k, i) => kb.on(`keydown-${k}`, course(i)));
-    kb.on('keydown-N', () => {
-      if (run.status !== 'won' && run.status !== 'lost') return;
-      startRun(newRunSeed());
-      this.scene.restart();
-    });
     kb.on('keydown-S', () => {
       if (run.status === 'map') return look(1)();
       if (run.status !== 'won' && run.status !== 'lost') return;
@@ -305,26 +325,48 @@ export class MapScene extends Phaser.Scene {
         redraw();
       },
       onWin: () => undefined,
+      buttons: [
+        {
+          label: '+10 blue stars (carried)',
+          onClick: () => {
+            debugAddBlue(run, 10);
+            redraw();
+          },
+        },
+        {
+          label: 'Fight the boss now',
+          onClick: () => {
+            debugSetCountdown(run, 0);
+            run.lastTownVisited = true;
+            if (run.status === 'map' && choices(run).some((n) => n.id === 'boss')) {
+              enterNode(run, 'boss');
+              this.scene.start('course', { run: true });
+            }
+          },
+        },
+        { label: 'Break the save', onClick: () => breakSave() },
+      ],
     });
   }
 
   private drawSummary(run: RunState): void {
     const m = shared.manifest;
     const won = run.status === 'won';
-    const reason = won ? 'YOU BEAT THE BOSS (A STAND-IN COURSE FOR NOW).' : run.endedBy === 'shots' ? 'OUT OF SHOTS WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.';
+    const reason = won ? `YOU BEAT ${run.totals.bosses} BOSSES. MORE REGIONS COME LATER.` : run.endedBy === 'shots' ? 'OUT OF SHOTS WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.';
     const gear = GEAR_CATEGORIES.map((c) => run.gear[c]).filter(Boolean).map((id) => GEAR.get(id!)!.name);
     const stored = GEAR_CATEGORIES.map((c) => run.burrow[c]).filter(Boolean).map((id) => GEAR.get(id!)!.name);
     const lines = [
       won ? 'RUN COMPLETE!' : 'RUN OVER',
       '',
       reason,
-      `ROWS CLIMBED: ${rowOf(run)}   COURSES FINISHED: ${run.totals.courses}`,
-      `YELLOW STARS EARNED: ${run.totals.stars}`,
-      `BLUE STARS (COUNTED, SPENT FROM MILESTONE 7): ${run.blueStars}`,
+      `REGION ${run.region}, ROW ${rowOf(run)}   COURSES FINISHED: ${run.totals.courses}   BOSSES: ${run.totals.bosses}`,
+      `YELLOW STARS EARNED: ${run.totals.stars} (LOST WITH THE RUN)`,
+      `BLUE STARS: ${run.totals.blueStashed} STASHED (SAFE)${run.totals.blueLost ? `, ${run.totals.blueLost} LOST (NOT STASHED)` : ''}`,
+      `BLUE STARS TO SPEND: ${run.profile.stash}`,
       `GEAR HELD: ${gear.length ? gear.join(', ') : 'NONE'}${won ? '' : ' (LOST)'}`,
       `SAFE IN YOUR BURROW: ${stored.length ? stored.join(', ') : 'NOTHING'}`,
       '',
-      'N: NEW RUN   S: SAME SEED AGAIN   1-6: TEST COURSES',
+      'ENTER: START MENU (SPEND BLUE STARS ON UPGRADES)   S: SAME SEED AGAIN',
     ];
     const text = pixelText(this, m, 0, 0, lines.join('\n'), { color: won ? GOOD : BAD });
     const w = text.width + 16;

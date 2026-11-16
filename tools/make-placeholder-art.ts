@@ -1197,6 +1197,119 @@ function drawSignpost(): Image {
   return img;
 }
 
+
+// ---------------------------------------------------------------------------
+// Milestone 7: bug bosses (owner, 2026-11-16: insects; five bugs, each in five
+// colours tied to its power), blue stars, summon pads, pods, the hub icons.
+// Original shapes drawn here; the colour words match src/content/bosses.ts.
+
+const BOSS_COLOURS: Record<string, string> = { red: '#d04030', blue: '#3878d8', yellow: '#e8c030', green: '#48a838' };
+const RAINBOW = ['#d04030', '#e8c030', '#48a838', '#3878d8'];
+
+/** One bug drawn in one shell colour. Big: about two tiles wide. */
+function drawBugIn(bug: string, base: string): Image {
+  const img = new Image(44, 40);
+  const leg = hex2('#201810');
+  const legs = (pts: readonly P[]) => {
+    for (const [x, y] of pts) img.set(x, y, leg);
+  };
+  if (bug === 'goliath') {
+    // A wide, heavy beetle with a horn and a seam down its shell.
+    legs([[6, 30], [5, 31], [4, 32], [38, 30], [39, 31], [40, 32], [10, 34], [9, 35], [34, 34], [35, 35], [14, 36], [30, 36]]);
+    blob(img, 22, 24, 18, 12, base, '#140c08');
+    const seam = hex2('#140c08');
+    for (let y = 13; y < 35; y++) img.set(22, y, seam);
+    blob(img, 22, 11, 8, 5, '#3a3028', '#100808');
+    for (const [x, y] of [[22, 2], [22, 3], [21, 4], [22, 4], [21, 5], [22, 5], [22, 6], [21, 7], [22, 7]] as P[]) img.set(x, y, hex2('#d8d0c0'));
+    eyes(img, [[18, 11], [26, 11]], '#f8f040');
+  } else if (bug === 'mantis') {
+    // Tall and thin, with folded front arms raised.
+    legs([[14, 36], [13, 37], [30, 36], [31, 37], [18, 38], [26, 38]]);
+    blob(img, 22, 30, 7, 8, base, '#101808');
+    blob(img, 22, 18, 4, 7, base, '#101808');
+    blob(img, 22, 8, 5, 4, base, '#101808');
+    for (let y = 10; y < 22; y++) {
+      img.set(14 - Math.floor((y - 10) / 3), y, leg);
+      img.set(30 + Math.floor((y - 10) / 3), y, leg);
+    }
+    eyes(img, [[19, 7], [25, 7]], '#f8f040');
+  } else if (bug === 'grasshopper') {
+    // Long body and big back legs bent for a jump.
+    blob(img, 22, 26, 16, 7, base, '#0c1808');
+    blob(img, 9, 22, 5, 5, base, '#0c1808');
+    for (let i = 0; i < 9; i++) {
+      img.set(28 + i, 18 + Math.floor(i / 2), leg);
+      img.set(36 - Math.floor(i / 3), 22 + i, leg);
+      img.set(16 + i, 18 + Math.floor(i / 2), leg);
+    }
+    legs([[12, 33], [11, 34], [18, 34], [17, 35]]);
+    eyes(img, [[7, 21], [10, 20]], '#f8f040');
+    for (const [x, y] of [[6, 16], [5, 15], [4, 14], [10, 16], [11, 15], [12, 14]] as P[]) img.set(x, y, leg);
+  } else if (bug === 'butterfly') {
+    blob(img, 13, 18, 11, 12, base, '#180818');
+    blob(img, 31, 18, 11, 12, base, '#180818');
+    blob(img, 22, 22, 3, 12, '#302030', '#100810');
+    eyes(img, [[21, 11], [23, 11]], '#f8f040');
+  } else {
+    // Centipede: a row of segments.
+    for (let k = 0; k < 6; k++) blob(img, 7 + k * 6, 26 - (k % 2), 4, 4, k === 0 ? '#302820' : base, '#100c08');
+    eyes(img, [[6, 25], [8, 25]], '#f8f040');
+  }
+  return img;
+}
+
+function drawBug(bug: string, colour: string): Image {
+  if (colour !== 'rainbow') return drawBugIn(bug, BOSS_COLOURS[colour]!);
+  // Rainbow: bands of the four powers' colours.
+  const layers = RAINBOW.map((c) => drawBugIn(bug, c));
+  const out = new Image(44, 40);
+  for (let y = 0; y < 40; y++) for (let x = 0; x < 44; x++) out.set(x, y, layers[Math.floor((x + y) / 5) % layers.length]!.get(x, y));
+  return out;
+}
+
+/** The map's boss icon: the bug's shape in light grey, tinted to the boss's colour by the display. */
+function drawBugIcon(bug: string): Image {
+  const big = drawBugIn(bug, '#e8e8e8');
+  const img = new Image(16, 16);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    let best: RGBA = [0, 0, 0, 0];
+    for (let dy = 0; dy < 3 && best[3] === 0; dy++) for (let dx = 0; dx < 3 && best[3] === 0; dx++) {
+      const px = big.get(Math.min(43, x * 44 / 16 + dx), Math.min(39, y * 40 / 16 + dy));
+      if (px[3] > 0) best = px;
+    }
+    img.set(x, y, best);
+  }
+  return img;
+}
+
+function drawSummonPad(): Image {
+  const img = new Image(32, 16);
+  const ring = hex2('#c060e0');
+  const inner = hex2('#603078');
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 32; x++) {
+    const r = Math.hypot((x + 0.5 - 16) / 13, (y + 0.5 - 8) / 6.5);
+    if (r <= 1 && r > 0.8) img.set(x, y, ring);
+    else if (r <= 0.45 && r > 0.3) img.set(x, y, inner);
+  }
+  return img;
+}
+
+function drawPod(): Image {
+  const img = new Image(8, 9);
+  blob(img, 4, 5, 3.5, 4, '#c8b890', '#302010');
+  img.set(3, 3, hex2('#f8f0d8'));
+  return img;
+}
+
+function drawStatusIcon(kind: string): Image {
+  const img = new Image(10, 10);
+  blob(img, 5, 5, 5, 5, kind === 'chilled' ? '#60b8f0' : '#60b040', '#101018');
+  const w = hex2('#f8f8f8');
+  const marks: P[] = kind === 'chilled' ? [[5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [3, 3], [7, 3], [3, 7], [7, 7], [4, 4], [6, 4], [4, 6], [6, 6]] : [[4, 2], [5, 2], [6, 2], [3, 3], [7, 3], [3, 4], [7, 4], [4, 5], [6, 5], [5, 6], [4, 7], [6, 7]];
+  for (const [x, y] of marks) img.set(x, y, w);
+  return img;
+}
+
 function drawCursor(): Image {
   const img = new Image(9, 7);
   rows(img, 0, 0, ['ooooooooo', 'o4444444o', '.o44444o.', '..o444o..', '...o4o...', '....o....', '.........'], '#f8f8f8', {}, '#202030');
@@ -1212,6 +1325,16 @@ emit('town-shop', drawShopBuilding(), 56, 52, ['idle'], [28, 51]);
 emit('town-burrow', drawBurrow(), 56, 36, ['idle'], [28, 33]);
 emit('town-sign', drawSignpost(), 28, 32, ['idle'], [14, 31]);
 emit('cursor', drawCursor(), 9, 7, ['idle'], [4, 6]);
+for (const bug of ['goliath', 'mantis', 'grasshopper', 'butterfly', 'centipede']) {
+  for (const colour of ['red', 'blue', 'yellow', 'green', 'rainbow']) emit(`boss-${bug}-${colour}`, drawBug(bug, colour), 44, 40, ['idle'], [22, 36]);
+  emit(`icon-boss-${bug}`, drawBugIcon(bug), 16, 16, ['idle'], [8, 8]);
+}
+emit('star-blue', drawStar('#58a8f8'), 11, 11, ['idle'], [5, 10]);
+emit('summon-pad', drawSummonPad(), 32, 16, ['idle'], [16, 8]);
+emit('pod', drawPod(), 8, 9, ['idle'], [4, 8]);
+emit('icon-chilled', drawStatusIcon('chilled'), 10, 10, ['idle'], [5, 5]);
+emit('icon-poisoned', drawStatusIcon('poisoned'), 10, 10, ['idle'], [5, 5]);
+for (const [id, kind] of [['perm-vitality', 'health'], ['perm-stamina', 'shots'], ['perm-head-start', 'reach'], ['perm-haggler', 'power'], ['perm-fortune', 'luck'], ['perm-ability', 'ability']] as const) emit(id, drawUpgrade(kind), 12, 12, ['idle'], [6, 6]);
 
 const font = drawFont();
 emit('font', font.img, 4, 6, font.frames, [0, 0]);

@@ -43,6 +43,10 @@ export interface RunOptions {
   readonly onUpgrade: (id: string) => void;
   readonly onCountdown: (n: number) => void;
   readonly onWin: () => void;
+  /** Milestone 7: more testing aids as plain buttons (blue stars, fight the boss now, break the save...). */
+  readonly buttons?: readonly { readonly label: string; readonly onClick: () => void }[];
+  /** Milestone 7: on a boss course, set the boss's health (to jump to a phase). */
+  readonly bossHealth?: { readonly value: number; readonly onSet: (n: number) => void };
 }
 
 export class TuningPanel {
@@ -227,6 +231,36 @@ export class TuningPanel {
         opts.onCountdown(Number(count.value));
       }),
     );
+    if (opts.buttons?.length) box.append(document.createElement('br'), ...opts.buttons.map((b) => this.button(b.label, b.onClick)));
+    if (opts.bossHealth) {
+      const hp = document.createElement('input');
+      hp.type = 'number';
+      hp.min = '1';
+      hp.max = '99';
+      hp.value = String(opts.bossHealth.value);
+      hp.style.width = '48px';
+      const set = opts.bossHealth.onSet;
+      box.append(
+        document.createElement('br'),
+        document.createTextNode('Boss health '),
+        hp,
+        this.button('Set', () => {
+          done(hp);
+          set(Number(hp.value));
+        }),
+      );
+    }
+  }
+
+  /** Milestone 7: testing aids on screens outside a run (start menu, hub): a title and some buttons. */
+  setAids(title: string, buttons: readonly { readonly label: string; readonly onClick: () => void }[]): void {
+    const box = this.runBox;
+    if (!box) return;
+    box.replaceChildren();
+    box.style.display = 'block';
+    const h = document.createElement('h3');
+    h.textContent = title;
+    box.append(h, ...buttons.map((b) => this.button(b.label, b.onClick)));
   }
 
   private button(text: string, onClick: () => void): HTMLButtonElement {

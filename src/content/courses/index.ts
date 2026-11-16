@@ -8,6 +8,7 @@ import slopesSurfaces from './slopes-surfaces.json';
 import courseRules from './course-rules.json';
 import enemiesAbilities from './enemies-abilities.json';
 import { BENCH_ID, benchCourse } from './testBench.ts';
+import arenaBug from './arena-bug.json';
 
 export const GENERATED_ID = 'generated';
 
@@ -26,3 +27,6 @@ export const TEST_COURSES: readonly CourseFile[] = [
   // A generated course (key 6): made by src/gen/ from the seed and budget.
   { id: GENERATED_ID, data: null },
 ];
+
+/** Boss arenas (Milestone 7, sheet section 3): one for now; more to cycle through come in Milestone 8 (owner, 2026-11-16). */
+export const ARENA_FILES: ReadonlyMap<string, unknown> = new Map([['arena-bug', arenaBug]]);

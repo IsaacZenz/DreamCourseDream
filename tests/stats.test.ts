@@ -34,7 +34,7 @@ describe('stat sheet and modifiers', () => {
     s.add(mod({ stat: 'maxHealth', op: 'mul', amount: 1.3 })); // 6.5 -> 7
     expect(s.get('maxHealth')).toBe(7);
     s.add(mod({ stat: 'hitDamage', op: 'add', amount: -5 }));
-    expect(s.get('hitDamage')).toBe(0); // open question F1: minimum 0
+    expect(s.get('hitDamage')).toBe(1); // owner, 2026-11-16 (F1): never below 1
     s.add(mod({ stat: 'maxHealth', op: 'add', amount: -100 }));
     expect(s.get('maxHealth')).toBe(1);
   });
@@ -53,12 +53,12 @@ describe('stat sheet and modifiers', () => {
 
   it('turn-limited modifiers count down and expire', () => {
     const s = new StatSheet(BALL_BASE_STATS);
-    s.add(mod({ stat: 'hitDamage', amount: -1, source: { kind: 'status', id: 'poisoned' }, duration: { kind: 'turns', turns: 2 } }));
-    expect(s.get('hitDamage')).toBe(0);
+    s.add(mod({ stat: 'starReach', amount: -0.5, source: { kind: 'status', id: 'poisoned' }, duration: { kind: 'turns', turns: 2 } }));
+    expect(s.get('starReach')).toBe(0.5);
     s.tickTurn();
-    expect(s.get('hitDamage')).toBe(0);
+    expect(s.get('starReach')).toBe(0.5);
     s.tickTurn();
-    expect(s.get('hitDamage')).toBe(1);
+    expect(s.get('starReach')).toBe(1);
   });
 
   it('course modifiers end with the course; run modifiers end with the run; permanent ones stay', () => {

@@ -10,19 +10,32 @@
  * At zero the boss is forced. Health, yellow stars, the ability, gear and run
  * upgrades carry between nodes; shots and naps refill on every course.
  *
- * The boss is a stand-in hard course until Milestone 7 builds The Warden.
+ * Milestone 7 (design sheet docs/plans/milestone-7.md, signed off by the owner
+ * 2026-11-16): the boss is a generated bug boss fought in its arena. Beating it
+ * heals fully, gives blue stars and a choice of gear, and starts region two
+ * (a new map, a higher budget, a different bug at its end). After region two's
+ * boss the run is complete.
  *
  * Owner, 2026-11-15: a shop node is a little town with the shop and the
- * player's Burrow (home base). The Burrow stores one gear item per category;
- * stored gear is safe from death, so it lives outside the run and is passed in
- * when a run starts. The display saves it in the browser.
+ * player's Burrow (home base). The Burrow, its hold and the blue star stash
+ * live in the player's profile (src/sim/profile.ts), which is kept between
+ * runs; the run holds a reference to it.
+ *
+ * Owner, 2026-11-16: blue stars earned in a run are carried, and become safe
+ * only when stashed: by visiting the Burrow, or by defeating a boss. Yellow
+ * stars are only ever carried.
  */
 import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY_ODDS, type GearCategory, type GearDef, type GearSlots } from '../content/gear.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
+import { BOSS_REGIONS, type BugId } from '../content/bosses.ts';
+import { bossBlueStars, type BossSpec } from './boss.ts';
+import { newProfile, permanentModifiers, sellValue, startingAbilityOf, type Burrow, type LastRun, type Profile } from './profile.ts';
 import { Rng } from './rng.ts';
 import { StatSheet, type Modifier } from './stats.ts';
 import type { Loadout } from './play.ts';
+
+export type { Burrow } from './profile.ts';
 
 // ---------------------------------------------------------------------------
 // The map
@@ -52,7 +65,8 @@ export function nodeById(map: RunMap, id: string): MapNode | undefined {
 // ---------------------------------------------------------------------------
 // State
 
-export type RunStatus = 'map' | 'course' | 'shop' | 'cache' | 'won' | 'lost';
+/** reward: choosing the boss's gear prize. region: waiting for the caller to start the next region (it makes the map). */
+export type RunStatus = 'map' | 'course' | 'shop' | 'cache' | 'reward' | 'region' | 'won' | 'lost';
 
 /** The node being played: where it is, what it is, and for courses the generator's seed and budget. */
 export interface CurrentNode {
@@ -65,6 +79,8 @@ export interface CurrentNode {
   readonly courseSeed: string;
   /** Gear item placed on this course, or null. */
   readonly gear: string | null;
+  /** Milestone 7: the boss to fight, on a boss node. */
+  readonly boss: BossSpec | null;
 }
 
 export interface Offer {
@@ -88,14 +104,22 @@ export interface CacheState {
   readonly offers: readonly Offer[];
 }
 
-/** The Burrow: one stored gear item per category. Kept between runs (it survives death). */
-export type Burrow = { -readonly [C in GearCategory]: string | null };
-
 export interface RunState {
   readonly seed: string;
-  /** The Burrow's contents. Changed only in a town; the caller saves it. */
+  /** What is kept between runs (stash, upgrades, Burrow, hold). Shared with the caller, who saves it. */
+  readonly profile: Profile;
+  /** The Burrow's contents (the profile's). Changed only in a town. */
   readonly burrow: Burrow;
-  readonly map: RunMap;
+  map: RunMap;
+  /** Milestone 7: the region (1 or 2) and its boss, picked when the region starts so the map can show it. */
+  region: number;
+  boss: BossSpec;
+  /** Bugs met in this run (owner, 2026-11-16: never the same bug twice). */
+  readonly met: BugId[];
+  /** Permanent upgrades, as modifiers, fixed when the run starts. */
+  readonly permanent: readonly Modifier[];
+  /** The boss's gear prize: one item per category to choose from (or skip). */
+  reward: { readonly offers: readonly string[] } | null;
   /** The last node finished, or null before row 1. */
   at: string | null;
   /** Nodes finished, in order. */
@@ -109,7 +133,7 @@ export interface RunState {
   counted: number;
   health: number;
   wallet: number;
-  /** Counted only until Milestone 7 gives them a wallet (sheet section 2.4). */
+  /** Blue stars carried (owner, 2026-11-16): lost if the run ends, safe once stashed in the Burrow or by beating a boss. */
   blueStars: number;
   ability: string | null;
   gear: { -readonly [C in GearCategory]: string | null };
@@ -120,18 +144,33 @@ export interface RunState {
   shop: ShopState | null;
   cache: CacheState | null;
   /** For the run summary. */
-  readonly totals: { courses: number; stars: number };
-  /** What ended the run. */
-  endedBy: 'health' | 'shots' | 'boss' | null;
+  readonly totals: { courses: number; stars: number; blueEarned: number; blueStashed: number; blueLost: number; bosses: number };
+  /** What ended the run. left: the game was closed away from a town (owner, 2026-11-16). */
+  endedBy: 'health' | 'shots' | 'boss' | 'left' | null;
   /** The last town before the forced boss has been offered and visited (owner, 2026-11-15). */
   lastTownVisited: boolean;
 }
 
-export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR): RunState {
+/** A boss used where none was picked (tests): the first built combination. */
+export const DEFAULT_BOSS: BossSpec = { bug: 'goliath', colour: 'red', skill: 'slam', region: 1 };
+
+/**
+ * Start a run. The caller makes the map and picks the boss (src/gen/), and
+ * passes the player's profile: its permanent upgrades, starting ability and
+ * Burrow apply to the run.
+ */
+export function createRun(seed: string, map: RunMap, profile: Profile = newProfile(), boss: BossSpec = DEFAULT_BOSS): RunState {
+  for (const c of GEAR_CATEGORIES) profile.burrow[c] = validGear(profile.burrow[c], c);
   const run: RunState = {
     seed,
-    burrow: { weapon: validGear(burrow.weapon, 'weapon'), armour: validGear(burrow.armour, 'armour'), bauble: validGear(burrow.bauble, 'bauble') },
+    profile,
+    burrow: profile.burrow,
     map,
+    region: 1,
+    boss,
+    met: [boss.bug],
+    permanent: permanentModifiers(profile),
+    reward: null,
     at: null,
     path: [],
     status: 'map',
@@ -142,17 +181,20 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     health: 0,
     wallet: 0,
     blueStars: 0,
-    ability: CHARACTERS.get(DEFAULT_CHARACTER)!.startingAbility,
+    ability: startingAbilityOf(profile) ?? CHARACTERS.get(DEFAULT_CHARACTER)!.startingAbility,
     gear: { ...NO_GEAR },
     upgrades: {},
     bought: {},
     shop: null,
     cache: null,
-    totals: { courses: 0, stars: 0 },
+    totals: { courses: 0, stars: 0, blueEarned: 0, blueStashed: 0, blueLost: 0, bosses: 0 },
     endedBy: null,
     lastTownVisited: false,
   };
-  run.health = runStats(run).get('maxHealth');
+  const stats = runStats(run);
+  run.health = stats.get('maxHealth');
+  // Head Start (Milestone 7).
+  run.wallet = stats.get('startingStars');
   return run;
 }
 
@@ -170,14 +212,14 @@ function rngFor(run: RunState, label: string): Rng {
 // Stats
 
 function upgradeModifiers(run: RunState): Modifier[] {
-  const out: Modifier[] = [];
+  const out: Modifier[] = [...run.permanent];
   for (const u of UPGRADE_LIST) {
     for (let i = 0; i < (run.upgrades[u.id] ?? 0); i++) out.push({ stat: u.stat, op: u.op, amount: u.amount, source: { kind: 'run', id: u.id }, duration: { kind: 'run' } });
   }
   return out;
 }
 
-/** The ball's stat sheet between courses: the character, run upgrades and gear. */
+/** The ball's stat sheet between courses: the character, permanent upgrades, run upgrades and gear. */
 export function runStats(run: RunState): StatSheet {
   const sheet = new StatSheet(CHARACTERS.get(DEFAULT_CHARACTER)!.stats);
   for (const m of upgradeModifiers(run)) sheet.add(m);
@@ -275,14 +317,17 @@ export function choices(run: RunState): MapNode[] {
 /** The budget of a course node (sheet section 4.1): 8 + 2 per counted node, hard courses ×1.5, capped. */
 export function budgetFor(run: RunState, type: NodeType): number {
   const b = RUN.budget;
-  const plain = b.start + b.perNode * run.counted;
+  // Milestone 7: region two starts higher (sheet section 6).
+  const start = b.regionStart[run.region - 1] ?? b.regionStart[b.regionStart.length - 1]!;
+  const plain = start + b.perNode * run.counted;
   const scaled = type === 'hard' || type === 'boss' ? Math.floor(plain * b.hardScale) : plain;
   return Math.min(b.cap, scaled);
 }
 
 /** Region 1 has an early and a late column of rarity odds (sheet section 5.2). */
 function oddsColumn(run: RunState, better: boolean): number {
-  const base = run.counted >= RUN.lateAfter ? 1 : 0;
+  // Region 1: early, then late. Region 2 has its own column (Milestone 6 sheet section 5.2).
+  const base = run.region >= 2 ? run.region : run.counted >= RUN.lateAfter ? 1 : 0;
   return Math.min(RARITY_ODDS.length - 1, base + (better ? 1 : 0));
 }
 
@@ -305,10 +350,10 @@ export function rarityWeights(column: number, dropLuck: number): number[] {
  * an item of that rarity (and the category, if given) that is not held and not
  * excluded. Rarities with nothing left to offer are skipped.
  */
-export function rollGear(run: RunState, rng: Rng, opts: { better?: boolean; category?: GearCategory; exclude?: readonly string[] } = {}): string | null {
+export function rollGear(run: RunState, rng: Rng, opts: { better?: boolean; category?: GearCategory; exclude?: readonly string[]; column?: number } = {}): string | null {
   const held = new Set([...GEAR_CATEGORIES.map((c) => run.gear[c]), ...(opts.exclude ?? [])]);
   const pool = (r: string): GearDef[] => GEAR_LIST.filter((g) => g.rarity === r && !held.has(g.id) && (!opts.category || g.category === opts.category));
-  const weights = rarityWeights(oddsColumn(run, !!opts.better), runStats(run).get('dropLuck')).map((w, i) => (pool(RARITIES[i]!).length ? w : 0));
+  const weights = rarityWeights(opts.column ?? oddsColumn(run, !!opts.better), runStats(run).get('dropLuck')).map((w, i) => (pool(RARITIES[i]!).length ? w : 0));
   const total = weights.reduce((a, b) => a + b, 0);
   if (total <= 0) return null;
   let pick = rng.float(0, total);
@@ -329,7 +374,8 @@ export function enterNode(run: RunState, id: string): CurrentNode {
   const type = typeOf(run, node);
   const isCourse = type === 'course' || type === 'hard' || type === 'boss';
   let gear: string | null = null;
-  if (isCourse) {
+  // The boss arena has no gear on it: the boss's prize is chosen after the fight.
+  if (isCourse && type !== 'boss') {
     const rng = rngFor(run, `coursegear:${id}:${run.counted}`);
     const always = type !== 'course';
     if (always || rng.chance(RUN.courseGearChance)) gear = rollGear(run, rng, { better: always, category: rng.pick(GEAR_CATEGORIES) });
@@ -340,8 +386,9 @@ export function enterNode(run: RunState, id: string): CurrentNode {
     type,
     early: type === 'boss' && run.countdown > 0,
     budget: isCourse ? budgetFor(run, type) : 0,
-    courseSeed: `${run.seed}-${id === 'boss' ? `BOSS${node.row}` : id === LAST_TOWN ? 'LASTTOWN' : id.toUpperCase()}`,
+    courseSeed: `${run.seed}-${run.region > 1 ? `R${run.region}-` : ''}${id === 'boss' ? `BOSS${node.row}` : id === LAST_TOWN ? 'LASTTOWN' : id.toUpperCase()}`,
     gear,
+    boss: type === 'boss' ? run.boss : null,
   };
   if (type === 'shop') {
     run.status = 'shop';
@@ -380,6 +427,29 @@ export interface CourseOutcome {
   readonly wallet: number;
   readonly ability: string | null;
   readonly gear: GearSlots;
+  /** Milestone 7: blue stars picked up on the course (crates, cracked tiles). */
+  readonly blueStars?: number;
+}
+
+/** Blue stars for finishing a course (sheet section 4.1). */
+function courseBlue(run: RunState, cur: CurrentNode): number {
+  if (cur.type === 'hard') return RUN.blue.hard;
+  if (cur.type === 'course') return rngFor(run, `blue:${cur.courseSeed}`).chance(RUN.blue.courseChance) ? RUN.blue.course : 0;
+  return 0;
+}
+
+/** Owner, 2026-11-16: blue stars carried become safe. Returns how many were stashed. */
+function stash(run: RunState): number {
+  const n = run.blueStars;
+  run.profile.stash += n;
+  run.totals.blueStashed += n;
+  run.blueStars = 0;
+  return n;
+}
+
+function earnBlue(run: RunState, n: number): void {
+  run.blueStars += n;
+  run.totals.blueEarned += n;
 }
 
 /** Yellow stars for finishing a node of this type. */
@@ -400,9 +470,9 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   run.wallet = out.wallet;
   run.ability = out.ability;
   run.gear = { ...out.gear };
+  earnBlue(run, out.blueStars ?? 0);
   if (!out.won) {
-    run.status = 'lost';
-    run.endedBy = out.lostBy ?? 'health';
+    endRun(run, out.lostBy === 'shots' ? 'shots' : 'died');
     return;
   }
   run.totals.courses++;
@@ -414,13 +484,82 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   }
   clampHealth(run);
   if (cur.type === 'boss') {
-    if (cur.early) run.blueStars += run.countdown * RUN.earlyBossBluePerStep;
+    // Sheet section 2.9: blue stars, a full heal, and a choice of gear. Owner, 2026-11-16: beating a boss stashes the blue stars carried.
+    earnBlue(run, bossBlueStars(cur.boss ?? run.boss) + (cur.early ? run.countdown * RUN.earlyBossBluePerStep : 0));
+    stash(run);
+    run.totals.bosses++;
+    run.health = runStats(run).get('maxHealth');
     run.current = null;
-    run.status = 'won';
-    run.endedBy = 'boss';
+    run.reward = { offers: rewardOffers(run) };
+    run.status = 'reward';
     return;
   }
+  earnBlue(run, courseBlue(run, cur));
   arrive(run, true);
+}
+
+/** One weapon, one armour, one bauble, a rarity better than the late odds (sheet section 2.9). */
+function rewardOffers(run: RunState): string[] {
+  const rng = rngFor(run, `reward:${run.region}`);
+  const out: string[] = [];
+  for (const c of GEAR_CATEGORIES) {
+    const id = rollGear(run, rng, { better: true, category: c, exclude: out, column: Math.min(RARITY_ODDS.length - 1, Math.max(1, run.region) + 1) });
+    if (id) out.push(id);
+  }
+  return out;
+}
+
+/**
+ * Take the boss's prize (an index into the offers), or skip it (null). Owner,
+ * 2026-11-16: the item it replaces goes to the Burrow, or to the hold if that
+ * Burrow slot is full. Then the next region, or the end of the run.
+ */
+export function chooseReward(run: RunState, i: number | null): string | null {
+  if (run.status !== 'reward' || !run.reward) return 'NO PRIZE TO CHOOSE';
+  if (i !== null) {
+    const id = run.reward.offers[i];
+    if (!id) return 'NOTHING THERE';
+    const old = setGear(run, id);
+    if (old) {
+      const c = GEAR.get(old)!.category;
+      if (!run.burrow[c]) run.burrow[c] = old;
+      else run.profile.hold.push(old);
+    }
+  }
+  run.reward = null;
+  if (run.region < BOSS_REGIONS.length) run.status = 'region';
+  else endRun(run, 'won');
+  return null;
+}
+
+/** Start the next region with its new map and boss (made by the caller, src/gen/). */
+export function startRegion(run: RunState, map: RunMap, boss: BossSpec): void {
+  if (run.status !== 'region') throw new Error('No region to start.');
+  run.region++;
+  run.map = map;
+  run.boss = boss;
+  run.met.push(boss.bug);
+  run.at = null;
+  run.path.length = 0;
+  run.countdown = RUN.countdown;
+  run.raises = 0;
+  run.counted = 0;
+  run.lastTownVisited = false;
+  run.status = 'map';
+}
+
+/** The run is over. Blue stars still carried are lost (owner, 2026-11-16); the profile keeps one line about it. */
+export function endRun(run: RunState, result: LastRun['result']): void {
+  run.current = null;
+  run.shop = null;
+  run.cache = null;
+  run.reward = null;
+  run.status = result === 'won' ? 'won' : 'lost';
+  run.endedBy = result === 'won' ? 'boss' : result === 'shots' ? 'shots' : result === 'left' ? 'left' : 'health';
+  if (result === 'won') stash(run);
+  run.totals.blueLost = run.blueStars;
+  run.blueStars = 0;
+  run.profile.lastRun = { result, region: run.region, row: rowOf(run), blueStashed: run.totals.blueStashed, blueLost: run.totals.blueLost };
 }
 
 // ---------------------------------------------------------------------------
@@ -556,6 +695,63 @@ export function burrowSwap(run: RunState, c: GearCategory): boolean {
   return true;
 }
 
+/**
+ * Owner, 2026-11-16: entering the Burrow stashes every blue star carried.
+ * Returns how many were stashed.
+ */
+export function visitBurrow(run: RunState): number {
+  if (run.status !== 'shop') return 0;
+  return stash(run);
+}
+
+/** Owner, 2026-11-16: sell the item housed in the Burrow for 25% of its price, rounded down, in yellow stars. */
+export function sellHoused(run: RunState, c: GearCategory): number {
+  if (run.status !== 'shop') return 0;
+  const id = run.burrow[c];
+  if (!id) return 0;
+  const n = sellValue(id);
+  run.burrow[c] = null;
+  run.wallet += n;
+  return n;
+}
+
+/** Categories with items waiting in the hold: the next Burrow visit sorts them first. */
+export function holdCategories(run: RunState): GearCategory[] {
+  return GEAR_CATEGORIES.filter((c) => run.profile.hold.some((id) => GEAR.get(id)?.category === c));
+}
+
+/** The items to sort in one category: worn first, then housed, then those in the hold. */
+export function sortCandidates(run: RunState, c: GearCategory): string[] {
+  const out: string[] = [];
+  if (run.gear[c]) out.push(run.gear[c]!);
+  if (run.burrow[c]) out.push(run.burrow[c]!);
+  for (const id of run.profile.hold) if (GEAR.get(id)?.category === c) out.push(id);
+  return out;
+}
+
+/**
+ * Settle one category of the hold (owner, 2026-11-16): choose which candidate
+ * to wear and which to house (indexes into `sortCandidates`, or null for
+ * none); every other candidate is sold for 25%. Returns the yellow stars
+ * gained, or a reason it could not be done.
+ */
+export function settleCategory(run: RunState, c: GearCategory, wear: number | null, house: number | null): number | string {
+  if (run.status !== 'shop') return 'NOT IN A TOWN';
+  const list = sortCandidates(run, c);
+  if ((wear !== null && !list[wear]) || (house !== null && !list[house])) return 'NOTHING THERE';
+  if (wear !== null && wear === house) return 'ONE ITEM CANNOT BE IN TWO PLACES';
+  let gained = 0;
+  list.forEach((id, i) => {
+    if (i !== wear && i !== house) gained += sellValue(id);
+  });
+  run.gear[c] = wear !== null ? list[wear]! : null;
+  run.burrow[c] = house !== null ? list[house]! : null;
+  run.profile.hold = run.profile.hold.filter((id) => GEAR.get(id)?.category !== c);
+  run.wallet += gained;
+  clampHealth(run);
+  return gained;
+}
+
 // ---------------------------------------------------------------------------
 // The cache (sheet section 8): a free pick of one from three.
 
@@ -590,6 +786,37 @@ export function leaveCache(run: RunState): void {
 }
 
 // ---------------------------------------------------------------------------
+// The town save point (owner, 2026-11-15 and 2026-11-16)
+
+/** The fields of a run that are saved at a town. The map is rebuilt from the seed and region; the profile is saved on its own. */
+export type SavedRun = Omit<RunState, 'profile' | 'burrow' | 'map'>;
+
+export function saveRun(run: RunState): SavedRun {
+  const { profile, burrow, map, ...rest } = run;
+  void profile;
+  void burrow;
+  void map;
+  return JSON.parse(JSON.stringify(rest)) as SavedRun;
+}
+
+/**
+ * Rebuild a run saved at a town. `map` is the region's map made again from the
+ * seed. Returns null if the saved data does not look like a run in a town.
+ */
+export function restoreRun(raw: unknown, map: RunMap, profile: Profile): RunState | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as SavedRun;
+  if (typeof r.seed !== 'string' || r.status !== 'shop' || !r.shop || !r.current || typeof r.region !== 'number' || !r.boss) return null;
+  if (typeof r.health !== 'number' || typeof r.wallet !== 'number' || !r.gear || !r.upgrades || !r.totals) return null;
+  const run: RunState = { ...r, profile, burrow: profile.burrow, map, path: [...r.path], met: [...r.met], permanent: [...r.permanent] } as RunState;
+  for (const c of GEAR_CATEGORIES) run.gear[c] = validGear(run.gear[c], c);
+  if (run.ability !== null && typeof run.ability !== 'string') run.ability = null;
+  if (run.at !== null && !nodeById(map, run.at)) return null;
+  clampHealth(run);
+  return run;
+}
+
+// ---------------------------------------------------------------------------
 // Testing aids (the U panel)
 
 export function debugAddStars(run: RunState, n: number): void {
@@ -598,4 +825,8 @@ export function debugAddStars(run: RunState, n: number): void {
 
 export function debugSetCountdown(run: RunState, n: number): void {
   run.countdown = Math.max(0, Math.round(n));
+}
+
+export function debugAddBlue(run: RunState, n: number): void {
+  earnBlue(run, n);
 }

@@ -35,8 +35,13 @@ import type { TuningPanel } from '../ui/tuningPanel';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { UPGRADE_LIST } from '../content/run';
 import { placeGear } from '../gen/placeGear';
-import { addUpgrade, botLoadoutOf, debugSetCountdown, finishCourse, loadoutOf, rewardFor } from '../sim/run';
-import { activeRun, newRunSeed, session, startRun, type RunCourse } from './runSession';
+import { addUpgrade, botLoadoutOf, debugAddBlue, debugSetCountdown, finishCourse, loadoutOf, rewardFor } from '../sim/run';
+import { activeRun, newRunSeed, persist, session, startRun, type RunCourse } from './runSession';
+import { arenaData, pickBoss } from '../gen/boss';
+import { bossName, phaseOf, type BossSpec, type MarkShape } from '../sim/boss';
+import { BUGS, COLOURS, SKILLS, type BugId, type ColourId, type SkillId } from '../content/bosses';
+import type { Element } from '../content/objects';
+import { BOSS_TINT } from './bossLook';
 import { getPanel, getTuning, preloadAssets, shared } from './shared';
 import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
 import { frameIndex, type Manifest } from './manifest';
@@ -47,6 +52,28 @@ import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 let manifest: Manifest = { version: 1, sprites: {} };
 /** The ?run= address starts a run only once, not on every restart. */
 let runStartedFromUrl = false;
+
+/**
+ * Testing route (Milestone 7, sheet section 8): ?boss=<seed> fights a boss
+ * straight away with base stats. &bug=, &colour=, &skill= pick the parts and
+ * &region=2 the stronger version; anything left out comes from the seed.
+ */
+function bossFromUrl(): BossSpec | null {
+  const q = new URLSearchParams(window.location.search);
+  const seed = q.get('boss');
+  if (seed === null) return null;
+  const region = Number(q.get('region')) === 2 ? 2 : 1;
+  const picked = pickBoss(seed.toUpperCase() || 'BOSS', region);
+  const bug = BUGS.find((b) => b.built && b.id === q.get('bug'))?.id ?? picked.bug;
+  const colour = COLOURS.find((c) => c.id === q.get('colour'))?.id ?? picked.colour;
+  const skill = SKILLS.find((k) => k.built && k.id === q.get('skill'))?.id ?? picked.skill;
+  return { bug: bug as BugId, colour: colour as ColourId, skill: skill as SkillId, region };
+}
+let bossTest: BossSpec | null = bossFromUrl();
+
+/** Display colours of the four powers, for marks and ground on boss courses (display only). */
+const POWER_COLOUR: Record<Element, number> = { fire: 0xf86030, ice: 0x60c8f8, shock: 0xf8e040, poison: 0x70d040 };
+
 
 /** Debug overlay modes, cycled with the G key. */
 const DEBUG_MODES = ['off', 'coords', 'heights', 'surfaces', 'areas'] as const;
@@ -212,6 +239,11 @@ export class CourseScene extends Phaser.Scene {
   private runMode = false;
   /** The course result has been given to the run (only once). */
   private runReported = false;
+  /** Milestone 7: the boss being fought, if this is a boss course. */
+  private bossSpec: BossSpec | null = null;
+  private bossGfx: Phaser.GameObjects.Graphics | null = null;
+  private bossHud: Phaser.GameObjects.Container | null = null;
+  private bossKey = '';
 
   constructor() {
     super('course');
@@ -255,7 +287,12 @@ export class CourseScene extends Phaser.Scene {
     }
     const file = TEST_COURSES[this.courseIndex]!;
     let data: unknown = file.data;
-    if (this.runMode) {
+    const runBoss = this.runMode ? (session.run!.current!.boss ?? null) : null;
+    this.bossSpec = this.runMode ? runBoss : bossTest;
+    if (this.bossSpec) {
+      // Milestone 7: a boss is fought in its arena (hand-built, not generated).
+      data = arenaData(this.seed, this.bossSpec.region).data;
+    } else if (this.runMode) {
       const ready = this.runCourse();
       if (!ready) {
         this.course = null;
@@ -297,7 +334,8 @@ export class CourseScene extends Phaser.Scene {
     panel = getPanel();
 
     const run = this.runMode ? session.run : null;
-    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run) }) });
+    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run) }), ...(this.bossSpec && { boss: this.bossSpec }) });
+    this.bossGfx = this.add.graphics().setDepth(OVERLAY_DEPTH - 30);
     this.runReported = false;
     this.setRunPanel();
     if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
@@ -351,6 +389,7 @@ export class CourseScene extends Phaser.Scene {
     this.drawHud(file.id, course);
     this.drawShotHud();
     this.drawOverlay();
+    if (this.bossSpec) this.bossTitleCard(this.bossSpec);
 
     if (file.id === GENERATED_ID) {
       this.updateViewer();
@@ -451,16 +490,16 @@ export class CourseScene extends Phaser.Scene {
     if (!this.runMode || this.runReported || !run || run.status !== 'course') return;
     this.runReported = true;
     const p = this.play;
-    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear });
+    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, blueStars: p.blueStars });
     session.course = null;
+    persist();
   }
 
-  /** Key 7: start a run, or go back to the one in progress. */
+  /** Key 7: the start menu, or back to the run in progress. */
   private openRun(): void {
     const run = activeRun();
     if (!run) {
-      startRun(newRunSeed());
-      this.scene.start('map');
+      this.scene.start('menu');
     } else if (run.status === 'course') {
       if (!this.runMode) this.scene.restart({ run: true, debug: this.debugMode });
     } else if (run.status === 'shop' || run.status === 'cache') this.scene.start('town');
@@ -501,7 +540,137 @@ export class CourseScene extends Phaser.Scene {
         debugWin(this.play);
         this.endShot();
       },
+      buttons: [{ label: '+10 blue stars (carried)', onClick: () => (this.runMode ? (this.play.blueStars += 10) : debugAddBlue(run, 10)) }],
+      ...(this.bossSpec && this.runMode && { bossHealth: { value: this.bossHealth(), onSet: (n: number) => this.setBossHealth(n) } }),
     });
+  }
+
+  private bossHealth(): number {
+    const b = this.play.boss;
+    return b ? (this.play.enemies.find((e) => e.uid === b.uid)?.health ?? 0) : 0;
+  }
+
+  /** Testing aid: set the boss's health (to jump to a phase). */
+  private setBossHealth(n: number): void {
+    const b = this.play.boss;
+    const e = b && this.play.enemies.find((x) => x.uid === b.uid);
+    if (!b || !e || e.defeated) return;
+    e.health = Math.max(1, Math.min(b.maxHealth, Math.round(n)));
+    this.bossKey = '';
+  }
+
+  /** The boss's name, shown big when the battle starts (owner, 2026-11-16: the name shows only here, not on the map). */
+  private bossTitleCard(spec: BossSpec): void {
+    const tint = BOSS_TINT[spec.colour];
+    const c = this.add.container(0, 0).setScrollFactor(0).setDepth(HUD_DEPTH + 20);
+    const name = bossName(spec).toUpperCase();
+    const t1 = pixelText(this, manifest, 0, 0, spec.region > 1 ? 'REGION TWO BOSS' : 'BOSS', { color: UI_DIM });
+    const t2 = pixelText(this, manifest, 0, 0, name, { color: tint });
+    t2.setScale(2);
+    const w = Math.max(t1.width, t2.width * 2) + 24;
+    c.add(this.add.rectangle(0, 0, w, 34, UI_BG, 0.94).setOrigin(0, 0).setStrokeStyle(1, tint));
+    t1.setPosition(Math.round((w - t1.width) / 2), 5);
+    t2.setPosition(Math.round((w - t2.width * 2) / 2), 15);
+    c.add([t1, t2]);
+    c.setPosition(Math.round((VIEW_WIDTH - w) / 2), 70);
+    this.tweens.add({ targets: c, alpha: 0, delay: 2600, duration: 600, onComplete: () => c.destroy() });
+  }
+
+  /** Marks, ground and pods on a boss course, drawn on the ground every frame. */
+  private drawBossLayer(): void {
+    const g = this.bossGfx;
+    const boss = this.play.boss;
+    if (!g) return;
+    g.clear();
+    if (!boss) return;
+    const course = this.play.course;
+    const pulse = 0.35 + 0.25 * Math.abs(Math.sin(this.time.now / 220));
+    const pt = (x: number, y: number) => {
+      const z = groundAt(course, x, y)?.h ?? 0;
+      return project(x, y, z / STEP_HEIGHT);
+    };
+    const poly = (pts: { x: number; y: number }[], color: number, fill: number, line: number) => {
+      const scr = pts.map((p) => pt(p.x, p.y));
+      g.fillStyle(color, fill);
+      g.beginPath();
+      scr.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
+      g.closePath();
+      g.fillPath();
+      if (line > 0) {
+        g.lineStyle(1, color, line);
+        g.strokePath();
+      }
+    };
+    const shapeOutline = (sh: MarkShape, color: number, fill: number, line: number) => {
+      if (sh.kind === 'circles') {
+        for (const c of sh.pts) {
+          const pts = [];
+          for (let k = 0; k < 24; k++) pts.push({ x: c.x + Math.cos((k / 24) * Math.PI * 2) * sh.r, y: c.y + Math.sin((k / 24) * Math.PI * 2) * sh.r });
+          poly(pts, color, fill, line);
+        }
+      } else if (sh.kind === 'lane') {
+        const len = Math.hypot(sh.bx - sh.ax, sh.by - sh.ay) || 1;
+        const nx = (-(sh.by - sh.ay) / len) * sh.half;
+        const ny = ((sh.bx - sh.ax) / len) * sh.half;
+        poly([{ x: sh.ax + nx, y: sh.ay + ny }, { x: sh.bx + nx, y: sh.by + ny }, { x: sh.bx - nx, y: sh.by - ny }, { x: sh.ax - nx, y: sh.ay - ny }], color, fill, line);
+      } else if (sh.kind === 'cone') {
+        const a0 = Math.atan2(sh.dy, sh.dx);
+        const half = (sh.halfAngle * Math.PI) / 180;
+        const pts = [{ x: sh.x, y: sh.y }];
+        for (let k = 0; k <= 10; k++) {
+          const a = a0 - half + (2 * half * k) / 10;
+          pts.push({ x: sh.x + Math.cos(a) * sh.length, y: sh.y + Math.sin(a) * sh.length });
+        }
+        poly(pts, color, fill, line);
+      } else {
+        for (const t of sh.tiles) poly([{ x: t.x, y: t.y }, { x: t.x + 1, y: t.y }, { x: t.x + 1, y: t.y + 1 }, { x: t.x, y: t.y + 1 }], color, fill, line);
+      }
+    };
+    // Ground left by colour attacks (scorch, ice, poison; clouds are drawn as clouds).
+    for (const h of boss.hazards) {
+      if (h.kind === 'cloud') continue;
+      const color = h.kind === 'scorch' ? POWER_COLOUR.fire : h.kind === 'ice' ? POWER_COLOUR.ice : POWER_COLOUR.poison;
+      shapeOutline(h.shape, color, 0.35, 0.6);
+    }
+    // Marks: they land on the next enemy turn. Skill marks have a red edge; colour marks are the power's colour.
+    for (const m of boss.marks) {
+      const color = POWER_COLOUR[m.power.element];
+      shapeOutline(m.shape, color, pulse * 0.6, 0);
+      shapeOutline(m.shape, m.source === 'colour' ? color : 0xff3030, 0, 1);
+    }
+    // Summon pads glow while a phase that summons is on.
+    for (const pd of this.play.pads) {
+      const p = pt(pd.x, pd.y);
+      g.lineStyle(1, 0xc060e0, 0.4 + 0.3 * Math.abs(Math.sin(this.time.now / 400)));
+      g.strokeEllipse(p.x, p.y, 22, 11);
+    }
+  }
+
+  /** The boss's health bar and name along the top (it replaces the star meter on a boss course). */
+  private drawBossHud(): void {
+    const boss = this.play.boss;
+    if (!boss) return;
+    const hp = this.bossHealth();
+    const key = `${hp},${boss.defeated}`;
+    if (key === this.bossKey) return;
+    this.bossKey = key;
+    this.bossHud?.destroy();
+    const c = this.add.container(0, 0).setScrollFactor(0).setDepth(HUD_DEPTH);
+    const w = 130;
+    const x = VIEW_WIDTH - w - 4;
+    const y = 32;
+    c.add(this.add.rectangle(x - 2, y - 9, w + 4, 18, UI_BG, 0.85).setOrigin(0, 0));
+    const tint = BOSS_TINT[boss.spec.colour];
+    c.add(pixelText(this, manifest, x, y - 7, boss.defeated ? 'DEFEATED!' : bossName(boss.spec).toUpperCase(), { color: boss.defeated ? GOOD : tint }));
+    const bar = this.add.graphics();
+    bar.fillStyle(METER_BG, 1).fillRect(x, y, w, 6);
+    bar.fillStyle(tint, 1).fillRect(x, y, Math.round((w * hp) / boss.maxHealth), 6);
+    // Notches at the phase thresholds.
+    bar.fillStyle(0xffffff, 1);
+    for (const t of [Math.floor((boss.maxHealth * 2) / 3), Math.floor(boss.maxHealth / 3)]) bar.fillRect(x + Math.round((w * t) / boss.maxHealth), y - 1, 1, 8);
+    c.add(bar);
+    c.add(pixelText(this, manifest, x + w - 34, y - 7, boss.defeated ? '' : `PHASE ${phaseOf(hp, boss.maxHealth)}`, { color: UI_DIM }));
+    this.bossHud = c;
   }
 
   /** Make the course in a background worker (or right here if workers are not available), then start again. */
@@ -536,7 +705,7 @@ export class CourseScene extends Phaser.Scene {
     const cy = VIEW_HEIGHT / 2;
     this.cameras.main.setScroll(0, 0);
     const cur = this.runMode ? session.run?.current : null;
-    const what = cur ? `MAKING THE NEXT COURSE  ${cur.type === 'boss' ? 'BOSS (STAND-IN)' : cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  BUDGET ${cur.budget}` : `GENERATING THE JOURNEY  #${this.seed}  BUDGET ${genBudget}`;
+    const what = cur ? `MAKING THE NEXT COURSE  ${cur.type === 'boss' ? 'BOSS' : cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  BUDGET ${cur.budget}` : `GENERATING THE JOURNEY  #${this.seed}  BUDGET ${genBudget}`;
     const title = pixelText(this, manifest, 0, 0, what, { color: UI_TEXT, background: UI_BG }).setScrollFactor(0);
     title.setPosition(Math.round(cx - title.width / 2), cy - 40);
     const hint = pixelText(this, manifest, 0, 0, 'BIG COURSES TAKE A FEW SECONDS: THE BOT IS CHECKING IT CAN BE BEATEN', { color: UI_DIM, background: UI_BG }).setScrollFactor(0);
@@ -593,6 +762,7 @@ export class CourseScene extends Phaser.Scene {
 
   /** Load a generated course (key 6, the seed viewer, [ and ], Enter after a win). */
   private loadGenerated(seed: string, budget: number, watch = false): void {
+    bossTest = null;
     this.scene.restart({ courseIndex: TEST_COURSES.findIndex((c) => c.id === GENERATED_ID), debug: this.debugMode, seed, budget, watch });
   }
 
@@ -710,6 +880,7 @@ export class CourseScene extends Phaser.Scene {
 
   private switchCourse(index: number): void {
     if (index >= TEST_COURSES.length) return;
+    bossTest = null;
     this.scene.restart({ courseIndex: index, debug: this.debugMode });
   }
 
@@ -830,7 +1001,7 @@ export class CourseScene extends Phaser.Scene {
       const inner = e.stats.get('innerRadius');
       const near = moving && inner > 0 && e.def.triggers.passBy !== 'none' && Math.hypot(ball.x - e.x, ball.y - e.y) < inner + 0.5;
       show(e.uid, e.def.sprite, e.x, e.y, e.z, { alpha: near && Math.floor(now / 80) % 2 ? 0.45 : 1 });
-      if (e.activated) show(`${e.uid}:alert`, 'alert', e.x, e.y, e.z, { lift: 18 + bob, depth: HUD_DEPTH - 10 });
+      if (e.activated && e.def.behaviour.kind !== 'boss') show(`${e.uid}:alert`, 'alert', e.x, e.y, e.z, { lift: 18 + bob, depth: HUD_DEPTH - 10 });
       if (e.statuses.some((st) => st.id === 'stunned')) show(`${e.uid}:stun`, 'icon-stunned', e.x, e.y, e.z, { lift: 20, depth: HUD_DEPTH - 10 });
       if (e.statuses.some((st) => st.id === 'burning')) show(`${e.uid}:burn`, 'icon-burning', e.x, e.y, e.z, { lift: 31, depth: HUD_DEPTH - 10 });
       if (e.lobTarget) {
@@ -842,6 +1013,10 @@ export class CourseScene extends Phaser.Scene {
       }
     }
     for (const sd of play.seeds) show(sd.uid, 'seed', sd.shot.ball.x, sd.shot.ball.y, sd.shot.ball.z);
+    // Milestone 7: pods that will hatch into helpers unless the ball rolls over them.
+    for (const pod of play.boss?.pods ?? []) show(pod.id, 'pod', pod.x, pod.y, pod.z, { lift: Math.floor(now / 150) % 4 === 0 ? 1 : 0 });
+    this.drawBossLayer();
+    this.drawBossHud();
     for (const f of play.flags) {
       show(f.uid, 'flag-pole', f.x, f.y, f.z, { frame: f.raised ? 'raised' : 'lowered' });
       // Owner, 2026-11-14: a star hovers above a raised flag: the star secured by that defeat.
@@ -1189,10 +1364,10 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage(`+1 STAR  ${this.play.meter}/${this.play.quota}`, STAR_FILL);
           break;
         case 'exitOpen':
-          this.queueMessage('QUOTA MET! THE EXIT IS OPEN', GOOD);
+          if (!this.play.boss) this.queueMessage('QUOTA MET! THE EXIT IS OPEN', GOOD);
           break;
         case 'defeat':
-          this.queueMessage(`${OBJECTS.get(e.enemy.split('#')[0]!)?.name ?? 'ENEMY'} DEFEATED!`, GOOD);
+          if (e.enemy !== this.play.boss?.uid) this.queueMessage(`${this.nameOf(e.enemy)} DEFEATED!${e.stars === 0 ? ' (NO STAR)' : ''}`, GOOD);
           break;
         case 'heart':
           this.queueMessage('+1 HEALTH', GOOD);
@@ -1201,7 +1376,7 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage('+1 SHOT', GOOD);
           break;
         case 'damage': {
-          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED' }[e.cause];
+          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', boss: 'BOSS HIT', burn: 'BURNING', scorch: 'SCORCHED' }[e.cause];
           this.queueMessage(`${what}! -${e.amount} HEALTH`, BAD);
           break;
         }
@@ -1283,6 +1458,33 @@ export class CourseScene extends Phaser.Scene {
         case 'echo':
           this.queueMessage('ECHO! THAT HIT COUNTS TWICE', 0xa080f0);
           break;
+        case 'blueStar':
+          this.queueMessage('A BLUE STAR! STASH IT IN YOUR BURROW TO KEEP IT', 0x80c0ff);
+          break;
+        case 'ballStatus':
+          this.queueMessage({ burning: 'BURNING! 1 DAMAGE EACH SHOT FOR 2 SHOTS', chilled: 'CHILLED! YOU ROLL LIKE ON ICE FOR 2 SHOTS', poisoned: 'POISONED! WEAKER HITS AND SHOTS FOR 2 SHOTS' }[e.status] ?? e.status.toUpperCase(), BAD);
+          break;
+        case 'bossMark':
+          this.queueMessage(e.attack === 'leap' ? 'IT IS GOING TO LEAP THERE!' : 'THE BOSS MARKS THE GROUND: MOVE OUT!', GUIDE_WARN);
+          break;
+        case 'bossLand':
+          if (e.hit) this.queueMessage('CAUGHT IN THE ATTACK!', BAD);
+          break;
+        case 'bossPhase':
+          this.queueMessage(e.phase === 2 ? 'PHASE 2: IT CALLS FOR HELP!' : e.phase === 3 ? 'PHASE 3: IT IS FURIOUS!' : 'PHASE 1', GUIDE_WARN);
+          break;
+        case 'bossSummon':
+          this.queueMessage(`${this.nameOf(e.enemy)} JOINS THE FIGHT`, GUIDE_WARN);
+          break;
+        case 'podHatch':
+          if (e.enemy) this.queueMessage('A POD HATCHED!', GUIDE_WARN);
+          break;
+        case 'podBroken':
+          this.queueMessage('POD SQUASHED!', GOOD);
+          break;
+        case 'bossDefeated':
+          this.queueMessage('THE BOSS IS DEFEATED! THE EXIT IS OPEN', GOOD);
+          break;
         case 'underwater':
           this.queueMessage('UNDER WATER: NEXT SHOT IS WEAKER', 0x80c8ff);
           break;
@@ -1296,7 +1498,7 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private nameOf(uid: string): string {
-    return (OBJECTS.get(uid.split('#')[0]!)?.name ?? 'ENEMY').toUpperCase();
+    return (this.play.enemies.find((e) => e.uid === uid)?.def.name ?? OBJECTS.get(uid.split('#')[0]!)?.name ?? 'ENEMY').toUpperCase();
   }
 
   private queueMessage(text: string, color: number): void {
@@ -1453,7 +1655,7 @@ export class CourseScene extends Phaser.Scene {
     const wild = this.time.now < this.wildUntil ? Math.floor(this.time.now / 90) % ABILITY_IDS.length : -1;
     const usedUp = p.abilityUsed && !!p.shot;
     const shields = shieldsLeft(p);
-    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, shields].join(',');
+    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.map((st) => st.id).join('+'), p.blueStars, p.gear.weapon, p.gear.armour, p.gear.bauble, shields].join(',');
     if (key === this.statusKey) return;
     this.statusKey = key;
     this.statusHud?.destroy();
@@ -1481,7 +1683,7 @@ export class CourseScene extends Phaser.Scene {
     const fill = p.quota > 0 ? Math.min(1, p.meter / p.quota) : 1;
     g.fillStyle(p.exitOpen ? GOOD : STAR_FILL, 1).fillRect(barX, barY, Math.round(barW * fill), 5);
     c.add(g);
-    const meterText = p.quota > 0 ? `${Math.min(p.meter, p.quota)}/${p.quota}${p.exitOpen ? ' OPEN' : ''}` : 'OPEN';
+    const meterText = p.boss ? (p.exitOpen ? 'OPEN' : 'BEAT THE BOSS') : p.quota > 0 ? `${Math.min(p.meter, p.quota)}/${p.quota}${p.exitOpen ? ' OPEN' : ''}` : 'OPEN';
     c.add(pixelText(this, manifest, barX + barW + 3, barY, meterText, { color: p.exitOpen ? GOOD : UI_TEXT }));
     c.add(pixelText(this, manifest, 104, 2, `HP ${p.health}/${maxHealth}`, { color: UI_TEXT }));
     const starX = 94;
@@ -1499,7 +1701,14 @@ export class CourseScene extends Phaser.Scene {
       c.add(pixelText(this, manifest, slotX + 14, 3, wild >= 0 ? '?' : def.name.toUpperCase(), { color: usedUp ? UI_DIM : UI_TEXT }));
       c.add(pixelText(this, manifest, slotX + 14, 11, usedUp ? 'USED' : 'F: USE', { color: UI_DIM }));
     } else c.add(pixelText(this, manifest, slotX + 3, 7, 'NO ABILITY', { color: UI_DIM }));
-    if (p.ballStatuses.some((st) => st.id === 'stunned')) c.add(this.add.image(x + 2, 0, 'icon-stunned', 0).setOrigin(0, 0));
+    // Statuses on the ball (Milestone 7: Burning, Chilled, Poisoned as well as Stunned).
+    let sx = x + 2;
+    for (const st of p.ballStatuses) {
+      const id = `icon-${st.id}`;
+      if (!manifest.sprites[id]) continue;
+      c.add(this.add.image(sx, 0, id, 0).setOrigin(0, 0));
+      sx += 11;
+    }
     // Gear slots (Milestone 6): weapon, armour, bauble; then the armour's ignored damages left this course.
     const gearX = slotX + 66;
     c.add(this.add.rectangle(gearX, 0, shields > 0 ? 58 : 44, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -1526,9 +1735,9 @@ export class CourseScene extends Phaser.Scene {
     const lines = cur
       ? won
         ? cur.type === 'boss'
-          ? ['BOSS BEATEN! (STAND-IN HARD COURSE)', '', 'THE RUN IS COMPLETE.', `SHOTS TAKEN: ${p.shotNumber}`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: RUN SUMMARY']
+          ? ['BOSS BEATEN!', '', `SHOTS TAKEN: ${p.shotNumber}`, 'FULL HEAL, BLUE STARS (STASHED SAFELY)', 'AND A PRIZE TO CHOOSE.', '', 'ENTER: CHOOSE YOUR PRIZE']
           : ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `FINISH REWARD: +${rewardFor(cur.type)} STARS`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: BACK TO THE MAP']
-        : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', 'GEAR IN YOUR BURROW IS SAFE.', '', 'ENTER: RUN SUMMARY']
+        : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', 'GEAR IN YOUR BURROW IS SAFE.', 'BLUE STARS NOT YET STASHED ARE LOST.', '', 'ENTER: RUN SUMMARY']
       : won
       ? ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: NEXT COURSE   R: PLAY AGAIN']
       : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
@@ -1567,8 +1776,10 @@ export class CourseScene extends Phaser.Scene {
     this.drawStatusHud();
     const cur = this.runMode ? session.run?.current : null;
     const label = cur
-      ? `RUN #${session.run!.seed}  ${cur.type === 'boss' ? 'BOSS (STAND-IN)' : cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  ROW ${cur.row}  BUDGET ${cur.budget}`
-      : `${n} ${course.name}`;
+      ? `RUN #${session.run!.seed}  ${cur.type === 'boss' ? 'BOSS' : cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  ${cur.type === 'boss' ? `REGION ${session.run!.region}` : `ROW ${cur.row}  BUDGET ${cur.budget}`}`
+      : this.bossSpec
+        ? `BOSS TEST  ${bossName(this.bossSpec).toUpperCase()}  REGION ${this.bossSpec.region}`
+        : `${n} ${course.name}`;
     pixelText(this, manifest, 2, 2, label, { color: UI_TEXT, background: UI_BG })
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH)

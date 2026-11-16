@@ -43,11 +43,15 @@ export const RUN = {
   budget: {
     /** Budget of the first course; it rises by `perNode` for each counted node (course, hard course, cache). */
     start: 8,
+    /** Milestone 7: the first course of each region (region two starts higher, sheet section 6). */
+    regionStart: [8, 18],
     perNode: 2,
     hardScale: 1.5,
     /** Owner, 2026-11-15: run courses capped at 30 for now. */
     cap: 30,
   },
+  /** Milestone 7: blue stars for finishing a course (sheet section 4.1; the boss's are in bosses.ts). */
+  blue: { courseChance: 0.5, course: 1, hard: 2 },
   /** Yellow stars for finishing a node. */
   reward: { course: 2, hard: 6, boss: 0 },
   /** Gear on a course: chance on a normal course; hard courses always have one. */

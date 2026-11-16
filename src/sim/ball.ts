@@ -192,6 +192,21 @@ export interface ShotState {
   burnMin: number;
   /** Tornado: the ball hovers at no lower than `floor` and ignores surfaces; the rules set its speed. */
   hover: { floor: number } | null;
+  /**
+   * Milestone 7: plain ground rolls as if it were ice. `iceAll`: the ball is
+   * Chilled. `iceTiles`: tiles a boss's frost turned to ice ("x,y"). Set by the
+   * course rules each step; plain data so a copied game copies it too.
+   */
+  iceAll: boolean;
+  iceTiles: readonly string[];
+}
+
+/** The surface whose numbers apply at a point: ice where the ice rules say so (plain ground only; never water or pads). */
+export function surfaceFor(s: ShotState, tile: Tile, x: number, y: number): string {
+  if (!s.iceAll && s.iceTiles.length === 0) return tile.surface;
+  const def = SURFACES.get(tile.surface);
+  if (!def || def.sinks || def.effect) return tile.surface;
+  return s.iceAll || s.iceTiles.includes(`${Math.floor(x)},${Math.floor(y)}`) ? 'ice' : tile.surface;
 }
 
 /** Where the ground is under a point, or null if the point is off the course. */
@@ -279,6 +294,8 @@ export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand, sca
     burnSteps: 0,
     burnMin: 0,
     hover: null,
+    iceAll: false,
+    iceTiles: [],
   };
 }
 
@@ -352,7 +369,7 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     if (!g) {
       b.grounded = false;
     } else {
-      const phys = surfacePhysics(tuning, g.tile.surface);
+      const phys = surfacePhysics(tuning, surfaceFor(s, g.tile, b.x, b.y));
       // Gravity along the slope.
       const k = 1 + g.sx * g.sx + g.sy * g.sy;
       b.vx += (-tuning.gravity * g.sx * DT) / k;
@@ -447,7 +464,7 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
 
   // Rest: slow, on the ground, and the slope cannot overcome friction.
   if (b.grounded && now) {
-    const phys = surfacePhysics(tuning, now.tile.surface);
+    const phys = surfacePhysics(tuning, surfaceFor(s, now.tile, b.x, b.y));
     const slope = Math.hypot(now.sx, now.sy);
     const holds = slope <= phys.friction;
     if (Math.hypot(b.vx, b.vy) < tuning.restSpeed && holds) s.restSteps++;
@@ -779,7 +796,7 @@ function land(tuning: Tuning, s: ShotState, g: Ground): void {
     s.hasLanded = true;
     return;
   }
-  const phys = surfacePhysics(tuning, g.tile.surface);
+  const phys = surfacePhysics(tuning, surfaceFor(s, g.tile, b.x, b.y));
   b.z = g.h;
   // Skipping across water (owner, 2026-11-15): fast and low, the ball bounces off the surface.
   if (SURFACES.get(g.tile.surface)?.sinks) {
