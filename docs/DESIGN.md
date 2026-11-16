@@ -119,6 +119,7 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
 - **Shots:** each shot costs one. At zero you must spend a turn recovering. Enemies get an extra turn while you recover, then your shots refill.
 - ~~**Decided (owner, 2026-11-15):** defeating an enemy gives back 1 shot.~~ Replaced the same day by:
 - **Decided (owner, 2026-11-15):** every hit that does damage to an enemy gives back 1 shot (one per enemy hit, also when several are hit in one shot). Shots never go above the shot allowance (the max shots stat).
+- **Decided (owner, 2026-11-16): except a boss.** Hitting a boss gives no shot back, so shots and naps matter in boss fights. Hitting its helpers still does.
 - **Decided (owner, 2026-11-15): two naps per course.** The recover turn is called a nap. Running out of shots the first and second time gives a nap (enemies act once more, shots refill). Running out a third time fails the course. Numbers in `src/content/rules.ts` (`naps`, `shotsPerHit`).
 - **Decided (owner, 2026-11-15): upgrades keep up with difficulty.** Big, high-budget courses can need more shots than a fresh character has. That is intended for now: as the hero progresses through a run they get upgrades (more shots, more damage and so on; Milestones 6 and 7) that let them keep up with the scaling. Until then, high-budget generated courses are hard to generate and slow (see PLAN.md progress log).
 - **Health:** lost to enemy attacks and hazards. At zero the run ends.

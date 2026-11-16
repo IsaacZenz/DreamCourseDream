@@ -444,6 +444,13 @@ Differences from the sheet, and choices it left open:
 - **The start menu** shows a plain stand-in title, "Untitled golf roguelike", until a name is chosen.
 - **The bot** counts damage to a boss as progress, like stars (so it can be used on boss fights).
 
+### Owner change after the first build (2026-11-16): harder boss fights
+
+The first bot report showed the fights were easy (a fresh character won 89%). The owner chose two of the planner's suggestions:
+
+- **No shot back for hitting a boss** (helpers still give one). An exception to the shot-back rule; recorded in DESIGN.md section 6.
+- **Rage timer:** after 15 boss turns the boss enrages: from then on it marks every turn (alternating skill and colour attack) and summons one helper every turn, as in phase 3, and every mark is 1.3 times bigger (Bolts strike one more tile). The HUD counts down "RAGE IN n" and then shows "RAGE!".
+
 ### Bot report
 
 See `docs/reports/boss-combinations.md` (made by `npm run boss:report`). 45 combinations, 10 seeds each, three setups (897 s): overall win rate **base 89%, region-one loadout 100%, region-two boss 97%**. **No combination fell below 20%, so nothing is listed for the owner to review.** Hardest for a fresh character: red bosses (Burning stacks with the hits), Goliath red slam 50%, then Goliath red charge, Grasshopper red slam and Grasshopper green pods at 60%. Fights take 9 to 16 shots: every hit on the boss gives a shot back, so most fights end before phase 3 lasts long. The bosses may be on the easy side; tune after playing.

@@ -39,7 +39,7 @@ import { addUpgrade, botLoadoutOf, debugAddBlue, debugSetCountdown, finishCourse
 import { activeRun, newRunSeed, persist, session, startRun, type RunCourse } from './runSession';
 import { arenaData, pickBoss } from '../gen/boss';
 import { bossName, phaseOf, type BossSpec, type MarkShape } from '../sim/boss';
-import { BUGS, COLOURS, SKILLS, type BugId, type ColourId, type SkillId } from '../content/bosses';
+import { BOSS_RULES, BUGS, COLOURS, SKILLS, type BugId, type ColourId, type SkillId } from '../content/bosses';
 import type { Element } from '../content/objects';
 import { BOSS_TINT } from './bossLook';
 import { getPanel, getTuning, preloadAssets, shared } from './shared';
@@ -651,7 +651,7 @@ export class CourseScene extends Phaser.Scene {
     const boss = this.play.boss;
     if (!boss) return;
     const hp = this.bossHealth();
-    const key = `${hp},${boss.defeated}`;
+    const key = `${hp},${boss.defeated},${boss.enraged},${boss.turn}`;
     if (key === this.bossKey) return;
     this.bossKey = key;
     this.bossHud?.destroy();
@@ -669,7 +669,7 @@ export class CourseScene extends Phaser.Scene {
     bar.fillStyle(0xffffff, 1);
     for (const t of [Math.floor((boss.maxHealth * 2) / 3), Math.floor(boss.maxHealth / 3)]) bar.fillRect(x + Math.round((w * t) / boss.maxHealth), y - 1, 1, 8);
     c.add(bar);
-    c.add(pixelText(this, manifest, x, y + 8, boss.defeated ? '' : `PHASE ${phaseOf(hp, boss.maxHealth)}   ${hp}/${boss.maxHealth}`, { color: UI_DIM }));
+    c.add(pixelText(this, manifest, x, y + 8, boss.defeated ? '' : `${boss.enraged ? 'RAGE!' : `PHASE ${phaseOf(hp, boss.maxHealth)}  RAGE IN ${Math.max(0, BOSS_RULES.rage.afterTurns - boss.turn)}`}   ${hp}/${boss.maxHealth}`, { color: boss.enraged ? BAD : UI_DIM }));
     this.bossHud = c;
   }
 
@@ -1476,6 +1476,9 @@ export class CourseScene extends Phaser.Scene {
           break;
         case 'bossLand':
           if (e.hit) this.queueMessage('CAUGHT IN THE ATTACK!', BAD);
+          break;
+        case 'bossRage':
+          this.queueMessage('IT FLIES INTO A RAGE! IT ATTACKS EVERY TURN', BAD);
           break;
         case 'bossPhase':
           this.queueMessage(e.phase === 2 ? 'PHASE 2: IT CALLS FOR HELP!' : e.phase === 3 ? 'PHASE 3: IT IS FURIOUS!' : 'PHASE 1', GUIDE_WARN);

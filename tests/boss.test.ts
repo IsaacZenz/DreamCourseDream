@@ -204,6 +204,31 @@ describe('the boss fight', () => {
   });
 });
 
+describe('harder boss fights (owner, 2026-11-16)', () => {
+  it('hitting the boss gives no shot back', () => {
+    const p = fight(spec());
+    p.shots = 3;
+    p.ball = ballAtTile(p.course, 7, 10);
+    takeShot(p, { angle: -Math.PI / 2, power: 0.6, type: 'ground', topSpin: 0, sideSpin: 0 });
+    runShot(p);
+    expect(bossOf(p).health).toBeLessThan(12);
+    expect(p.shots).toBe(2);
+  });
+
+  it('the rage timer: after 15 boss turns it marks every turn, with bigger marks', () => {
+    const p = fight(spec());
+    p.boss!.turn = 15;
+    const ev = pass(p);
+    expect(ev.some((e) => e.kind === 'bossRage')).toBe(true);
+    expect(p.boss!.enraged).toBe(true);
+    const mark = p.boss!.marks[0]!;
+    expect(mark.shape.kind === 'circles' && mark.shape.r).toBeCloseTo(1.75 * 1.3);
+    // It marks again on the very next turn (phase 1 would wait a turn).
+    moveBall(p, 2, 12);
+    expect(pass(p).some((e) => e.kind === 'bossMark')).toBe(true);
+  });
+});
+
 describe('statuses on the ball and the damage floor (owner, 2026-11-16)', () => {
   it('Burning hurts at the start of each of the next two shots', () => {
     // On the arena with no boss, so nothing else puts Burning on again.

@@ -62,7 +62,7 @@ import {
   type ShotWorld,
 } from './ball.ts';
 import { railTileList, railTiles, tileAt, type Course, type CourseObject, type GridPoint } from './course.ts';
-import { BOSS_ATTACKS, BOSS_SUMMONS, type PowerDef } from '../content/bosses.ts';
+import { BOSS_ATTACKS, BOSS_RULES, BOSS_SUMMONS, type PowerDef } from '../content/bosses.ts';
 import { bossDefeated, bossEnemyDef, bossTurn, iceTiles, inShape, newBossState, updatePhase, wearHazards, type BossEvent, type BossHost, type BossSpec, type BossState } from './boss.ts';
 import { computeHit, isBehind } from './damage.ts';
 import { Rng, type Seed } from './rng.ts';
@@ -1262,7 +1262,9 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
     e.health = Math.max(0, e.health - damage);
     play.log.push({ kind: 'hit', enemy: e.uid, damage, blocked: res.blocked });
     // Owner, 2026-11-15: every hit that does damage gives a shot back, up to the shot allowance.
-    if (damage > 0) gainShots(play, RULES.shotsPerHit * (echo ? 2 : 1));
+    // Owner, 2026-11-16: hitting a boss gives no shot back (its helpers still do).
+    const perHit = e.def.behaviour.kind === 'boss' ? BOSS_RULES.shotsPerHit : RULES.shotsPerHit;
+    if (damage > 0 && perHit > 0) gainShots(play, perHit * (echo ? 2 : 1));
     if (damage > 0) weaponEffects(play, e, s);
     if (e.health <= 0) defeat(play, e);
     else if (!e.defeated) respond(play, e, 'hit');

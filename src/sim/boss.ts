@@ -19,6 +19,7 @@
 import {
   BOSS_ATTACKS,
   BOSS_REGIONS,
+  BOSS_RULES,
   BOSS_SUMMONS,
   BUGS,
   COLOURS,
@@ -183,6 +184,8 @@ export interface BossState {
   touched: string[];
   touchedMotion: number;
   defeated: boolean;
+  /** Owner, 2026-11-16: the rage timer ran out; it attacks every turn with bigger marks. */
+  enraged: boolean;
 }
 
 export function newBossState(spec: BossSpec, uid: string): BossState {
@@ -203,6 +206,7 @@ export function newBossState(spec: BossSpec, uid: string): BossState {
     touched: [],
     touchedMotion: -1,
     defeated: false,
+    enraged: false,
   };
 }
 
@@ -273,6 +277,7 @@ export type BossEvent =
   | { kind: 'bossMark'; mark: string; attack: MarkAttack }
   | { kind: 'bossLand'; mark: string; attack: MarkAttack; hit: boolean }
   | { kind: 'bossPhase'; phase: 1 | 2 | 3 }
+  | { kind: 'bossRage' }
   | { kind: 'bossSummon'; enemy: string }
   | { kind: 'bossLeap' }
   | { kind: 'podHatch'; pod: string; enemy: string | null }
@@ -322,34 +327,36 @@ function makeMark(boss: BossState, host: BossHost, source: 'skill' | 'colour'): 
   const ux = toBall > 1e-6 ? (b.x - me.x) / toBall : me.fx;
   const uy = toBall > 1e-6 ? (b.y - me.y) / toBall : me.fy;
   const A = BOSS_ATTACKS;
+  // Owner, 2026-11-16: an enraged boss makes bigger marks.
+  const k = boss.enraged ? BOSS_RULES.rage.markScale : 1;
   let attack: MarkAttack;
   let shape: MarkShape;
   if (source === 'skill') {
     attack = boss.spec.skill;
-    if (attack === 'slam') shape = { kind: 'circles', pts: [{ x: b.x, y: b.y }], r: boss.phase === 3 ? A.slam.radiusPhase3 : A.slam.radius };
+    if (attack === 'slam') shape = { kind: 'circles', pts: [{ x: b.x, y: b.y }], r: (boss.phase === 3 ? A.slam.radiusPhase3 : A.slam.radius) * k };
     else if (attack === 'pods') {
       const pts = [{ x: b.x, y: b.y }];
       for (let i = 1; i < A.pods.count; i++) {
         const p = randomFloorNear(host, b.x, b.y, A.pods.scatter);
         if (p) pts.push(p);
       }
-      shape = { kind: 'circles', pts, r: A.pods.radius };
+      shape = { kind: 'circles', pts, r: A.pods.radius * k };
     } else if (attack === 'charge') {
       const end = laneEnd(host, me.x, me.y, ux, uy);
-      shape = { kind: 'lane', ax: me.x, ay: me.y, bx: end.x, by: end.y, half: A.charge.halfWidth };
+      shape = { kind: 'lane', ax: me.x, ay: me.y, bx: end.x, by: end.y, half: A.charge.halfWidth * k };
     } else return null; // Gust and Web snare: Milestone 8.
   } else {
     attack = power.attack;
-    if (attack === 'fireball') shape = { kind: 'circles', pts: [{ x: b.x, y: b.y }], r: A.fireball.radius };
-    else if (attack === 'frost') shape = { kind: 'cone', x: me.x, y: me.y, dx: ux, dy: uy, length: bug.radius + A.frost.length, halfAngle: A.frost.halfAngle };
+    if (attack === 'fireball') shape = { kind: 'circles', pts: [{ x: b.x, y: b.y }], r: A.fireball.radius * k };
+    else if (attack === 'frost') shape = { kind: 'cone', x: me.x, y: me.y, dx: ux, dy: uy, length: bug.radius + A.frost.length * k, halfAngle: A.frost.halfAngle * k };
     else if (attack === 'bolts') {
       const tiles = [{ x: Math.floor(b.x), y: Math.floor(b.y) }];
-      for (let i = 0; i < A.bolts.extra; i++) {
+      for (let i = 0; i < A.bolts.extra + (boss.enraged ? BOSS_RULES.rage.extraBolts : 0); i++) {
         const p = randomFloorNear(host, b.x, b.y, A.bolts.scatter, (px, py) => !tiles.some((t) => t.x === Math.floor(px) && t.y === Math.floor(py)));
         if (p) tiles.push({ x: Math.floor(p.x), y: Math.floor(p.y) });
       }
       shape = { kind: 'tiles', tiles };
-    } else shape = { kind: 'circles', pts: [{ x: me.x, y: me.y }], r: A.spores.radius };
+    } else shape = { kind: 'circles', pts: [{ x: me.x, y: me.y }], r: A.spores.radius * k };
   }
   const mark: BossMark = { id, source, attack, power, shape, made: boss.turn };
   boss.marks.push(mark);
@@ -517,13 +524,23 @@ export function bossTurn(boss: BossState, host: BossHost): void {
     boss.phaseTurn = 0;
   }
   updatePhase(boss, host);
+  // Owner, 2026-11-16: the rage timer. From now on it attacks every turn, like phase 3.
+  if (!boss.enraged && boss.turn >= BOSS_RULES.rage.afterTurns) {
+    boss.enraged = true;
+    host.log({ kind: 'bossRage' });
+  }
   let marked: 'skill' | 'colour' | null = null;
   const alternate = () => {
     const kind = boss.next;
     boss.next = kind === 'skill' ? 'colour' : 'skill';
     if (makeMark(boss, host, kind)) marked = kind;
   };
-  if (phase === 1) {
+  if (boss.enraged) {
+    alternate();
+    const list = boss.nextHelper;
+    boss.nextHelper = list === 'attacker' ? 'carrier' : 'attacker';
+    summon(boss, host, list);
+  } else if (phase === 1) {
     if (boss.phaseTurn % 2 === 0) alternate();
   } else if (phase === 2) {
     if (boss.phaseTurn % 2 === 0) {

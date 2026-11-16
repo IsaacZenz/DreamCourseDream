@@ -133,6 +133,18 @@ export const BOSS_ATTACKS = {
   scorchDamage: 1,
 } as const;
 
+/**
+ * Owner, 2026-11-16 (making boss fights harder):
+ * - Hitting a boss gives no shot back (an exception to the "every damaging hit
+ *   gives back 1 shot" rule). Hitting its helpers still does.
+ * - Rage: after `afterTurns` boss turns it attacks every turn, as in phase 3,
+ *   and its marks are `markScale` times bigger.
+ */
+export const BOSS_RULES = {
+  shotsPerHit: 0,
+  rage: { afterTurns: 15, markScale: 1.3, extraBolts: 1 },
+} as const;
+
 /** Summons (sheet section 2.5). */
 export const BOSS_SUMMONS = {
   attackers: ['mossback', 'spitter', 'lunger'],
