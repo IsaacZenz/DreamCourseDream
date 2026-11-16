@@ -656,10 +656,10 @@ export class CourseScene extends Phaser.Scene {
     this.bossKey = key;
     this.bossHud?.destroy();
     const c = this.add.container(0, 0).setScrollFactor(0).setDepth(HUD_DEPTH);
-    const w = 130;
-    const x = VIEW_WIDTH - w - 4;
-    const y = 32;
-    c.add(this.add.rectangle(x - 2, y - 9, w + 4, 18, UI_BG, 0.85).setOrigin(0, 0));
+    const w = 150;
+    const x = Math.round((VIEW_WIDTH - w) / 2);
+    const y = 41;
+    c.add(this.add.rectangle(x - 2, y - 9, w + 4, 25, UI_BG, 0.85).setOrigin(0, 0));
     const tint = BOSS_TINT[boss.spec.colour];
     c.add(pixelText(this, manifest, x, y - 7, boss.defeated ? 'DEFEATED!' : bossName(boss.spec).toUpperCase(), { color: boss.defeated ? GOOD : tint }));
     const bar = this.add.graphics();
@@ -669,7 +669,7 @@ export class CourseScene extends Phaser.Scene {
     bar.fillStyle(0xffffff, 1);
     for (const t of [Math.floor((boss.maxHealth * 2) / 3), Math.floor(boss.maxHealth / 3)]) bar.fillRect(x + Math.round((w * t) / boss.maxHealth), y - 1, 1, 8);
     c.add(bar);
-    c.add(pixelText(this, manifest, x + w - 34, y - 7, boss.defeated ? '' : `PHASE ${phaseOf(hp, boss.maxHealth)}`, { color: UI_DIM }));
+    c.add(pixelText(this, manifest, x, y + 8, boss.defeated ? '' : `PHASE ${phaseOf(hp, boss.maxHealth)}   ${hp}/${boss.maxHealth}`, { color: UI_DIM }));
     this.bossHud = c;
   }
 
@@ -1013,6 +1013,13 @@ export class CourseScene extends Phaser.Scene {
       }
     }
     for (const sd of play.seeds) show(sd.uid, 'seed', sd.shot.ball.x, sd.shot.ball.y, sd.shot.ball.z);
+    // Statuses on the ball (Milestone 7: Burning, Chilled, Poisoned as well as Stunned), in a row above it.
+    play.ballStatuses.forEach((st, i) => {
+      const id = `icon-${st.id}`;
+      if (!manifest.sprites[id]) return;
+      const offset = (i - (play.ballStatuses.length - 1) / 2) * 0.35;
+      show(`ball:${st.id}`, id, ball.x + offset, ball.y - offset, ball.z, { lift: 14 + bob, depth: HUD_DEPTH - 10 });
+    });
     // Milestone 7: pods that will hatch into helpers unless the ball rolls over them.
     for (const pod of play.boss?.pods ?? []) show(pod.id, 'pod', pod.x, pod.y, pod.z, { lift: Math.floor(now / 150) % 4 === 0 ? 1 : 0 });
     this.drawBossLayer();
@@ -1683,7 +1690,7 @@ export class CourseScene extends Phaser.Scene {
     const fill = p.quota > 0 ? Math.min(1, p.meter / p.quota) : 1;
     g.fillStyle(p.exitOpen ? GOOD : STAR_FILL, 1).fillRect(barX, barY, Math.round(barW * fill), 5);
     c.add(g);
-    const meterText = p.boss ? (p.exitOpen ? 'OPEN' : 'BEAT THE BOSS') : p.quota > 0 ? `${Math.min(p.meter, p.quota)}/${p.quota}${p.exitOpen ? ' OPEN' : ''}` : 'OPEN';
+    const meterText = p.boss ? (p.exitOpen ? 'OPEN' : 'BOSS') : p.quota > 0 ? `${Math.min(p.meter, p.quota)}/${p.quota}${p.exitOpen ? ' OPEN' : ''}` : 'OPEN';
     c.add(pixelText(this, manifest, barX + barW + 3, barY, meterText, { color: p.exitOpen ? GOOD : UI_TEXT }));
     c.add(pixelText(this, manifest, 104, 2, `HP ${p.health}/${maxHealth}`, { color: UI_TEXT }));
     const starX = 94;
@@ -1701,14 +1708,7 @@ export class CourseScene extends Phaser.Scene {
       c.add(pixelText(this, manifest, slotX + 14, 3, wild >= 0 ? '?' : def.name.toUpperCase(), { color: usedUp ? UI_DIM : UI_TEXT }));
       c.add(pixelText(this, manifest, slotX + 14, 11, usedUp ? 'USED' : 'F: USE', { color: UI_DIM }));
     } else c.add(pixelText(this, manifest, slotX + 3, 7, 'NO ABILITY', { color: UI_DIM }));
-    // Statuses on the ball (Milestone 7: Burning, Chilled, Poisoned as well as Stunned).
-    let sx = x + 2;
-    for (const st of p.ballStatuses) {
-      const id = `icon-${st.id}`;
-      if (!manifest.sprites[id]) continue;
-      c.add(this.add.image(sx, 0, id, 0).setOrigin(0, 0));
-      sx += 11;
-    }
+    // Statuses on the ball are drawn above the ball itself (syncObjects).
     // Gear slots (Milestone 6): weapon, armour, bauble; then the armour's ignored damages left this course.
     const gearX = slotX + 66;
     c.add(this.add.rectangle(gearX, 0, shields > 0 ? 58 : 44, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -1763,7 +1763,7 @@ export class CourseScene extends Phaser.Scene {
 
   private showMessage(text: string, color: number): void {
     this.message?.destroy();
-    this.message = pixelText(this, manifest, 0, 46, text, { color, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
+    this.message = pixelText(this, manifest, 0, this.play?.boss ? 62 : 46, text, { color, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
     this.message.x = Math.round((VIEW_WIDTH - this.message.width) / 2);
     this.messageUntil = this.time.now + 1400;
   }

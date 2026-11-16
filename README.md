@@ -30,6 +30,7 @@ Then open the address it prints (usually http://localhost:5173).
 | `npm run art` | Regenerate the placeholder sprites and `assets/manifest.json` |
 | `npm run gen -- ABC123 12` | Print one generated course (seed, budget) as text, with pass or fail |
 | `npm run gen:batch` | Generate 500 courses (budgets 8, 12, 20, 30), report the pass rate and times, and draw a contact sheet in `tools/out/` (the pictures need Playwright) |
+| `npm run boss:report` | Milestone 7: the bot fights every built boss combination (10 seeds, three loadouts) and writes `docs/reports/boss-combinations.md`, listing the ones it struggles with. Takes about 10 minutes |
 | `npm run build` | Build the site into `dist/` |
 | `npm run preview` | Serve the built site locally |
 
@@ -66,11 +67,21 @@ Every mechanic works from the keyboard alone; the mouse is optional (owner decis
 | U | Tuning panel (debug) |
 | H | Show or hide the help lines |
 
+### Screens outside a course (Milestone 7)
+
+The game opens on a placeholder **start menu**: Continue run (when a run was saved in a town), New run, Upgrades. Up/Down and Enter.
+
+- **Upgrades (the hub):** spend stashed blue stars. Up/Down choose, Enter buy, Left/Right pick the starting ability once it is unlocked, Esc back.
+- **Map:** Left/Right choose a node, Enter go. The boss marker shows the boss's bug in its colour. After a run ends, Enter goes back to the start menu.
+- **Town:** Left/Right walk, Enter go in. In the Burrow: Enter swaps the worn and stored item, **X sells the stored item** for 25%. If something waits in the hold, a sorting screen comes first: Up/Down choose, Enter cycles WEAR / HOUSE / SELL, C confirms.
+- **Boss prize:** Left/Right choose, Enter take it, Esc skip.
+- Key 7 on a test course opens the start menu (or goes back to the run in progress).
+
 ### The HUD
 
 Top left: health (hearts), shots left (blue orbs), the star meter (stars towards the course's quota; it turns green and says OPEN when the exit opens), yellow stars held, and the seed (`#ABC123`). Each shot uses one orb. When they run out you get a recover turn and they refill. Next to it: the ability slot (the ability you hold; greyed once used this shot).
 
-You can also open a course directly: `?course=course-rules`, `?course=flat-walls`, `?course=slopes-surfaces` or `?course=enemies-abilities` or `?course=generated` (add `&budget=12` for the budget), or `?course=test-bench&bench=rail` for the test bench with something chosen (any object id, or `rail`), and add `&seed=ABC123` to replay a seed, `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
+You can also open a course directly: `?course=course-rules`, `?course=flat-walls`, `?course=slopes-surfaces` or `?course=enemies-abilities` or `?course=generated` (add `&budget=12` for the budget), or `?course=test-bench&bench=rail` for the test bench with something chosen (any object id, or `rail`), and add `&seed=ABC123` to replay a seed, `?boss=ABC` to fight a bug boss at once with base stats (pick parts with `&bug=goliath|mantis|grasshopper`, `&colour=red|blue|yellow|green|rainbow`, `&skill=slam|pods|charge`, and `&region=2` for the stronger version), `&debug=heights` (or `coords`, `surfaces`) or `&tune=1` to open the tuning panel.
 
 ## Folder layout
 

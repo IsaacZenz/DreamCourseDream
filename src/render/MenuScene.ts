@@ -76,8 +76,8 @@ export class MenuScene extends Phaser.Scene {
     const m = shared.manifest;
     const g = this.add.graphics();
     // A strip of checkered grass and a rolling ball, in the game's pixel style.
-    for (let y = 150; y < VIEW_HEIGHT; y += 8) for (let x = 0; x < VIEW_WIDTH; x += 8) g.fillStyle(((x + y) / 8) % 2 ? 0x58a848 : 0x4c9840, 1).fillRect(x, y, 8, 8);
-    const ball = this.add.image(40, 148, 'ball', 0).setOrigin(0.5, 1).setScale(2);
+    for (let y = 152; y < VIEW_HEIGHT; y += 8) for (let x = 0; x < VIEW_WIDTH; x += 8) g.fillStyle(((x + y) / 8) % 2 ? 0x58a848 : 0x4c9840, 1).fillRect(x, y, 8, 8);
+    const ball = this.add.image(40, 152, 'ball', 0).setOrigin(0.5, 1).setScale(2);
     this.tweens.add({ targets: ball, x: VIEW_WIDTH - 40, duration: 4000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     // No name chosen yet (DESIGN.md open question 9): a plain stand-in title.
     const title = pixelText(this, m, 0, 0, 'UNTITLED GOLF ROGUELIKE', { color: SELECT });

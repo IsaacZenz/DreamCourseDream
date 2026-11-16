@@ -9,7 +9,7 @@
  *   owner decides what goes on it from the bot report).
  */
 import { BANNED_COMBOS, BOSS_ARENAS, BUGS, COLOURS, SKILLS, comboId, type BugId } from '../content/bosses.ts';
-import { ARENA_FILES } from '../content/courses/index.ts';
+import { ARENA_FILES } from '../content/courses/arenas.ts';
 import type { BossSpec } from '../sim/boss.ts';
 import { parseCourse, type Course } from '../sim/course.ts';
 import { Rng } from '../sim/rng.ts';

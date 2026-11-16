@@ -150,17 +150,17 @@ After playing the first generator, the owner asked for larger, more open, much m
 ## Milestone 7 — Boss and permanent progress
 
 - [x] **Plan gate (signed off by the owner, 2026-11-16):** design sheet for The Warden (replaced by generated bug bosses) (phases, attacks, summons, arena), blue star sources, the hub screen and the permanent upgrades. Owner signs it off before any of them is built.
-- [ ] Boss generator (owner, 2026-11-16): bug bosses from three random parts; in this milestone three bugs (Goliath beetle, Praying mantis, Grasshopper), all five colours with their attacks, three skills (Slam, Pod barrage, Charge), summons, phases (FEATURES.md section 5)
-- [ ] Burning, Chilled and Poisoned on the ball (the boss colours need them; moved forward from Milestone 8)
-- [ ] Bot test of every boss combination, with a report listing the ones it cannot beat for the owner to review before any is banned
-- [ ] Blue stars: sources and wallet
-- [ ] A placeholder start menu: the game opens on it (owner, 2026-11-16: the real game needs a proper start menu; the finished one is Milestone 9)
-- [ ] Hub screen between runs with the levelled list and the starting-ability unlock (FEATURES.md section 10)
-- [ ] Death flow: lose run items, keep permanent upgrades and blue stars
-- [ ] Save and load with a version number and a safe fallback if the save is unreadable
-- [ ] Owner, 2026-11-15: a town is the save point for a run in progress. Leaving the game at a town and coming back carries on from there; death still starts over. Owner, 2026-11-16: leaving anywhere else loses the run
-- [ ] Burrow additions (owner, 2026-11-16): sell the housed item for 25%, the hold and its sorting screen, stashing blue stars
-- [ ] Region two starts after the boss with a higher budget
+- [x] Boss generator (owner, 2026-11-16): bug bosses from three random parts; in this milestone three bugs (Goliath beetle, Praying mantis, Grasshopper), all five colours with their attacks, three skills (Slam, Pod barrage, Charge), summons, phases (FEATURES.md section 5)
+- [x] Burning, Chilled and Poisoned on the ball (the boss colours need them; moved forward from Milestone 8)
+- [x] Bot test of every boss combination, with a report listing the ones it cannot beat for the owner to review before any is banned
+- [x] Blue stars: sources and wallet
+- [x] A placeholder start menu: the game opens on it (owner, 2026-11-16: the real game needs a proper start menu; the finished one is Milestone 9)
+- [x] Hub screen between runs with the levelled list and the starting-ability unlock (FEATURES.md section 10)
+- [x] Death flow: lose run items, keep permanent upgrades and blue stars
+- [x] Save and load with a version number and a safe fallback if the save is unreadable
+- [x] Owner, 2026-11-15: a town is the save point for a run in progress. Leaving the game at a town and coming back carries on from there; death still starts over. Owner, 2026-11-16: leaving anywhere else loses the run
+- [x] Burrow additions (owner, 2026-11-16): sell the housed item for 25%, the hold and its sorting screen, stashing blue stars
+- [x] Region two starts after the boss with a higher budget
 
 **Done when:** the owner can die, buy a permanent upgrade, start again, and see the upgrade applied; and can beat the boss.
 

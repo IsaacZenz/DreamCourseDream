@@ -1,6 +1,6 @@
 # Milestone 7 design sheet — Boss and permanent progress
 
-**Status: signed off by the owner, 2026-11-16**, with the answers recorded in section 9 and the changes in sections 2, 4.3, 5.0, 7.2 and 7b.
+**Status: signed off by the owner, 2026-11-16**, with the answers recorded in section 9 and the changes in sections 2, 4.3, 5.0, 7.2 and 7b. **Built 2026-11-16**; differences in [section 11](#11-as-built-2026-11-16). Waiting for the owner to play it.
 
 **Owner, 2026-11-16:** the single Warden is replaced by **bug bosses generated from parts** (bug type × colour and power × base skill). Section 2 is rewritten with the owner's answers; items marked **(proposal)** there still need review.
 
@@ -361,7 +361,7 @@ Everything lives under one browser storage key, `dreamcoursedream.save`:
 - **The hold:** an item sent to the Burrow while its slot there is already full waits in the **hold** (today only a boss reward does this). The **next time you enter the Burrow**, a sorting screen opens first: for each category with an item in the hold, you choose which item to wear, which to house, and sell the rest. You cannot leave the screen until every category is down to one worn and one housed.
 - **Owner, 2026-11-16:** items in the hold are safe from death and wait until the next Burrow visit, even in a later run.
 - **Blue stars:** entering the Burrow stashes all carried blue stars (section 4.3).
-- Burrow keys as in Milestone 6, plus **S** to sell the housed item (asks to confirm, showing the yellow stars it gives).
+- Burrow keys as in Milestone 6, plus **X** to sell the housed item (asks to confirm, showing the yellow stars it gives). As built: X, not S, because S already moves down the list.
 
 ---
 
@@ -420,3 +420,31 @@ Things to check on purpose while playtesting (after the build):
 - Close the page during a course and see the run ended (blue stars kept).
 - Use "Break the save" and check the game recovers with the notice.
 - The Burrow item stored in Milestone 6 is still there after the save change.
+
+---
+
+## 11. As built (2026-11-16)
+
+Where things live: boss parts and numbers in `src/content/bosses.ts`; the boss's turn in `src/sim/boss.ts` (it acts on the course only through a small "host" that `src/sim/play.ts` provides); the boss picker and arena loader in `src/gen/boss.ts`; the arena in `src/content/courses/arena-bug.json`; permanent upgrades in `src/content/permanent.ts`; the profile (stash, levels, Burrow, hold) in `src/sim/profile.ts`; the save format in `src/save/saveData.ts` and browser storage in `src/save/save.ts`; new screens `MenuScene`, `HubScene`, `RewardScene`.
+
+Differences from the sheet, and choices it left open:
+
+- **Sizes "across" are radii.** The slam ring is 1.75 tiles from its centre (2.25 in phase 3), the fireball 1, pods 0.6, the spore ring 3 tiles from the boss. A ring 1.75 tiles across would be too small to matter.
+- **Colour attacks always do 1 damage; skills do the bug's damage** (Goliath 2). Every hit also gives the colour's status. Only the colour attack leaves ground.
+- **The grasshopper's leap** comes on top of the phase pattern: it marks a landing spot every second boss turn and leaps there on the next. Landing near the ball does 1 damage within 1 tile of its body and knocks the ball away. In a Charge, a boss that can move (the grasshopper) rushes down the lane; the others send a shockwave.
+- **The mantis** turns to face the ball each boss turn (so "behind" moves) and, on every third boss turn on which it marks, makes the other attack's mark too (in phase 2, a second colour mark).
+- **Helpers** take the boss's colour (their element and the status their hits give). A carrier always gives its ability, even when it gives no star (the sheet's proposal). Helpers that attack (Spitter, Lunger) start awake.
+- **Burning on the ball** hurts at the start of the shot; like any damage, it does nothing during the 0.5 s immunity after other damage.
+- **Rarity in region two** uses the Milestone 6 "Region 2" column from its first node (there already was one), not region one's late column. The boss prize uses the column above the region's (region one: Region 2's odds).
+- **The exit on a boss course** is the arena's centre tile, where the boss stands at the start (the grasshopper may be elsewhere when it falls).
+- **Saving:** `runActive` in the save marks a run under way. If the game opens with a run active and none saved at a town, the run is treated as ended by leaving (the start menu says so). Starting a new run over a saved one asks first and counts the saved one as left.
+- **Map icons** are 16-pixel versions of the boss sprites, tinted by the display; a rainbow boss flickers through the four colours.
+- **Status icons** on the ball are drawn above the ball, not in the HUD.
+- **Testing aids:** on the map, "+10 blue stars (carried)", "Fight the boss now", "Break the save"; on a boss course, "Boss health" (to jump to a phase); on the start menu and hub, "+10 blue stars (stashed)" and (hub) "Reset permanent progress". Address `?boss=<seed>&bug=&colour=&skill=&region=` fights a boss with base stats.
+- **The start menu** shows a plain stand-in title, "Untitled golf roguelike", until a name is chosen.
+- **The bot** counts damage to a boss as progress, like stars (so it can be used on boss fights).
+
+### Bot report
+
+See `docs/reports/boss-combinations.md` (made by `npm run boss:report`). @@REPORT@@
+

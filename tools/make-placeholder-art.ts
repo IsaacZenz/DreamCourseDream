@@ -932,7 +932,7 @@ const GLYPHS: Record<string, string> = {
   ' ': '000000000000000', '.': '000000000000010', ',': '000000000010100', ':': '000010000010000',
   '-': '000000111000000', '+': '000010111010000', '/': '001001010100100', '(': '010100100100010',
   ')': '010001001001010', '#': '101111101111101', '=': '000111000111000', '?': '111001010000010',
-  '!': '010010010000010', "'": '010010000000000', '>': '100010001010100', '<': '001010100010001',
+  '!': '010010010000010', '%': '101001010100101', "'": '010010000000000', '>': '100010001010100', '<': '001010100010001',
 };
 
 function drawFont(): { img: Image; frames: string[] } {
@@ -1267,17 +1267,30 @@ function drawBug(bug: string, colour: string): Image {
   return out;
 }
 
-/** The map's boss icon: the bug's shape in light grey, tinted to the boss's colour by the display. */
+/** The map's boss icon: the bug's shape shrunk to 16x16 in light grey, tinted to the boss's colour by the display. */
 function drawBugIcon(bug: string): Image {
   const big = drawBugIn(bug, '#e8e8e8');
   const img = new Image(16, 16);
+  // Fit the bug's own bounding box into the icon, keeping its shape.
+  let x0 = 44, y0 = 40, x1 = 0, y1 = 0;
+  for (let y = 0; y < 40; y++) for (let x = 0; x < 44; x++) if (big.get(x, y)[3] > 0) {
+    x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+  }
+  const size = Math.max(x1 - x0 + 1, y1 - y0 + 1);
+  const ox = x0 - (size - (x1 - x0 + 1)) / 2;
+  const oy = y0 - (size - (y1 - y0 + 1)) / 2;
+  const k = size / 16;
   for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
-    let best: RGBA = [0, 0, 0, 0];
-    for (let dy = 0; dy < 3 && best[3] === 0; dy++) for (let dx = 0; dx < 3 && best[3] === 0; dx++) {
-      const px = big.get(Math.min(43, x * 44 / 16 + dx), Math.min(39, y * 40 / 16 + dy));
-      if (px[3] > 0) best = px;
+    let n = 0, total = 0, sum = [0, 0, 0];
+    for (let sy = Math.floor(oy + y * k); sy < Math.floor(oy + (y + 1) * k); sy++) for (let sx = Math.floor(ox + x * k); sx < Math.floor(ox + (x + 1) * k); sx++) {
+      total++;
+      if (sx < 0 || sy < 0 || sx >= 44 || sy >= 40) continue;
+      const px = big.get(sx, sy);
+      if (px[3] === 0) continue;
+      n++;
+      sum = [sum[0]! + px[0], sum[1]! + px[1], sum[2]! + px[2]];
     }
-    img.set(x, y, best);
+    if (total && n / total >= 0.35) img.set(x, y, [Math.round(sum[0]! / n), Math.round(sum[1]! / n), Math.round(sum[2]! / n), 255]);
   }
   return img;
 }
