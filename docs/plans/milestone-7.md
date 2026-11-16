@@ -2,6 +2,8 @@
 
 **Status: waiting for the owner's sign-off.** Nothing on this sheet is built yet.
 
+**Owner, 2026-11-16:** the single Warden is replaced by **bosses generated from parts** (bug type × colour and power × base skill), insect theme. Section 2 below is the old single-boss plan and will be rewritten from section 2b once the owner has reviewed it.
+
 How to review: read each section, change any number or rule you want, and answer the numbered questions in [section 9](#9-questions-for-the-owner). Each question has a default, so "use the defaults" is a valid answer. Every number here is a starting value and goes into `src/content/` so it can be tuned later.
 
 Where this sheet uses a default from an open question in DESIGN.md or FEATURES.md, it says so.
@@ -98,6 +100,70 @@ Same as every course (DESIGN.md section 8): aim, shot, rest check, enemy turn. T
 | Yellow stars | 0 (the summons already give some) |
 
 Then the run moves on to region two (section 6).
+
+---
+
+## 2b. Generated bug bosses — proposal for review (2026-11-16)
+
+Owner decision: a boss level rolls three parts at random. Below are the planner's recommendations for each part. **Not signed off.** Numbers are starting values; "Warden" in section 2 is the reference boss (12 health, 1 damage).
+
+### 2b.1 Bug types (skin, base stats, movement)
+
+| Bug | Role | Health | Damage | Moves? | Its own rule |
+|---|---|---|---|---|---|
+| Goliath beetle | Tank | 12 | 2 | No | Heavy shell: the ball bounces off it with only 40% of its speed (others 60%) |
+| Praying mantis | Quick | 10 | 1 | No, but turns to face the ball | Every third enemy turn it acts twice. A hit from behind does double damage (weak spot) |
+| Butterfly | Floater | 8 | 1 | Drifts up to 3 tiles each enemy turn, over the arena floor only | Hovers 1 tile up: ground shots pass under it. Only a ball in the air can hit it |
+| Centipede | Crawler | 12 (shared by all segments) | 1 | Crawls a loop around the arena all the time, like a Trundler | Body of 6 segments. Body knocks the ball away but does not hurt; the head hurts. Hitting the head does double damage |
+| Grasshopper | Jumper | 11 | 1 | Leaps to a new spot every second enemy turn; the landing spot is marked a turn ahead | Lands with a small shockwave (1 damage, radius 1 tile). Stands still between leaps |
+| Bumblebee | Hive queen | 9 | 1 | Hovers in place | Summons twice as often and keeps up to 6 helpers (others 4) |
+
+Six are named; the owner asked for five skins. Planner's pick to drop if only five: **Bumblebee**, because every boss already summons, so "summons more" is its weakest identity.
+
+### 2b.2 Colours and powers
+
+The power colours **every attack** of the boss (its skill's hits put the status on the ball, and the spot each attack lands on is left as hazard ground for 2 turns). Summoned helpers are the same colour (like a squad theme).
+
+| Colour | Power | A hit does | Ground it leaves (2 turns) | Resists | Weak to | Odds |
+|---|---|---|---|---|---|---|
+| Red | Fire | Burning: 1 damage at the start of each of your next 2 shots | Scorch: 1 damage on touch | Fire | Ice | 22.5% |
+| Blue | Ice | Chilled: rolls as if on ice for 2 shots | Ice tiles | Ice | Fire | 22.5% |
+| Yellow | Lightning | Stunned: lose 1 shot (status already built) | A small thunder cloud | Shock | — | 22.5% |
+| Green | Poison | Poisoned: −1 hit damage for 2 shots (see note) | Poison puddle: Poisoned on touch | Poison | — | 22.5% |
+| Rainbow | All four | One power per attack, picked at random; the wind-up glows that colour so you can react | Matches the power used | None | None | 10%, +2 blue stars reward |
+
+Notes:
+- Burning on the ball, Chilled and Poisoned are planned for Milestone 8; this pulls them into Milestone 7.
+- Poison is not an element yet (elements are fire, ice, shock). It would become a fourth.
+- **Poison against a boss:** with today's rule (FEATURES.md F1, damage can drop to 0) a poisoned ball with 1 hit damage cannot hurt the boss at all for 2 shots. Planner recommends hit damage never drops below 1.
+- Colour is never the only clue: each power also gets its own icon and particle shape, for colour-blind players.
+
+### 2b.3 Base skills (the attack)
+
+Every skill is marked on the ground one enemy turn ahead, so the player always has one shot to get clear. Each has a different shape of danger.
+
+| Skill | Shape | Mark (turn 1) | Lands (next turn) |
+|---|---|---|---|
+| Slam | One big circle | Ring 1.75 tiles across the ball's spot | Shockwave: 1 damage + the boss's damage bonus, knocks the ball 6 tiles/s outward |
+| Pod barrage (owner) | Many small circles | 4 small rings (0.6 tiles): one on the ball, three scattered within 3 tiles | Pods burst: damage in each ring. A pod that lands on empty ground lies there and hatches into a helper next turn unless the ball rolls over it first |
+| Charge | A straight lane | A lane 1.5 tiles wide from the boss, through the ball, to the edge | The boss (or a shockwave, for bosses that cannot move) rushes along the lane: damage and a sideways knock. A moving boss ends up at the far end |
+| Gust | The whole arena, one direction | An arrow showing which way the wind will blow | Wind pushes a resting ball 4 tiles that way, into sand, hazards or against rails. Rocks block it: rest behind one to stay put. 0 damage, but it carries the power's status |
+| Web snare | Ground that piles up | 3 tiles near the ball | Web lands: a ball on a web takes 1 damage and is stuck (next shot at half power). Webs stay 3 turns and act like sand |
+
+### 2b.4 Rules for the random pick
+
+- 6 bugs × 5 colours × 5 skills = 150 bosses (125 with five bugs).
+- **No repeat bug in one run**, so region two never meets the same bug as region one.
+- Names come from the parts: colour word + bug (+ title), for example "Ember Goliath", "Frost Mantis".
+- **Beatable check:** CLAUDE.md rule 6 asks that generated content is verified. A test fights every combination with the bot at base stats and a run's upgrades; any combination it never beats is tuned or put on a "not allowed together" list in the data.
+- The phases from section 2.3 stay: phase 1 the skill alone, phase 2 summons, phase 3 both and faster.
+
+### 2b.5 How much goes in Milestone 7 (planner's recommendation)
+
+This is several times the size of one Warden. Planner recommends building the whole system now with a **first set**, and the rest in Milestone 8:
+
+- Milestone 7: the boss generator, all five colours (with the three statuses), **three skills** (Slam, Pod barrage, Charge) and **three bugs** that use physics the game already has (Goliath beetle, Praying mantis, Grasshopper).
+- Milestone 8: Gust, Web snare, Butterfly (needs "only an airborne ball can hit it"), Centipede (needs a body made of segments), Bumblebee.
 
 ---
 

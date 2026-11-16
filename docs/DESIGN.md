@@ -188,6 +188,8 @@ Each enemy type is a definition file entry: family, health, star value, radii, t
 
 **Decided:** a boss is mainly a large health bar with phases whose attack pattern changes as it loses health. Some bosses, not all, add a weak-point puzzle. See `docs/FEATURES.md` section 5.
 
+**Decided (owner, 2026-11-16): bosses are generated from parts.** Each boss is a random pick of three parts: a **bug type** (sets its base stats and how it moves), a **colour with its power** (red fire, blue ice, yellow lightning, green poison, rainbow all four, one at a time at random), and a **base skill** (its attack; Slam and a pod barrage that marks where pods will land are two of them). Every boss can summon. The details are being reviewed in `docs/plans/milestone-7.md` section 2b.
+
 ## 9. Abilities and gear
 
 **Decided:** one ability slot plus gear slots.
@@ -294,5 +296,5 @@ Opus: use the default and say that you did. The owner can change any of these at
 | 6 | Can gear be sold? | No. Swapping is covered in FEATURES.md section 8 |
 | 7 | Is there healing outside shops and caches? (Owner, 2026-11-15: default kept) | Bosses heal fully; nothing else |
 | 8 | Does the run have an end, or go until death? | Three regions and a final boss, then an endless mode unlocks |
-| 9 | Theme, setting, main character and the game's name | **Partly answered (owner, 2026-11-15), planning only:** the hero is an **armadillo** who stands on two legs, rolls up into a ball when launched, and pops back out when the ball stops. Villains share one theme, not yet chosen: either **reptiles and amphibians with an alligator as the main villain**, or **insects**. Name and setting still undecided; all needed before Milestone 9 |
+| 9 | Theme, setting, main character and the game's name | **Partly answered (owner, 2026-11-15), planning only:** the hero is an **armadillo** who stands on two legs, rolls up into a ball when launched, and pops back out when the ball stops. Villains share one theme: **insects (owner, 2026-11-16)**. Name and setting still undecided; all needed before Milestone 9 |
 | 10 | Do patrollers hurt, or only block and deflect? | Per type; the first patroller built deals 1 damage and knocks the ball back |

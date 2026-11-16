@@ -177,9 +177,11 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 
 | Working name | Gimmick | Milestone |
 |---|---|---|
-| The Warden | None. Three phases: slow slams, then summons, then both faster. | 7 |
+| ~~The Warden~~ | Replaced by generated bosses (below) | |
 | Second boss | Shield that only drops after it attacks | 8 |
 | Third and final boss | Decide with the owner | 8 |
+
+**Decided (owner, 2026-11-16): bug bosses from random parts.** Villains are insects. A boss level picks at random a **bug type** (each its own skin, with its own base stats and movement), a **colour tied to a power** (red: fire, blue: ice, yellow: lightning, green: poison, rainbow: all of them, picking one at random per attack), and one of five **base skills** (Slam; Pod barrage, which marks where its pods will land on the next turn, like the Spitter; three more to choose). All bosses summon. Bug types named by the owner: Goliath beetle (12 health, higher damage), praying mantis (attacks slightly faster), butterfly (floats above the map so it can move around), centipede, bumblebee, grasshopper. Owner asked for five skins; six are named. Proposal under review in `docs/plans/milestone-7.md` section 2b.
 
 ---
 
