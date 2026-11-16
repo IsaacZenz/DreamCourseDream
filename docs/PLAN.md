@@ -174,7 +174,7 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] Linked objects (switches, gates, bridges); optional course modifiers
 - [ ] Second gear slot unlocks; extra characters
 - [ ] Three biomes with their own chunk sets
-- [ ] Several boss arenas, picked at random for each boss fight (owner, 2026-11-16: one arena in Milestone 7, more to cycle through before the game is complete); a biome may bring its own
+- [ ] Several boss arenas, picked at random for each boss fight (owner, 2026-11-16: one arena in Milestone 7, more to cycle through before the game is complete); a biome may bring its own. Owner, 2026-11-16: meaner arenas with **themes**, for example a **spike arena** and a **water arena** (fewer rocks, bigger knock-backs, so being knocked around has real consequences). Each theme goes on the Milestone 8 design sheet for the owner to review
 - [ ] Theme switch after each boss (day, night, jungle, underground, spooky): same objects, different art set through the manifest (owner, 2026-11-14)
 - [ ] More gear and shop variety
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
