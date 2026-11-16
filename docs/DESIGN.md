@@ -188,7 +188,7 @@ Each enemy type is a definition file entry: family, health, star value, radii, t
 
 **Decided:** a boss is mainly a large health bar with phases whose attack pattern changes as it loses health. Some bosses, not all, add a weak-point puzzle. See `docs/FEATURES.md` section 5.
 
-**Decided (owner, 2026-11-16): bosses are generated from parts.** Each boss is a random pick of three parts: a **bug type** (sets its base stats and how it moves), a **colour with its power** (red fire, blue ice, yellow lightning, green poison, rainbow all four, one at a time at random), and a **base skill** (its attack; Slam and a pod barrage that marks where pods will land are two of them). Every boss can summon. The details are being reviewed in `docs/plans/milestone-7.md` section 2b.
+**Decided (owner, 2026-11-16): bosses are generated from parts.** Each boss is a random pick of three parts: a **bug type** (sets its base stats and how it moves), a **colour with its power** (red fire, blue ice, yellow lightning, green poison, rainbow all four, one at a time at random), and a **base skill** (its attack; Slam and a pod barrage that marks where pods will land are two of them). Every boss can summon. Five bug types (the bumblebee was dropped), each colour with its own simple attack that also flavours the skill, no repeat bug in one run, names made from the parts (owner, 2026-11-16). Details in `docs/FEATURES.md` section 5 and `docs/plans/milestone-7.md` section 2.
 
 ## 9. Abilities and gear
 

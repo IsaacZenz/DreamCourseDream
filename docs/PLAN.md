@@ -150,7 +150,9 @@ After playing the first generator, the owner asked for larger, more open, much m
 ## Milestone 7 — Boss and permanent progress
 
 - [ ] **Plan gate:** design sheet for The Warden (phases, attacks, summons, arena), blue star sources, the hub screen and the permanent upgrades. Owner signs it off before any of them is built.
-- [ ] Boss template and the first boss, The Warden (FEATURES.md section 5)
+- [ ] Boss generator (owner, 2026-11-16): bug bosses from three random parts; in this milestone three bugs (Goliath beetle, Praying mantis, Grasshopper), all five colours with their attacks, three skills (Slam, Pod barrage, Charge), summons, phases (FEATURES.md section 5)
+- [ ] Burning, Chilled and Poisoned on the ball (the boss colours need them; moved forward from Milestone 8)
+- [ ] Bot test of every boss combination, with a report listing the ones it cannot beat for the owner to review before any is banned
 - [ ] Blue stars: sources and wallet
 - [ ] Hub screen between runs with the levelled list and the starting-ability unlock (FEATURES.md section 10)
 - [ ] Death flow: lose run items, keep permanent upgrades and blue stars
@@ -165,8 +167,8 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] **Plan gate:** design sheet for every new ability, enemy, trait, status, boss, linked object, biome, gear item and character in this milestone. Owner signs it off before any of them is built. This milestone is large; it may be planned and built in several rounds, each with its own sheet.
 - [ ] Remaining abilities from DESIGN.md section 9
 - [ ] Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear and its drop chance
-- [ ] Remaining statuses: Poisoned, Burning, Chilled
-- [ ] More enemy types in both families; a second and third boss, one with a gimmick
+- [ ] Remaining statuses on enemies: Poisoned, Chilled (on the ball they come in Milestone 7)
+- [ ] More enemy types in both families; the remaining boss parts (Butterfly, Centipede, Gust, Web snare)
 - [ ] Linked objects (switches, gates, bridges); optional course modifiers
 - [ ] Second gear slot unlocks; extra characters
 - [ ] Three biomes with their own chunk sets
@@ -246,3 +248,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-15 — Milestone 6 done: the owner played the run build, asked for the countdown of 7 and the last town, and approved. Merged to `main`. Known limits carried forward: the boss is a stand-in hard course, blue stars are counted but not spent, and saving a run at a town come in Milestone 7.
 - 2026-11-16 — Milestone 7 design sheet written: `docs/plans/milestone-7.md` (The Warden with its slam and summon actions and three phases, the arena, blue star sources and wallet, the hub and permanent upgrade costs, the starting ability unlock, the death flow, region two, the save format with its fallback, and the town save point). Ten questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
 - 2026-11-16 — Owner decisions: villains are insects; bosses are generated from three random parts (bug type, colour with its power, base skill), and every boss summons. Recorded in DESIGN.md (section 8, open question 9) and FEATURES.md section 5. The planner's proposal for six bug types, five colours and five skills is in `docs/plans/milestone-7.md` section 2b, **waiting for the owner's review**.
+- 2026-11-16 — Owner answers on the bug bosses: five bug types (bumblebee dropped); lightning and poison weak to each other; hit damage never below 1 unless a gimmick blocks the hit (FEATURES.md F1); poison becomes a fourth element (F5); icons as well as colours; no repeat bug in a run; every combination bot-tested with a list for the owner before any ban; the Milestone 7 / 8 split; names from parts; each colour gets its own simple attack and also flavours the skill. Recorded in DESIGN.md, FEATURES.md and this plan. `docs/plans/milestone-7.md` section 2 rewritten; new proposals (the colour attacks, bug and skill numbers, poison's shot-power cut) are questions 11 to 15. **Waiting for the owner's sign-off.**

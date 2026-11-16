@@ -62,7 +62,8 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 **Default:**
 
 - Damage is in whole numbers.
-- **Elements:** fire, ice, shock. A hit has an element if the ball's current ability or weapon gives it one. Weak: damage ×2. Resistant: damage halved, rounded down.
+- **Elements:** fire, ice, shock, and **poison (owner, 2026-11-16, with the bug bosses)**. A hit has an element if the ball's current ability or weapon gives it one. Weak: damage ×2. Resistant: damage halved, rounded down. **Owner, 2026-11-16:** fire and ice are weak to each other; shock (lightning) and poison are weak to each other.
+- **Owner, 2026-11-16: a hit's damage never drops below 1** (after modifiers, poison and resistance), unless a gimmick specifically blocks the hit, such as a shield or a guarded side, which still takes it to 0.
 - **Positions:** "from above" means the ball was airborne just before contact. "From behind" uses the direction the enemy is facing. A weak spot doubles damage; a guarded side blocks the hit.
 - **Order of calculation:** hit damage after modifiers → element → position → shield or block → subtract from enemy health.
 - **Contact:** if the enemy survives, the ball bounces off it. If the enemy is defeated, the ball carries on with a small loss of speed. The same enemy cannot be hit again within half a second.
@@ -181,7 +182,7 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 | Second boss | Shield that only drops after it attacks | 8 |
 | Third and final boss | Decide with the owner | 8 |
 
-**Decided (owner, 2026-11-16): bug bosses from random parts.** Villains are insects. A boss level picks at random a **bug type** (each its own skin, with its own base stats and movement), a **colour tied to a power** (red: fire, blue: ice, yellow: lightning, green: poison, rainbow: all of them, picking one at random per attack), and one of five **base skills** (Slam; Pod barrage, which marks where its pods will land on the next turn, like the Spitter; three more to choose). All bosses summon. Bug types named by the owner: Goliath beetle (12 health, higher damage), praying mantis (attacks slightly faster), butterfly (floats above the map so it can move around), centipede, bumblebee, grasshopper. Owner asked for five skins; six are named. Proposal under review in `docs/plans/milestone-7.md` section 2b.
+**Decided (owner, 2026-11-16): bug bosses from random parts.** Villains are insects. A boss level picks at random a **bug type** (each its own skin, base stats and movement), a **colour tied to a power** (red: fire, blue: ice, yellow: lightning, green: poison, rainbow: all four, one at random per attack), and a **base skill**. Every boss summons. **Five bug types:** Goliath beetle (12 health, higher damage), praying mantis (attacks slightly faster), butterfly (floats above the map so it can move), centipede, grasshopper; the bumblebee was dropped. **Each colour has its own simple attack, and also flavours the base skill with its effect.** **Five base skills**, including Slam and a pod barrage that marks where its pods will land (owner); the planner proposed Charge, Gust and Web snare. Each power has its own icon and particle shape as well as its colour. No repeat bug in one run. Names are made from the parts. The bot tests every combination, and the ones it cannot beat are listed for the owner before any is banned. Milestone 7 builds the generator, all five colours, three skills (Slam, Pod barrage, Charge) and three bugs (Goliath beetle, Praying mantis, Grasshopper); the rest come in Milestone 8. Details: `docs/plans/milestone-7.md` section 2.
 
 ---
 
@@ -383,7 +384,7 @@ id, name, icon id, modifiers while active, effect each turn, duration in turns, 
 
 ### Starter set (Default)
 
-Owner, 2026-11-15: Burning on enemies is built in Milestone 6 (the fire gear needs it); Burning on the ball stays in Milestone 8.
+Owner, 2026-11-15: Burning on enemies is built in Milestone 6 (the fire gear needs it). Owner, 2026-11-16: the bug bosses' colours need Burning, Chilled and Poisoned on the ball, so they come forward to Milestone 7 (`docs/plans/milestone-7.md` section 2.3).
 
 | Status | On an enemy | On the ball | Lasts |
 |---|---|---|---|
@@ -442,11 +443,11 @@ Opus: use the default and say that you did.
 
 | # | Question | Default until answered |
 |---|---|---|
-| F1 | Poison at base damage makes the ball deal 0. Is that right, or should damage never go below 1? | Minimum 0. Poison lasts only 2 turns. |
+| F1 | ~~Poison at base damage makes the ball deal 0. Is that right, or should damage never go below 1?~~ | **Answered (owner, 2026-11-16): never below 1**, unless a gimmick specifically blocks the hit (section 2) |
 | F2 | Does swapped-out gear stay on the ground? | Yes, until the player leaves the course |
 | F3 | Enemy gear drop chance | 10% |
 | F4 | Squad theme share chance | 70% |
-| F5 | Which elements exist | Fire, ice, shock |
+| F5 | Which elements exist | **Answered (owner, 2026-11-16):** fire, ice, shock, poison |
 | F6 | Can the boss countdown be bought back up in a shop? | Yes, +1, once per shop |
 | F7 | Do blue stars found during a run survive death? | Yes |
 | F8 | Third boss and its gimmick | Decide in Milestone 8 |
