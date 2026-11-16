@@ -446,5 +446,5 @@ Differences from the sheet, and choices it left open:
 
 ### Bot report
 
-See `docs/reports/boss-combinations.md` (made by `npm run boss:report`). @@REPORT@@
+See `docs/reports/boss-combinations.md` (made by `npm run boss:report`). 45 combinations, 10 seeds each, three setups (897 s): overall win rate **base 89%, region-one loadout 100%, region-two boss 97%**. **No combination fell below 20%, so nothing is listed for the owner to review.** Hardest for a fresh character: red bosses (Burning stacks with the hits), Goliath red slam 50%, then Goliath red charge, Grasshopper red slam and Grasshopper green pods at 60%. Fights take 9 to 16 shots: every hit on the boss gives a shot back, so most fights end before phase 3 lasts long. The bosses may be on the easy side; tune after playing.
 
