@@ -59,7 +59,20 @@ let runStartedFromUrl = false;
  * &region=2 the stronger version; anything left out comes from the seed.
  */
 function bossFromUrl(): BossSpec | null {
+  // The shared test build can only carry a plain name after #: #boss (random parts), #boss-mantis-green-pods,
+  // and #boss2-... for the region-two version.
+  const hash = window.location.hash.slice(1);
+  const h = /^boss(2)?(?:-([a-z]+)-([a-z]+)-([a-z]+))?$/.exec(hash);
   const q = new URLSearchParams(window.location.search);
+  if (!q.has('boss') && h) {
+    q.set('boss', 'TEST');
+    if (h[1]) q.set('region', '2');
+    if (h[2]) {
+      q.set('bug', h[2]);
+      q.set('colour', h[3]!);
+      q.set('skill', h[4]!);
+    }
+  }
   const seed = q.get('boss');
   if (seed === null) return null;
   const region = Number(q.get('region')) === 2 ? 2 : 1;
