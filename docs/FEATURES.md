@@ -347,7 +347,7 @@ Cost rises with each level.
 
 | Unlock | Milestone |
 |---|---|
-| Start each run with a chosen ability | 7 |
+| Start each run with a chosen ability (owner, 2026-11-16: any built ability, all available once unlocked) | 7 |
 | Second weapon, armour or bauble slot (one unlock per category) | 8 |
 | New gear and abilities added to the pool of things that can appear | 8 |
 | New characters | 8 |
@@ -358,7 +358,7 @@ Cost rises with each level.
 
 **Decided (owner, 2026-11-15): a shop node is a little town** with the shop and the player's **Burrow** (home base), entered and left as often as wanted, and a Continue signpost to carry on. Drawn in the game's pixel style.
 
-**Decided (owner, 2026-11-15): the Burrow** stores one gear item per category. Stored gear is safe from death and waits there for later runs. In a town the player can store the item worn, take a stored one out, or swap them. The Burrow is saved in the browser (Milestone 6). In Milestone 7 the town also becomes the save point for a run in progress (leave at a town, carry on later; death still starts over). **Owner, 2026-11-16:** leaving the game anywhere else loses the run and everything in it. **Owner, 2026-11-16, more Burrow rules:** the housed item can be **sold for 25% of its price** (rounded down) in yellow stars; an item sent to a full Burrow slot (the one replaced by a boss reward) waits in a **hold**, and the next Burrow visit makes you choose what to wear, house and sell, so there is never more than one worn and one housed per category; visiting the Burrow **stashes your carried blue stars**, which keeps them safe. Details in `docs/plans/milestone-7.md` section 7b.
+**Decided (owner, 2026-11-15): the Burrow** stores one gear item per category. Stored gear is safe from death and waits there for later runs. In a town the player can store the item worn, take a stored one out, or swap them. The Burrow is saved in the browser (Milestone 6). In Milestone 7 the town also becomes the save point for a run in progress (leave at a town, carry on later; death still starts over). **Owner, 2026-11-16:** leaving the game anywhere else loses the run and everything in it. **Owner, 2026-11-16, more Burrow rules:** the housed item can be **sold for 25% of its price** (rounded down) in yellow stars; an item sent to a full Burrow slot (the one replaced by a boss reward) waits in a **hold**, and the next Burrow visit makes you choose what to wear, house and sell, so there is never more than one worn and one housed per category; visiting the Burrow **stashes your carried blue stars**, which keeps them safe, and so does defeating a boss. Yellow stars are only ever carried. Items in the hold are safe until the next Burrow visit. Details in `docs/plans/milestone-7.md` section 7b.
 
 **Decided:** each shop sells a random handful. Stock can be rerolled for yellow stars.
 

@@ -1,6 +1,6 @@
 # Milestone 7 design sheet — Boss and permanent progress
 
-**Status: waiting for the owner's sign-off.** Nothing on this sheet is built yet.
+**Status: all questions answered by the owner (2026-11-16); waiting for the owner's sign-off to build.** Nothing on this sheet is built yet.
 
 **Owner, 2026-11-16:** the single Warden is replaced by **bug bosses generated from parts** (bug type × colour and power × base skill). Section 2 is rewritten with the owner's answers; items marked **(proposal)** there still need review.
 
@@ -222,17 +222,27 @@ A rough count: a run that dies before the boss earns about 1 to 4; a run that be
 - Blue stars earned during a run are **carried**. Carried blue stars are at risk: they are lost if the run ends by death or by leaving the game away from a town.
 - **Visiting the Burrow stashes every carried blue star** in the **stash**, automatically. The stash is safe forever (saved, section 7).
 - The hub spends from the stash. Blue stars are spent only on the hub (FEATURES.md section 11).
-- **(proposal)** Completing the whole run (beating the region-two boss) stashes carried blue stars automatically, since the hero has made it home.
+- **Owner, 2026-11-16: defeating a boss stashes every carried blue star automatically**, including the boss's own reward. This happens after each boss, in every region.
+- Yellow stars are never stashed: they are only carried, and are lost for good when the run ends.
 - The HUD, map and town show both: "Blue: 3 carried, 21 stashed".
-- Worth knowing: there are no towns in rows 1 and 2, and a boss's 5 blue stars are carried into region two until its first town. Question 16 checks this is what the owner means.
+- Worth knowing: there are no towns in rows 1 and 2, so a run that dies before its first town keeps no blue stars (owner confirmed, question 16).
 
 ---
 
 ## 5. The hub and permanent upgrades
 
+### 5.0 The start menu (owner, 2026-11-16, question 9)
+
+The real game opens on **a proper start menu**, not a test course. In this milestone it is a plain placeholder version; the finished title screen, settings, tutorial and controls help come in Milestone 9.
+
+- The game's name (none chosen yet, DESIGN.md open question 9, so a placeholder "Untitled golf roguelike" in plain text, never the repository name).
+- **Continue run** (only when a run is saved at a town), **New run** (asks to confirm if a saved run would be abandoned), **Upgrades** (the hub), and the save notice if the save had to be reset.
+- Up/Down and Enter, or the mouse.
+- Testing: keys 1 to 6 still jump to the test courses from the start menu and the course screen; `?course=`, `?run=` and `?boss=` addresses still skip the menu.
+
 ### 5.1 The hub screen
 
-A simple screen in the game's placeholder pixel style, shown **between runs** and when the game opens (question 9):
+A simple screen in the game's placeholder pixel style, shown **between runs** and reached from the start menu (section 5.0):
 
 - The blue star wallet.
 - The **levelled list** (section 5.2): each upgrade with its name, a row of pips for its levels, what the next level gives, and its cost. Greyed out when you cannot afford it or it is at the top level.
@@ -268,7 +278,7 @@ Permanent upgrades are applied when a run starts (and to the bot, which already 
 |---|---|
 | Cost | **8 blue stars**, once |
 | Effect | Each run starts holding a chosen ability. |
-| Choice | Any of the four built abilities: Anchor, Burner, Hop, Tornado (question 7). Picked on the hub with Left/Right; it can be changed before every run, for free. "None" is also a choice |
+| Choice | **Owner, 2026-11-16: any of the built abilities**, all available as soon as it is unlocked: Anchor, Burner, Hop, Tornado (question 7), and new ones as they are added. Picked on the hub with Left/Right; it can be changed before every run, for free. "None" is also a choice |
 | Rules | It is an ordinary held ability: replaced by the next one you pick up, and lost by falling off the edge |
 
 ### 5.4 Death flow (DESIGN.md section 10)
@@ -349,7 +359,7 @@ Everything lives under one browser storage key, `dreamcoursedream.save`:
   | Sells for | 2 | 3 | 6 | 8 | 12 | 17 |
 
 - **The hold:** an item sent to the Burrow while its slot there is already full waits in the **hold** (today only a boss reward does this). The **next time you enter the Burrow**, a sorting screen opens first: for each category with an item in the hold, you choose which item to wear, which to house, and sell the rest. You cannot leave the screen until every category is down to one worn and one housed.
-- **(proposal)** Items in the hold are safe from death, like the Burrow, and wait for the next run's first Burrow visit (question 17).
+- **Owner, 2026-11-16:** items in the hold are safe from death and wait until the next Burrow visit, even in a later run.
 - **Blue stars:** entering the Burrow stashes all carried blue stars (section 4.3).
 - Burrow keys as in Milestone 6, plus **S** to sell the housed item (asks to confirm, showing the yellow stars it gives).
 
@@ -376,17 +386,17 @@ Everything lives under one browser storage key, `dreamcoursedream.save`:
 | 4 | ~~The Warden's numbers~~ | | **Owner, 2026-11-16: replaced by generated bug bosses (section 2).** |
 | 5 | Arena: one hand-built arena now (section 3), or generate it from the seed? | One hand-built arena; more can be added as files | **Owner, 2026-11-16: one for now.** More arenas to cycle through before the game is complete (PLAN.md Milestone 8) |
 | 6 | ~~Region two's boss~~ | | **Owner, 2026-11-16: a generated boss with a different bug** (section 6). |
-| 7 | Starting ability: any of the four built abilities, or only abilities you have picked up in an earlier run? | Any of the four | |
+| 7 | Starting ability: any of the four built abilities, or only abilities you have picked up in an earlier run? | Any of the four | **Owner, 2026-11-16: all of them.** |
 | 8 | Should summoned enemies leave flag poles and give yellow stars like normal enemies (more clutter in the arena, but more stars)? | Yes, normal enemies | **Owner, 2026-11-16: 50% chance** of a star and a flag pole when one dies; otherwise it just dies |
-| 9 | Should the game now open on the hub? (Keys 1 to 6 would still go to the test courses; key 7 would open the hub instead of starting a run straight away.) | Yes, open on the hub | |
+| 9 | Should the game now open on the hub? (Keys 1 to 6 would still go to the test courses; key 7 would open the hub instead of starting a run straight away.) | Yes, open on the hub | **Owner, 2026-11-16: the real game opens on a proper start menu** (section 5.0) |
 | 10 | Gear reward after a boss (section 2.9): choose one of three or skip; the replaced item is lost. Or should the replaced item go to the Burrow if its slot is empty? | Lost | **Owner, 2026-11-16: it goes to the Burrow**, or the hold if full. Burrow items can be sold for 25% (section 7b) |
 | 11 | Poison and the damage floor (section 2.3): with a floor of 1, poison's −1 hit damage does nothing to a fresh character. Add −20% shot power to Poisoned so it always matters? | Yes, add −20% shot power | **Owner, 2026-11-16: yes.** |
 | 12 | The colour attacks (section 2.3): Fireball, Frost breath, Bolts, Spore burst. Keep, change or replace? | As in section 2.3 | **Owner, 2026-11-16: yes.** |
 | 13 | Bug numbers and rules marked (proposal) in section 2.2 (mantis 10 health, grasshopper 11, and so on). | As in section 2.2 | **Owner, 2026-11-16: yes.** |
 | 14 | Skill numbers and the pod-hatching idea (section 2.4). | As in section 2.4 | **Owner, 2026-11-16: yes.** |
 | 15 | Should the map show the boss's name and part icons ahead of time, so you can prepare (section 2.6)? | Yes | **Owner, 2026-11-16: no name.** An icon of the boss's bug in its colour; the name shows when the battle starts |
-| 16 | Blue stars (section 4.3): carried blue stars are lost on death or leaving away from a town, and only become safe when you visit a Burrow. Is that the meaning? | Yes, as written in section 4.3 | |
-| 17 | Items in the hold: safe from death and kept for the next run, or lost on death? | Safe, kept | |
+| 16 | Blue stars (section 4.3): carried blue stars are lost on death or leaving away from a town, and only become safe when you visit a Burrow. Is that the meaning? | Yes, as written in section 4.3 | **Owner, 2026-11-16: correct**, for blue stars only; yellow stars are only ever carried. Defeating a boss also stashes them |
+| 17 | Items in the hold: safe from death and kept for the next run, or lost on death? | Safe, kept | **Owner, 2026-11-16: safe until the next Burrow visit.** |
 
 ---
 
