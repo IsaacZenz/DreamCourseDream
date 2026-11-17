@@ -311,7 +311,7 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 
 ### Success rolls (owner, 2026-11-17)
 
-A weapon's special effect (burn, stun, chain zap, heal, knock away, echo) only works if its **success roll** succeeds, shown by a spinning wheel of **10 slices**. Better weapons have more slices filled (by rarity: 2, 3, 4, 5, 6, 7). The permanent upgrade **Knack** fills one more slice per level, and the consumable **acorns** fill extra slices for one course. Against a boss the wheel has **20 slices**. Plain stat changes and elements always apply. Replaces the Milestone 6 fixed chances. Details in `docs/plans/milestone-7.md` section 4b.
+A weapon's special effect (burn, stun, chain zap, heal, knock away, echo) only works if its **success roll** succeeds, shown by a spinning wheel of **10 slices**. Better weapons have more slices filled (by rarity: 2, 3, 4, 5, 6, 7). The permanent upgrade **Knack** fills one more slice per level, and the consumable **acorns** fill extra slices for one course. Against a boss the wheel has **20 slices**. Plain stat changes and elements always apply. Replaces the Milestone 6 fixed chances. Details in `docs/plans/milestone-7.md` section 4b. **Owner, 2026-11-17:** twelve new armour and bauble items with slice perks (the Grit and Spinner families, Gambler's Vest, Fortune's Mail, Hot Streak Charm, Golden Spinner; sheet section 4b.6), so armour and baubles have four items per rarity.
 
 ### Template (Default)
 
@@ -337,7 +337,7 @@ Replaces the six-item starter set. **Six rarities in three pairs**: (common, unc
 
 **Decided:** bought with blue stars. A levelled list plus one-time unlocks.
 
-**Default:** bought on the hub screen between runs.
+**Decided (owner, 2026-11-17):** bought in the Burrow (the home and hub screen) between runs. Each starting ability is bought separately, 8 blue stars each.
 
 ### Levelled list, Milestone 7
 
@@ -366,6 +366,8 @@ Cost rises with each level. **Owner, 2026-11-17:** Vitality and Stamina 5, 8, 12
 ## 11. Shops
 
 **Decided (owner, 2026-11-15): a shop node is a little town** with the shop and the player's **Burrow** (home base), entered and left as often as wanted, and a Continue signpost to carry on. Drawn in the game's pixel style.
+
+**Decided (owner, 2026-11-17): the Burrow is also the hub screen between runs** (one home: stored gear, blue star stash, permanent upgrades, starting abilities). Walking into a town deposits carried blue stars into the stash.
 
 **Decided (owner, 2026-11-15): the Burrow** stores one gear item per category. Stored gear is safe from death and waits there for later runs. In a town the player can store the item worn, take a stored one out, or swap them. The Burrow is saved in the browser (Milestone 6). In Milestone 7 the town also becomes the save point for a run in progress (leave at a town, carry on later; death still starts over).
 
@@ -460,5 +462,5 @@ Opus: use the default and say that you did.
 | F4 | Squad theme share chance | 70% |
 | F5 | Which elements exist | Fire, ice, shock |
 | F6 | Can the boss countdown be bought back up in a shop? | Yes, +1, once per shop |
-| F7 | Do blue stars found during a run survive death? | Yes. Owner, 2026-11-17: but not closing the game outside a town; only a boss's blue stars are kept then |
+| F7 | Do blue stars found during a run survive death? | **Answered (owner, 2026-11-17): no.** They are carried until deposited, automatically, at a town or on beating a boss; carried blue stars are lost on death or on closing the game outside a town |
 | F8 | Third boss and its gimmick | Decide in Milestone 8 |

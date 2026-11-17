@@ -240,11 +240,11 @@ Gear examples are in `docs/FEATURES.md` section 8.
 - Fighting the boss early gives a bonus that scales with the countdown remaining.
 - ~~Blue stars come from bosses, hard courses, and rare hidden spots on normal courses.~~
 - **Decided (owner, 2026-11-15): blue star sources:** beating a course, beating a boss, and an extra-rare chance inside crates or under cracked ground. **Owner, 2026-11-17:** course 1, hard course 2, boss 5 (region 1) and 8 (region 2), crates 2%, secured crates and cracked tiles 5% (times drop luck). Details in `docs/plans/milestone-7.md` section 4.
-- **Decided (owner, 2026-11-17): closing the game outside a town loses the run and everything collected in it, blue stars included.** The only exception is beating a boss: its blue stars and the "boss beaten" record are kept at once. Closing in a town keeps the run.
+- **Decided (owner, 2026-11-17): closing the game outside a town loses the run and everything collected in it, carried blue stars included.** Closing in a town keeps the run.
 - **Decided (owner, 2026-11-17): difficulty scales in two separate ways in every region:** courses get bigger (more and larger areas), and opponents get harder (more threat budget, and tougher enemies through region modifiers). The cap of 30 is lifted for later regions. Numbers in `docs/plans/milestone-7.md` section 7.4.
 - **Decided (owner, 2026-11-17): each region's boss comes from a boss randomizer** (a seeded pick from that region's boss pool). Until Milestone 8 adds bosses, every pool holds only The Warden.
-- Blue stars earned during a run are kept even if the run ends in death (but not if the game is closed outside a town; see above).
-- Permanent upgrades are bought on a hub screen between runs: maximum health, maximum shots, gear slots, starting yellow stars, shop discount, a starting ability.
+- ~~Blue stars earned during a run are kept even if the run ends in death.~~ **Decided (owner, 2026-11-17): the blue star deposit.** Blue stars found on a run are carried, and go into the player's stash only when deposited, automatically, on reaching a town or beating a boss. Carried blue stars are lost on death or when the game is closed outside a town.
+- **Decided (owner, 2026-11-17): one home, the Burrow.** The hub screen between runs and the Burrow in towns are the same place: stored gear, the blue star stash, permanent upgrades and starting abilities. Permanent upgrades are bought there between runs: maximum health, maximum shots, gear slots, starting yellow stars, shop discount, a starting ability.
 
 ## 11. Procedural generation
 

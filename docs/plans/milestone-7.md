@@ -1,6 +1,6 @@
 # Milestone 7 design sheet — Boss and permanent progress
 
-**Status: owner's answers received 2026-11-17** (section 10). Questions 1, 2, 3, 5, 7, 9, 10 and 12 are settled. Questions 4, 6, 8 and 11 led to new design, written into sections 2.5, 3, 5.3 and 7.4. Later the same day the owner replaced question 8's answer with **success rolls** (section 4b). **Waiting for the owner to confirm those parts and the four follow-up questions in [section 10c](#10c-follow-up-questions-2026-11-17) (B, C, D, and E to H).** Nothing on this sheet is built yet.
+**Status: owner's answers received 2026-11-17** (sections 10 and 10c). All twelve questions and follow-ups A to H are answered. The owner's answers led to new design in sections 2.5, 3, 4.2, 4b, 5 and 7.4, including **success rolls** (4b), the **blue star deposit** (4.2), **one home called the Burrow** (5) and **twelve new gear items** (4b.6). **Waiting for the owner to sign off those parts and follow-up questions I and J ([section 10d](#10d-last-questions-2026-11-17)).** Nothing on this sheet is built yet.
 
 How to review: read each section, change any number or rule you want. Every number here is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -8,7 +8,7 @@ How to review: read each section, change any number or rule you want. Every numb
 
 ## 1. What this milestone adds, in one paragraph
 
-The stand-in boss is replaced by **The Warden**, a real boss with a big health bar and three phases, fought in one of **five themed arenas**. **Blue stars** get a wallet that lasts between runs. Between runs there is a **hub screen** (the Den) where you spend blue stars on **permanent upgrades** and buy **starting abilities**. The game is **saved**: the Den, your blue stars and the Burrow always, and a run in progress whenever you are in a town. Beating The Warden heals you, gives you a gear pick, and starts **region two**, where courses are **bigger** and enemies are **tougher**, each scaled separately.
+The stand-in boss is replaced by **The Warden**, a real boss with a big health bar and three phases, fought in one of **five themed arenas**. **Blue stars** get a wallet that lasts between runs. Between runs you are in your home, **the Burrow**, where you spend blue stars on **permanent upgrades** and buy **starting abilities**. The game is **saved**: the Burrow (stash, upgrades, stored gear) always, and a run in progress whenever you are in a town. Beating The Warden heals you, gives you a gear pick, and starts **region two**, where courses are **bigger** and enemies are **tougher**, each scaled separately.
 
 ---
 
@@ -137,12 +137,28 @@ Each arena file adds two fields:
 
 A blue star from a crate or cracked tile is a **pickup** on the ground (new object `blue-star`, new placeholder sprite). It uses star reach.
 
-### 4.2 When blue stars are yours (owner, 2026-11-17, question 3)
+### 4.2 When blue stars are yours: the deposit (owner, 2026-11-17, questions 3 and B)
 
-Blue stars from a run are held **with the run** until it ends, so they share the run's fate:
+Blue stars you find on a run are **carried**, not yet yours. They only go into your **blue star stash** (the wallet that lasts between runs) when they are **deposited**, which happens automatically in two places:
 
-| How the run ends | Blue stars from the run |
+1. **Reaching a town.** Walking into any town (including the last town before the boss) deposits everything you carry.
+2. **Beating a boss.** The boss's blue stars, the early bonus and everything you carry are deposited at once, and the "boss beaten" record (for later unlocks) is saved.
+
+Anything still carried when the run ends any other way is **lost**:
+
+| What happens | Carried blue stars |
 |---|---|
+| You reach a town | Deposited |
+| You beat a boss | Deposited, with the boss's reward |
+| You die (health or naps run out) | **Lost** |
+| You close the game outside a town | **Lost**, with the run |
+| You close the game in a town | Nothing lost (they were deposited when you arrived); you carry on from that town |
+
+So a town is now worth reaching for two reasons: it saves the run and it banks your blue stars. The HUD and map show **carried** blue stars separately from the **stash**, with a note: "Deposited at the next town or boss."
+
+This replaces FEATURES.md open question F7's default ("blue stars found during a run survive death").
+
+---|---|
 | Death (health or naps run out) | **Kept**: added to your wallet (FEATURES.md open question F7, default; see follow-up question B) |
 | Winning the run | Kept |
 | **Closing the game outside a town** | **Lost**, with everything else in the run |
@@ -196,13 +212,17 @@ Armour (the Guard family's hit-back and stun) does not roll for now; see follow-
 
 ### 4b.4 Knack: a permanent upgrade for success rolls
 
-**Owner, 2026-11-17:** a new upgrade path. Each level fills one more slice on every wheel. It goes on the Den's levelled list (section 5.2) as a sixth upgrade, a new stat `rollSlices` (base 0) through the modifier system.
+**Owner, 2026-11-17:** a new upgrade path. Each level fills one more slice on every wheel. It goes on the Burrow's levelled list (section 5.2) as a sixth upgrade, a new stat `rollSlices` (base 0) through the modifier system.
 
 | Upgrade | Levels | Per level | Cost of levels 1 to 5 | Total |
 |---|---|---|---|---|
 | Knack | 5 | +1 filled slice on every wheel | 6, 10, 14, 18, 24 | 72 |
 
 With all five levels, a common weapon has 7 of 10 slices, and a legendary one fills the wheel (a sure thing on ordinary enemies, 12 of 20 on a boss).
+
+### 4b.5a Not in shops yet (owner, question G)
+
+Knack stays a permanent upgrade only for now. Instead, slice perks come from new gear (4b.6).
 
 ### 4b.5 The acorn: a consumable for better odds
 
@@ -219,13 +239,63 @@ With all five levels, a common weapon has 7 of 10 slices, and a legendary one fi
 - Two acorns on one course add together.
 - The HUD shows an acorn icon with "+N" while one is working.
 
-## 5. The Den (hub screen) and permanent upgrades
+### 4b.6 New gear: slice perks on armour and baubles (owner, 2026-11-17, question G)
 
-### 5.1 The Den
+**Owner, 2026-11-17:** use success rolls to add variety to the gear list, as perks on armour or baubles. Twelve new items, so armour and baubles each get a fourth item at every rarity (66 items in all; weapons stay at 18, since their rarity already sets their slices). The new items join the shop, cache, course and boss-reward pools automatically.
 
-The hub screen between runs (working name kept by the owner, question 12). Same placeholder pixel style as the town.
+Two new stats, both through the modifier system: `rollSlices` (extra filled slices on every wheel; Knack uses it too) and `bossSlices` (extra filled slices on the boss wheel only).
 
-- **The game opens on the Den** (owner, question 9). Keys 1 to 6 still open the test courses; key 7 goes to the Den. `?run=<seed>` still starts a run at once, for testing.
+**Armour, new family: Grit** (steady against big foes; boss wheel only)
+
+| Rarity | Item | Effect |
+|---|---|---|
+| Common | Grit Pads | +2 slices on the boss wheel |
+| Uncommon | Grit Vest | +3 slices on the boss wheel |
+| Rare | Grit Mail | +4 slices on the boss wheel, max health +1 |
+| Double rare | Grit Plate | +5 slices on the boss wheel, max health +1 |
+
+**Armour, new special rare and legendary**
+
+| Rarity | Item | Effect |
+|---|---|---|
+| Special rare | Gambler's Vest | +3 slices on every wheel, but max health −1 (a risky trade) |
+| Legendary | Fortune's Mail | Max health +2. The first failed roll each course spins again |
+
+**Baubles, new family: Spinner** (better odds everywhere)
+
+| Rarity | Item | Effect |
+|---|---|---|
+| Common | Brass Spinner | +1 slice on every wheel |
+| Uncommon | Silver Spinner | +1 slice, drop luck +10% |
+| Rare | Gold Spinner | +2 slices |
+| Double rare | Jewel Spinner | +2 slices, drop luck +20% |
+
+**Baubles, new special rare and legendary**
+
+| Rarity | Item | Effect |
+|---|---|---|
+| Special rare | Hot Streak Charm | Each successful roll fills one more slice for the rest of that shot (a chain of hits gets better and better) |
+| Legendary | Golden Spinner | The boss wheel has 15 slices instead of 20, and +1 slice on every wheel |
+
+Names are working names. Prices follow rarity as for all gear (10, 15, 25, 35, 50, 70).
+
+## 5. The Burrow: home, hub screen and permanent upgrades
+
+### 5.1 One home (owner, 2026-11-17, question D)
+
+The hub screen between runs and the Burrow in towns are **one place: the Burrow**, the armadillo's home. (The working name "the Den" from earlier drafts is dropped.) It holds:
+
+- your **stored gear** (one per category, as built in Milestone 6),
+- your **blue star stash**,
+- the **permanent upgrades** and **starting abilities**.
+
+**Between runs** you are in the Burrow, and can do everything: store or take gear, buy upgrades and abilities, pick the starting ability, start or continue a run.
+
+**In a town** the Burrow door opens the same home. You can swap gear as before and see your stash grow from the deposit. Upgrades, abilities and the starting-ability toggle are shown but greyed out ("between runs only"; see follow-up question I).
+
+Same placeholder pixel style as the town.
+
+- **The game opens on the Burrow** (owner, question 9). Keys 1 to 6 still open the test courses; key 7 goes to the Burrow. `?run=<seed>` still starts a run at once, for testing.
 - On screen: your blue stars, the six levelled upgrades, the starting abilities, and totals (runs played, bosses beaten, best region reached).
 - **Start a new run**, or **Continue run** if a run is saved at a town.
 - Keyboard: up/down to choose, Enter to buy or start, left/right to pick the starting ability. The mouse also works.
@@ -244,14 +314,14 @@ Each is a **modifier** with source "permanent" and duration "forever", applied a
 | Knack (owner, 2026-11-17) | 5 | +1 filled slice on every success wheel (section 4b.4) | 6, 10, 14, 18, 24 | 72 |
 
 - Head Start needs a new stat, `startingStars` (base 0), so it goes through the modifier system.
-- **No refunds** (owner, question 10). A "reset the Den" button exists only in the testing panel.
+- **No refunds** (owner, question 10). A "reset the Burrow" button exists only in the testing panel.
 
 ### 5.3 Starting abilities (owner, 2026-11-17, question 11)
 
-- **Each ability is bought separately**, once, for **8 blue stars** each: Anchor, Burner, Hop, Tornado (follow-up question C on the price).
+- **Each ability is bought separately**, once, for **8 blue stars** each (owner, question C): Anchor, Burner, Hop, Tornado.
 - **If you own more than one, you choose which to start the run with**, or none. The choice is a toggle on the starting-ability row: left/right steps through the ones you own.
 - The chosen ability works like any held ability: falling off the edge loses it, a carrier replaces it.
-- Where the toggle lives: see follow-up question D (the owner suggested the Burrow).
+- **The toggle lives in the Burrow** (owner, question D), usable between runs.
 - Abilities added in Milestone 8 join the list as data.
 
 ---
@@ -264,16 +334,16 @@ Each is a **modifier** with source "permanent" and duration "forever", applied a
 |---|---|---|
 | Profile | blue stars, upgrade levels, abilities owned and the one chosen, bosses beaten, the last arena used, totals | every time it changes |
 | Burrow | the three stored gear items (moved here from its own save; the old one is read once and moved over) | every time it changes |
-| Run in progress | the whole run state, including its blue stars, only while you are in a town | entering a town and after each thing you do there |
+| Run in progress | the whole run state, only while you are in a town (carried blue stars are already deposited by then) | entering a town and after each thing you do there |
 
-**Safe fallback:** if the save cannot be read (damaged, from a newer version, or storage blocked), the game does not crash. It keeps a copy of the unreadable text under a backup key, starts that part empty, and shows a message in the Den: "Your save could not be read. A copy has been kept." Each part is checked on its own, so a damaged run save does not wipe your blue stars. A save from an older version is upgraded step by step.
+**Safe fallback:** if the save cannot be read (damaged, from a newer version, or storage blocked), the game does not crash. It keeps a copy of the unreadable text under a backup key, starts that part empty, and shows a message in the Burrow: "Your save could not be read. A copy has been kept." Each part is checked on its own, so a damaged run save does not wipe your blue stars. A save from an older version is upgraded step by step.
 
 ### 6.2 The town is the save point (owner, 2026-11-15; closing rule owner, 2026-11-17)
 
 - **Entering a town saves the run**, and so does every purchase, reroll and Burrow swap there. Closing the page in a town and coming back puts you in that same town, with the same shop stock.
 - The map is not stored; it is made again from the run seed.
-- **Leaving the town deletes the run save.** Closing the game anywhere else **loses the run and everything collected in it, blue stars included** (section 4.2), except a boss's banked rewards. The Den warns you once: "Your run is saved only in towns."
-- **Death** deletes the run save, adds the run's blue stars to the wallet, and goes to the run summary, then the Den.
+- **Leaving the town deletes the run save.** Closing the game anywhere else **loses the run and everything collected in it, carried blue stars included** (section 4.2). The Burrow warns you once: "Your run is saved only in towns."
+- **Death** deletes the run save, loses the carried blue stars, and goes to the run summary, then the Burrow.
 
 ---
 
@@ -282,10 +352,10 @@ Each is a **modifier** with source "permanent" and duration "forever", applied a
 ### 7.1 Death
 
 1. The course ends (health or naps ran out).
-2. **Run summary**, as now, plus blue stars earned this run and your new total.
-3. **Lost:** yellow stars, ability, gear (except the Burrow), run upgrades, map position, the run save.
-4. **Kept:** blue stars, permanent upgrades, abilities owned, the Burrow.
-5. Enter goes to the **Den**.
+2. **Run summary**, as now, plus blue stars deposited this run, blue stars lost, and your stash.
+3. **Lost:** carried blue stars, yellow stars, ability, gear (except the Burrow), run upgrades, map position, the run save.
+4. **Kept:** the blue star stash, permanent upgrades, abilities owned, the Burrow.
+5. Enter goes to the **Burrow**.
 
 ### 7.2 Beating the region-one Warden
 
@@ -300,7 +370,7 @@ Each is a **modifier** with source "permanent" and duration "forever", applied a
 | Map | A new map from the run seed (fork `map:2`), same shape and node odds |
 | Countdown | Back to 7; raises back to 0 (at most 3 per region) |
 | Gear odds | the "Region 2" rarity column |
-| Carries over | health (full after the heal), yellow stars, ability, gear, run upgrades, the run's blue stars |
+| Carries over | health (full after the heal), yellow stars, ability, gear, run upgrades |
 | Biome and theme | the same for now; new biomes and the theme switch after each boss are Milestone 8 |
 | Boss | from the region-two boss pool: the Warden, 18 health (section 2.8) |
 | After the region-two Warden | the run ends with a win |
@@ -340,16 +410,16 @@ Region one plays about as it does now. In region two, courses are both longer an
 
 ### 8.1 New and changed screens
 
-- **The Den** (section 5).
+- **The Burrow** as the hub screen (section 5).
 - **Arena HUD:** the Warden's health bar across the top with phase marks at 2/3 and 1/3; the slam ring on the ground; no star meter.
 - **Success wheels** on every course (section 4b), and the acorn icon on the HUD.
 - **Boss reward screen:** gear pick of 1 from 3.
 - **Map:** the boss marker shows the boss's name; "REGION 2" when there; blue stars this run.
-- **Run summary:** blue stars this run and in total; "Enter: to the Den".
+- **Run summary:** blue stars this run and in total; "Enter: to the Burrow".
 
 ### 8.2 Testing aids (U panel, debug only)
 
-- +10 blue stars; reset the Den (the Burrow stays).
+- +10 blue stars; reset the Burrow's upgrades and abilities (stored gear stays).
 - Go straight to the boss (any region), and choose the arena.
 - Set the Warden's health (to jump to a phase).
 - Start region two now.
@@ -366,7 +436,7 @@ Region one plays about as it does now. In region two, courses are both longer an
 - **Permanent modifiers** and owned abilities passed into `createRun` with the Burrow; a `startingStars` stat.
 - **Regions** in `src/sim/run.ts`; the generator takes size and threat as separate inputs; region toughness as modifiers on enemies.
 - **Boss pools** per region, and the arena pick that skips the last arena.
-- New placeholder sprites: the Warden (three phases), slam ring, blue star, puff, the success wheel (10 and 20 slices), three acorns, the Den, five arena looks.
+- New placeholder sprites: the Warden (three phases), slam ring, blue star, puff, the success wheel (10 and 20 slices), three acorns, the Burrow as a hub, five arena looks.
 
 ---
 
@@ -382,7 +452,7 @@ Region one plays about as it does now. In region two, courses are both longer an
 | 6 | Arenas | Three hand-built | **Five hand-picked arenas, each with a gimmick or theme. Never the same arena twice in a row** (section 3) |
 | 7 | Minions leave flag poles? | No | **Default** (no) |
 | 8 | Can the Warden be stunned? | No | **Stun weapons have a 20% chance**, shown by a little wheel with "STUN" where the hand spins. **Replaced the same day** by success rolls for every weapon effect, a 20-slice boss wheel, the Knack upgrade and acorns (section 4b) |
-| 9 | What the game opens on | The Den | **Default** |
+| 9 | What the game opens on | The Den (now the Burrow, question D) | **Default** |
 | 10 | Refunds of permanent upgrades | No | **No refunds** |
 | 11 | Starting ability | One unlock for all | **Buy each ability separately.** If you own more than one, choose which to start with; maybe a toggle in the Burrow (section 5.3) |
 | 12 | Names | Keep | **Default** (keep) |
@@ -394,22 +464,22 @@ The remaining milestones (PLAN.md 8 and 9) and the reference files were checked 
 | Later work | What Milestone 7 does now |
 |---|---|
 | Second and third bosses, one with a gimmick (M8) | Bosses are data entries; a gimmick field exists. They join the region boss pools (section 2.8) |
-| More Den unlocks: second gear slots, new gear and abilities in the pool, new characters (M8) | Den upgrades and unlocks are a data list; the profile stores a chosen character id (Rollo for now) |
+| More unlocks in the Burrow: second gear slots, new gear and abilities in the pool, new characters (M8) | The Burrow's upgrades and unlocks are a data list; the profile stores a chosen character id (Rollo for now) |
 | Unlocks from beating a boss the first time (FEATURES.md section 15) | The profile records bosses beaten, banked at once (section 4.2) |
 | Three regions, a final boss, endless mode | Regions are numbered; size, threat, toughness, rarity column and boss pool are looked up per region; region three's numbers are already in section 7.4 |
 | Theme switch after each boss (M8) | The display can read the region number |
 | Tier 3 and 4 enemies, elite blue star chance (M8) | Toughness and blue star sources are data lists |
 | Balance pass with the bot, per region (M8) | The bot can play arenas and the batch tool takes size and threat |
-| Title screen, settings, tutorial (M9) | The title screen goes in front of the Den |
+| Title screen, settings, tutorial (M9) | The title screen goes in front of the Burrow |
 
 ## 10c. Follow-up questions (2026-11-17)
 
 | # | Question | Default |
 |---|---|---|
 | A | ~~Stuns: flat 20% for bosses only, or everywhere?~~ | **Answered by the owner** with success rolls (section 4b) |
-| B | **Death and blue stars, question 3.** You said what happens when the game is closed outside a town. When you **die**, are the run's blue stars kept? | Kept (FEATURES.md F7), so dying is never worse than quitting |
-| C | **Ability prices, question 11.** 8 blue stars each, or different prices per ability? | 8 each (32 for all four) |
-| D | **Where the ability toggle goes, question 11.** The Burrow is in towns, during a run; the starting ability is picked before a run starts. Two ways: (1) the toggle is in the Den, before each run; or (2) **merge the Den and the Burrow into one home**, called the Burrow, with stored gear, upgrades and the ability toggle in one place, and a door to it in every town. In a town the ability toggle would be greyed out, since the run has started | **(2), merge them.** One home is simpler to understand than two, and it matches your idea of the toggle living in the Burrow. If you prefer (1), the Den stays separate |
+| B | When you die, are the run's blue stars kept? | **Owner: no.** Blue stars are only kept once deposited, automatically, on reaching a town or beating a boss (section 4.2) |
+| C | Ability prices | **Owner: 8 each** |
+| D | Merge the Den and the Burrow? | **Owner: yes**, one home called the Burrow (section 5.1) |
 
 ---
 
@@ -417,10 +487,19 @@ The remaining milestones (PLAN.md 8 and 9) and the reference files were checked 
 
 | # | Question | Default |
 |---|---|---|
-| E | Should **armour** effects roll too (Bramble and Thicket Guards' stun, the Guard family's hit-back, Mirror Plate)? | No, only weapons, as you described. Armour works when you get hurt, and a roll there would feel like being punished twice |
-| F | "For that round": does an acorn last **one course**, or **one shot**? | One course |
-| G | Is Knack only a **permanent** upgrade (blue stars, in the Den), or should there also be a **run upgrade** version in shops (yellow stars, lost on death)? | Permanent only. A shop version can be added in the Milestone 8 balance pass if success rolls feel too stingy |
-| H | Slices by rarity: 2, 3, 4, 5, 6, 7 (so a legendary works 70% of the time on ordinary enemies). Right spread? | As listed; tune after playing |
+| E | Armour effects roll too? | **Owner: no**, weapons only |
+| F | Acorn lasts one course or one shot? | **Owner: one course** |
+| G | Knack in shops too? | **Owner: permanent only for now**, and add slice perks to armour and baubles for variety (section 4b.6) |
+| H | Slices 2 to 7 by rarity? | **Owner: yes** |
+
+---
+
+## 10d. Last questions (2026-11-17)
+
+| # | Question | Default |
+|---|---|---|
+| I | Now that the Burrow is one home with a door in every town: can you **buy permanent upgrades and abilities in a town**, mid-run, with stars you just deposited? | No, between runs only (shown greyed out in towns). Permanent upgrades stay a reward you take into the next run, and the run you are on cannot suddenly jump in strength |
+| J | The twelve new items (4b.6) give armour and baubles four items per rarity instead of three (your Milestone 6 rule was three). Is that fine, or should some old items be swapped out to keep three? | Add them; keep every old item |
 
 ---
 
@@ -430,12 +509,13 @@ The owner can die, buy a permanent upgrade, start again, and see the upgrade app
 
 Things to check on purpose while playtesting (once built):
 
-- Die on purpose early; see the run's blue stars added to the wallet.
+- Collect blue stars, then die before a town: they are lost. Collect some, reach a town, and see them deposited into the stash.
 - Buy Vitality level 1; start a run and see 6 health.
-- Buy Hop and Anchor; toggle between them; start a run and see the chosen one held.
+- Buy Hop and Anchor in the Burrow; toggle between them; start a run and see the chosen one held.
 - Get to a town, close the tab, open the game, choose Continue run: you are in that town with the same shop.
-- Close the tab during a course instead: the run and its blue stars are gone, the wallet is as it was before the run.
-- Beat the Warden, then close the tab on the next map: the boss's blue stars are still in the wallet.
+- Close the tab during a course instead: the run and its carried blue stars are gone; the stash keeps what was deposited.
+- Beat the Warden, then close the tab on the next map: the boss's blue stars and everything carried are in the stash.
+- Equip Grit Pads and see the boss wheel get 2 more filled slices; try the Hot Streak Charm through a line of enemies.
 - Damage the save from the testing panel and reload: the game starts, says the save could not be read, keeps the backup.
 - Fight the Warden in each arena (testing panel) and check each gimmick; see each phase change; dodge a slam; take one on purpose; watch the stun wheel with a Knob equipped.
 - Equip a Knob and watch the wheel: see roughly 2 in 10 stuns; then buy Knack and see one more slice filled. Do the same on the Warden and see the 20-slice boss wheel.
