@@ -185,7 +185,7 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 
 - **Boss randomizer:** each region's boss is a seeded pick from that region's boss pool. New bosses are added to the pools as data.
 - **Arenas:** five hand-picked arenas, each with its own gimmick or theme (Milestone 7: Bumper Ring, Sinkhole Bowl, Ice Rink, The Moat, Storm Steps). The same arena is never used twice in a row, also across runs.
-- **Stuns on a boss:** a stun has a 20% chance, shown by a little wheel with a "STUN" slice where a hand spins. Whether this also changes the Knob items on ordinary enemies is a follow-up question on the Milestone 7 sheet (default: bosses only).
+- **Boss wheel:** success rolls (section 8) against a boss use a 20-slice wheel instead of 10, with the same number of slices filled, so bosses are always harder to affect.
 - Summoned minions leave no flag pole (default kept).
 
 ---
@@ -309,9 +309,13 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 - Rarity (owner, 2026-11-15): common, uncommon, rare, double rare, special rare, legendary, thought of in three pairs. Rarity sets price, how often it appears at each point in the run, and strength.
 - Sources: placed on courses, shops, caches, boss rewards, and the small enemy drop chance.
 
+### Success rolls (owner, 2026-11-17)
+
+A weapon's special effect (burn, stun, chain zap, heal, knock away, echo) only works if its **success roll** succeeds, shown by a spinning wheel of **10 slices**. Better weapons have more slices filled (by rarity: 2, 3, 4, 5, 6, 7). The permanent upgrade **Knack** fills one more slice per level, and the consumable **acorns** fill extra slices for one course. Against a boss the wheel has **20 slices**. Plain stat changes and elements always apply. Replaces the Milestone 6 fixed chances. Details in `docs/plans/milestone-7.md` section 4b.
+
 ### Template (Default)
 
-id, name, icon id, category, rarity, element (weapons only, or none), modifiers while equipped, triggered effect (if any) and its trigger, price.
+id, name, icon id, category, rarity, element (weapons only, or none), modifiers while equipped, triggered effect (if any) and its trigger, slices filled on the success wheel (weapons; owner, 2026-11-17), price.
 
 ### Gear list, Milestone 6 (owner, 2026-11-15)
 
@@ -344,6 +348,7 @@ Replaces the six-item starter set. **Six rarities in three pairs**: (common, unc
 | Head Start | 3 | +10 starting yellow stars |
 | Haggler | 3 | −10% shop prices |
 | Fortune | 3 | +10% drop luck |
+| Knack (owner, 2026-11-17) | 5 | +1 filled slice on every success wheel |
 
 Cost rises with each level. **Owner, 2026-11-17:** Vitality and Stamina 5, 8, 12, 16, 20; Head Start and Fortune 3, 6, 10; Haggler 4, 8, 12. **No refunds.**
 
@@ -369,7 +374,7 @@ Cost rises with each level. **Owner, 2026-11-17:** Vitality and Stamina 5, 8, 12
 **Default:**
 
 - Five offers: two gear items, two stat boosts, one service.
-- Services: heal 2 health, or raise the boss countdown by 1.
+- Services: heal 2 health, or raise the boss countdown by 1. **Owner, 2026-11-17:** the service slot may also offer an acorn (a consumable, section 13).
 - Reroll price starts low and doubles with each reroll in the same shop.
 - Prices follow rarity and are multiplied by the shop prices stat.
 - The run shop takes yellow stars only. Blue stars are spent only on the hub screen.
@@ -412,6 +417,7 @@ For the ball, one turn is one shot. Build the system and Stunned in Milestone 4;
 | Heart | +1 health | Crates, rare enemy drop |
 | Shot orb | +1 shot, up to the maximum | Crates, placed on courses |
 | Wild | A random ability (not the one held), replacing the current one | Small chance from secured crates, 10% times drop luck (owner, 2026-11-14) |
+| Acorn (consumable; owner, 2026-11-17) | Extra filled slices on success wheels for one course: Lucky +2, Golden +3, Star +5 | Crates and secured crates (rarer acorns rarer), and shops |
 
 Build in Milestone 3.
 

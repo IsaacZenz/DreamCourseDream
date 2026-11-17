@@ -195,6 +195,7 @@ Each enemy type is a definition file entry: family, health, star value, radii, t
 - **Abilities:** defeating an ability-carrying enemy gives you its ability, replacing the one you hold. It is triggered with a key during a shot.
 - **Gear:** passive items in three categories: weapon, armour, bauble. The ball holds one of each. Rolling over gear of a held category swaps it automatically. Gear never needs a button; weapon effects trigger only on contact with an enemy.
 - **Run upgrades:** plain stackable stat boosts, separate from gear, with no slot limit.
+- **Decided (owner, 2026-11-17): success rolls.** A weapon's special effect only works if a spinning wheel lands on a filled slice: 10 slices, more filled on better weapons, one more per level of the permanent upgrade Knack, extra for one course from an acorn consumable. Against a boss the wheel has 20 slices. See FEATURES.md section 8.
 
 Full detail for gear, run upgrades, damage, enemy tiers, statuses, shops and permanent upgrades is in `docs/FEATURES.md`.
 

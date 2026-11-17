@@ -1,6 +1,6 @@
 # Milestone 7 design sheet — Boss and permanent progress
 
-**Status: owner's answers received 2026-11-17** (section 10). Questions 1, 2, 3, 5, 7, 9, 10 and 12 are settled. Questions 4, 6, 8 and 11 led to new design, written into sections 2.5, 3, 5.3 and 7.4. **Waiting for the owner to confirm those parts and the four follow-up questions in [section 10c](#10c-follow-up-questions-2026-11-17).** Nothing on this sheet is built yet.
+**Status: owner's answers received 2026-11-17** (section 10). Questions 1, 2, 3, 5, 7, 9, 10 and 12 are settled. Questions 4, 6, 8 and 11 led to new design, written into sections 2.5, 3, 5.3 and 7.4. Later the same day the owner replaced question 8's answer with **success rolls** (section 4b). **Waiting for the owner to confirm those parts and the four follow-up questions in [section 10c](#10c-follow-up-questions-2026-11-17) (B, C, D, and E to H).** Nothing on this sheet is built yet.
 
 How to review: read each section, change any number or rule you want. Every number here is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -69,17 +69,12 @@ Works like the Spitter: a warning first, the attack a turn later, so you always 
 - **Owner, 2026-11-17 (question 7, default): minions leave no flag pole**; they vanish in a puff.
 - When the Warden is defeated, all its minions vanish too.
 
-### 2.5 Stuns, the stun wheel, and other gear against the Warden
+### 2.5 Gear against the Warden
 
-**Owner, 2026-11-17 (question 8):** stun weapons have a **20% chance** of stunning, and a little **wheel** shows it: a spinner with "STUN" on one slice, a hand that spins and stops.
-
-How this sheet reads that (follow-up question A, section 10c):
-
-- **Against a boss, every stun is a flat 20% chance**, whatever the item: the Knob family (normally 20%, 35%, 50%) and the Bramble and Thicket Guards (normally a sure stun) all roll 20% on the Warden. Against ordinary enemies the items stay as built in Milestone 6.
+- **Success rolls on a boss use the boss wheel** (section 4b): 20 slices instead of 10, so every weapon effect is half as likely to work on a boss.
 - A stunned Warden **skips its next action** (one slam or one summon), then carries on.
-- **The wheel:** whenever a stun roll happens on the Warden, a small wheel pops up above it: five slices, one marked STUN (one in five = 20%). The hand spins for about a second and stops on STUN or a blank slice. The result is decided by the simulation's seeded random number generator at the moment of the hit; the wheel only shows it, so it never changes the outcome. Placeholder art now; the polished version goes with the Milestone 9 animations (like the Wild slot machine).
-- **Burning** works on it (1 damage at the start of each enemy turn).
-- **Giant's Knuckle** does not push it (it never moves), but the extra damage counts. Echo Shell, Thunder Knuckle, Wrecking Shell and the rest work as on any enemy.
+- **Burning** works on it (1 damage at the start of each enemy turn), once the burn roll succeeds.
+- **Giant's Knuckle** does not push it (it never moves), but the extra damage always counts.
 
 ### 2.6 Winning and losing in the arena
 
@@ -159,6 +154,71 @@ The HUD and map show "blue stars this run" separately from your wallet, so it is
 
 ---
 
+## 4b. Success rolls and the wheel (owner, 2026-11-17)
+
+**Owner, 2026-11-17:** a weapon's special effect does not always happen. Every time it would, there is a **success roll**, shown by a spinning wheel. This replaces the fixed chances of Milestone 6 (the Knob family's 20%, 35%, 50%) and the sure effects (every burn, zap, heal, knock and echo).
+
+### 4b.1 The wheel
+
+- A wheel of **10 slices**. Some slices are **filled** and show the effect's word (STUN, BURN, ZAP, HEAL, KNOCK, ECHO). A hand spins and stops on one slice: filled means it works.
+- Chance of success = filled slices ÷ 10. With all 10 filled it always works.
+- **Boss wheel:** against a boss the wheel has **20 slices**, with the same number filled. So bosses are always harder to affect.
+- Which slices are filled is placed at random on the wheel each time; it is only for the look.
+- The result is decided by the simulation's seeded random number generator at the moment of the hit. The wheel only shows it (CLAUDE.md rule 3: same seed and inputs, same result). It pops up small, beside the enemy, and spins for about 0.6 s while play carries on, so a shot through several enemies shows several wheels. Placeholder art now; polished with the Milestone 9 animations.
+
+### 4b.2 How many slices are filled
+
+Filled slices = the weapon's slices + Knack upgrade levels (4b.3) + any acorn this course (4b.4), at most the wheel's size.
+
+| Weapon rarity | Slices filled | Chance on a 10 wheel | On the boss wheel |
+|---|---|---|---|
+| Common | 2 | 20% | 10% |
+| Uncommon | 3 | 30% | 15% |
+| Rare | 4 | 40% | 20% |
+| Double rare | 5 | 50% | 25% |
+| Special rare | 6 | 60% | 30% |
+| Legendary | 7 | 70% | 35% |
+
+The slices are a number on each item, defaulting to its rarity's number above, so any one item can be tuned on its own. The Knob family is now told apart by its slices (Bonk 2, Thump 3, Clang 4, Gong 5) instead of percentages.
+
+### 4b.3 What rolls and what does not
+
+| Rolls (one wheel per hit) | Always happens, no roll |
+|---|---|
+| Burn (Coat family, Sunfire Crown) | Plain stat changes: extra hit damage, shot power (Shell family, Blaze and Inferno Coat's +1 damage and so on) |
+| Stun (Knob family) | Elements: a fire weapon's hits are always fire, Thunder Knuckle's always shock |
+| Chain zap (Thunder Knuckle) | Gong Knob's +1 damage to a stunned enemy (it depends on the stun, which already rolled) |
+| Heal (Leech Fang: one roll on the first damaging hit each shot; a miss means no heal that shot) | Sunfire Crown's burst (it depends on the burn, which already rolled) |
+| Knock away (Giant's Knuckle) | Wrecking Shell rolling on through a defeat (it is how the ball moves, not something done to the enemy) |
+| Echo (Echo Shell: one roll on the first hit each shot) | |
+
+Armour (the Guard family's hit-back and stun) does not roll for now; see follow-up question E.
+
+### 4b.4 Knack: a permanent upgrade for success rolls
+
+**Owner, 2026-11-17:** a new upgrade path. Each level fills one more slice on every wheel. It goes on the Den's levelled list (section 5.2) as a sixth upgrade, a new stat `rollSlices` (base 0) through the modifier system.
+
+| Upgrade | Levels | Per level | Cost of levels 1 to 5 | Total |
+|---|---|---|---|---|
+| Knack | 5 | +1 filled slice on every wheel | 6, 10, 14, 18, 24 | 72 |
+
+With all five levels, a common weapon has 7 of 10 slices, and a legendary one fills the wheel (a sure thing on ordinary enemies, 12 of 20 on a boss).
+
+### 4b.5 The acorn: a consumable for better odds
+
+**Owner, 2026-11-17:** a consumable that fills extra slices for one course. It is a new kind of thing (the first consumable you carry); working names:
+
+| Item | Rarity | Extra slices this course | Shop price (yellow stars) |
+|---|---|---|---|
+| Lucky Acorn | Common | +2 | 6 |
+| Golden Acorn | Rare | +3 | 12 |
+| Star Acorn | Special rare | +5 | 20 |
+
+- **Found in a crate:** crates have a 4% chance and secured crates 10%, times drop luck, of dropping an acorn. Which acorn is rolled on the region's rarity odds (the same table as gear), so the better ones are rare early in the run. Picked up on a course, it works **at once, for the rest of that course**.
+- **Bought in a shop:** the shop's service slot now offers Heal, Delay the Boss, or an acorn (a third each; an acorn's rarity by the same odds). A bought acorn goes in your **pocket** and is used automatically when the next course starts, including the boss arena. The pocket holds one; while it is full, the shop does not offer acorns.
+- Two acorns on one course add together.
+- The HUD shows an acorn icon with "+N" while one is working.
+
 ## 5. The Den (hub screen) and permanent upgrades
 
 ### 5.1 The Den
@@ -166,7 +226,7 @@ The HUD and map show "blue stars this run" separately from your wallet, so it is
 The hub screen between runs (working name kept by the owner, question 12). Same placeholder pixel style as the town.
 
 - **The game opens on the Den** (owner, question 9). Keys 1 to 6 still open the test courses; key 7 goes to the Den. `?run=<seed>` still starts a run at once, for testing.
-- On screen: your blue stars, the five levelled upgrades, the starting abilities, and totals (runs played, bosses beaten, best region reached).
+- On screen: your blue stars, the six levelled upgrades, the starting abilities, and totals (runs played, bosses beaten, best region reached).
 - **Start a new run**, or **Continue run** if a run is saved at a town.
 - Keyboard: up/down to choose, Enter to buy or start, left/right to pick the starting ability. The mouse also works.
 
@@ -181,6 +241,7 @@ Each is a **modifier** with source "permanent" and duration "forever", applied a
 | Head Start | 3 | +10 starting yellow stars | 3, 6, 10 | 19 |
 | Haggler | 3 | shop prices −10% (added: three give 70%) | 4, 8, 12 | 24 |
 | Fortune | 3 | drop luck +10% | 3, 6, 10 | 19 |
+| Knack (owner, 2026-11-17) | 5 | +1 filled slice on every success wheel (section 4b.4) | 6, 10, 14, 18, 24 | 72 |
 
 - Head Start needs a new stat, `startingStars` (base 0), so it goes through the modifier system.
 - **No refunds** (owner, question 10). A "reset the Den" button exists only in the testing panel.
@@ -280,7 +341,8 @@ Region one plays about as it does now. In region two, courses are both longer an
 ### 8.1 New and changed screens
 
 - **The Den** (section 5).
-- **Arena HUD:** the Warden's health bar across the top with phase marks at 2/3 and 1/3; the slam ring on the ground; the stun wheel; no star meter.
+- **Arena HUD:** the Warden's health bar across the top with phase marks at 2/3 and 1/3; the slam ring on the ground; no star meter.
+- **Success wheels** on every course (section 4b), and the acorn icon on the HUD.
 - **Boss reward screen:** gear pick of 1 from 3.
 - **Map:** the boss marker shows the boss's name; "REGION 2" when there; blue stars this run.
 - **Run summary:** blue stars this run and in total; "Enter: to the Den".
@@ -304,7 +366,7 @@ Region one plays about as it does now. In region two, courses are both longer an
 - **Permanent modifiers** and owned abilities passed into `createRun` with the Burrow; a `startingStars` stat.
 - **Regions** in `src/sim/run.ts`; the generator takes size and threat as separate inputs; region toughness as modifiers on enemies.
 - **Boss pools** per region, and the arena pick that skips the last arena.
-- New placeholder sprites: the Warden (three phases), slam ring, blue star, puff, stun wheel, the Den, five arena looks.
+- New placeholder sprites: the Warden (three phases), slam ring, blue star, puff, the success wheel (10 and 20 slices), three acorns, the Den, five arena looks.
 
 ---
 
@@ -319,7 +381,7 @@ Region one plays about as it does now. In region two, courses are both longer an
 | 5 | What ends region two | The Warden again | **The Warden as a placeholder.** Region bosses come from the boss randomizer once more bosses exist (section 2.8) |
 | 6 | Arenas | Three hand-built | **Five hand-picked arenas, each with a gimmick or theme. Never the same arena twice in a row** (section 3) |
 | 7 | Minions leave flag poles? | No | **Default** (no) |
-| 8 | Can the Warden be stunned? | No | **Stun weapons have a 20% chance**, shown by a little wheel with "STUN" where the hand spins (section 2.5) |
+| 8 | Can the Warden be stunned? | No | **Stun weapons have a 20% chance**, shown by a little wheel with "STUN" where the hand spins. **Replaced the same day** by success rolls for every weapon effect, a 20-slice boss wheel, the Knack upgrade and acorns (section 4b) |
 | 9 | What the game opens on | The Den | **Default** |
 | 10 | Refunds of permanent upgrades | No | **No refunds** |
 | 11 | Starting ability | One unlock for all | **Buy each ability separately.** If you own more than one, choose which to start with; maybe a toggle in the Burrow (section 5.3) |
@@ -344,10 +406,21 @@ The remaining milestones (PLAN.md 8 and 9) and the reference files were checked 
 
 | # | Question | Default |
 |---|---|---|
-| A | **Stuns, question 8.** Does the flat 20% apply **only against bosses** (Knob items keep 20/35/50% on ordinary enemies), or should **every** stun item become 20% everywhere? | Only against bosses. Changing it everywhere would make the Thump, Clang and Gong Knobs all the same as the common Bonk Knob |
+| A | ~~Stuns: flat 20% for bosses only, or everywhere?~~ | **Answered by the owner** with success rolls (section 4b) |
 | B | **Death and blue stars, question 3.** You said what happens when the game is closed outside a town. When you **die**, are the run's blue stars kept? | Kept (FEATURES.md F7), so dying is never worse than quitting |
 | C | **Ability prices, question 11.** 8 blue stars each, or different prices per ability? | 8 each (32 for all four) |
 | D | **Where the ability toggle goes, question 11.** The Burrow is in towns, during a run; the starting ability is picked before a run starts. Two ways: (1) the toggle is in the Den, before each run; or (2) **merge the Den and the Burrow into one home**, called the Burrow, with stored gear, upgrades and the ability toggle in one place, and a door to it in every town. In a town the ability toggle would be greyed out, since the run has started | **(2), merge them.** One home is simpler to understand than two, and it matches your idea of the toggle living in the Burrow. If you prefer (1), the Den stays separate |
+
+---
+
+### New follow-up questions from success rolls (2026-11-17)
+
+| # | Question | Default |
+|---|---|---|
+| E | Should **armour** effects roll too (Bramble and Thicket Guards' stun, the Guard family's hit-back, Mirror Plate)? | No, only weapons, as you described. Armour works when you get hurt, and a roll there would feel like being punished twice |
+| F | "For that round": does an acorn last **one course**, or **one shot**? | One course |
+| G | Is Knack only a **permanent** upgrade (blue stars, in the Den), or should there also be a **run upgrade** version in shops (yellow stars, lost on death)? | Permanent only. A shop version can be added in the Milestone 8 balance pass if success rolls feel too stingy |
+| H | Slices by rarity: 2, 3, 4, 5, 6, 7 (so a legendary works 70% of the time on ordinary enemies). Right spread? | As listed; tune after playing |
 
 ---
 
@@ -365,5 +438,7 @@ Things to check on purpose while playtesting (once built):
 - Beat the Warden, then close the tab on the next map: the boss's blue stars are still in the wallet.
 - Damage the save from the testing panel and reload: the game starts, says the save could not be read, keeps the backup.
 - Fight the Warden in each arena (testing panel) and check each gimmick; see each phase change; dodge a slam; take one on purpose; watch the stun wheel with a Knob equipped.
+- Equip a Knob and watch the wheel: see roughly 2 in 10 stuns; then buy Knack and see one more slice filled. Do the same on the Warden and see the 20-slice boss wheel.
+- Buy an acorn in a shop and see it used at the next course; break crates until one drops an acorn.
 - Fight two bosses in a row (region one, then region two): the arenas differ.
 - In region two, see longer courses with more enemies, each with one more health.
