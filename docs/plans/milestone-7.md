@@ -231,7 +231,8 @@ Everything is kept in the browser in **one save** under one key, with a version 
 | Budget | 18 + 2 per counted node in the region, hard courses ×1.5, **capped at 30** (question 4) |
 | Gear odds | the "Region 2" rarity column (already written in Milestone 6) |
 | Carries over | health (full after the heal), yellow stars, ability, gear, run upgrades |
-| Biome and theme | the same as region one for now; new biomes and the theme switch are Milestone 8 |
+| Biome and theme | the same as region one for now; new biomes and the theme switch after each boss are Milestone 8 |
+| Enemy mix | the same enemies as region one; tier 3 enemies join in region two in Milestone 8 (FEATURES.md section 14) |
 | Boss | The Warden again, with 18 health and the region-two rewards (question 5) |
 | After the region-two Warden | the run ends with a win: run summary, then the Den |
 
@@ -288,6 +289,25 @@ The map, the HUD and the town show "REGION 2".
 | 10 | Can permanent upgrades be refunded? | No. Only the testing panel can reset the Den | |
 | 11 | Starting ability: one unlock that lets you pick any ability each run, or buy each ability separately? | One unlock, 10 blue stars, then choose any of the four each run | |
 | 12 | Names: "The Warden" and "the Den" are working names. Keep them? | Keep them for now | |
+
+---
+
+## 10b. Fit with the later milestones (checked 2026-11-17)
+
+The remaining milestones (PLAN.md 8 and 9) and the reference files were checked against this sheet. Nothing in them conflicts with it. These points make sure Milestone 7 is built so the later work slots in without a rewrite:
+
+| Later work | What Milestone 7 does now to leave room for it |
+|---|---|
+| Second and third bosses, one with a gimmick (M8; FEATURES.md section 5: the second boss's shield drops only after it attacks) | The boss is a data entry: phases, actions per phase, summon pools, arena set and rewards. The Warden is the first entry. A gimmick field exists (empty for the Warden) |
+| More Den unlocks: second gear slot per category, new gear and abilities in the pool, new characters (M8; FEATURES.md sections 3 and 10) | Den upgrades and unlocks are a data list in `src/content/`, so M8 adds entries. The profile already stores a chosen character id (always Rollo for now) |
+| Unlocks from beating a boss for the first time (FEATURES.md section 15) | The profile records which bosses have been beaten and the best region reached |
+| Three regions, a final boss, then endless mode (DESIGN.md open question 8) | Regions are numbered; budget start, rarity column and boss are looked up per region in data. Region three is added as data in M8 |
+| Theme switch after each boss (M8) | The region number is part of the run state the display reads, so a theme can be chosen from it later |
+| Tier 3 and 4 enemies, and the elite blue star chance (M8) | Blue star sources are a data list; another source is one more entry |
+| Balance pass with the bot, completion rate per region (M8) | The bot can already play an arena (section 3's test), so the batch tool can include boss fights |
+| Title screen, settings, tutorial (M9) | The title screen will go in front of the Den; nothing in the Den depends on being the first screen |
+
+One older default is replaced by this sheet: DESIGN.md section 10 gives a hard course "a blue star chance". Section 4.1 makes it a sure 2 blue stars instead. If you sign this off, DESIGN.md will be updated to match.
 
 ---
 
