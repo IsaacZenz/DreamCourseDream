@@ -395,6 +395,8 @@ export interface PlayOptions {
   readonly character?: string;
   /** What the ball brings from the run (Milestone 6). Leave out for a fresh ball. */
   readonly loadout?: Loadout;
+  /** Milestone 7 (owner, 2026-11-17): region toughness, a modifier list added to every enemy's stat sheet. */
+  readonly enemyModifiers?: readonly Modifier[];
 }
 
 /** The ball's state carried into a course from the run. */
@@ -584,6 +586,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     if (!def) return;
     if (def.kind === 'enemy') {
       const es = new StatSheet(def.stats);
+      for (const m of opts.enemyModifiers ?? []) es.add(m);
       const [fx, fy] = facingVec(o.facing);
       const path = def.behaviour.kind === 'patrol' ? makePath(o.path) : null;
       const e: EnemyState = {

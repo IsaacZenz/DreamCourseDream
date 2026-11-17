@@ -4,12 +4,11 @@
  * The generator itself is plain simulation code in src/gen/.
  */
 import type { Tuning } from '../content/tuning';
-import { generateCourse } from '../gen/validate';
-import type { Loadout } from '../sim/play';
+import { generateCourse, type GenOptions } from '../gen/validate';
 
-self.onmessage = (e: MessageEvent<{ seed: string; budget: number; tuning: Tuning; loadout?: Loadout }>) => {
-  const { seed, budget, tuning, loadout } = e.data;
+self.onmessage = (e: MessageEvent<{ seed: string; budget: number; tuning: Tuning; opts?: GenOptions }>) => {
+  const { seed, budget, tuning, opts } = e.data;
   const t0 = performance.now();
-  const result = generateCourse(seed, budget, tuning, loadout ? { loadout } : {});
+  const result = generateCourse(seed, budget, tuning, opts ?? {});
   self.postMessage({ result, ms: performance.now() - t0 });
 };

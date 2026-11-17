@@ -20,6 +20,8 @@
 import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY_ODDS, type GearCategory, type GearDef, type GearSlots } from '../content/gear.ts';
 import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
+import type { JourneySize } from '../content/gen.ts';
+import { LAST_REGION, REGIONS, botShotsFor, type RegionDef } from '../content/run.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
 import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
 import { buyUpgrade, permanentModifiers, type Profile } from './profile.ts';
@@ -55,7 +57,8 @@ export function nodeById(map: RunMap, id: string): MapNode | undefined {
 // ---------------------------------------------------------------------------
 // State
 
-export type RunStatus = 'map' | 'course' | 'shop' | 'cache' | 'won' | 'lost';
+/** reward: the boss is beaten and the player picks 1 of 3 gear items before the next region (Milestone 7). */
+export type RunStatus = 'map' | 'course' | 'shop' | 'cache' | 'reward' | 'won' | 'lost';
 
 /** The node being played: where it is, what it is, and for courses the generator's seed and budget. */
 export interface CurrentNode {
@@ -147,6 +150,8 @@ export interface RunState {
   lastTownVisited: boolean;
   /** Owner, 2026-11-17: an acorn bought in a shop, used when the next course starts. Holds one. */
   pocket: string | null;
+  /** The boss reward: a pick of 1 from 3 gear items (Milestone 7 sheet section 2.7). */
+  reward: Offer[] | null;
 }
 
 /** What a run starts with from the player's permanent progress (Milestone 7). */
@@ -185,6 +190,7 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     endedBy: null,
     lastTownVisited: false,
     pocket: null,
+    reward: null,
   };
   const stats = runStats(run);
   run.health = stats.get('maxHealth');
@@ -252,6 +258,14 @@ export function botLoadoutOf(run: RunState): Loadout {
   return { ability: run.ability, gear: { ...run.gear }, modifiers: upgradeModifiers(run) };
 }
 
+/**
+ * Everything the generator needs for the current course besides its seed and
+ * budget: the bot's loadout, the region's journey size and enemy toughness.
+ */
+export function genOptionsFor(run: RunState): { loadout: Loadout; size: JourneySize; enemyModifiers: Modifier[] } {
+  return { loadout: botLoadoutOf(run), size: sizeFor(run, run.current?.type ?? 'course'), enemyModifiers: enemyModifiersFor(run) };
+}
+
 /** Put on an item between courses (shop, cache, testing aid). The old one is lost. */
 export function setGear(run: RunState, id: string): string | null {
   const g = GEAR.get(id);
@@ -314,17 +328,44 @@ export function choices(run: RunState): MapNode[] {
   return here.links.map((id) => nodeById(run.map, id)!).filter(Boolean);
 }
 
-/** The budget of a course node (sheet section 4.1): 8 + 2 per counted node, hard courses ×1.5, capped. */
-export function budgetFor(run: RunState, type: NodeType): number {
-  const b = RUN.budget;
-  const plain = b.start + b.perNode * run.counted;
-  const scaled = type === 'hard' || type === 'boss' ? Math.floor(plain * b.hardScale) : plain;
-  return Math.min(b.cap, scaled);
+/** The region's numbers (Milestone 7 sheet section 7.4). Regions past the list use the last entry. */
+export function regionDef(run: RunState): RegionDef {
+  return REGIONS[Math.min(REGIONS.length, Math.max(1, run.region)) - 1]!;
 }
 
-/** Region 1 has an early and a late column of rarity odds (sheet section 5.2). */
+/**
+ * The threat budget of a course node: the region's start plus so much per
+ * counted node in the region, hard courses x1.5, capped (owner, 2026-11-17:
+ * region 1 is 8 + 2 per node, cap 30, as in Milestone 6).
+ */
+export function budgetFor(run: RunState, type: NodeType): number {
+  const t = regionDef(run).threat;
+  const plain = t.start + t.perNode * run.counted;
+  const scaled = type === 'hard' || type === 'boss' ? Math.floor(plain * RUN.budget.hardScale) : plain;
+  return Math.min(t.cap, scaled);
+}
+
+/** The journey's size for a course node: the region's areas and area size; hard courses one area more. */
+export function sizeFor(run: RunState, type: NodeType): JourneySize {
+  const r = regionDef(run);
+  const plain = Math.min(r.areas.max, r.areas.start + Math.floor(run.counted / r.areas.every));
+  const n = type === 'hard' || type === 'boss' ? plain + 1 : plain;
+  return { areas: [n, n], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(n) };
+}
+
+/** Region toughness: a modifier on every enemy (source "region"). */
+export function enemyModifiersFor(run: RunState): Modifier[] {
+  return regionDef(run).toughness.map((t) => ({ stat: t.stat, op: 'add' as const, amount: t.amount, source: { kind: 'region' as const, id: `region${run.region}` }, duration: { kind: 'forever' as const } }));
+}
+
+/** The boss randomizer (owner, 2026-11-17): a seeded pick from the region's boss pool. */
+export function bossOf(run: RunState): string {
+  return rngFor(run, `boss:${run.region}`).pick(regionDef(run).bosses);
+}
+
+/** Region 1 has an early and a late column of rarity odds (sheet section 5.2); later regions have their own. */
 function oddsColumn(run: RunState, better: boolean): number {
-  const base = run.counted >= RUN.lateAfter ? 1 : 0;
+  const base = run.region > 1 ? regionDef(run).oddsColumn : run.counted >= RUN.lateAfter ? 1 : 0;
   return Math.min(RARITY_ODDS.length - 1, base + (better ? 1 : 0));
 }
 
@@ -488,15 +529,60 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   clampHealth(run);
   if (cur.type === 'boss') {
     // Owner, 2026-11-17: beating a boss deposits its reward and everything carried at once.
-    run.blueStars += bossBlueStars(1) + (cur.early ? run.countdown * BLUE_STARS.earlyPerStep : 0);
+    run.blueStars += bossBlueStars(run.region) + (cur.early ? run.countdown * BLUE_STARS.earlyPerStep : 0);
     deposit(run);
-    run.bossesBeaten.push('warden');
+    run.bossesBeaten.push(bossOf(run));
+    // DESIGN.md open question 7: beating a boss heals fully.
+    run.health = runStats(run).get('maxHealth');
     run.current = null;
-    run.status = 'won';
-    run.endedBy = 'boss';
+    if (run.region >= LAST_REGION) {
+      run.status = 'won';
+      run.endedBy = 'boss';
+      return;
+    }
+    run.status = 'reward';
+    run.reward = bossReward(run);
     return;
   }
   arrive(run, true);
+}
+
+// ---------------------------------------------------------------------------
+// After the boss: the reward and the next region (Milestone 7 sheet section 7)
+
+/** Three gear items on the better odds column, all different. */
+function bossReward(run: RunState): Offer[] {
+  const rng = rngFor(run, `bossreward:${run.region}`);
+  const out: Offer[] = [];
+  for (let i = 0; i < 3; i++) {
+    const id = rollGear(run, rng, { better: true, exclude: out.map((o) => o.id) });
+    if (id) out.push({ kind: 'gear', id, sold: false });
+  }
+  return out;
+}
+
+/** Take reward `i` (or none, with null), then the next region starts on `nextMap` (src/gen/runMap.ts, region + 1). */
+export function takeBossReward(run: RunState, i: number | null, nextMap: RunMap): void {
+  if (run.status !== 'reward') return;
+  const offer = i === null ? undefined : run.reward?.[i];
+  if (offer) setGear(run, offer.id);
+  run.reward = null;
+  startRegion(run, run.region + 1, nextMap);
+}
+
+/** A new region: a new map from the run seed, the countdown back to 7, raises and counted nodes back to 0. */
+export function startRegion(run: RunState, region: number, map: RunMap): void {
+  run.region = region;
+  run.map = map;
+  run.at = null;
+  run.countdown = RUN.countdown;
+  run.raises = 0;
+  run.counted = 0;
+  run.lastTownVisited = false;
+  run.current = null;
+  run.shop = null;
+  run.cache = null;
+  run.status = 'map';
 }
 
 // ---------------------------------------------------------------------------

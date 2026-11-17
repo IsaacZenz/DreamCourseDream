@@ -84,6 +84,20 @@ export function journeyRow(budget: number) {
   return GEN.journey.find((r) => budget < r.under) ?? GEN.journey[GEN.journey.length - 1]!;
 }
 
+/**
+ * How big a journey is, apart from how much is in it (owner, 2026-11-17: size
+ * and difficulty scale separately; Milestone 7 sheet section 7.4). The run
+ * sets this per region; without it, it follows the budget as in Milestone 5b.
+ */
+export type { JourneySize } from '../content/gen.ts';
+
+import type { JourneySize } from '../content/gen.ts';
+
+export function sizeForBudget(budget: number): JourneySize {
+  const row = journeyRow(budget);
+  return { areas: row.areas, areaSize: GEN.areaSize, maxEnemies: GEN.maxEnemies, botShots: row.botShots };
+}
+
 // ---------------------------------------------------------------------------
 // Corner-height grids
 
@@ -310,9 +324,8 @@ function sideTile(r: Rect, side: Direction, c: number): Point {
   return s.axis === 'x' ? [c, s.fixed] : [s.fixed, c];
 }
 
-export function buildTerrain(rng: Rng, budget: number): TerrainResult {
-  const row = journeyRow(budget);
-  const nAreas = rng.int(row.areas[0], row.areas[1]);
+export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeForBudget(budget)): TerrainResult {
+  const nAreas = rng.int(size.areas[0], size.areas[1]);
   let terrainLeft = Math.floor(budget * GEN.terrainShare);
   const board: Board = { tiles: new Map(), region: new Map(), regions: [] };
   const rects: Rect[] = [];
@@ -323,7 +336,7 @@ export function buildTerrain(rng: Rng, budget: number): TerrainResult {
   const islands: Point[] = [];
 
   let dir: Direction = rng.pick(DIRECTIONS);
-  let rect: Rect = { x: 0, y: 0, w: rng.int(GEN.areaSize[0], GEN.areaSize[1]), h: rng.int(GEN.areaSize[0], GEN.areaSize[1]) };
+  let rect: Rect = { x: 0, y: 0, w: rng.int(size.areaSize[0], size.areaSize[1]), h: rng.int(size.areaSize[0], size.areaSize[1]) };
   // Where this area is entered: a tile on its side, and the height there.
   let entryTile: Point = sideTile(rect, opposite(dir), Math.floor(sideRange(rect, opposite(dir)).from + (sideRange(rect, opposite(dir)).to - sideRange(rect, opposite(dir)).from) / 2));
   let entryHeight = 0;
@@ -341,7 +354,7 @@ export function buildTerrain(rng: Rng, budget: number): TerrainResult {
     // Plan the way out first (direction, exit point, passage, next area), retrying if it does not fit.
     let plan: Plan | null = null;
     for (let tries = 0; tries < 8 && !plan; tries++) {
-      plan = planNext(rng, budget, rect, dir, last, rects, ascend, terrainLeft, tries);
+      plan = planNext(rng, budget, rect, dir, last, rects, ascend, terrainLeft, tries, size.areaSize);
     }
     if (!plan) return { ok: false, reason: 'no room for the trail' };
     const { nextDir, exitTile } = plan;
@@ -612,7 +625,7 @@ interface Plan {
 }
 
 /** Choose how the trail leaves an area and where the next area goes. Null if it does not fit. */
-function planNext(rng: Rng, budget: number, rect: Rect, dir: Direction, last: boolean, rects: readonly Rect[], ascend: boolean, terrainLeft: number, tries: number): Plan | null {
+function planNext(rng: Rng, budget: number, rect: Rect, dir: Direction, last: boolean, rects: readonly Rect[], ascend: boolean, terrainLeft: number, tries: number, areaSize: readonly [number, number]): Plan | null {
   let nextDir: Direction = dir;
   if (!last && (tries > 0 || rng.chance(GEN.turnChance))) nextDir = tries === 0 ? (rng.chance(0.5) ? LEFT[dir] : RIGHT[dir]) : rng.pick([dir, LEFT[dir], RIGHT[dir]]);
   const er = sideRange(rect, nextDir);
@@ -635,8 +648,8 @@ function planNext(rng: Rng, budget: number, rect: Rect, dir: Direction, last: bo
   const outY = nextDir === 'sw' ? rect.y + rect.h : nextDir === 'ne' ? rect.y - len : 0;
   const prect: Rect = er.axis === 'x' ? { x: c0, y: outY, w: width, h: len } : { x: outX, y: c0, w: len, h: width };
   if (len > 0 && rects.some((r) => r !== rect && overlaps(r, prect, 1))) return null;
-  const nw = rng.int(GEN.areaSize[0], GEN.areaSize[1]);
-  const nh = rng.int(GEN.areaSize[0], GEN.areaSize[1]);
+  const nw = rng.int(areaSize[0], areaSize[1]);
+  const nh = rng.int(areaSize[0], areaSize[1]);
   const across = er.axis === 'x' ? nw : nh;
   const lo = c0 + width - across + 1;
   const hi = c0 - 1;

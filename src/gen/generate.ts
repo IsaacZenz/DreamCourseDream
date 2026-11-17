@@ -11,7 +11,7 @@ import { DIRECTIONS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { heightChar, parseCourse, segmentsTouch, type Course } from '../sim/course.ts';
 import { Rng } from '../sim/rng.ts';
 import { shapeOf, type Corners } from '../sim/tileShape.ts';
-import { buildTerrain, type Point, type Terrain, type TileSpec } from './journey.ts';
+import { buildTerrain, type Point, type Terrain, type TileSpec, type JourneySize } from './journey.ts';
 
 /** What the budget was spent on. */
 export interface Spend {
@@ -56,13 +56,16 @@ function weighted<T>(rng: Rng, items: readonly { item: T; weight: number }[]): T
 }
 
 /** The stream of random numbers for one attempt. */
-export function attemptRng(seed: string, budget: number, attempt: number): Rng {
-  return Rng.fromSeed(`gen/${seed}/${budget}/${attempt}`);
+export function attemptRng(seed: string, budget: number, attempt: number, size?: JourneySize): Rng {
+  // A size set by the run is part of the stream's name; without one, Milestone 5b seeds give the same courses.
+  const s = size ? `/a${size.areas.join('-')}s${size.areaSize.join('-')}e${size.maxEnemies}` : '';
+  return Rng.fromSeed(`gen/${seed}/${budget}/${attempt}${s}`);
 }
 
-export function generateAttempt(seed: string, budget: number, attempt: number): AttemptResult {
-  const rng = attemptRng(seed, budget, attempt);
-  const tr = buildTerrain(rng.fork('terrain'), budget);
+export function generateAttempt(seed: string, budget: number, attempt: number, size?: JourneySize): AttemptResult {
+  const rng = attemptRng(seed, budget, attempt, size);
+  const maxEnemies = size?.maxEnemies ?? GEN.maxEnemies;
+  const tr = buildTerrain(rng.fork('terrain'), budget, size);
   if (!tr.ok) return tr;
   const terrain = tr.terrain;
   const place = rng.fork('place');
@@ -170,14 +173,14 @@ export function generateAttempt(seed: string, budget: number, attempt: number): 
     if (n === areaIdx.length - 1) share = enemyLeft;
     const startLeft = enemyLeft;
     const areaTiles = [...tilesOf(ri), ...terrain.islands.filter((p) => regionAt(p) === ri)];
-    for (let guard = 0; guard < 8 && share > 0 && enemyCount < GEN.maxEnemies; guard++) {
+    for (let guard = 0; guard < 8 && share > 0 && enemyCount < maxEnemies; guard++) {
       // A squad round an anchor tile.
       const free = areaTiles.filter((p) => ok(p));
       if (!free.length) break;
       const anchor = place.pick(free);
       const size = place.int(GEN.squadMin, GEN.squadMax);
       let added = 0;
-      for (let m = 0; m < size && share > 0 && enemyCount < GEN.maxEnemies; m++) {
+      for (let m = 0; m < size && share > 0 && enemyCount < maxEnemies; m++) {
         const reserve = Math.max(0, GEN.minEnemies - enemyCount - 1);
         const choices: { item: () => void; weight: number }[] = [];
         for (const [id, weight] of Object.entries(GEN.enemyWeights)) {

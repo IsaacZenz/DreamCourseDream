@@ -188,7 +188,7 @@ describe('run rules', () => {
     expect(run.counted).toBe(1);
   });
 
-  it('at countdown zero the boss is forced, with an optional last town first (owner); beating it wins the run', () => {
+  it('at countdown zero the boss is forced, with an optional last town first (owner); beating it leads to region two', () => {
     const run = newRun();
     for (let i = 0; i < 40 && run.countdown > 0; i++) {
       const next = choices(run).find((n) => n.type !== 'boss' && n.type !== 'shop') ?? choices(run)[0]!;
@@ -208,7 +208,8 @@ describe('run rules', () => {
     }
     expect(run.current!.type).toBe('boss');
     winCourse(run);
-    expect(run.status).toBe('won');
+    // Milestone 7: the region-one boss gives a gear pick, then region two starts.
+    expect(run.status).toBe('reward');
   });
 
   it('no last town is offered straight after leaving a town', () => {

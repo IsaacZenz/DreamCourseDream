@@ -35,7 +35,7 @@ import type { TuningPanel } from '../ui/tuningPanel';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { UPGRADE_LIST } from '../content/run';
 import { placeGear } from '../gen/placeGear';
-import { addUpgrade, botLoadoutOf, debugSetCountdown, finishCourse, loadoutOf, rewardFor } from '../sim/run';
+import { addUpgrade, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, rewardFor } from '../sim/run';
 import { activeRun, newRunSeed, session, startRun, type RunCourse } from './runSession';
 import { getPanel, getTuning, preloadAssets, shared } from './shared';
 import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
@@ -297,7 +297,7 @@ export class CourseScene extends Phaser.Scene {
     panel = getPanel();
 
     const run = this.runMode ? session.run : null;
-    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run) }) });
+    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run) }) });
     this.runReported = false;
     this.setRunPanel();
     if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
@@ -400,7 +400,7 @@ export class CourseScene extends Phaser.Scene {
   private runKey(): string {
     const run = session.run!;
     const cur = run.current!;
-    return `${cur.courseSeed}|${cur.budget}|${JSON.stringify(botLoadoutOf(run))}`;
+    return `${cur.courseSeed}|${cur.budget}|${JSON.stringify(genOptionsFor(run))}`;
   }
 
   private runCourse(): RunCourse | null {
@@ -418,7 +418,7 @@ export class CourseScene extends Phaser.Scene {
     const key = this.runKey();
     if (session.pending === key) return;
     session.pending = key;
-    const loadout = botLoadoutOf(run);
+    const opts = genOptionsFor(run);
     const done = (result: GenResult, ms: number) => {
       if (session.pending !== key) return;
       session.pending = null;
@@ -435,11 +435,11 @@ export class CourseScene extends Phaser.Scene {
         worker.terminate();
         done(e.data.result, e.data.ms);
       };
-      worker.postMessage({ seed: cur.courseSeed, budget: cur.budget, tuning, loadout });
+      worker.postMessage({ seed: cur.courseSeed, budget: cur.budget, tuning, opts });
     } catch {
       this.time.delayedCall(50, () => {
         const t0 = performance.now();
-        const result = generateCourse(cur.courseSeed, cur.budget, tuning!, { loadout });
+        const result = generateCourse(cur.courseSeed, cur.budget, tuning!, opts);
         done(result, performance.now() - t0);
       });
     }
