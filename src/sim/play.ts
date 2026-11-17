@@ -39,6 +39,7 @@ import {
   RAIL,
 } from '../content/objects.ts';
 import { BOSS_TIER, RULES } from '../content/rules.ts';
+import { BOSSES, type BossDef, type BossPhase } from '../content/bosses.ts';
 import { STATUSES } from '../content/statuses.ts';
 import { DIRECTION_VECTORS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { STEPS_PER_SECOND, surfacePhysics, type Tuning } from '../content/tuning.ts';
@@ -127,6 +128,15 @@ export interface EnemyState {
   surfacedShot: number;
   /** The tile it was last on, so a flag is lowered only when it enters that tile. */
   tileKey: string;
+  /** Milestone 7: summoned by a boss (leaves no flag pole; vanishes when the boss is defeated). */
+  minion: boolean;
+  /** Boss: the ring its next slam lands on, or null. */
+  slamMark: { x: number; y: number; r: number } | null;
+  /** Boss: its phase (0 = the first), from its health. */
+  phase: number;
+  /** Boss: hits counted in shot number `hitShot` (bosses take a limited number per shot). */
+  hitShot: number;
+  hitsInShot: number;
 }
 
 export interface PickupState {
@@ -232,7 +242,7 @@ export type PlayEvent =
   | { kind: 'shotOrb' }
   | { kind: 'hit'; enemy: string; damage: number; blocked: boolean }
   | { kind: 'defeat'; enemy: string; stars: number }
-  | { kind: 'damage'; amount: number; cause: 'spikes' | 'sunk' | 'out' | 'enemy' | 'seed' | 'zap' }
+  | { kind: 'damage'; amount: number; cause: 'spikes' | 'sunk' | 'out' | 'enemy' | 'seed' | 'zap' | 'slam' }
   | { kind: 'exitOpen' }
   | { kind: 'recover' }
   | { kind: 'enemyTurn' }
@@ -295,7 +305,17 @@ export type PlayEvent =
   /** A blue star picked up: carried until deposited at a town or on beating a boss. */
   | { kind: 'blueStar'; x: number; y: number }
   /** An acorn picked up, or the pocket acorn used at the start: extra slices for this course. */
-  | { kind: 'acorn'; item: string; slices: number };
+  | { kind: 'acorn'; item: string; slices: number }
+  /** A boss marked a ring where its next slam lands (Milestone 7). */
+  | { kind: 'slamMark'; enemy: string; x: number; y: number; r: number }
+  /** A boss's slam landed; `hit` if the ball was inside the ring on the ground. */
+  | { kind: 'slam'; enemy: string; x: number; y: number; r: number; hit: boolean }
+  /** A boss summoned a minion. */
+  | { kind: 'summon'; boss: string; enemy: string; x: number; y: number }
+  /** A boss entered a new phase and shed a plate. */
+  | { kind: 'phase'; enemy: string; phase: number }
+  /** A minion vanished in a puff (its boss was defeated). */
+  | { kind: 'vanish'; enemy: string };
 
 /** What a success roll is for: the word shown on the wheel's filled slices. */
 export type RollEffect = 'burn' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
@@ -320,6 +340,8 @@ export interface PlayState {
   readonly quota: number;
   /** Once open, the exit stays open (owner, 2026-11-14). */
   exitOpen: boolean;
+  /** Milestone 7: a boss course. The exit opens only when the boss is defeated, never from stars. */
+  readonly bossExit: boolean;
   /** Where the ball is when it is still. While it moves, see `shot.ball`. */
   ball: BallState;
   /** Where the ball last came to rest on ground that can hold it. */
@@ -374,6 +396,10 @@ export interface PlayState {
   /** Blue stars picked up on this course (carried; the run deposits them later). */
   blueStars: number;
   readonly rarityWeights: readonly number[];
+  /** Milestone 7: region toughness, for enemies summoned during the course too. */
+  readonly enemyModifiers: readonly Modifier[];
+  /** Minions summoned so far (for their ids). */
+  summoned: number;
   /** Clouds that already zapped the ball in this motion. */
   zapped: string[];
   /** Ball and rolling things touching right now, so each meeting counts once. */
@@ -397,6 +423,8 @@ export interface PlayOptions {
   readonly loadout?: Loadout;
   /** Milestone 7 (owner, 2026-11-17): region toughness, a modifier list added to every enemy's stat sheet. */
   readonly enemyModifiers?: readonly Modifier[];
+  /** Milestone 7: the boss's health in this region (bosses do not take the region's health toughness). */
+  readonly bossHealth?: number;
 }
 
 /** The ball's state carried into a course from the run. */
@@ -529,7 +557,8 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     wallet: lo.wallet ?? 0,
     meter: 0,
     quota: course.quota,
-    exitOpen: course.quota <= 0,
+    exitOpen: course.quota <= 0 && !hasBoss(course),
+    bossExit: hasBoss(course),
     ball: ballAtTile(course, course.start.x, course.start.y),
     restSpot: ballAtTile(course, course.start.x, course.start.y),
     enemies: [],
@@ -565,6 +594,8 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     streak: 0,
     blueStars: 0,
     rarityWeights: lo.rarityWeights ?? RARITY_ODDS[0]!.weights,
+    enemyModifiers: opts.enemyModifiers ?? [],
+    summoned: 0,
     zapped: [],
     touching: [],
     turnQueue: [],
@@ -584,46 +615,8 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     const z = heightAt(course, cx, cy);
     const uid = `${o.id}#${i}`;
     if (!def) return;
-    if (def.kind === 'enemy') {
-      const es = new StatSheet(def.stats);
-      for (const m of opts.enemyModifiers ?? []) es.add(m);
-      const [fx, fy] = facingVec(o.facing);
-      const path = def.behaviour.kind === 'patrol' ? makePath(o.path) : null;
-      const e: EnemyState = {
-        uid,
-        def,
-        place: o,
-        x: cx,
-        y: cy,
-        z,
-        fx,
-        fy,
-        stats: es,
-        health: es.get('health'),
-        defeated: false,
-        activated: false,
-        statuses: [],
-        lastHitClock: -Infinity,
-        shieldMotion: -1,
-        passByShot: -1,
-        insideInner: false,
-        body: null,
-        bodySpiked: false,
-        bodyZapped: [],
-        path,
-        pathDist: path ? o.phase * path.total * 2 : 0,
-        vx: 0,
-        vy: 0,
-        lobTarget: null,
-        burrowed: def.behaviour.kind === 'burrow',
-        popAt: null,
-        launchedAt: -Infinity,
-        surfacedShot: 0,
-        tileKey: tileKeyOf(cx, cy),
-      };
-      if (path) placeOnPath(play, e);
-      play.enemies.push(e);
-    } else if (def.kind === 'pickup') play.pickups.push({ uid, def, x: cx, y: cy, z, taken: false });
+    if (def.kind === 'enemy') play.enemies.push(newEnemy(play, opts, def, o, uid, cx, cy, z));
+    else if (def.kind === 'pickup') play.pickups.push({ uid, def, x: cx, y: cy, z, taken: false });
     else if (def.kind === 'blocker') play.blockers.push({ uid, def, x: cx, y: cy, z });
     else if (def.kind === 'mover') {
       const shape: ObjectShape = def.shape.kind === 'box' && o.orient === 'y' ? { kind: 'box', hx: def.shape.hy, hy: def.shape.hx } : def.shape;
@@ -673,6 +666,68 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
 // Gear (Milestone 6)
 
 /** The effects of a kind from the gear the ball holds. */
+/** A course with a boss on it (Milestone 7): the exit opens when the boss is defeated. */
+export function hasBoss(course: Course): boolean {
+  return course.objects.some((o) => {
+    const d = OBJECTS.get(o.id);
+    return d?.kind === 'enemy' && d.behaviour.kind === 'boss';
+  });
+}
+
+/**
+ * An enemy as placed on the course or summoned by a boss. Region toughness is
+ * added to its stats; a boss takes the region's boss health instead of the
+ * toughness on health.
+ */
+function newEnemy(play: PlayState, opts: PlayOptions, def: EnemyDef, o: CourseObject, uid: string, cx: number, cy: number, z: number, minion = false): EnemyState {
+  const boss = def.behaviour.kind === 'boss';
+  const es = new StatSheet(def.stats);
+  for (const m of opts.enemyModifiers ?? []) if (!(boss && m.stat === 'health')) es.add(m);
+  if (boss && opts.bossHealth !== undefined) es.add({ stat: 'health', op: 'add', amount: opts.bossHealth - es.get('health'), source: { kind: 'region', id: 'boss' }, duration: { kind: 'forever' } });
+  const [fx, fy] = facingVec(o.facing);
+  const path = def.behaviour.kind === 'patrol' ? makePath(o.path) : null;
+  const e: EnemyState = {
+    uid,
+    def,
+    place: o,
+    x: cx,
+    y: cy,
+    z,
+    fx,
+    fy,
+    stats: es,
+    health: es.get('health'),
+    defeated: false,
+    // A boss acts from the start of the fight (Milestone 7 sheet section 2.2).
+    activated: boss,
+    statuses: [],
+    lastHitClock: -Infinity,
+    shieldMotion: -1,
+    passByShot: -1,
+    insideInner: false,
+    body: null,
+    bodySpiked: false,
+    bodyZapped: [],
+    path,
+    pathDist: path ? o.phase * path.total * 2 : 0,
+    vx: 0,
+    vy: 0,
+    lobTarget: null,
+    burrowed: def.behaviour.kind === 'burrow',
+    popAt: null,
+    launchedAt: -Infinity,
+    surfacedShot: 0,
+    tileKey: tileKeyOf(cx, cy),
+    minion,
+    slamMark: null,
+    phase: 0,
+    hitShot: -1,
+    hitsInShot: 0,
+  };
+  if (path) placeOnPath(play, e);
+  return e;
+}
+
 export function gearFx<K extends GearEffect['kind']>(play: PlayState, kind: K): Extract<GearEffect, { kind: K }>[] {
   const out: Extract<GearEffect, { kind: K }>[] = [];
   for (const c of GEAR_CATEGORIES) {
@@ -1223,7 +1278,17 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
   if (e.defeated) return 'pass';
   // Owner, 2026-11-14: the ball only damages an enemy during the player's own action (a shot).
   // A ball that was knocked while standing still does no damage and sets off no hit trigger.
-  const counted = !play.knocked && play.clock - e.lastHitClock >= steps(RULES.hitCooldown);
+  let counted = !play.knocked && play.clock - e.lastHitClock >= steps(RULES.hitCooldown);
+  // Milestone 7: a boss takes only so many hits per shot.
+  const bossDef = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss) : undefined;
+  if (counted && bossDef) {
+    if (e.hitShot !== play.shotNumber) {
+      e.hitShot = play.shotNumber;
+      e.hitsInShot = 0;
+    }
+    if (e.hitsInShot >= bossDef.hitsPerShot) counted = false;
+    else e.hitsInShot++;
+  }
   if (counted) {
     e.lastHitClock = play.clock;
     const { base: plain, element } = hitStats(play, s);
@@ -1254,7 +1319,10 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
     if (damage > 0) gainShots(play, RULES.shotsPerHit * (echo ? 2 : 1));
     if (damage > 0) weaponEffects(play, e, s);
     if (e.health <= 0) defeat(play, e);
-    else if (!e.defeated) respond(play, e, 'hit');
+    else if (!e.defeated) {
+      bossPhaseCheck(play, e);
+      respond(play, e, 'hit');
+    }
   }
   if (e.defeated) {
     // Wrecking Shell: defeats never slow the ball.
@@ -1422,6 +1490,7 @@ function defeat(play: PlayState, e: EnemyState): void {
   e.body = null;
   e.activated = false;
   e.lobTarget = null;
+  e.slamMark = null;
   play.log.push({ kind: 'defeat', enemy: e.uid, stars: e.def.starValue });
   addStars(play, e.def.starValue, e.x, e.y);
   // Golden Tooth: extra stars in the wallet only.
@@ -1432,6 +1501,14 @@ function defeat(play: PlayState, e: EnemyState): void {
       play.log.push({ kind: 'burst', enemy: e.uid });
       for (const o of play.enemies) if (o !== e && !o.defeated && !o.burrowed && Math.hypot(o.x - e.x, o.y - e.y) <= fx.radius) hurtEnemy(play, o, fx.damage);
     }
+  }
+  if (e.def.behaviour.kind === 'boss') bossDefeated(play, e);
+  // Owner, 2026-11-17: a boss's minions leave no flag pole (and neither does the boss).
+  const boss = bossDefOf(play, e);
+  if (e.def.behaviour.kind === 'boss' || (e.minion && !(boss?.minionsLeaveFlag ?? false))) {
+    if (e.def.grantsAbility) giveAbility(play, e.def.grantsAbility, false);
+    play.world.obstacles = obstaclesOf(play);
+    return;
   }
   play.flags.push({
     uid: `flag:${e.uid}`,
@@ -1456,7 +1533,7 @@ function addStars(play: PlayState, n: number, x: number, y: number, fromFlag = f
     play.meter++;
     play.log.push({ kind: 'star', x, y });
   }
-  if (!play.exitOpen && play.meter >= play.quota) {
+  if (!play.exitOpen && !play.bossExit && play.meter >= play.quota) {
     play.exitOpen = true;
     play.log.push({ kind: 'exitOpen' });
   }
@@ -1468,6 +1545,115 @@ function hurtEnemy(play: PlayState, e: EnemyState, amount: number): void {
   e.health = Math.max(0, e.health - amount);
   play.log.push({ kind: 'hit', enemy: e.uid, damage: amount, blocked: false });
   if (e.health <= 0) defeat(play, e);
+  else bossPhaseCheck(play, e);
+}
+
+// ---------------------------------------------------------------------------
+// Bosses (Milestone 7 sheet section 2)
+
+/** The boss entry (bosses.ts) for a boss, or for a minion the boss that summoned it. */
+function bossDefOf(play: PlayState, e: EnemyState): BossDef | undefined {
+  if (e.def.behaviour.kind === 'boss') return BOSSES.get(e.def.behaviour.boss);
+  if (!e.minion) return undefined;
+  const b = play.enemies.find((x) => x.def.behaviour.kind === 'boss');
+  return b && b.def.behaviour.kind === 'boss' ? BOSSES.get(b.def.behaviour.boss) : undefined;
+}
+
+/** The phase a boss is in from its health: the first phase whose threshold it is still above. */
+export function bossPhaseIndex(e: EnemyState, def: BossDef): number {
+  const full = e.stats.get('health');
+  const i = def.phases.findIndex((p) => e.health > p.above * full);
+  return i < 0 ? def.phases.length - 1 : i;
+}
+
+/** After damage: a boss that crossed into a new phase sheds a plate (a heart and a shot orb) and clears its slam ring. */
+function bossPhaseCheck(play: PlayState, e: EnemyState): void {
+  const def = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss) : undefined;
+  if (!def || e.defeated) return;
+  const phase = bossPhaseIndex(e, def);
+  if (phase <= e.phase) return;
+  e.phase = phase;
+  e.slamMark = null;
+  play.log.push({ kind: 'phase', enemy: e.uid, phase });
+  for (const id of def.shed) dropPickup(play, id, e.x, e.y, `${e.uid}:shed${phase}:${id}`);
+}
+
+/** One boss action on an enemy turn: land the old slam and mark a new one, and summon, as its phase says. */
+function bossAction(play: PlayState, e: EnemyState): void {
+  const def = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss) : undefined;
+  if (!def) return;
+  const phase = def.phases[e.phase]!;
+  if (e.slamMark) landSlam(play, e, def);
+  if (phase.slamRadius !== null && play.status === 'playing') {
+    const b = ballNow(play);
+    e.slamMark = { x: b.x, y: b.y, r: phase.slamRadius };
+    play.log.push({ kind: 'slamMark', enemy: e.uid, ...e.slamMark });
+  }
+  const alive = play.enemies.filter((m) => m.minion && !m.defeated).length;
+  if (alive < phase.maxMinions && phase.pool.length) summon(play, e, def, phase);
+}
+
+/** The slam lands on its ring: a ball on the ground inside it takes damage and is thrown out of the ring. */
+function landSlam(play: PlayState, e: EnemyState, def: BossDef): void {
+  const m = e.slamMark!;
+  e.slamMark = null;
+  const b = ballNow(play);
+  const g = groundAt(play.course, b.x, b.y);
+  const onGround = !!g && b.z <= g.h + 0.05;
+  const d = Math.hypot(b.x - m.x, b.y - m.y);
+  const hit = onGround && d <= m.r;
+  play.log.push({ kind: 'slam', enemy: e.uid, x: m.x, y: m.y, r: m.r, hit });
+  if (!hit) return;
+  damageBall(play, def.slam.damage, 'slam', e);
+  if (play.status !== 'playing') return;
+  const s = ensureBallMoving(play);
+  // Away from the ring's centre (a random way if the ball is right on it).
+  const a = d > 1e-3 ? Math.atan2(b.y - m.y, b.x - m.x) : play.rng.float(0, Math.PI * 2);
+  s.ball.vx = Math.cos(a) * def.slam.knockSpeed;
+  s.ball.vy = Math.sin(a) * def.slam.knockSpeed;
+  s.ball.vz = def.slam.knockHop;
+  s.ball.grounded = false;
+  s.ball.z += 0.001;
+  s.restSteps = 0;
+}
+
+/** Summon one minion at a free spawn spot (none if every spot is taken). */
+function summon(play: PlayState, boss: EnemyState, def: BossDef, phase: BossPhase): void {
+  const b = ballNow(play);
+  const free = play.course.spawns.filter((p) => {
+    const x = p.x + 0.5;
+    const y = p.y + 0.5;
+    if (Math.hypot(b.x - x, b.y - y) < def.spawnClear + 0.5) return false;
+    return !play.enemies.some((o) => !o.defeated && Math.hypot(o.x - x, o.y - y) < def.spawnClear + enemyRadius(o));
+  });
+  if (!free.length) return;
+  const spot = play.rng.pick(free);
+  const id = phase.pool[play.rng.weighted(phase.pool.map((p) => p.weight))]!.id;
+  const edef = OBJECTS.get(id);
+  if (edef?.kind !== 'enemy') return;
+  const o: CourseObject = { id, x: spot.x, y: spot.y, path: [], facing: 'se', phase: 0, orient: 'x', drops: null };
+  const cx = spot.x + 0.5;
+  const cy = spot.y + 0.5;
+  const uid = `summon:${id}#${play.summoned++}`;
+  play.enemies.push(newEnemy(play, { seed: play.seed, enemyModifiers: play.enemyModifiers }, edef, o, uid, cx, cy, heightAt(play.course, cx, cy), true));
+  play.log.push({ kind: 'summon', boss: boss.uid, enemy: uid, x: cx, y: cy });
+  play.world.obstacles = obstaclesOf(play);
+}
+
+/** The boss is beaten: its minions vanish and the exit opens. */
+function bossDefeated(play: PlayState, e: EnemyState): void {
+  for (const m of play.enemies) {
+    if (!m.minion || m.defeated) continue;
+    m.defeated = true;
+    m.body = null;
+    m.activated = false;
+    play.log.push({ kind: 'vanish', enemy: m.uid });
+  }
+  if (!play.exitOpen) {
+    play.exitOpen = true;
+    play.log.push({ kind: 'exitOpen' });
+  }
+  void e;
 }
 
 // ---------------------------------------------------------------------------
@@ -1477,7 +1663,7 @@ function respond(play: PlayState, e: EnemyState, trigger: 'hit' | 'rest' | 'pass
   const r = e.def.triggers[trigger];
   if (r === 'none' || e.defeated) return;
   play.log.push({ kind: 'trigger', enemy: e.uid, trigger });
-  const acts = e.def.behaviour.kind === 'lob' || e.def.behaviour.kind === 'launch';
+  const acts = e.def.behaviour.kind === 'lob' || e.def.behaviour.kind === 'launch' || e.def.behaviour.kind === 'boss';
   if (r === 'immediate') act(play, e, true);
   if ((r === 'activated' || r === 'immediate') && acts && !e.activated) {
     e.activated = true;
@@ -1506,6 +1692,8 @@ function act(play: PlayState, e: EnemyState, now: boolean): void {
     e.fy = dy / d;
     launchEnemy(play, e, (dx / d) * speed, (dy / d) * speed);
     play.log.push({ kind: 'launch', enemy: e.uid });
+  } else if (bh.kind === 'boss') {
+    bossAction(play, e);
   } else if (bh.kind === 'burrow') {
     // Owner, 2026-11-14: it waits a moment (the hill rumbles), then shoots up out of the ground.
     if (!e.burrowed || e.popAt !== null) return;

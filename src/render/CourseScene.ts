@@ -35,7 +35,8 @@ import type { TuningPanel } from '../ui/tuningPanel';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { UPGRADE_LIST } from '../content/run';
 import { placeGear } from '../gen/placeGear';
-import { addUpgrade, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, rewardFor } from '../sim/run';
+import { addUpgrade, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, regionDef, rewardFor } from '../sim/run';
+import { ARENAS } from '../content/arenas';
 import { activeRun, newRunSeed, session, startRun, type RunCourse } from './runSession';
 import { getPanel, getTuning, preloadAssets, shared } from './shared';
 import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
@@ -255,7 +256,11 @@ export class CourseScene extends Phaser.Scene {
     }
     const file = TEST_COURSES[this.courseIndex]!;
     let data: unknown = file.data;
-    if (this.runMode) {
+    const arena = this.runMode ? session.run!.current!.arena : null;
+    if (arena) {
+      // Milestone 7: a boss fight is in a hand-built arena, not generated.
+      data = ARENAS.get(arena)!.data;
+    } else if (this.runMode) {
       const ready = this.runCourse();
       if (!ready) {
         this.course = null;
@@ -297,7 +302,7 @@ export class CourseScene extends Phaser.Scene {
     panel = getPanel();
 
     const run = this.runMode ? session.run : null;
-    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run) }) });
+    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: regionDef(run).bossHealth }) });
     this.runReported = false;
     this.setRunPanel();
     if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
@@ -1201,7 +1206,7 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage('+1 SHOT', GOOD);
           break;
         case 'damage': {
-          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED' }[e.cause];
+          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED' }[e.cause];
           this.queueMessage(`${what}! -${e.amount} HEALTH`, BAD);
           break;
         }

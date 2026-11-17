@@ -20,6 +20,7 @@
 import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY_ODDS, type GearCategory, type GearDef, type GearSlots } from '../content/gear.ts';
 import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
+import { BOSSES } from '../content/bosses.ts';
 import type { JourneySize } from '../content/gen.ts';
 import { LAST_REGION, REGIONS, botShotsFor, type RegionDef } from '../content/run.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
@@ -73,6 +74,9 @@ export interface CurrentNode {
   readonly gear: string | null;
   /** Owner, 2026-11-17: the pocket acorn taken into this course, or null. */
   readonly acorn: string | null;
+  /** Milestone 7: a boss fight's boss and arena (src/content/arenas), or null on other nodes. */
+  readonly boss: string | null;
+  readonly arena: string | null;
 }
 
 export interface Offer {
@@ -152,12 +156,16 @@ export interface RunState {
   pocket: string | null;
   /** The boss reward: a pick of 1 from 3 gear items (Milestone 7 sheet section 2.7). */
   reward: Offer[] | null;
+  /** The arena of the last boss fight (from the profile, then this run's), never used twice in a row. */
+  lastArena: string | null;
 }
 
 /** What a run starts with from the player's permanent progress (Milestone 7). */
 export interface RunStart {
   readonly levels?: Readonly<Record<string, number>>;
   readonly startAbility?: string | null;
+  /** The arena of the player's last boss fight, so the next one differs (owner, 2026-11-17). */
+  readonly lastArena?: string | null;
 }
 
 export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR, start: RunStart = {}): RunState {
@@ -191,6 +199,7 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     lastTownVisited: false,
     pocket: null,
     reward: null,
+    lastArena: start.lastArena ?? null,
   };
   const stats = runStats(run);
   run.health = stats.get('maxHealth');
@@ -363,6 +372,14 @@ export function bossOf(run: RunState): string {
   return rngFor(run, `boss:${run.region}`).pick(regionDef(run).bosses);
 }
 
+/** Owner, 2026-11-17: a seeded pick from the boss's arena set, never the arena of the last boss fight. */
+export function pickArena(run: RunState): string {
+  const def = BOSSES.get(bossOf(run));
+  const all = def?.arenas ?? [];
+  const options = all.filter((a) => a !== run.lastArena);
+  return rngFor(run, `arena:${run.region}`).pick(options.length ? options : all);
+}
+
 /** Region 1 has an early and a late column of rarity odds (sheet section 5.2); later regions have their own. */
 function oddsColumn(run: RunState, better: boolean): number {
   const base = run.region > 1 ? regionDef(run).oddsColumn : run.counted >= RUN.lateAfter ? 1 : 0;
@@ -426,7 +443,10 @@ export function enterNode(run: RunState, id: string): CurrentNode {
     courseSeed: `${run.seed}-${id === 'boss' ? `BOSS${node.row}` : id === LAST_TOWN ? 'LASTTOWN' : id.toUpperCase()}`,
     gear,
     acorn: isCourse ? run.pocket : null,
+    boss: type === 'boss' ? bossOf(run) : null,
+    arena: type === 'boss' ? pickArena(run) : null,
   };
+  if (run.current.arena) run.lastArena = run.current.arena;
   if (isCourse) run.pocket = null;
   if (type === 'shop') {
     // Owner, 2026-11-17: reaching a town deposits the blue stars carried.

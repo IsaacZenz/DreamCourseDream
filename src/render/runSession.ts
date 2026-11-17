@@ -49,7 +49,7 @@ export function newRunSeed(): string {
 
 export function startRun(seed: string): RunState {
   const p = session.profile;
-  session.run = createRun(seed, generateRunMap(seed), session.burrow, { levels: p.levels, startAbility: p.startAbility });
+  session.run = createRun(seed, generateRunMap(seed), session.burrow, { levels: p.levels, startAbility: p.startAbility, lastArena: p.lastArena });
   session.course = null;
   session.pending = null;
   session.saved = null;
@@ -86,6 +86,7 @@ export function persist(): void {
     p.stash += drainDeposit(run);
     for (const b of run.bossesBeaten) if (!p.bossesBeaten.includes(b)) p.bossesBeaten.push(b);
     p.totals.bestRegion = Math.max(p.totals.bestRegion, run.region);
+    p.lastArena = run.lastArena;
     session.burrow = { ...run.burrow };
     session.saved = run.status === 'shop' ? snapshotRun(run) : null;
   }

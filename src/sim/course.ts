@@ -113,6 +113,8 @@ export interface Course {
   readonly objects: readonly CourseObject[];
   /** Guard rails: lines through tile centres (Milestone 5b). */
   readonly rails: readonly (readonly GridPoint[])[];
+  /** Milestone 7: spots where a boss's summons appear (boss arenas). Empty on other courses. */
+  readonly spawns: readonly GridPoint[];
 }
 
 export type ParseResult = { ok: true; course: Course } | { ok: false; errors: string[] };
@@ -128,7 +130,7 @@ interface LegendEntry {
   link?: string;
 }
 
-const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects', 'rails'];
+const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects', 'rails', 'spawns'];
 const TILE_TOKEN = /^(.)([0-9a-z]|[0-9a-z]{4})$/u;
 const OLD_TILE_TOKEN = /^(.)(\d|\d{4})$/u;
 
@@ -258,7 +260,7 @@ export function parseCourse(raw: unknown): ParseResult {
     if (n !== 2) errors.push(`Warp link "${link}" is used by ${n} tile(s); it must be used by exactly 2.`);
   }
 
-  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number, objects: [] as CourseObject[], rails: [] as GridPoint[][] };
+  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number, objects: [] as CourseObject[], rails: [] as GridPoint[][], spawns: [] as GridPoint[] };
   const checkSpot = (p: GridPoint | null, name: string) => {
     if (!p) return;
     const t = tileAt({ ...course, start: p, exit: p }, p.x, p.y);
@@ -272,6 +274,17 @@ export function parseCourse(raw: unknown): ParseResult {
   if (start && exit && start.x === exit.x && start.y === exit.y) errors.push('"start" and "exit" must be different tiles.');
 
 
+  // Milestone 7: optional "spawns" for a boss's summons, [[x, y], ...], each on ground that holds the ball.
+  const spawns: GridPoint[] = [];
+  if (raw.spawns !== undefined) {
+    if (!Array.isArray(raw.spawns)) errors.push('"spawns" must be a list of [x, y] points.');
+    else
+      raw.spawns.forEach((p, i) => {
+        const pt = parsePoint(p, `spawns[${i}]`, errors);
+        checkSpot(pt, `spawns[${i}]`);
+        if (pt) spawns.push(pt);
+      });
+  }
   const rails = parseRails(raw.rails, course, errors);
   const objects = parseObjects(raw.objects, course, errors);
   checkRailCrossings(objects, rails, errors);
@@ -286,7 +299,7 @@ export function parseCourse(raw: unknown): ParseResult {
   }
 
   if (errors.length || !start || !exit) return { ok: false, errors };
-  return { ok: true, course: { ...course, start, exit, objects, rails } };
+  return { ok: true, course: { ...course, start, exit, objects, rails, spawns } };
 }
 
 /** Yellow stars a course can give: enemy star values, placed yellow stars and stars inside breakables. */

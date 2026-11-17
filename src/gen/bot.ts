@@ -71,6 +71,8 @@ export interface BotHints {
   readonly loadout?: Loadout;
   /** Milestone 7: region toughness on every enemy. */
   readonly enemyModifiers?: readonly Modifier[];
+  /** Milestone 7: the boss's health in this region. */
+  readonly bossHealth?: number;
 }
 
 export function playBot(course: Course, tuning: Tuning, seed: string, hints: BotHints = {}): BotResult {
@@ -95,7 +97,7 @@ export function playBot(course: Course, tuning: Tuning, seed: string, hints: Bot
     return v;
   };
 
-  let play = createPlay(course, tuning, { seed, ...(hints.loadout && { loadout: hints.loadout }), ...(hints.enemyModifiers && { enemyModifiers: hints.enemyModifiers }) });
+  let play = createPlay(course, tuning, { seed, ...(hints.loadout && { loadout: hints.loadout }), ...(hints.enemyModifiers && { enemyModifiers: hints.enemyModifiers }), ...(hints.bossHealth !== undefined && { bossHealth: hints.bossHealth }) });
   const moves: BotMove[] = [];
   let simulated = 0;
   const done = (reason: string): BotResult => {

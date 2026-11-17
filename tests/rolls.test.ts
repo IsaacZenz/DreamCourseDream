@@ -159,7 +159,7 @@ describe('acorns in the run', () => {
     const { generateRunMap } = await import('../src/gen/runMap');
     const run = createRun('ACORN', generateRunMap('ACORN'));
     run.status = 'shop';
-    run.current = { id: 'lasttown', row: 1, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, acorn: null };
+    run.current = { id: 'lasttown', row: 1, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, acorn: null, boss: null, arena: null };
     run.shop = { node: 'lasttown', offers: [{ kind: 'acorn', id: 'lucky-acorn', sold: false }, { kind: 'acorn', id: 'golden-acorn', sold: false }], rerolls: 0, freeRerolls: 0, raised: false };
     run.wallet = 30;
     expect(buy(run, 0)).toBeNull();

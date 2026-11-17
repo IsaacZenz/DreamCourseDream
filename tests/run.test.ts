@@ -243,7 +243,7 @@ describe('run rules', () => {
     run.countdown = 3;
     expect(typeOf(run, node)).toBe('boss');
     run.status = 'course';
-    run.current = { id: 'r9l1', row: 9, type: 'boss', early: true, budget: 20, courseSeed: 'X', gear: null, acorn: null };
+    run.current = { id: 'r9l1', row: 9, type: 'boss', early: true, budget: 20, courseSeed: 'X', gear: null, acorn: null, boss: null, arena: null };
     winCourse(run);
     // Owner, 2026-11-17: the boss's 5, plus 1 per countdown step left, deposited at once.
     expect(run.blueStars).toBe(0);
@@ -321,7 +321,7 @@ describe('shop and cache', () => {
   function shopRun(): RunState {
     const run = newRun('SHOP');
     run.status = 'shop';
-    run.current = { id: 'r3l0', row: 3, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, acorn: null };
+    run.current = { id: 'r3l0', row: 3, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, acorn: null, boss: null, arena: null };
     run.shop = { node: 'r3l0', offers: [], rerolls: 0, freeRerolls: 0, raised: false };
     run.shop.offers = [
       { kind: 'gear', id: 'studded-shell', sold: false },
@@ -389,7 +389,7 @@ describe('shop and cache', () => {
   it('cache: take one for free, which finishes the node and counts', () => {
     const run = newRun();
     run.status = 'cache';
-    run.current = { id: 'r2l1', row: 2, type: 'cache', early: false, budget: 0, courseSeed: '', gear: null, acorn: null };
+    run.current = { id: 'r2l1', row: 2, type: 'cache', early: false, budget: 0, courseSeed: '', gear: null, acorn: null, boss: null, arena: null };
     run.cache = { node: 'r2l1', offers: [{ kind: 'upgrade', id: 'long-arms', sold: false }] };
     expect(takeFromCache(run, 0)).toBeNull();
     expect(run.wallet).toBe(0);

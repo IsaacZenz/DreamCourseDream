@@ -1,0 +1,76 @@
+{
+ "format": 3,
+ "name": "Arena: Bumper Ring",
+ "legend": {
+  "g": "grass",
+  "b": "bumper"
+ },
+ "tiles": [
+  ". . b6 b6 b6 b6 b6 b6 b6 b6 b6 . .",
+  ". g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 .",
+  "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
+  "b6 g2 g2 b6 g2 g2 g2 g2 g2 b6 g2 g2 b6",
+  "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
+  "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
+  "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
+  "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
+  "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
+  "b6 g2 g2 b6 g2 g2 g2 g2 g2 b6 g2 g2 b6",
+  "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
+  ". g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 .",
+  ". . b6 b6 b6 b6 b6 b6 b6 b6 b6 . ."
+ ],
+ "start": [
+  6,
+  11
+ ],
+ "exit": [
+  6,
+  1
+ ],
+ "quota": 0,
+ "objects": [
+  {
+   "id": "warden",
+   "at": [
+    6,
+    6
+   ]
+  }
+ ],
+ "spawns": [
+  [
+   3,
+   5
+  ],
+  [
+   9,
+   5
+  ],
+  [
+   3,
+   7
+  ],
+  [
+   9,
+   7
+  ],
+  [
+   5,
+   3
+  ],
+  [
+   7,
+   3
+  ],
+  [
+   5,
+   9
+  ],
+  [
+   7,
+   9
+  ]
+ ],
+ "rails": []
+}

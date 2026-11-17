@@ -194,7 +194,9 @@ export type Behaviour =
       readonly grace: number;
       readonly upShots: number;
       readonly hitWhileMoving: boolean;
-    };
+    }
+  /** A boss (Milestone 7): its phases, slams and summons are in bosses.ts under this id. Active from the start. */
+  | { readonly kind: 'boss'; readonly boss: string };
 
 /**
  * When touching the ball hurts it (the enemy's attack damage).
@@ -445,6 +447,26 @@ const defs: readonly ObjectDef[] = [
     contact: 'moving',
     grantsAbility: null,
     cost: 3,
+  },
+  // The Warden (Milestone 7 sheet section 2). Health is set per region (run.ts REGIONS bossHealth).
+  {
+    kind: 'enemy',
+    id: 'warden',
+    name: 'The Warden',
+    sprite: 'warden',
+    family: 'sentinel',
+    tier: 5,
+    stats: { health: 12, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 0,
+    ...PLAIN,
+    shape: { kind: 'round', r: 0.9 },
+    height: 1.6,
+    bounce: 0.6,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'boss', boss: 'warden' },
+    contact: 'never',
+    grantsAbility: null,
+    cost: 0,
   },
   carrier('anchorback', 'Anchorback', 'anchor'),
   carrier('emberback', 'Emberback', 'burner'),
