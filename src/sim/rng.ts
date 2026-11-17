@@ -135,6 +135,22 @@ export class Rng {
     return items[this.int(0, items.length - 1)] as T;
   }
 
+  /** An index into `weights`, each chosen in proportion to its weight. Needs a positive total. */
+  weighted(weights: readonly number[]): number {
+    const total = weights.reduce((a, b) => a + Math.max(0, b), 0);
+    if (!(total > 0)) throw new Error('weighted() needs a positive total weight.');
+    let pick = this.float(0, total);
+    let last = 0;
+    for (let i = 0; i < weights.length; i++) {
+      const w = Math.max(0, weights[i]!);
+      if (w <= 0) continue;
+      last = i;
+      if (pick < w) return i;
+      pick -= w;
+    }
+    return last;
+  }
+
   /** A shuffled copy of the list. The original is not changed. */
   shuffle<T>(items: readonly T[]): T[] {
     const out = items.slice();

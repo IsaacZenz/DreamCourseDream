@@ -19,6 +19,7 @@
  */
 import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY_ODDS, type GearCategory, type GearDef, type GearSlots } from '../content/gear.ts';
+import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
 import { Rng } from './rng.ts';
 import { StatSheet, type Modifier } from './stats.ts';
@@ -65,10 +66,12 @@ export interface CurrentNode {
   readonly courseSeed: string;
   /** Gear item placed on this course, or null. */
   readonly gear: string | null;
+  /** Owner, 2026-11-17: the pocket acorn taken into this course, or null. */
+  readonly acorn: string | null;
 }
 
 export interface Offer {
-  readonly kind: 'gear' | 'upgrade' | 'heal' | 'raise';
+  readonly kind: 'gear' | 'upgrade' | 'heal' | 'raise' | 'acorn';
   readonly id: string;
   sold: boolean;
 }
@@ -125,6 +128,8 @@ export interface RunState {
   endedBy: 'health' | 'shots' | 'boss' | null;
   /** The last town before the forced boss has been offered and visited (owner, 2026-11-15). */
   lastTownVisited: boolean;
+  /** Owner, 2026-11-17: an acorn bought in a shop, used when the next course starts. Holds one. */
+  pocket: string | null;
 }
 
 export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR): RunState {
@@ -151,6 +156,7 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     totals: { courses: 0, stars: 0 },
     endedBy: null,
     lastTownVisited: false,
+    pocket: null,
   };
   run.health = runStats(run).get('maxHealth');
   return run;
@@ -198,7 +204,12 @@ function hasRunEffect(run: RunState, kind: string): boolean {
 
 /** What the ball brings into a course. */
 export function loadoutOf(run: RunState): Loadout {
-  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run) };
+  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run), acorn: run.current?.acorn ?? null, rarityWeights: dropWeights(run) };
+}
+
+/** Rarity weights for things dropped on a course (acorns): the run's odds column after drop luck. */
+export function dropWeights(run: RunState): number[] {
+  return rarityWeights(oddsColumn(run, false), runStats(run).get('dropLuck'));
 }
 
 /**
@@ -342,7 +353,9 @@ export function enterNode(run: RunState, id: string): CurrentNode {
     budget: isCourse ? budgetFor(run, type) : 0,
     courseSeed: `${run.seed}-${id === 'boss' ? `BOSS${node.row}` : id === LAST_TOWN ? 'LASTTOWN' : id.toUpperCase()}`,
     gear,
+    acorn: isCourse ? run.pocket : null,
   };
+  if (isCourse) run.pocket = null;
   if (type === 'shop') {
     run.status = 'shop';
     run.shop = { node: id, offers: [], rerolls: 0, freeRerolls: 0, raised: false };
@@ -436,6 +449,7 @@ export function priceOf(run: RunState, offer: Offer): number {
   if (offer.kind === 'gear') base = GEAR.get(offer.id)!.price;
   else if (offer.kind === 'upgrade') base = upgradePrice(run, offer.id);
   else if (offer.kind === 'heal') base = RUN.shop.heal.price;
+  else if (offer.kind === 'acorn') base = ACORNS.get(offer.id)!.price;
   else base = RUN.shop.raise.price;
   return Math.max(0, Math.round(base * runStats(run).get('shopPrices')));
 }
@@ -476,9 +490,21 @@ function shopStock(run: RunState, shop: ShopState, keep: readonly Offer[]): Offe
   }
   const slot = RUN.shop.gearOffers + RUN.shop.upgradeOffers;
   const k = old(slot);
-  const raise = canRaise(run, shop) && rng.chance(0.5);
-  out.push(k ?? { kind: raise ? 'raise' : 'heal', id: raise ? 'raise' : 'heal', sold: false });
+  out.push(k ?? serviceOffer(run, shop, rng));
   return out;
+}
+
+/**
+ * The service slot (owner, 2026-11-17): Heal, Delay the Boss or an acorn, a
+ * third each. No raise when none are left; no acorn while the pocket is full.
+ */
+function serviceOffer(run: RunState, shop: ShopState, rng: Rng): Offer {
+  const kinds: ('heal' | 'raise' | 'acorn')[] = ['heal'];
+  if (canRaise(run, shop)) kinds.push('raise');
+  if (!run.pocket) kinds.push('acorn');
+  const kind = rng.pick(kinds);
+  if (kind === 'acorn') return { kind, id: ACORN_LIST[rng.weighted(acornWeights(dropWeights(run)))]!.id, sold: false };
+  return { kind, id: kind, sold: false };
 }
 
 /** Why an offer cannot be bought now, or null if it can. */
@@ -487,6 +513,7 @@ export function cannotBuy(run: RunState, offer: Offer, free = false): string | n
   if (!free && priceOf(run, offer) > run.wallet) return 'NOT ENOUGH STARS';
   if (offer.kind === 'heal' && run.health >= runStats(run).get('maxHealth')) return 'HEALTH IS FULL';
   if (offer.kind === 'raise' && run.shop && !canRaise(run, run.shop)) return 'NO RAISES LEFT';
+  if (offer.kind === 'acorn' && run.pocket) return 'POCKET IS FULL';
   return null;
 }
 
@@ -496,6 +523,8 @@ function applyOffer(run: RunState, offer: Offer): void {
   else if (offer.kind === 'heal') {
     run.health += run.status === 'cache' ? RUN.cache.heal : RUN.shop.heal.amount;
     clampHealth(run);
+  } else if (offer.kind === 'acorn') {
+    run.pocket = offer.id;
   } else {
     run.countdown++;
     run.raises++;

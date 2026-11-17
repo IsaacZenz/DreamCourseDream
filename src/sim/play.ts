@@ -24,7 +24,8 @@
  */
 import { ABILITIES, ABILITY_IDS, type AbilityDef } from '../content/abilities.ts';
 import { CHARACTERS, DEFAULT_CHARACTER, type CharacterDef } from '../content/characters.ts';
-import { GEAR, GEAR_CATEGORIES, NO_GEAR, type GearCategory, type GearEffect, type GearSlots } from '../content/gear.ts';
+import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
+import { GEAR, GEAR_CATEGORIES, NO_GEAR, RARITY_ODDS, type GearCategory, type GearEffect, type GearSlots } from '../content/gear.ts';
 import {
   OBJECTS,
   type BlockerDef,
@@ -37,7 +38,7 @@ import {
   type PickupDef,
   RAIL,
 } from '../content/objects.ts';
-import { RULES } from '../content/rules.ts';
+import { BOSS_TIER, RULES } from '../content/rules.ts';
 import { STATUSES } from '../content/statuses.ts';
 import { DIRECTION_VECTORS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { STEPS_PER_SECOND, surfacePhysics, type Tuning } from '../content/tuning.ts';
@@ -283,7 +284,21 @@ export type PlayEvent =
   /** Health healed by gear during a course (Leech Fang). */
   | { kind: 'healed'; amount: number; item: string }
   /** Echo Shell: this hit counted twice. */
-  | { kind: 'echo' };
+  | { kind: 'echo' }
+  // Milestone 7.
+  /**
+   * A success roll (owner, 2026-11-17): the wheel for one weapon effect. The
+   * result is decided here; the display only shows the wheel spinning to it.
+   * `respun`: Fortune's Mail spun a failed roll again (this is the second spin).
+   */
+  | { kind: 'roll'; enemy: string; effect: RollEffect; filled: number; size: number; success: boolean; respun: boolean }
+  /** A blue star picked up: carried until deposited at a town or on beating a boss. */
+  | { kind: 'blueStar'; x: number; y: number }
+  /** An acorn picked up, or the pocket acorn used at the start: extra slices for this course. */
+  | { kind: 'acorn'; item: string; slices: number };
+
+/** What a success roll is for: the word shown on the wheel's filled slices. */
+export type RollEffect = 'burn' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
 
 export type PlayStatus = 'playing' | 'won' | 'lost';
 
@@ -349,6 +364,16 @@ export interface PlayState {
   /** Shot number of the last Echo Shell hit and the last Leech Fang heal (once per shot each). */
   echoShot: number;
   leechShot: number;
+  /** Owner, 2026-11-17: extra filled slices on success wheels from acorns this course. */
+  acornSlices: number;
+  /** Fortune's Mail: failed rolls spun again this course. */
+  respinsUsed: number;
+  /** Hot Streak Charm: successful rolls in shot number `streakShot`. */
+  streakShot: number;
+  streak: number;
+  /** Blue stars picked up on this course (carried; the run deposits them later). */
+  blueStars: number;
+  readonly rarityWeights: readonly number[];
   /** Clouds that already zapped the ball in this motion. */
   zapped: string[];
   /** Ball and rolling things touching right now, so each meeting counts once. */
@@ -381,6 +406,10 @@ export interface Loadout {
   readonly wallet?: number;
   /** Run upgrades: modifiers that last the run. */
   readonly modifiers?: readonly Modifier[];
+  /** Owner, 2026-11-17: the pocket acorn used as the course starts (its id), or none. */
+  readonly acorn?: string | null;
+  /** Rarity weights (in the order of RARITIES) for things dropped on this course, such as acorns. Region 1's early odds if left out. */
+  readonly rarityWeights?: readonly number[];
 }
 
 /** What the player does during one step. */
@@ -528,6 +557,12 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     shieldsUsed: 0,
     echoShot: -1,
     leechShot: -1,
+    acornSlices: 0,
+    respinsUsed: 0,
+    streakShot: -1,
+    streak: 0,
+    blueStars: 0,
+    rarityWeights: lo.rarityWeights ?? RARITY_ODDS[0]!.weights,
     zapped: [],
     touching: [],
     turnQueue: [],
@@ -622,6 +657,12 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
   play.world.contact = (o, s) => onBallContact(play, o, s);
   // Moss Plate: heal at the start of each course.
   for (const fx of gearFx(play, 'healAtStart')) play.health = Math.min(play.stats.get('maxHealth'), play.health + fx.amount);
+  // Owner, 2026-11-17: a pocket acorn bought in a shop is used as the course starts.
+  const pocket = lo.acorn ? ACORNS.get(lo.acorn) : undefined;
+  if (pocket) {
+    play.acornSlices += pocket.slices;
+    play.log.push({ kind: 'acorn', item: pocket.id, slices: pocket.slices });
+  }
   return play;
 }
 
@@ -1196,10 +1237,12 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
     );
     if (res.shieldUsed) e.shieldMotion = play.motion;
     // Echo Shell: the first hit each shot counts twice.
-    const echo = res.damage > 0 && gearFx(play, 'echo').length > 0 && play.echoShot !== play.shotNumber;
-    if (echo) {
+    // Owner, 2026-11-17: one success roll, on the first hit each shot.
+    let echo = false;
+    if (res.damage > 0 && gearFx(play, 'echo').length > 0 && play.echoShot !== play.shotNumber) {
       play.echoShot = play.shotNumber;
-      play.log.push({ kind: 'echo' });
+      echo = successRoll(play, e, 'echo');
+      if (echo) play.log.push({ kind: 'echo' });
     }
     const damage = res.damage * (echo ? 2 : 1);
     e.health = Math.max(0, e.health - damage);
@@ -1224,19 +1267,67 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
   return 'bounce';
 }
 
+/** Bosses use the boss wheel (owner, 2026-11-17). Bosses are tier 5 (FEATURES.md section 4). */
+export function isBoss(e: EnemyState): boolean {
+  return e.def.tier >= BOSS_TIER;
+}
+
+/**
+ * How a success roll on this enemy would go: filled slices and wheel size
+ * (owner, 2026-11-17; Milestone 7 sheet section 4b). Filled = the weapon's
+ * slices + every-wheel slices (Knack, Spinners) + boss-wheel slices on a boss
+ * + acorns this course + Hot Streak this shot, at most the wheel's size.
+ */
+export function wheelFor(play: PlayState, e: EnemyState): { filled: number; size: number } {
+  const weapon = play.gear.weapon ? GEAR.get(play.gear.weapon) : undefined;
+  const boss = isBoss(e);
+  const bossSize = Math.min(RULES.bossWheelSlices, ...gearFx(play, 'bossWheel').map((fx) => fx.slices));
+  const size = boss ? bossSize : RULES.wheelSlices;
+  const streak = play.streakShot === play.shotNumber ? play.streak : 0;
+  const filled = (weapon?.slices ?? 0) + play.stats.get('rollSlices') + (boss ? play.stats.get('bossSlices') : 0) + play.acornSlices + streak;
+  return { filled: Math.max(0, Math.min(size, filled)), size };
+}
+
+/** Spin the wheel for one weapon effect. Fortune's Mail spins a failed roll again; Hot Streak Charm adds a slice per success this shot. */
+function successRoll(play: PlayState, e: EnemyState, effect: RollEffect): boolean {
+  const spin = (respun: boolean): boolean => {
+    const { filled, size } = wheelFor(play, e);
+    const success = play.rng.int(0, size - 1) < filled;
+    play.log.push({ kind: 'roll', enemy: e.uid, effect, filled, size, success, respun });
+    return success;
+  };
+  let ok = spin(false);
+  const respins = gearFx(play, 'respin').reduce((n, fx) => n + fx.count, 0);
+  if (!ok && play.respinsUsed < respins) {
+    play.respinsUsed++;
+    ok = spin(true);
+  }
+  if (ok && gearFx(play, 'hotStreak').length) {
+    if (play.streakShot !== play.shotNumber) {
+      play.streakShot = play.shotNumber;
+      play.streak = 0;
+    }
+    play.streak++;
+  }
+  return ok;
+}
+
 /** What the weapon does on a damaging hit (Milestone 6), before the enemy is checked for defeat. */
 function weaponEffects(play: PlayState, e: EnemyState, s: ShotState): void {
   const alive = e.health > 0;
-  for (const fx of gearFx(play, 'burn')) if (alive) applyEnemyStatus(play, e, 'burning', fx.turns);
-  for (const fx of gearFx(play, 'stunChance')) if (alive && play.rng.chance(fx.chance)) applyEnemyStatus(play, e, 'stunned');
+  // Owner, 2026-11-17: each special effect works only on a successful roll (Milestone 7 sheet section 4b).
+  for (const fx of gearFx(play, 'burn')) if (alive && successRoll(play, e, 'burn')) applyEnemyStatus(play, e, 'burning', fx.turns);
+  if (gearFx(play, 'stun').length && alive && successRoll(play, e, 'stun')) applyEnemyStatus(play, e, 'stunned');
   for (const fx of gearFx(play, 'leech')) {
     if (play.leechShot === play.shotNumber) break;
     play.leechShot = play.shotNumber;
+    if (!successRoll(play, e, 'heal')) break;
     const before = play.health;
     play.health = Math.min(play.stats.get('maxHealth'), play.health + fx.heal);
     if (play.health > before) play.log.push({ kind: 'healed', amount: play.health - before, item: gearWith(play, 'leech') });
   }
   for (const fx of gearFx(play, 'chainZap')) {
+    if (!successRoll(play, e, 'zap')) continue;
     let best: EnemyState | null = null;
     let bestD = fx.range;
     for (const o of play.enemies) {
@@ -1255,6 +1346,7 @@ function weaponEffects(play: PlayState, e: EnemyState, s: ShotState): void {
   for (const fx of gearFx(play, 'knockBack')) {
     // Patrollers keep to their path, and a Mole underground cannot be moved.
     if (!alive || e.def.behaviour.kind === 'patrol' || !standing(e)) continue;
+    if (!successRoll(play, e, 'knock')) continue;
     const b = s.ball;
     const dx = e.x - b.x;
     const dy = e.y - b.y;
@@ -1284,6 +1376,13 @@ function breakIt(play: PlayState, b: BreakableState): void {
   for (const id of b.drops) dropPickup(play, id, b.x, b.y, `${b.uid}:${id}`);
   const wild = b.def.wildChance > 0 && play.rng.chance(b.def.wildChance * play.stats.get('dropLuck'));
   if (wild) dropPickup(play, 'wild', b.x, b.y, `${b.uid}:wild`);
+  // Owner, 2026-11-17: rare blue stars and acorns.
+  const luck = play.stats.get('dropLuck');
+  if (b.def.blueStarChance > 0 && play.rng.chance(b.def.blueStarChance * luck)) dropPickup(play, 'blue-star', b.x, b.y, `${b.uid}:blue`);
+  if (b.def.acornChance > 0 && play.rng.chance(b.def.acornChance * luck)) {
+    const w = acornWeights(play.rarityWeights);
+    dropPickup(play, ACORN_LIST[play.rng.weighted(w)]!.id, b.x, b.y, `${b.uid}:acorn`);
+  }
   play.log.push({ kind: 'break', uid: b.uid, wild });
   play.world.obstacles = obstaclesOf(play);
 }
@@ -1750,6 +1849,12 @@ function collectPickups(play: PlayState): void {
       if (play.shots >= play.stats.get('maxShots')) continue;
       play.shots++;
       play.log.push({ kind: 'shotOrb' });
+    } else if (p.def.effect === 'blueStar') {
+      play.blueStars++;
+      play.log.push({ kind: 'blueStar', x: p.x, y: p.y });
+    } else if (p.def.effect === 'acorn') {
+      play.acornSlices += p.def.slices ?? 0;
+      play.log.push({ kind: 'acorn', item: p.def.id, slices: p.def.slices ?? 0 });
     } else if (p.def.effect === 'wild') {
       // Owner, 2026-11-14: a random ability, never the one already held.
       const options = ABILITY_IDS.filter((id) => id !== play.ability);
