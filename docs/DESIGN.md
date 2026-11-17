@@ -244,7 +244,7 @@ Gear examples are in `docs/FEATURES.md` section 8.
 - **Decided (owner, 2026-11-17): difficulty scales in two separate ways in every region:** courses get bigger (more and larger areas), and opponents get harder (more threat budget, and tougher enemies through region modifiers). The cap of 30 is lifted for later regions. Numbers in `docs/plans/milestone-7.md` section 7.4.
 - **Decided (owner, 2026-11-17): each region's boss comes from a boss randomizer** (a seeded pick from that region's boss pool). Until Milestone 8 adds bosses, every pool holds only The Warden.
 - ~~Blue stars earned during a run are kept even if the run ends in death.~~ **Decided (owner, 2026-11-17): the blue star deposit.** Blue stars found on a run are carried, and go into the player's stash only when deposited, automatically, on reaching a town or beating a boss. Carried blue stars are lost on death or when the game is closed outside a town.
-- **Decided (owner, 2026-11-17): one home, the Burrow.** The hub screen between runs and the Burrow in towns are the same place: stored gear, the blue star stash, permanent upgrades and starting abilities. Permanent upgrades are bought there between runs: maximum health, maximum shots, gear slots, starting yellow stars, shop discount, a starting ability.
+- **Decided (owner, 2026-11-17): one home, the Burrow.** The hub screen between runs and the Burrow in towns are the same place: stored gear, the blue star stash, permanent upgrades and starting abilities. Permanent upgrades are bought there, between runs or (owner, 2026-11-17) in a town's Burrow mid-run, where they work at once: maximum health, maximum shots, gear slots, starting yellow stars, shop discount, a starting ability.
 
 ## 11. Procedural generation
 

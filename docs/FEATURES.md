@@ -337,7 +337,7 @@ Replaces the six-item starter set. **Six rarities in three pairs**: (common, unc
 
 **Decided:** bought with blue stars. A levelled list plus one-time unlocks.
 
-**Decided (owner, 2026-11-17):** bought in the Burrow (the home and hub screen) between runs. Each starting ability is bought separately, 8 blue stars each.
+**Decided (owner, 2026-11-17):** bought in the Burrow (the home and hub screen), between runs or in a town mid-run, where they work at once. Each starting ability is bought separately, 8 blue stars each.
 
 ### Levelled list, Milestone 7
 

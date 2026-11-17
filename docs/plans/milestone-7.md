@@ -1,6 +1,6 @@
 # Milestone 7 design sheet — Boss and permanent progress
 
-**Status: owner's answers received 2026-11-17** (sections 10 and 10c). All twelve questions and follow-ups A to H are answered. The owner's answers led to new design in sections 2.5, 3, 4.2, 4b, 5 and 7.4, including **success rolls** (4b), the **blue star deposit** (4.2), **one home called the Burrow** (5) and **twelve new gear items** (4b.6). **Waiting for the owner to sign off those parts and follow-up questions I and J ([section 10d](#10d-last-questions-2026-11-17)).** Nothing on this sheet is built yet.
+**Status: signed off by the owner, 2026-11-17**, after three rounds of answers (sections 10, 10c and 10d). The owner's answers are already written into every section. Owner's note on question I: if buying upgrades mid-run makes things too easy, prices may be raised in balancing.
 
 How to review: read each section, change any number or rule you want. Every number here is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -291,7 +291,7 @@ The hub screen between runs and the Burrow in towns are **one place: the Burrow*
 
 **Between runs** you are in the Burrow, and can do everything: store or take gear, buy upgrades and abilities, pick the starting ability, start or continue a run.
 
-**In a town** the Burrow door opens the same home. You can swap gear as before and see your stash grow from the deposit. Upgrades, abilities and the starting-ability toggle are shown but greyed out ("between runs only"; see follow-up question I).
+**In a town** the Burrow door opens the same home. You can swap gear as before and see your stash grow from the deposit. **Owner, 2026-11-17 (question I): you can also buy upgrades and abilities in a town**, with the stars just deposited. A permanent upgrade bought mid-run works at once for the rest of that run (for example Vitality raises max health and heals 1, like Tough Shell). An ability bought mid-run is yours for later runs; the starting-ability toggle is greyed out in towns, since the run has started. Prices may be raised in balancing if this makes runs too easy.
 
 Same placeholder pixel style as the town.
 
@@ -498,8 +498,8 @@ The remaining milestones (PLAN.md 8 and 9) and the reference files were checked 
 
 | # | Question | Default |
 |---|---|---|
-| I | Now that the Burrow is one home with a door in every town: can you **buy permanent upgrades and abilities in a town**, mid-run, with stars you just deposited? | No, between runs only (shown greyed out in towns). Permanent upgrades stay a reward you take into the next run, and the run you are on cannot suddenly jump in strength |
-| J | The twelve new items (4b.6) give armour and baubles four items per rarity instead of three (your Milestone 6 rule was three). Is that fine, or should some old items be swapped out to keep three? | Add them; keep every old item |
+| I | Buy permanent upgrades and abilities in a town, mid-run? | **Owner: yes.** Raise prices in balancing if needed (section 5.1) |
+| J | Four armour and bauble items per rarity (66 items)? | **Owner: yes**, add them and keep every old item |
 
 ---
 
