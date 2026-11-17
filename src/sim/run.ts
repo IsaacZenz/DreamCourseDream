@@ -21,6 +21,8 @@ import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY_ODDS, type GearCategory, type GearDef, type GearSlots } from '../content/gear.ts';
 import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
+import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
+import { buyUpgrade, permanentModifiers, type Profile } from './profile.ts';
 import { Rng } from './rng.ts';
 import { StatSheet, type Modifier } from './stats.ts';
 import type { Loadout } from './play.ts';
@@ -98,7 +100,10 @@ export interface RunState {
   readonly seed: string;
   /** The Burrow's contents. Changed only in a town; the caller saves it. */
   readonly burrow: Burrow;
-  readonly map: RunMap;
+  /** The region's map (a new one each region, Milestone 7). */
+  map: RunMap;
+  /** Region number, from 1 (Milestone 7: a new region starts after each boss). */
+  region: number;
   /** The last node finished, or null before row 1. */
   at: string | null;
   /** Nodes finished, in order. */
@@ -112,8 +117,20 @@ export interface RunState {
   counted: number;
   health: number;
   wallet: number;
-  /** Counted only until Milestone 7 gives them a wallet (sheet section 2.4). */
+  /**
+   * Blue stars carried (owner, 2026-11-17): found or earned on this run but
+   * not yet deposited. Deposited automatically on reaching a town or beating a
+   * boss; lost on death or closing the game outside a town.
+   */
   blueStars: number;
+  /** Blue stars deposited during this run (for the summary). */
+  banked: number;
+  /** Deposited but not yet added to the profile's stash; the caller takes them with `drainDeposit`. */
+  toStash: number;
+  /** Permanent upgrade levels this run uses (from the profile; raised when one is bought in a town). */
+  readonly permanent: Record<string, number>;
+  /** Bosses beaten on this run (the caller records them in the profile). */
+  readonly bossesBeaten: string[];
   ability: string | null;
   gear: { -readonly [C in GearCategory]: string | null };
   /** Times each run upgrade was bought (or taken from a cache). */
@@ -132,11 +149,18 @@ export interface RunState {
   pocket: string | null;
 }
 
-export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR): RunState {
+/** What a run starts with from the player's permanent progress (Milestone 7). */
+export interface RunStart {
+  readonly levels?: Readonly<Record<string, number>>;
+  readonly startAbility?: string | null;
+}
+
+export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR, start: RunStart = {}): RunState {
   const run: RunState = {
     seed,
     burrow: { weapon: validGear(burrow.weapon, 'weapon'), armour: validGear(burrow.armour, 'armour'), bauble: validGear(burrow.bauble, 'bauble') },
     map,
+    region: 1,
     at: null,
     path: [],
     status: 'map',
@@ -147,7 +171,11 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     health: 0,
     wallet: 0,
     blueStars: 0,
-    ability: CHARACTERS.get(DEFAULT_CHARACTER)!.startingAbility,
+    banked: 0,
+    toStash: 0,
+    permanent: { ...(start.levels ?? {}) },
+    bossesBeaten: [],
+    ability: start.startAbility !== undefined && start.startAbility !== null ? start.startAbility : CHARACTERS.get(DEFAULT_CHARACTER)!.startingAbility,
     gear: { ...NO_GEAR },
     upgrades: {},
     bought: {},
@@ -158,7 +186,10 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     lastTownVisited: false,
     pocket: null,
   };
-  run.health = runStats(run).get('maxHealth');
+  const stats = runStats(run);
+  run.health = stats.get('maxHealth');
+  // Head Start (owner, 2026-11-17).
+  run.wallet = stats.get('startingStars');
   return run;
 }
 
@@ -176,7 +207,7 @@ function rngFor(run: RunState, label: string): Rng {
 // Stats
 
 function upgradeModifiers(run: RunState): Modifier[] {
-  const out: Modifier[] = [];
+  const out: Modifier[] = permanentModifiers(run.permanent);
   for (const u of UPGRADE_LIST) {
     for (let i = 0; i < (run.upgrades[u.id] ?? 0); i++) out.push({ stat: u.stat, op: u.op, amount: u.amount, source: { kind: 'run', id: u.id }, duration: { kind: 'run' } });
   }
@@ -357,6 +388,8 @@ export function enterNode(run: RunState, id: string): CurrentNode {
   };
   if (isCourse) run.pocket = null;
   if (type === 'shop') {
+    // Owner, 2026-11-17: reaching a town deposits the blue stars carried.
+    deposit(run);
     run.status = 'shop';
     run.shop = { node: id, offers: [], rerolls: 0, freeRerolls: 0, raised: false };
     run.shop.offers = shopStock(run, run.shop, []);
@@ -393,6 +426,30 @@ export interface CourseOutcome {
   readonly wallet: number;
   readonly ability: string | null;
   readonly gear: GearSlots;
+  /** Blue stars picked up on the course (carried). */
+  readonly blueStars?: number;
+}
+
+/** Move the carried blue stars to the stash (owner, 2026-11-17: at a town, or on beating a boss). */
+export function deposit(run: RunState): number {
+  const n = run.blueStars;
+  run.blueStars = 0;
+  run.banked += n;
+  run.toStash += n;
+  return n;
+}
+
+/** Blue stars deposited since the last call, for the caller to add to the profile's stash. */
+export function drainDeposit(run: RunState): number {
+  const n = run.toStash;
+  run.toStash = 0;
+  return n;
+}
+
+/** Blue stars for beating the boss of a region (region 1 first). */
+export function bossBlueStars(region: number): number {
+  const list = BLUE_STARS.boss;
+  return list[Math.min(list.length, Math.max(1, region)) - 1]!;
 }
 
 /** Yellow stars for finishing a node of this type. */
@@ -413,12 +470,15 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   run.wallet = out.wallet;
   run.ability = out.ability;
   run.gear = { ...out.gear };
+  run.blueStars += out.blueStars ?? 0;
   if (!out.won) {
     run.status = 'lost';
     run.endedBy = out.lostBy ?? 'health';
     return;
   }
   run.totals.courses++;
+  if (cur.type === 'course') run.blueStars += BLUE_STARS.course;
+  else if (cur.type === 'hard') run.blueStars += BLUE_STARS.hard;
   run.wallet += rewardFor(cur.type);
   run.totals.stars += rewardFor(cur.type);
   // Granite Hide: heal after each course.
@@ -427,7 +487,10 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   }
   clampHealth(run);
   if (cur.type === 'boss') {
-    if (cur.early) run.blueStars += run.countdown * RUN.earlyBossBluePerStep;
+    // Owner, 2026-11-17: beating a boss deposits its reward and everything carried at once.
+    run.blueStars += bossBlueStars(1) + (cur.early ? run.countdown * BLUE_STARS.earlyPerStep : 0);
+    deposit(run);
+    run.bossesBeaten.push('warden');
     run.current = null;
     run.status = 'won';
     run.endedBy = 'boss';
@@ -616,6 +679,24 @@ export function leaveCache(run: RunState): void {
   if (run.status !== 'cache') return;
   run.cache = null;
   arrive(run, true);
+}
+
+// ---------------------------------------------------------------------------
+// Permanent upgrades bought in a town's Burrow (owner, 2026-11-17, question I)
+
+/**
+ * Buy a permanent upgrade level in a town, mid-run: the profile pays from its
+ * stash and the level works at once for the rest of this run. Returns null,
+ * or why it could not be bought.
+ */
+export function buyPermanentInTown(run: RunState, profile: Profile, id: string): string | null {
+  if (run.status !== 'shop') return 'ONLY IN A TOWN';
+  const why = buyUpgrade(profile, id);
+  if (why) return why;
+  run.permanent[id] = (run.permanent[id] ?? 0) + 1;
+  run.health += PERMANENT_UPGRADES.get(id)?.heal ?? 0;
+  clampHealth(run);
+  return null;
 }
 
 // ---------------------------------------------------------------------------

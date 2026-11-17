@@ -378,7 +378,7 @@ export class TownScene extends Phaser.Scene {
     if (!burrowSwap(run, c)) {
       this.say('NOTHING TO SWAP', BAD);
     } else {
-      storeBurrow(run);
+      storeBurrow();
       const name = (id: string | null) => (id ? GEAR.get(id)!.name.toUpperCase() : '');
       this.say(worn && stored ? `SWAPPED: WEARING ${name(stored)}` : worn ? `${name(worn)} STORED SAFELY` : `NOW WEARING ${name(stored)}`, GOOD);
     }

@@ -244,7 +244,9 @@ describe('run rules', () => {
     run.status = 'course';
     run.current = { id: 'r9l1', row: 9, type: 'boss', early: true, budget: 20, courseSeed: 'X', gear: null, acorn: null };
     winCourse(run);
-    expect(run.blueStars).toBe(3);
+    // Owner, 2026-11-17: the boss's 5, plus 1 per countdown step left, deposited at once.
+    expect(run.blueStars).toBe(0);
+    expect(run.banked).toBe(8);
   });
 
   it('losing a course ends the run (owner: also when out of naps)', () => {
