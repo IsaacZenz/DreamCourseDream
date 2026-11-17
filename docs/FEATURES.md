@@ -40,7 +40,7 @@ Nothing changes a stat directly. Everything applies a **modifier**:
 - which stat,
 - add or multiply,
 - the amount,
-- where it came from (permanent upgrade, run boost, gear, ability, status, trait),
+- where it came from (permanent upgrade, run boost, gear, ability, status, trait, region),
 - how long it lasts (forever, this run, this course, N turns, while equipped).
 
 Final value = (base + all adds) × all multipliers, then rounded and limited to that stat's minimum and maximum.
@@ -177,9 +177,16 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 
 | Working name | Gimmick | Milestone |
 |---|---|---|
-| The Warden | None. Three phases: slow slams, then summons, then both faster. | 7 |
+| The Warden | None. Three phases: slow slams, then summons, then both faster. Placeholder boss for every region until Milestone 8 (owner, 2026-11-17). | 7 |
 | Second boss | Shield that only drops after it attacks | 8 |
 | Third and final boss | Decide with the owner | 8 |
+
+**Decided (owner, 2026-11-17):**
+
+- **Boss randomizer:** each region's boss is a seeded pick from that region's boss pool. New bosses are added to the pools as data.
+- **Arenas:** five hand-picked arenas, each with its own gimmick or theme (Milestone 7: Bumper Ring, Sinkhole Bowl, Ice Rink, The Moat, Storm Steps). The same arena is never used twice in a row, also across runs.
+- **Stuns on a boss:** a stun has a 20% chance, shown by a little wheel with a "STUN" slice where a hand spins. Whether this also changes the Knob items on ordinary enemies is a follow-up question on the Milestone 7 sheet (default: bosses only).
+- Summoned minions leave no flag pole (default kept).
 
 ---
 
@@ -338,13 +345,13 @@ Replaces the six-item starter set. **Six rarities in three pairs**: (common, unc
 | Haggler | 3 | −10% shop prices |
 | Fortune | 3 | +10% drop luck |
 
-Cost rises with each level.
+Cost rises with each level. **Owner, 2026-11-17:** Vitality and Stamina 5, 8, 12, 16, 20; Head Start and Fortune 3, 6, 10; Haggler 4, 8, 12. **No refunds.**
 
 ### Unlocks
 
 | Unlock | Milestone |
 |---|---|
-| Start each run with a chosen ability | 7 |
+| Start each run with a chosen ability. **Owner, 2026-11-17:** each ability is bought separately; with more than one owned, the player chooses which to start with (a toggle) | 7 |
 | Second weapon, armour or bauble slot (one unlock per category) | 8 |
 | New gear and abilities added to the pool of things that can appear | 8 |
 | New characters | 8 |
@@ -401,7 +408,7 @@ For the ball, one turn is one shot. Build the system and Stunned in Milestone 4;
 | Pickup | Effect | Where it comes from |
 |---|---|---|
 | Yellow star | +1 to the meter and the wallet | Enemies, crates |
-| Blue star | +1 permanent currency | Owner, 2026-11-15: beating a course, beating a boss, and an extra-rare chance in crates or under cracked ground. Amounts on the Milestone 7 sheet |
+| Blue star | +1 permanent currency | Owner, 2026-11-15: beating a course, beating a boss, and an extra-rare chance in crates or under cracked ground. Owner, 2026-11-17: course 1, hard course 2, boss 5 (region 1) or 8 (region 2); crates 2%, secured crates and cracked tiles 5%, times drop luck |
 | Heart | +1 health | Crates, rare enemy drop |
 | Shot orb | +1 shot, up to the maximum | Crates, placed on courses |
 | Wild | A random ability (not the one held), replacing the current one | Small chance from secured crates, 10% times drop luck (owner, 2026-11-14) |
@@ -418,6 +425,7 @@ Build in Milestone 3.
 - **Run budget (owner, 2026-11-15):** 8 + 2 per course, hard course or cache finished (shops do not count), hard courses ×1.5, capped at 30 for now. Running out of naps on a run course ends the run.
 - **Prices:** gear by rarity 10, 15, 25, 35, 50, 70 (owner, 2026-11-15; see `docs/plans/milestone-6.md` section 5.2), stat boost 12 rising by 6, heal 10, first reroll 3.
 - **Budget:** each course has a difficulty budget that rises with each node and jumps after each boss. Enemies, traits, obstacles and hazards each cost budget.
+- **Owner, 2026-11-17: size and toughness scale separately in every region** (DESIGN.md section 10). Course size (areas per journey, area size), threat budget and enemy toughness (region modifiers) are three dials set per region; see `docs/plans/milestone-7.md` section 7.4.
 - **Tier mix by region:** region 1 is mostly tiers 1–2; region 2 adds tier 3; region 3 adds tier 4.
 - **Owner, 2026-11-15 (Milestone 5 testing, before the run exists):** after winning a generated course, the next one's budget rises by a random 0 to 4 (seeded), capped at 40. The Milestone 5 generator rules are in `docs/plans/milestone-5.md`.
 - **Hard courses:** 150% of the normal budget, a guaranteed tier-up squad leader, better rewards.
@@ -446,5 +454,5 @@ Opus: use the default and say that you did.
 | F4 | Squad theme share chance | 70% |
 | F5 | Which elements exist | Fire, ice, shock |
 | F6 | Can the boss countdown be bought back up in a shop? | Yes, +1, once per shop |
-| F7 | Do blue stars found during a run survive death? | Yes |
+| F7 | Do blue stars found during a run survive death? | Yes. Owner, 2026-11-17: but not closing the game outside a town; only a boss's blue stars are kept then |
 | F8 | Third boss and its gimmick | Decide in Milestone 8 |
