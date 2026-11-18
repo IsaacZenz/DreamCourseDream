@@ -155,6 +155,12 @@ Early courses use mostly tiers 1 and 2. Later regions shift the mix upward (sect
 
 **Owner, 2026-11-14:** for now every enemy is worth 1 star, whatever its tier (overrides the Stars column of the tier table until the Milestone 8 balance pass).
 
+**Owner, 2026-11-18 (Milestone 8 round 1):**
+
+- **Veterans (tier 3) and Elites (tier 4) are worth 2 stars**; other enemies stay at 1. Collecting the quota must not become easier than it is now (proposed quota rule in `docs/plans/milestone-8.md` section 4.0, waiting for confirmation).
+- **Every enemy is an insect.** Existing enemies are renamed (Mossback → Snoozegrub, Trundler → Mudroller, Spitter → Spittlebug, Lunger → Pouncehopper, Mole → Mole Cricket, the carriers → grubs, the Warden → the Stagwarden); names under review in the sheet, section 7.0.
+- Explosive must not clear the board by accident (options in the sheet, section 5.1a).
+
 Tiers 3 and 4, traits, elements, squads and enemy gear are Milestone 8, but the template fields must exist from Milestone 4.
 
 ---
@@ -404,6 +410,8 @@ Owner, 2026-11-15: Burning on enemies is built in Milestone 6 (the fire gear nee
 | Burning | 1 damage at the start of each enemy turn | 1 damage at the start of each shot | 2 turns |
 | Stunned | Skips its next turn | Loses 1 shot | 1 turn |
 | Chilled | Cannot move; the next hit on it does double damage | Rolls as if on ice | 2 turns |
+
+**Owner, 2026-11-18:** fire and ice cancel each other (Burning on a chilled thing removes both, and the other way round), and water puts out a burning ball. The Burner ability burns what it hits for 1 turn, with no success roll. Water frozen by the Frost ability stays ice for 2 turns; freezing it again resets the 2 turns.
 
 For the ball, one turn is one shot. Build the system and Stunned in Milestone 4; the rest in Milestone 8.
 
