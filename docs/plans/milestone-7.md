@@ -1,6 +1,6 @@
 # Milestone 7 design sheet — Boss and permanent progress
 
-**Status: signed off by the owner, 2026-11-17**, after three rounds of answers (sections 10, 10c and 10d). **Built 2026-11-18**; differences from the sheet are in [section 12](#12-as-built-2026-11-18). Waiting for the owner to play it.
+**Status: signed off by the owner, 2026-11-17**, after three rounds of answers (sections 10, 10c and 10d). **Built 2026-11-18**; differences from the sheet are in [section 12](#12-as-built-2026-11-18). **Approved by the owner, 2026-11-18**, after playing the test build.
 
 How to review: read each section, change any number or rule you want. Every number here is a starting value and goes into `src/content/` so it can be tuned later.
 
