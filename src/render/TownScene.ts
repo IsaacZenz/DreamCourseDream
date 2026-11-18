@@ -4,6 +4,7 @@ import { RUN, UPGRADE_LIST, UPGRADES } from '../content/run';
 import {
   addUpgrade,
   burrowSwap,
+  upcomingJobs,
   buy,
   buyPermanentInTown,
   cannotBuy,
@@ -23,6 +24,7 @@ import {
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
 import { persist, session, storeBurrow } from './runSession';
+import { prefetch } from './genQueue';
 import { drawRows, progressRows } from './progressMenu';
 import { ACORNS } from '../content/consumables';
 import { getPanel, preloadAssets, shared } from './shared';
@@ -114,6 +116,8 @@ export class TownScene extends Phaser.Scene {
   private redraw(run: RunState): void {
     // Owner, 2026-11-15/17: the town is the save point. Every change here is saved at once.
     persist();
+    // Owner, 2026-11-18: make the courses after this town in the background (again if the gear changed).
+    prefetch(upcomingJobs(run));
     this.tweens.killAll();
     this.children.removeAll(true);
     if (this.mode === 'town') this.drawTown(run);

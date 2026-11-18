@@ -9,7 +9,7 @@ import { generateRunMap } from '../src/gen/runMap';
 import { generateAttempt } from '../src/gen/generate';
 import { parseCourse } from '../src/sim/course';
 import { createPlay } from '../src/sim/play';
-import { budgetFor, choices, createRun, enemyModifiersFor, enterNode, finishCourse, sizeFor, takeBossReward, type RunState } from '../src/sim/run';
+import { budgetFor, choices, createRun, enemyModifiersFor, enterNode, finishCourse, genOptionsFor, sizeFor, takeBossReward, upcomingJobs, type RunState } from '../src/sim/run';
 
 function win(run: RunState): void {
   finishCourse(run, { won: true, lostBy: null, health: run.health, wallet: run.wallet, ability: run.ability, gear: run.gear });
@@ -62,14 +62,14 @@ describe('regions', () => {
     expect(choices(run).length).toBeGreaterThan(0);
   });
 
-  it('region two: bigger start, more threat (18 + 3 per node, cap 45), +1 health on every enemy; its boss wins the run', () => {
+  it('region two: bigger start, more threat (18 + 3 per node, cap 36), +1 health on every enemy; its boss wins the run', () => {
     const run = createRun('R3', generateRunMap('R3'));
     beatBoss(run);
     takeBossReward(run, null, generateRunMap('R3', 2));
     expect(budgetFor(run, 'course')).toBe(18);
     run.counted = 2;
     expect(budgetFor(run, 'course')).toBe(24);
-    expect(sizeFor(run, 'course').areas).toEqual([5, 5]);
+    expect(sizeFor(run, 'course').areas).toEqual([4, 4]);
     expect(sizeFor(run, 'course').areaSize).toEqual([9, 15]);
     expect(enemyModifiersFor(run)).toEqual([{ stat: 'health', op: 'add', amount: 1, source: { kind: 'region', id: 'region2' }, duration: { kind: 'forever' } }]);
     beatBoss(run);
@@ -101,5 +101,47 @@ describe('regions', () => {
 
   it('every region names a boss pool with the Warden in it (owner: placeholder until Milestone 8)', () => {
     for (const r of REGIONS) expect(r.bosses).toContain('warden');
+  });
+});
+
+describe('courses made ahead (owner, 2026-11-18, option B)', () => {
+  const same = (run: RunState, job: { id: string; courseSeed: string; budget: number; opts: unknown }) => {
+    const cur = enterNode(run, job.id);
+    expect(cur.courseSeed).toBe(job.courseSeed);
+    expect(cur.budget).toBe(job.budget);
+    expect(genOptionsFor(run)).toEqual(job.opts);
+  };
+
+  it('from the map: a job is exactly the course entering that node makes', () => {
+    const run = createRun('AHEAD', generateRunMap('AHEAD'));
+    const jobs = upcomingJobs(run);
+    expect(jobs.length).toBe(3);
+    same(run, jobs[1]!);
+  });
+
+  it('during a course: the jobs are the choices after winning it', () => {
+    const run = createRun('AHEAD2', generateRunMap('AHEAD2'));
+    enterNode(run, choices(run)[0]!.id);
+    const jobs = upcomingJobs(run);
+    expect(run.status).toBe('course');
+    win(run);
+    expect(jobs.map((j) => j.id)).toEqual(choices(run).map((n) => n.id).filter((id) => jobs.some((j) => j.id === id)));
+    same(run, jobs[0]!);
+  });
+
+  it('region two courses get their own seeds', () => {
+    const run = createRun('R5', generateRunMap('R5'));
+    const one = upcomingJobs(run)[0]!.courseSeed;
+    run.region = 2;
+    expect(upcomingJobs(run)[0]!.courseSeed).toBe(`${one}-2`);
+  });
+
+  it('owner option A: region two is 3 to 6 areas, threat capped at 36', () => {
+    const run = createRun('R6', generateRunMap('R6'));
+    run.region = 2;
+    expect(sizeFor(run, 'course').areas).toEqual([3, 3]);
+    run.counted = 20;
+    expect(sizeFor(run, 'course').areas).toEqual([6, 6]);
+    expect(budgetFor(run, 'course')).toBe(36);
   });
 });

@@ -271,8 +271,50 @@ export function botLoadoutOf(run: RunState): Loadout {
  * Everything the generator needs for the current course besides its seed and
  * budget: the bot's loadout, the region's journey size and enemy toughness.
  */
-export function genOptionsFor(run: RunState): { loadout: Loadout; size: JourneySize; enemyModifiers: Modifier[] } {
-  return { loadout: botLoadoutOf(run), size: sizeFor(run, run.current?.type ?? 'course'), enemyModifiers: enemyModifiersFor(run) };
+export function genOptionsFor(run: RunState, type: NodeType = run.current?.type ?? 'course'): { loadout: Loadout; size: JourneySize; enemyModifiers: Modifier[] } {
+  return { loadout: botLoadoutOf(run), size: sizeFor(run, type), enemyModifiers: enemyModifiersFor(run) };
+}
+
+/** A node's course seed: the run seed plus the node (and the region from region two on, so regions differ). */
+export function courseSeedOf(run: RunState, node: MapNode): string {
+  const id = node.id;
+  const base = `${run.seed}-${id === 'boss' ? `BOSS${node.row}` : id === LAST_TOWN ? 'LASTTOWN' : id.toUpperCase()}`;
+  return run.region > 1 ? `${base}-${run.region}` : base;
+}
+
+/** Everything needed to make a node's course ahead of time (owner, 2026-11-18: make courses in the background). */
+export interface CourseJob {
+  readonly id: string;
+  readonly courseSeed: string;
+  readonly budget: number;
+  readonly opts: ReturnType<typeof genOptionsFor>;
+}
+
+/** The generated course a node would get if the player went there now; null for towns, caches and boss arenas. */
+export function courseJobFor(run: RunState, node: MapNode): CourseJob | null {
+  const type = typeOf(run, node);
+  if (type !== 'course' && type !== 'hard') return null;
+  return { id: node.id, courseSeed: courseSeedOf(run, node), budget: budgetFor(run, type), opts: genOptionsFor(run, type) };
+}
+
+/**
+ * The courses the player can go to next: from the map, the choices now; in a
+ * town or cache, the choices after leaving it; during a course, the choices
+ * after winning it with the loadout as it is now. A guess for a course in
+ * play: if the player ends with other gear, those courses are made again.
+ */
+export function upcomingJobs(run: RunState): CourseJob[] {
+  let ahead: RunState = run;
+  if (run.status !== 'map') {
+    if (run.status === 'reward' || run.status === 'won' || run.status === 'lost' || run.current?.type === 'boss') return [];
+    ahead = structuredClone(run);
+    if (ahead.status === 'shop') leaveShop(ahead);
+    else if (ahead.status === 'cache') leaveCache(ahead);
+    else if (ahead.status === 'course') finishCourse(ahead, { won: true, lostBy: null, health: ahead.health, wallet: ahead.wallet, ability: ahead.ability, gear: ahead.gear });
+  }
+  return choices(ahead)
+    .map((n) => courseJobFor(ahead, n))
+    .filter((j): j is CourseJob => j !== null);
 }
 
 /** Put on an item between courses (shop, cache, testing aid). The old one is lost. */
@@ -440,7 +482,7 @@ export function enterNode(run: RunState, id: string): CurrentNode {
     type,
     early: type === 'boss' && run.countdown > 0,
     budget: isCourse ? budgetFor(run, type) : 0,
-    courseSeed: `${run.seed}-${id === 'boss' ? `BOSS${node.row}` : id === LAST_TOWN ? 'LASTTOWN' : id.toUpperCase()}`,
+    courseSeed: courseSeedOf(run, node),
     gear,
     acorn: isCourse ? run.pocket : null,
     boss: type === 'boss' ? bossOf(run) : null,

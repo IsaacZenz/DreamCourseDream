@@ -36,10 +36,11 @@ import type { TuningPanel } from '../ui/tuningPanel';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { UPGRADE_LIST } from '../content/run';
 import { placeGear } from '../gen/placeGear';
-import { addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, regionDef, rewardFor } from '../sim/run';
+import { upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, regionDef, rewardFor } from '../sim/run';
 import { ARENAS } from '../content/arenas';
 import { activeRun, newRunSeed, persist, session, startRun, type RunCourse } from './runSession';
 import { ACORNS } from '../content/consumables';
+import { jobKey, madeCourse, prefetch, want, type Made } from './genQueue';
 import { BOSSES } from '../content/bosses';
 import { BLUE_STARS } from '../content/progress';
 import { LAST_REGION } from '../content/run';
@@ -271,6 +272,9 @@ export class CourseScene extends Phaser.Scene {
       // Milestone 7: a boss fight is in a hand-built arena, not generated.
       data = ARENAS.get(arena)!.data;
     } else if (this.runMode) {
+      // Made in the background already? Then no loading screen at all.
+      const ahead = this.runCourse() ? null : madeCourse(this.runKey());
+      if (ahead) this.storeRunCourse(ahead);
       const ready = this.runCourse();
       if (!ready) {
         this.course = null;
@@ -315,6 +319,8 @@ export class CourseScene extends Phaser.Scene {
     this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: regionDef(run).bossHealth }) });
     this.runReported = false;
     this.setRunPanel();
+    // Owner, 2026-11-18: while this course is played, make the next ones in the background.
+    if (run && run.status === 'course') prefetch(upcomingJobs(run));
     if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
     // The first visit to the bench opens the panel, so the choices are easy to find.
     if (file.id === BENCH_ID && !benchShown) {
@@ -415,7 +421,7 @@ export class CourseScene extends Phaser.Scene {
   private runKey(): string {
     const run = session.run!;
     const cur = run.current!;
-    return `${cur.courseSeed}|${cur.budget}|${JSON.stringify(genOptionsFor(run))}`;
+    return jobKey(cur.courseSeed, cur.budget, genOptionsFor(run));
   }
 
   private runCourse(): RunCourse | null {
@@ -434,30 +440,23 @@ export class CourseScene extends Phaser.Scene {
     if (session.pending === key) return;
     session.pending = key;
     const opts = genOptionsFor(run);
-    const done = (result: GenResult, ms: number) => {
+    const done = (m: Made) => {
       if (session.pending !== key) return;
       session.pending = null;
-      let raw = result.raw;
-      let course = result.course;
-      if (cur.gear) ({ raw, course } = placeGear(raw, course, cur.gear, cur.courseSeed));
-      session.course = { key, raw, course, result, ms };
-      (result.fallback ? console.warn : console.info)(`${result.summary}, ${Math.round(ms)} ms${cur.gear ? `, gear: ${cur.gear}` : ''}`);
+      this.storeRunCourse(m);
       if (this.scene.isActive()) this.scene.restart({ run: true, debug: this.debugMode });
     };
-    try {
-      const worker = new Worker(new URL('./genWorker.ts', import.meta.url), { type: 'module' });
-      worker.onmessage = (e: MessageEvent<{ result: GenResult; ms: number }>) => {
-        worker.terminate();
-        done(e.data.result, e.data.ms);
-      };
-      worker.postMessage({ seed: cur.courseSeed, budget: cur.budget, tuning, opts });
-    } catch {
-      this.time.delayedCall(50, () => {
-        const t0 = performance.now();
-        const result = generateCourse(cur.courseSeed, cur.budget, tuning!, opts);
-        done(result, performance.now() - t0);
-      });
-    }
+    // Owner, 2026-11-18: often it was made in the background already (genQueue.ts).
+    want(cur.courseSeed, cur.budget, opts, done);
+  }
+
+  /** A made course becomes the run's current course: its gear item (if any) is placed on it. */
+  private storeRunCourse({ result, ms }: Made): void {
+    const cur = session.run!.current!;
+    let raw = result.raw;
+    let course = result.course;
+    if (cur.gear) ({ raw, course } = placeGear(raw, course, cur.gear, cur.courseSeed));
+    session.course = { key: this.runKey(), raw, course, result, ms };
   }
 
   /** The course result goes back to the run, once. */

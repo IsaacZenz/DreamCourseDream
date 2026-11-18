@@ -5,7 +5,8 @@ import { BOSSES } from '../content/bosses';
 import { ACORNS } from '../content/consumables';
 import { BLUE_STARS } from '../content/progress';
 import { generateRunMap } from '../gen/runMap';
-import { LAST_TOWN, addUpgrade, bossBlueStars, bossOf, regionDef, sizeFor, startRegion, takeBossReward, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
+import { prefetch } from './genQueue';
+import { courseJobFor, type CourseJob, LAST_TOWN, addUpgrade, bossBlueStars, bossOf, regionDef, sizeFor, startRegion, takeBossReward, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
 import { debugBossFight, newRunSeed, persist, session, startRun } from './runSession';
@@ -84,6 +85,7 @@ export class MapScene extends Phaser.Scene {
     persist();
     this.options = choices(run);
     this.sel = Math.min(this.sel, Math.max(0, this.options.length - 1));
+    this.prefetchChoices(run);
     this.drawMap(run);
     this.drawPanel(run);
     this.setupKeys(run);
@@ -189,7 +191,15 @@ export class MapScene extends Phaser.Scene {
     return { x: MAP_X + LANE_W, y: -(row - 0.5) * ROW_H };
   }
 
+  /** Owner, 2026-11-18: make the reachable courses in the background, the selected one first. */
+  private prefetchChoices(run: RunState): void {
+    if (run.status !== 'map') return;
+    const order = [this.options[this.sel], ...this.options.filter((_, i) => i !== this.sel)].filter((n): n is MapNode => !!n);
+    prefetch(order.map((n) => courseJobFor(run, n)).filter((j): j is CourseJob => j !== null));
+  }
+
   private refreshSelection(run: RunState): void {
+    this.prefetchChoices(run);
     const n = this.options[this.sel];
     if (!n || !this.cursor) return;
     const p = n.id === 'boss' ? { x: MAP_X + LANE_W * 3 + 26, y: -(n.row - 0.5) * ROW_H } : n.id === LAST_TOWN ? this.lastTownXY(n.row) : this.nodeXY(n.row, n.lane);
