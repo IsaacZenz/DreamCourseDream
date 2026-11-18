@@ -175,6 +175,7 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] More gear and shop variety
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
 - [ ] Resolve the remaining open questions with the owner
+- [ ] Owner, 2026-11-18: endless mode after the third region: each new region scales the same way, bosses from the boss randomizer
 
 **Done when:** three regions and a final boss are playable and the owner judges the difficulty curve fair.
 
@@ -192,7 +193,7 @@ After playing the first generator, the owner asked for larger, more open, much m
 
 ## Later, not planned in detail
 
-Controller support; desktop packaging; open-world mode; endless mode; daily seed.
+Controller support; desktop packaging; open-world mode; daily seed. (Endless mode moved into Milestone 8 by the owner, 2026-11-18.)
 
 ---
 
@@ -256,3 +257,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-18 — Owner: relax the course check (a roguelike: failing is expected). The bot now plays with a par kit per region instead of the player's gear and upgrades (region 1 a fresh ball; region 2 max shots +1, hit damage +1, shot power +10%), needs 1 health left (was 2), and has 1.5 times the shot limit. Generation is much faster. Region 2 averages (6 seeds each): first course 1.0 s (was 3.1), after 3 nodes 1.1 s (was 6.5), hard after 3 nodes 2.5 s (was 36), after 6 nodes 6.7 s (was 52), hard after 6 nodes 12.7 s (was 41); slowest 23.6 s; no fallbacks in 72 courses across both regions. Region 1 late courses 2.1 s (was 3.2). Courses made ahead are no longer thrown away when the player buys gear. 1 new test (348 in total).
 - 2026-11-18 — Milestone 7 done: the owner played the test build (private artifact) and approved it ("everything passes"). Changes made during review: region two smaller and courses made in the background; trapped-ball fix; relaxed course check with a par kit per region. Known limits carried forward: the Warden is the placeholder boss for every region; region three, more bosses, biomes and the theme switch come in Milestone 8.
 - 2026-11-18 — Milestone 8 round 1 design sheet written: `docs/plans/milestone-8.md` (enemies, elements and bosses: statuses, ranks Veteran and Elite, six traits, squad themes, enemy gear, five new enemies, Frost and Static, the bosses Gloamshell and Mother Bramble, region three). The sheet proposes splitting Milestone 8 into three rounds. Ten questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-18 — Owner decision: after the three regions the run carries on into endless mode, scaling the same way each region, bosses from the boss randomizer. Recorded in DESIGN.md (open question 8), FEATURES.md section 15 and the round 1 sheet (section 10a, three new questions).

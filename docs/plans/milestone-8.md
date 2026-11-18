@@ -1,6 +1,6 @@
 # Milestone 8 design sheet — Content and balance
 
-**Status: round 1 written 2026-11-18. Waiting for the owner's review.** Nothing on this sheet is built yet.
+**Status: round 1 written 2026-11-18; endless mode added at the owner's request the same day (section 10a). Waiting for the owner's review.** Nothing on this sheet is built yet.
 
 How to review: read each section and change any number, name or rule you want. Section 12 lists the questions I need answered; each has a default I will use if you say "defaults are fine". Every number is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -12,7 +12,7 @@ Milestone 8 is the biggest milestone in the plan: eleven checklist items, each o
 
 | Round | Theme | PLAN.md items | What you can play at the end |
 |---|---|---|---|
-| **1 (this sheet)** | **Enemies, elements and bosses** | Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear; Poisoned, Burning, Chilled; more enemy types in both families; second and third boss; two of the remaining abilities (Frost and Static, because the elements need an ice and a shock source) | **Three regions and a final boss**, which is the milestone's "done when" |
+| **1 (this sheet)** | **Enemies, elements and bosses** | Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear; Poisoned, Burning, Chilled; more enemy types in both families; second and third boss; two of the remaining abilities (Frost and Static, because the elements need an ice and a shock source) | **Three regions and a final boss**, which is the milestone's "done when", then **endless mode** (owner, 2026-11-18; section 10a) |
 | 2 | Abilities and the world | The other four abilities (Burr, Kite, Gyre, Drift); linked objects (switches, gates, bridges); optional course modifiers; three biomes; the theme switch after each boss | Each region looks and plays differently |
 | 3 | Characters, gear and balance | Second gear slot unlocks; extra characters; more gear and shop variety; the balance pass with the bot; the remaining open questions | A fair difficulty curve, judged by you |
 
@@ -314,8 +314,36 @@ A round clearing about 15 tiles across, Mother Bramble in the middle on flat gro
 
 - **Region three opens** with the numbers you signed off in Milestone 7 (sheet section 7.4): 5 to 8 areas, area side 10 to 16, threat 28 + 3 per node capped at 60, at most 18 enemies, every enemy +1 health and +1 attack damage, rarity column 4, par kit max shots +2, hit damage +1, shot power +20%, max health +2.
 - **Boss pools:** region 1 and region 2: **The Warden and Gloamshell**, a seeded pick, and **never the same boss twice in one run** (so a run meets both, in a random order). Region 3: **Mother Bramble** only.
-- **Beating Mother Bramble wins the run:** a "Run complete" screen with the run's totals (courses, enemies, stars, blue stars), then back to the Burrow. The profile records the win (`totals.wins`) and the first win.
-- **Endless mode** (DESIGN.md open question 8) stays in "Later, not planned". The win only records itself for now.
+- **Beating Mother Bramble wins the run:** a "Run complete" screen with the run's totals (courses, enemies, stars, blue stars). The profile records the win (`totals.wins`) and the first win. **Owner, 2026-11-18: the run then carries on into endless mode** (section 10a).
+
+### 10a. Endless mode (owner, 2026-11-18)
+
+**Decided (owner):** after the three regions the run goes on into endless mode. Each new region scales the same way the first three do (size, threat and toughness as separate dials), and each region's boss comes from the boss randomizer already planned.
+
+**Default (my proposal, owner may change):**
+
+- **After Mother Bramble:** the "Run complete" screen records the win, then offers **Keep going** (region 4 starts at once, with the usual boss reward: full heal and a gear pick) or **Back to the Burrow** (the run ends as a win). Default: Keep going is selected.
+- **Endless regions are worked out by a rule, not written one by one.** Region 4 and later take region 3's numbers and add one step per region:
+
+  | Dial | Step per endless region | Region 4 | Region 6 |
+  |---|---|---|---|
+  | Threat start | +10 | 38 | 58 |
+  | Threat per node | same (+3) | 3 | 3 |
+  | Threat cap | +12 | 72 | 96 |
+  | Most enemies | +2 | 20 | 24 |
+  | Enemy toughness | +1 health one region, +1 attack damage the next, in turn | +2 health, +1 attack | +3 health, +2 attack |
+  | Boss health | +6 | Warden 30 | Warden 42 |
+  | Veteran / Elite share | +3% / +4% (Veteran at most 40%, Elite at most 40%) | 28% / 12% | 34% / 20% |
+  | Squad themes | region 3's odds | | |
+  | Gear rarity odds | the best column (region 3's) | | |
+  | Par kit (the course check's bot) | +1 max shots, +1 max health, +10% shot power | | |
+  | Blue stars for the boss | +2 (region 3 gives 12) | 14 | 18 |
+
+- **Course size stops growing at region 3's size** (5 to 8 areas, side 10 to 16). This is the one place I suggest *not* scaling the same way, and here is why: size is what makes courses slow to make (region two needed fixing in Milestone 7, and region three is untested). If size kept growing, by region 5 or 6 the game would wait minutes for each course or fall back to the simple stand-in course. Threat and toughness keep growing with no speed cost worth worrying about, so endless still gets harder every region. If you want size to grow too, I would measure it and bring you numbers first.
+- **Bosses in endless:** every region's pool is **all bosses** (the Warden, Gloamshell, Mother Bramble, and any added later). The randomizer never picks the **same boss as the last region**, and never the same arena twice in a row (as now). Boss health follows the table above; Gloamshell and Mother Bramble scale by the same share as the Warden.
+- **The display** shows "REGION 4", "REGION 5" and so on. Until round 2 adds the theme switch, endless regions reuse the five looks in turn (round 2 will say which).
+- **Records:** the profile keeps the **deepest region reached** (`totals.bestRegion`, already saved) and shows it in the Burrow. Dying in endless is still death: carried items are lost, deposited blue stars stay.
+- **The bot's shot limit** and every other rule stay as for region 3.
 
 **The speed risk again.** Region three's courses are the biggest yet. Region two needed options A and B in Milestone 7 to make courses in time. While building I will measure region three with `npm run gen:batch` (6 seeds at 0, 3 and 6 nodes, normal and hard) and report the times. If they are too slow, I will bring you options with numbers (for example 4 to 7 areas, or a threat cap of 48) rather than quietly change the table.
 
@@ -347,6 +375,9 @@ A round clearing about 15 tiles across, Mother Bramble in the middle on flat gro
 | 7 | Frozen water stays ice for the rest of the course | Yes |
 | 8 | Fire and ice cancel each other; water puts out a burning ball | Yes |
 | 9 | Burner now burns what it hits for 1 turn, with no success roll (abilities do not roll; only weapon effects do) | Yes |
+| 11 | Endless: after Mother Bramble, choose Keep going or Back to the Burrow | Yes, Keep going selected |
+| 12 | Endless: threat, toughness, boss health and the par kit keep growing each region, but **course size stops at region 3's** (speed) | Yes |
+| 13 | Endless boss pool: all bosses, never the same as the last region | Yes |
 | 10 | Names: Skitterling, Bramblehog, Glowmoth, Snapjaw, Puffcap, Sproutling, Frostback, Sparkback, Gloamshell, Mother Bramble, The Thicket | Keep |
 
 ---
@@ -384,3 +415,5 @@ Things to check on purpose once it is built (test bench and real runs):
 - Fight Gloamshell: dodge a charge, then hit its open back. Try to hit it while closed.
 - Fight Mother Bramble: hit her side (it hurts you), then land on her crown from a spring.
 - Win a full run and see the "Run complete" screen.
+- Choose Keep going: region 4 starts, enemies are tougher, the boss is a random pick that is not Mother Bramble twice in a row.
+- Choose Back to the Burrow instead: the run ends as a win.

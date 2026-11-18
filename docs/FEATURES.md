@@ -446,7 +446,7 @@ Build in Milestone 3.
 
 **Default.**
 
-- **Regions:** three, each with its own biome, enemy pool, hazard mix and boss. The run ends after the third boss. Reaching the end unlocks an endless mode.
+- **Regions:** three, each with its own biome, enemy pool, hazard mix and boss. ~~The run ends after the third boss. Reaching the end unlocks an endless mode.~~ **Decided (owner, 2026-11-18): after the third boss the run goes on into endless mode.** Each new region scales the same way as the first three (size, threat and toughness as separate dials) and its boss is a seeded pick from the boss randomizer. Built in Milestone 8 round 1; numbers in `docs/plans/milestone-8.md` section 10a.
 - **Course modifiers** (Milestone 8, optional): a course may roll one rule change, such as wind, low gravity, or darkness that shortens the guide. Each is a set of modifiers and has a budget cost.
 - **Unlocks:** new content enters the pool through blue star unlocks (section 10) and by beating each boss for the first time.
 
