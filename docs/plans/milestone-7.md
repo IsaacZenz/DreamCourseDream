@@ -387,9 +387,9 @@ Each one climbs as you finish counted nodes in a region, and jumps at the start 
 
 | Dial | Region 1 | Region 2 | Region 3 (Milestone 8, written now) |
 |---|---|---|---|
-| Areas per journey | 2, +1 every 2 counted nodes, at most 5 | 4, +1 every 2, at most 7 | 5, +1 every 2, at most 8 |
+| Areas per journey | 2, +1 every 2 counted nodes, at most 5 | 3, +1 every 2, at most 6 (owner, 2026-11-18; was 4 to 7) | 5, +1 every 2, at most 8 |
 | Area side, tiles | 8–14 | 9–15 | 10–16 |
-| Threat budget | 8 + 2 per counted node, cap 30 | 18 + 3 per counted node, cap 45 | 28 + 3 per counted node, cap 60 |
+| Threat budget | 8 + 2 per counted node, cap 30 | 18 + 3 per counted node, cap 36 (owner, 2026-11-18; was 45) | 28 + 3 per counted node, cap 60 |
 | Most enemies on one course | 10 | 14 | 18 |
 | Enemy toughness | as built | +1 health on every enemy | +1 health and +1 attack damage |
 | Warden health | 12 | 18 | 24 |
@@ -526,7 +526,7 @@ Differences from the sheet, and choices it left open (each is a Default the owne
   | Region 2, after 6 nodes | 42.9 s | 64.9 s | 2 of 6 |
   | Region 2, hard, after 6 nodes | 58.3 s | 83.1 s | 4 of 6 |
 
-  Region two's later courses are too slow and sometimes fail all their checks (the game then uses a simple stand-in course). The bot here played with no upgrades; a real player arriving in region two has gear and upgrades, which helps the bot, but not enough to fix this. **The numbers are as signed off; the owner chooses what to change** (see the session summary for the options). The next course is still made while the loading screen shows; making it in the background while the player is on the map was not built yet.
+  Region two's later courses were too slow and sometimes failed all their checks (the game then uses a simple stand-in course). **Owner, 2026-11-18: options A and B.** (A) Region two is now 3 to 6 areas with threat capped at 36. (B) A background worker (`src/render/genQueue.ts`) makes the courses the player can go to next while they are on the map (the selected node first), in a town (the choices after leaving it), or playing a course (the choices after winning it with the gear held now); the course the player picks jumps the queue. A course made ahead is exactly the one the run would make on arrival. New timings in the progress log. Region three's numbers are unchanged until Milestone 8. The bot here played with no upgrades; a real player arriving in region two has gear and upgrades, which helps the bot, but not enough to fix this. **The numbers are as signed off; the owner chooses what to change** (see the session summary for the options). The next course is still made while the loading screen shows; making it in the background while the player is on the map was not built yet.
 - **Testing aids** (U panel): in the Burrow, +10 blue stars, reset upgrades and abilities, start region two, show the save, damage the save, and fight the boss in a chosen arena; on the map, go to region two and fight the boss in a chosen arena; in a boss fight, jump the boss to phase 2, phase 3 or 1 health.
 - **The pixel font gained a % sign** (it showed as "?" before, also in Milestone 6 gear descriptions).
 - **In a town's Burrow**, press P to spend blue stars (the sheet left the key open).
