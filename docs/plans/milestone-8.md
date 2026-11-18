@@ -375,10 +375,10 @@ A round clearing about 15 tiles across, Mother Bramble in the middle on flat gro
 | 7 | Frozen water stays ice for the rest of the course | Yes |
 | 8 | Fire and ice cancel each other; water puts out a burning ball | Yes |
 | 9 | Burner now burns what it hits for 1 turn, with no success roll (abilities do not roll; only weapon effects do) | Yes |
+| 10 | Names: Skitterling, Bramblehog, Glowmoth, Snapjaw, Puffcap, Sproutling, Frostback, Sparkback, Gloamshell, Mother Bramble, The Thicket | Keep |
 | 11 | Endless: after Mother Bramble, choose Keep going or Back to the Burrow | Yes, Keep going selected |
 | 12 | Endless: threat, toughness, boss health and the par kit keep growing each region, but **course size stops at region 3's** (speed) | Yes |
 | 13 | Endless boss pool: all bosses, never the same as the last region | Yes |
-| 10 | Names: Skitterling, Bramblehog, Glowmoth, Snapjaw, Puffcap, Sproutling, Frostback, Sparkback, Gloamshell, Mother Bramble, The Thicket | Keep |
 
 ---
 
