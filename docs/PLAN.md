@@ -150,13 +150,14 @@ After playing the first generator, the owner asked for larger, more open, much m
 ## Milestone 7 — Boss and permanent progress
 
 - [x] **Plan gate:** design sheet for The Warden (phases, attacks, summons, arena), blue star sources, the hub screen and the permanent upgrades. Owner signs it off before any of them is built.
-- [ ] Boss template and the first boss, The Warden (FEATURES.md section 5)
-- [ ] Blue stars: sources and wallet
-- [ ] Hub screen between runs with the levelled list and the starting-ability unlock (FEATURES.md section 10)
-- [ ] Death flow: lose run items, keep permanent upgrades and blue stars
-- [ ] Save and load with a version number and a safe fallback if the save is unreadable
-- [ ] Owner, 2026-11-15: a town is the save point for a run in progress. Leaving the game at a town and coming back carries on from there; death still starts over
-- [ ] Region two starts after the boss with a higher budget
+- [x] Boss template and the first boss, The Warden (FEATURES.md section 5)
+- [x] Blue stars: sources and wallet
+- [x] Hub screen between runs with the levelled list and the starting-ability unlock (FEATURES.md section 10)
+- [x] Death flow: lose run items, keep permanent upgrades and blue stars
+- [x] Save and load with a version number and a safe fallback if the save is unreadable
+- [x] Owner, 2026-11-15: a town is the save point for a run in progress. Leaving the game at a town and coming back carries on from there; death still starts over
+- [x] Region two starts after the boss with a higher budget
+- [x] Owner, 2026-11-17: success rolls (wheel), Knack, acorns, twelve slice-perk gear items; blue star deposit; one home (the Burrow); five themed arenas; size and toughness scaled separately per region
 
 **Done when:** the owner can die, buy a permanent upgrade, start again, and see the upgrade applied; and can beat the boss.
 
@@ -249,3 +250,4 @@ Controller support; desktop packaging; open-world mode; endless mode; daily seed
 - 2026-11-17 — Owner decision: **success rolls.** Every weapon special effect rolls on a 10-slice wheel (more slices filled on better weapons); a 20-slice boss wheel; a new permanent upgrade, Knack, fills one slice per level; a new consumable, the acorn, fills extra slices for one course (crates and shops). Added to the Milestone 7 sheet (section 4b) with four more follow-up questions (E to H); recorded in DESIGN.md section 9 and FEATURES.md sections 5, 8, 10, 11 and 13.
 - 2026-11-17 — Owner answered follow-ups B to H: blue stars are carried and only kept once deposited, automatically, at a town or on beating a boss (lost on death); abilities 8 blue stars each; the Den and the Burrow merge into one home, the Burrow; armour does not roll; an acorn lasts one course; slices 2 to 7 by rarity; Knack stays permanent only, and gear gets slice perks for variety (twelve new armour and bauble items, sheet section 4b.6). Two last questions (I, J) on the sheet. **Waiting for the owner's sign-off.**
 - 2026-11-17 — Milestone 7 design sheet **signed off by the owner** (`docs/plans/milestone-7.md`). Last answers: permanent upgrades and abilities can also be bought in a town's Burrow mid-run (prices may rise in balancing); the twelve new gear items are added (66 in all).
+- 2026-11-18 — Milestone 7 built on branch `claude/gifted-feynman-yczrqc` (the session's required branch). Simulation: success rolls with a 10-slice wheel and a 20-slice boss wheel (`wheelFor` in `src/sim/play.ts`), twelve slice-perk gear items (66 in all), acorns (`src/content/consumables.ts`); blue stars carried and deposited at towns and on beating a boss; permanent upgrades and starting abilities (`src/content/progress.ts`, `src/sim/profile.ts`), also bought in a town; one versioned save in three parts with a safe fallback (`src/save/saveData.ts`, `src/save/store.ts`), the run saved only in towns; regions with size, threat and toughness set separately (`REGIONS` in `src/content/run.ts`), boss pools and a new map per region; the boss template (`src/content/bosses.ts`) and The Warden (phases, slams, summons, plate shed, one hit per shot); five arenas (`src/content/arenas/`), never the same twice in a row. Display: the Burrow as the opening hub screen, success wheels, the boss bar and slam ring, carried blue stars and acorns on the HUD, the boss reward pick, region labels, testing aids. New placeholder sprites. `npm run arenas` checks every arena with the bot (all at least 12/20). 53 new tests (341 in total). Played in a browser: Burrow (buy, toggle), run start with the upgrade applied, all five arenas, a boss hit with the boss wheel, the slam ring, the win screen, reward pick, region two, a town's Burrow upgrades, continuing a saved run after a reload, and a damaged save; screenshots checked. Differences from the sheet in its section 12, including one rule added during the build (a boss takes one hit per shot). **Known problem:** region two's later courses take 40-60 s to make and sometimes fall back to a simple course; options for the owner in the session summary. **Waiting for the owner** to play it.

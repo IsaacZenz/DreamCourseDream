@@ -595,6 +595,8 @@ export function startRegion(run: RunState, region: number, map: RunMap): void {
   run.region = region;
   run.map = map;
   run.at = null;
+  // The path is drawn on the region's map, so it starts again.
+  run.path.length = 0;
   run.countdown = RUN.countdown;
   run.raises = 0;
   run.counted = 0;

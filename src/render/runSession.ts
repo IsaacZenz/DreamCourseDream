@@ -12,7 +12,7 @@ import type { GenResult } from '../gen/validate';
 import type { Course } from '../sim/course';
 import type { GearSlots } from '../content/gear';
 import type { Profile } from '../sim/profile';
-import { createRun, drainDeposit, type RunState } from '../sim/run';
+import { createRun, drainDeposit, enterNode, startRegion, type RunState } from '../sim/run';
 import { restoreRun, snapshotRun, type RunSnapshot } from '../save/saveData';
 import { loadSave, writeSave } from '../save/store';
 
@@ -53,6 +53,7 @@ export function startRun(seed: string): RunState {
   session.course = null;
   session.pending = null;
   session.saved = null;
+  bossesRecorded = 0;
   p.totals.runs++;
   persist();
   return session.run;
@@ -63,6 +64,7 @@ export function continueRun(): RunState | null {
   const snap = session.saved;
   if (!snap) return null;
   session.run = restoreRun(snap, generateRunMap(snap.seed, snap.region));
+  bossesRecorded = session.run.bossesBeaten.length;
   session.course = null;
   session.pending = null;
   return session.run;
@@ -79,6 +81,9 @@ export function activeRun(): RunState | null {
  * beaten, the Burrow) and write the save. The run itself is saved only while
  * it stands in a town; anywhere else the run save is removed.
  */
+/** Bosses of the current run already added to the profile's total. */
+let bossesRecorded = 0;
+
 export function persist(): void {
   const p = session.profile;
   const run = session.run;
@@ -87,10 +92,42 @@ export function persist(): void {
     for (const b of run.bossesBeaten) if (!p.bossesBeaten.includes(b)) p.bossesBeaten.push(b);
     p.totals.bestRegion = Math.max(p.totals.bestRegion, run.region);
     p.lastArena = run.lastArena;
+    p.totals.bossWins += run.bossesBeaten.length - bossesRecorded;
+    bossesRecorded = run.bossesBeaten.length;
     session.burrow = { ...run.burrow };
     session.saved = run.status === 'shop' ? snapshotRun(run) : null;
   }
   writeSave({ profile: p, burrow: session.burrow, run: session.saved });
+}
+
+// ---------------------------------------------------------------------------
+// Testing aids (the U panel, Milestone 7 sheet section 8.2)
+
+/** Clear upgrades, abilities and records; the stash and the stored gear stay. */
+export function resetProgress(): void {
+  const p = session.profile;
+  for (const k of Object.keys(p.levels)) delete p.levels[k];
+  p.abilities.length = 0;
+  p.startAbility = null;
+  persist();
+}
+
+/** A new run that goes straight into the boss fight, in this arena (any region the run is in). */
+export function debugBossFight(arena: string, run: RunState = startRun(newRunSeed())): void {
+  run.countdown = 0;
+  run.lastTownVisited = true;
+  run.status = 'map';
+  run.current = null;
+  const cur = enterNode(run, 'boss');
+  run.current = { ...cur, arena };
+  run.lastArena = arena;
+}
+
+/** A new run that starts in region two. */
+export function debugRegionTwo(): RunState {
+  const run = startRun(newRunSeed());
+  startRegion(run, 2, generateRunMap(run.seed, 2));
+  return run;
 }
 
 /** Kept for the town scene: the Burrow changed. */

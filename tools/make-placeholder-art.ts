@@ -933,6 +933,8 @@ const GLYPHS: Record<string, string> = {
   '-': '000000111000000', '+': '000010111010000', '/': '001001010100100', '(': '010100100100010',
   ')': '010001001001010', '#': '101111101111101', '=': '000111000111000', '?': '111001010000010',
   '!': '010010010000010', "'": '010010000000000', '>': '100010001010100', '<': '001010100010001',
+  // Milestone 7: percent signs in upgrade and gear descriptions.
+  '%': '101001010100101',
 };
 
 function drawFont(): { img: Image; frames: string[] } {
@@ -1055,11 +1057,14 @@ const RARITY_EDGE: Record<string, string> = {
 };
 const FAMILY_FILL: Record<string, string> = {
   Shell: '#a8a8b8', Coat: '#e05828', Knob: '#a87848', Lining: '#e0d0a0', Guard: '#48a048', Hide: '#8a6040', Magnet: '#d83838', Sight: '#48a8e8', Pebble: '#58c878',
+  // Milestone 7 (owner, 2026-11-17): slice perks.
+  Grit: '#9a8878', Spinner: '#e8c048',
 };
 const UNIQUE_FILL: Record<string, string> = {
   'thunder-knuckle': '#f0e040', 'wrecking-shell': '#606878', 'leech-fang': '#c02848', 'sunfire-crown': '#f8a020', 'giants-knuckle': '#b08060', 'echo-shell': '#a080f0',
   'mirror-plate': '#c8e8f8', 'cork-plate': '#c89858', 'moss-plate': '#589838', 'phoenix-plate': '#f86020', 'bastion-plate': '#8890a8', 'storm-cloak': '#5868b8',
   'pocket-pillow': '#e8b8d8', 'golden-tooth': '#f0d048', 'feather-charm': '#f0f0f8', 'crown-of-plenty': '#f8c828', 'pocket-watch': '#d8b060', 'four-leaf-clover': '#38c048',
+  'gamblers-vest': '#c03860', 'fortunes-mail': '#58c8a8', 'hot-streak-charm': '#f85818', 'golden-spinner': '#f8e060',
 };
 /** Shape masks, 12x12: weapon a spiked ball, armour a shield, bauble a gem. */
 const GEAR_SHAPES: Record<string, readonly string[]> = {
@@ -1072,6 +1077,8 @@ const GEAR_MARKS: Record<string, P[]> = {
   Shell: [[4, 5], [6, 5], [5, 4], [5, 6]], Coat: [[5, 3], [4, 4], [6, 5], [5, 6], [4, 6], [6, 6]], Knob: [[4, 4], [5, 4], [4, 5], [5, 5]],
   Lining: [[3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [3, 5], [4, 5], [5, 5], [6, 5], [7, 5]], Guard: [[3, 3], [7, 3], [4, 4], [6, 4], [5, 5]], Hide: [[5, 3], [4, 4], [6, 4], [5, 5], [5, 6]],
   Magnet: [[3, 3], [3, 4], [3, 5], [7, 3], [7, 4], [7, 5], [4, 6], [5, 6], [6, 6]], Sight: [[3, 4], [4, 3], [5, 3], [6, 3], [7, 4], [5, 4]], Pebble: [[5, 3], [4, 4], [6, 4], [5, 5]],
+  // A little wheel with a spoke (Spinner) and a bar (Grit).
+  Spinner: [[4, 3], [5, 3], [6, 3], [3, 4], [7, 4], [3, 5], [5, 5], [7, 5], [4, 6], [5, 6], [6, 6], [5, 4]], Grit: [[3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [5, 5], [5, 6]],
 };
 function uniqueMark(id: string): P[] {
   // A star-shaped mark, turned a little differently for each item.
@@ -1212,6 +1219,74 @@ emit('town-shop', drawShopBuilding(), 56, 52, ['idle'], [28, 51]);
 emit('town-burrow', drawBurrow(), 56, 36, ['idle'], [28, 33]);
 emit('town-sign', drawSignpost(), 28, 32, ['idle'], [14, 31]);
 emit('cursor', drawCursor(), 9, 7, ['idle'], [4, 6]);
+
+// ---------------------------------------------------------------------------
+// Milestone 7: the Warden, blue stars, acorns, permanent upgrades, the summon puff.
+
+/** The Warden: a big armoured stone shape, about two tiles wide. One frame per phase: it cracks as it loses health. */
+function drawWarden(phase: number): Image {
+  const img = new Image(44, 44);
+  const foot = hex2('#3a3440');
+  for (let y = 38; y < 42; y++) for (const x0 of [8, 30]) for (let x = x0; x < x0 + 7; x++) img.set(x, y, foot);
+  blob(img, 22, 24, 20, 17, '#7a7484', '#18141c');
+  // Plates on its back: fewer each phase (it sheds one at each phase change).
+  const plate = ramp('#a89cb8');
+  const plates: P[][] = [
+    [[10, 12], [11, 12], [12, 12], [13, 12], [10, 13], [11, 13], [12, 13], [13, 13]],
+    [[19, 9], [20, 9], [21, 9], [22, 9], [23, 9], [24, 9], [19, 10], [20, 10], [21, 10], [22, 10], [23, 10], [24, 10]],
+    [[30, 12], [31, 12], [32, 12], [33, 12], [30, 13], [31, 13], [32, 13], [33, 13]],
+  ];
+  plates.slice(0, 3 - phase).forEach((pl) => pl.forEach(([x, y]) => img.set(x, y, plate[4]!)));
+  // Cracks.
+  const crack = hex2('#201820');
+  const cracks: P[] = [[16, 18], [17, 19], [17, 20], [18, 21], [27, 16], [26, 17], [26, 18], [25, 19], [24, 20], [12, 26], [13, 27], [13, 28], [31, 25], [30, 26], [31, 27]];
+  cracks.slice(0, phase * 7).forEach(([x, y]) => img.set(x, y, crack));
+  // Face at the front, with glowing eyes.
+  blob(img, 14, 30, 7, 5, '#5a5464', '#18141c');
+  const glow = hex2(phase === 2 ? '#f84020' : '#f8c030');
+  for (const [x, y] of [[11, 29], [12, 29], [16, 29], [17, 29]] as P[]) img.set(x, y, glow);
+  for (let x = 11; x < 18; x++) img.set(x, 32, hex2('#18141c'));
+  return img;
+}
+
+function drawAcorn(cap: string, nut: string, star: boolean): Image {
+  const img = new Image(10, 11);
+  blob(img, 5, 6.5, 4, 4, nut, '#3a2008');
+  for (let y = 1; y < 5; y++) for (let x = 1; x < 9; x++) if (Math.hypot(x + 0.5 - 5, y + 0.5 - 4.5) < 4) img.set(x, y, hex2(y === 1 || x === 1 || x === 8 ? '#2a1808' : cap));
+  img.set(5, 0, hex2('#3a2008'));
+  if (star) for (const [x, y] of [[5, 6], [4, 7], [5, 7], [6, 7], [5, 8]] as P[]) img.set(x, y, hex2('#f8f8f8'));
+  return img;
+}
+
+function drawPerm(base: string, mark: readonly P[]): Image {
+  const img = new Image(12, 12);
+  blob(img, 6, 6, 6, 6, base, '#101018');
+  // A blue star corner: bought with blue stars.
+  for (const [x, y] of [[9, 1], [8, 2], [9, 2], [10, 2], [9, 3]] as P[]) img.set(x, y, hex2('#58b8f8'));
+  for (const [x, y] of mark) img.set(x, y, hex2('#f8f8f8'));
+  return img;
+}
+
+function drawPuff(f: number): Image {
+  const img = new Image(16, 14);
+  const r = 3 + f * 1.5;
+  for (const [cx, cy] of [[8, 8], [5, 9], [11, 9], [8, 5]] as P[]) blob(img, cx, cy, r * 0.6, r * 0.55, f < 2 ? '#e8e8f0' : '#a8a8b8', f < 2 ? '#8888a0' : '#787890');
+  return img;
+}
+
+emit('warden', sheet([0, 1, 2].map(drawWarden)), 44, 44, ['phase1', 'phase2', 'phase3'], [22, 41]);
+emit('star-blue', drawStar('#48a8f8'), 11, 11, ['idle'], [5, 10]);
+emit('acorn-lucky', drawAcorn('#7a5028', '#c89048', false), 10, 11, ['idle'], [5, 10]);
+emit('acorn-golden', drawAcorn('#a07020', '#f8d040', false), 10, 11, ['idle'], [5, 10]);
+emit('acorn-star', drawAcorn('#4050a0', '#88b8f8', true), 10, 11, ['idle'], [5, 10]);
+emit('puff', sheet([0, 1, 2].map(drawPuff)), 16, 14, ['0', '1', '2'], [8, 12]);
+const ARROW: P[] = [[6, 2], [5, 3], [6, 3], [7, 3], [4, 4], [6, 4], [8, 4], [6, 5], [6, 6], [6, 7], [6, 8], [6, 9]];
+const PERM_LOOK: Record<string, [string, readonly P[]]> = {
+  'perm-vitality': ['#e83c50', ARROW], 'perm-stamina': ['#40c8e8', ARROW], 'perm-head-start': ['#f8d030', ARROW],
+  'perm-haggler': ['#d8a048', [[3, 6], [4, 6], [5, 6], [6, 6], [7, 6], [8, 6], [9, 6]]], 'perm-fortune': ['#40c060', ARROW],
+  'perm-knack': ['#e8c048', [[4, 3], [5, 3], [6, 3], [7, 3], [3, 4], [8, 4], [3, 5], [5, 5], [8, 5], [3, 6], [8, 6], [4, 7], [5, 7], [6, 7], [7, 7], [5, 4], [5, 6]]],
+};
+for (const [id, [base, mark]] of Object.entries(PERM_LOOK)) emit(id, drawPerm(base, mark), 12, 12, ['idle'], [6, 6]);
 
 const font = drawFont();
 emit('font', font.img, 4, 6, font.frames, [0, 0]);

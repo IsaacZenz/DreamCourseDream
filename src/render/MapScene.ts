@@ -1,10 +1,15 @@
 import Phaser from 'phaser';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
-import { RUN, UPGRADE_LIST, UPGRADES, type NodeType } from '../content/run';
-import { LAST_TOWN, addUpgrade, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
+import { UPGRADE_LIST, UPGRADES, type NodeType } from '../content/run';
+import { BOSSES } from '../content/bosses';
+import { ACORNS } from '../content/consumables';
+import { BLUE_STARS } from '../content/progress';
+import { generateRunMap } from '../gen/runMap';
+import { LAST_TOWN, addUpgrade, bossBlueStars, bossOf, regionDef, sizeFor, startRegion, takeBossReward, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
-import { newRunSeed, session, startRun } from './runSession';
+import { debugBossFight, newRunSeed, persist, session, startRun } from './runSession';
+import { ARENA_LIST } from '../content/arenas';
 import { getPanel, preloadAssets, shared } from './shared';
 
 const ROW_H = 26;
@@ -27,15 +32,22 @@ const NODE_NAME: Record<NodeType, string> = { course: 'COURSE', hard: 'HARD COUR
 function nodeInfo(run: RunState, type: NodeType): string[] {
   switch (type) {
     case 'course':
-      return [`BUDGET ${budgetFor(run, 'course')}`, `FINISH: +${rewardFor('course')} STARS`];
+      return [`BUDGET ${budgetFor(run, 'course')}, ${sizeFor(run, 'course').areas[0]} AREAS`, `FINISH: +${rewardFor('course')} STARS +${BLUE_STARS.course} BLUE`];
     case 'hard':
-      return [`BUDGET ${budgetFor(run, 'hard')}`, `FINISH: +${rewardFor('hard')} STARS`, 'ALWAYS HAS A GEAR ITEM'];
+      return [`BUDGET ${budgetFor(run, 'hard')}, ${sizeFor(run, 'hard').areas[0]} AREAS`, `FINISH: +${rewardFor('hard')} STARS +${BLUE_STARS.hard} BLUE`, 'ALWAYS HAS A GEAR ITEM'];
     case 'shop':
-      return ['THE SHOP AND YOUR BURROW', 'DOES NOT LOWER THE COUNTDOWN'];
+      return ['THE SHOP AND YOUR BURROW', 'DEPOSITS YOUR BLUE STARS', 'SAVES THE RUN'];
     case 'cache':
       return ['TAKE ONE OF THREE, FREE'];
-    case 'boss':
-      return [`STAND-IN: HARD COURSE`, `BUDGET ${budgetFor(run, 'boss')}`, ...(run.countdown > 0 ? [`EARLY: +${run.countdown * RUN.earlyBossBluePerStep} BLUE STARS`] : [])];
+    case 'boss': {
+      const boss = BOSSES.get(bossOf(run));
+      return [
+        `${boss?.name.toUpperCase() ?? 'BOSS'}: ${regionDef(run).bossHealth} HEALTH`,
+        `BEAT IT: +${bossBlueStars(run.region)} BLUE STARS`,
+        ...(run.countdown > 0 ? [`EARLY: +${run.countdown * BLUE_STARS.earlyPerStep} MORE`] : []),
+        'IN ONE OF FIVE ARENAS',
+      ];
+    }
   }
 }
 
@@ -68,13 +80,17 @@ export class MapScene extends Phaser.Scene {
       this.scene.restart();
       return;
     }
+    // Milestone 7: keep the save up to date (leaving a town removes the run save).
+    persist();
     this.options = choices(run);
     this.sel = Math.min(this.sel, Math.max(0, this.options.length - 1));
     this.drawMap(run);
     this.drawPanel(run);
     this.setupKeys(run);
     this.setRunPanel(run);
+    this.setProgressPanel(run);
     if (run.status === 'won' || run.status === 'lost') this.drawSummary(run);
+    if (run.status === 'reward') this.drawReward(run);
   }
 
   private nodeXY(row: number, lane: number): { x: number; y: number } {
@@ -192,10 +208,12 @@ export class MapScene extends Phaser.Scene {
       c.add(pixelText(this, m, 4, y, text, { color }));
       y += 7;
     };
-    line(`RUN #${run.seed}`, UI_DIM);
+    line(`RUN #${run.seed}  REGION ${run.region}`, UI_DIM);
     y += 2;
     line(`HEALTH ${run.health}/${stats.get('maxHealth')}`, run.health <= 2 ? BAD : UI_TEXT);
     line(`STARS ${run.wallet}`, STAR);
+    line(`BLUE: ${run.blueStars} CARRIED, ${session.profile.stash} SAFE`, 0x80c8ff);
+    if (run.pocket) line(`POCKET: ${ACORNS.get(run.pocket)?.name.toUpperCase()}`, STAR);
     line(run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS NEXT!', 0xff8080);
     line(`COURSES DONE ${run.totals.courses}`, UI_DIM);
     y += 3;
@@ -250,15 +268,28 @@ export class MapScene extends Phaser.Scene {
       this.scrollY += d * ROW_H;
       this.cameras.main.setScroll(0, this.scrollY);
     };
-    kb.on('keydown-LEFT', move(-1));
-    kb.on('keydown-A', move(-1));
-    kb.on('keydown-RIGHT', move(1));
-    kb.on('keydown-D', move(1));
+    const pick = (d: number) => () => {
+      if (run.status !== 'reward') return move(d)();
+      const n = run.reward?.length ?? 0;
+      if (!n) return;
+      this.rewardSel = (this.rewardSel + d + n) % n;
+      this.scene.restart();
+    };
+    kb.on('keydown-LEFT', pick(-1));
+    kb.on('keydown-A', pick(-1));
+    kb.on('keydown-RIGHT', pick(1));
+    kb.on('keydown-D', pick(1));
     kb.on('keydown-UP', look(-1));
     kb.on('keydown-W', look(-1));
     kb.on('keydown-DOWN', look(1));
-    kb.on('keydown-ENTER', () => this.go(run));
-    kb.on('keydown-SPACE', () => this.go(run));
+    const ok = () => {
+      if (run.status === 'reward') return this.takeReward(run, this.rewardSel);
+      if (run.status === 'won' || run.status === 'lost') return this.scene.start('burrow');
+      this.go(run);
+    };
+    kb.on('keydown-ENTER', ok);
+    kb.on('keydown-SPACE', ok);
+    kb.on('keydown-ESC', () => run.status === 'reward' && this.takeReward(run, null));
     kb.on('keydown-U', () => getPanel().toggle());
     const course = (i: number) => () => this.scene.start('course', { courseIndex: i });
     ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'].forEach((k, i) => kb.on(`keydown-${k}`, course(i)));
@@ -308,10 +339,81 @@ export class MapScene extends Phaser.Scene {
     });
   }
 
+  // -------------------------------------------------------------------------
+  // After the boss (Milestone 7 sheet section 7.2): pick 1 of 3 gear items, then the next region.
+
+  private rewardSel = 0;
+
+  private drawReward(run: RunState): void {
+    const m = shared.manifest;
+    const offers = run.reward ?? [];
+    const w = 300;
+    const h = 120;
+    const c = this.add.container(Math.round((VIEW_WIDTH - w) / 2), Math.round((VIEW_HEIGHT - h) / 2)).setScrollFactor(0).setDepth(200);
+    c.add(this.add.rectangle(0, 0, w, h, UI_BG, 0.97).setOrigin(0, 0).setStrokeStyle(1, GOOD));
+    c.add(pixelText(this, m, 8, 6, `THE WARDEN IS BEATEN! PICK ONE REWARD, THEN REGION ${run.region + 1}`, { color: GOOD }));
+    offers.forEach((o, i) => {
+      const g = GEAR.get(o.id)!;
+      const x = 8 + i * 96;
+      const sel = i === this.rewardSel;
+      c.add(this.add.rectangle(x, 18, 90, 80, 0x1c1c34, 1).setOrigin(0, 0).setStrokeStyle(sel ? 2 : 1, sel ? STAR : 0x404060));
+      c.add(this.add.image(x + 45, 36, g.icon, 0).setScale(2));
+      c.add(pixelText(this, m, x + 4, 52, g.name.toUpperCase().slice(0, 21), { color: UI_TEXT }));
+      c.add(pixelText(this, m, x + 4, 59, `${g.category.toUpperCase()} ${g.rarity.toUpperCase()}`, { color: UI_DIM }));
+      const words = g.desc.toUpperCase().split(' ');
+      let line = '';
+      let ly = 68;
+      for (const wd of words) {
+        if ((line + ' ' + wd).trim().length > 21) {
+          c.add(pixelText(this, m, x + 4, ly, line, { color: UI_DIM }));
+          ly += 7;
+          line = wd;
+        } else line = (line + ' ' + wd).trim();
+      }
+      if (line) c.add(pixelText(this, m, x + 4, ly, line, { color: UI_DIM }));
+    });
+    c.add(pixelText(this, m, 8, h - 12, 'LEFT/RIGHT: CHOOSE  ENTER: TAKE IT (REPLACES THAT SLOT)  ESC: NONE', { color: UI_DIM }));
+  }
+
+  private takeReward(run: RunState, i: number | null): void {
+    takeBossReward(run, i, generateRunMap(run.seed, run.region + 1));
+    this.rewardSel = 0;
+    this.sel = 0;
+    this.scrollY = 0;
+    this.cameras.main.setScroll(0, 0);
+    persist();
+    this.scene.restart();
+  }
+
+  /** Milestone 7 testing aids on the map: fight the boss now in a chosen arena, or jump to region two. */
+  private setProgressPanel(run: RunState): void {
+    getPanel().setProgress(
+      run.status === 'map'
+        ? {
+            title: 'Region and boss testing aids',
+            buttons: [
+              {
+                label: 'Go to region two now',
+                onClick: () => {
+                  startRegion(run, 2, generateRunMap(run.seed, 2));
+                  this.scene.restart();
+                },
+              },
+            ],
+            arenas: ARENA_LIST.map((a) => ({ id: a.id, label: `${a.name}: ${a.gimmick}` })),
+            onArena: (id) => {
+              debugBossFight(id, run);
+              this.scene.start('course', { run: true });
+            },
+          }
+        : null,
+    );
+  }
+
   private drawSummary(run: RunState): void {
     const m = shared.manifest;
     const won = run.status === 'won';
-    const reason = won ? 'YOU BEAT THE BOSS (A STAND-IN COURSE FOR NOW).' : run.endedBy === 'shots' ? 'OUT OF SHOTS WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.';
+    const reason = won ? `YOU BEAT THE BOSS OF REGION ${run.region}!` : run.endedBy === 'shots' ? 'OUT OF SHOTS WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.';
     const gear = GEAR_CATEGORIES.map((c) => run.gear[c]).filter(Boolean).map((id) => GEAR.get(id!)!.name);
     const stored = GEAR_CATEGORIES.map((c) => run.burrow[c]).filter(Boolean).map((id) => GEAR.get(id!)!.name);
     const lines = [
@@ -320,11 +422,11 @@ export class MapScene extends Phaser.Scene {
       reason,
       `ROWS CLIMBED: ${rowOf(run)}   COURSES FINISHED: ${run.totals.courses}`,
       `YELLOW STARS EARNED: ${run.totals.stars}`,
-      `BLUE STARS (COUNTED, SPENT FROM MILESTONE 7): ${run.blueStars}`,
+      `BLUE STARS DEPOSITED: ${run.banked}${run.blueStars ? `   LOST (CARRIED): ${run.blueStars}` : ''}   STASH: ${session.profile.stash}`,
       `GEAR HELD: ${gear.length ? gear.join(', ') : 'NONE'}${won ? '' : ' (LOST)'}`,
       `SAFE IN YOUR BURROW: ${stored.length ? stored.join(', ') : 'NOTHING'}`,
       '',
-      'N: NEW RUN   S: SAME SEED AGAIN   1-6: TEST COURSES',
+      'ENTER: TO THE BURROW   N: NEW RUN   S: SAME SEED AGAIN',
     ];
     const text = pixelText(this, m, 0, 0, lines.join('\n'), { color: won ? GOOD : BAD });
     const w = text.width + 16;

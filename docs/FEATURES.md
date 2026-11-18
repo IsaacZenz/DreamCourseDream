@@ -187,6 +187,7 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 - **Arenas:** five hand-picked arenas, each with its own gimmick or theme (Milestone 7: Bumper Ring, Sinkhole Bowl, Ice Rink, The Moat, Storm Steps). The same arena is never used twice in a row, also across runs.
 - **Boss wheel:** success rolls (section 8) against a boss use a 20-slice wheel instead of 10, with the same number of slices filled, so bosses are always harder to affect.
 - Summoned minions leave no flag pole (default kept).
+- **As built (2026-11-18), owner may change:** a boss takes one hit per shot (`hitsPerShot`), so the ball cannot rattle a dozen hits into it in one shot.
 
 ---
 

@@ -1,6 +1,6 @@
 # Milestone 7 design sheet — Boss and permanent progress
 
-**Status: signed off by the owner, 2026-11-17**, after three rounds of answers (sections 10, 10c and 10d). The owner's answers are already written into every section. Owner's note on question I: if buying upgrades mid-run makes things too easy, prices may be raised in balancing.
+**Status: signed off by the owner, 2026-11-17**, after three rounds of answers (sections 10, 10c and 10d). **Built 2026-11-18**; differences from the sheet are in [section 12](#12-as-built-2026-11-18). Waiting for the owner to play it.
 
 How to review: read each section, change any number or rule you want. Every number here is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -500,6 +500,36 @@ The remaining milestones (PLAN.md 8 and 9) and the reference files were checked 
 |---|---|---|
 | I | Buy permanent upgrades and abilities in a town, mid-run? | **Owner: yes.** Raise prices in balancing if needed (section 5.1) |
 | J | Four armour and bauble items per rarity (66 items)? | **Owner: yes**, add them and keep every old item |
+
+---
+
+## 12. As built (2026-11-18)
+
+Differences from the sheet, and choices it left open (each is a Default the owner may change):
+
+- **A boss takes one hit per shot** (`hitsPerShot` in `src/content/bosses.ts`). Not on the sheet. Without it the ball rattles against the Warden on a slope or the Moat's island and lands a dozen hits in one shot, so the fight could end in one or two shots. With it, the bot needs 18 to 33 shots to win.
+- **Stars do not open a boss arena's exit.** Only the boss's defeat does; a minion's star goes to the wallet only. (Found while building: with a quota of 0, the first star opened the exit.)
+- **The Moat's island is 5 × 5**, with a one-tile ring of water, not 3 × 3 in a two-tile ring: the narrower version was too hard to land on.
+- **Arena check, `npm run arenas`** (the bot, a fresh ball, 20 seeds each, 80-shot limit): Bumper Ring 17/20, Ice Rink 20/20, Sinkhole Bowl 20/20, Storm Steps 16/20, The Moat 12/20. All at least half, as the sheet asks. The unit tests play three seeds per arena to keep the test run quick.
+- **Arenas are course files** (format 3 with an optional `spawns` list), not a new format 4; the boss is an object like any enemy. A course with a boss on it keeps its exit closed until the boss falls.
+- **Boss testing aid "Win this course"** finishes the fight without defeating the boss, so the boss bar still shows health on the win screen.
+- **Region generation speed** (section 7.4, measured with the region numbers as signed off, a fresh ball, 6 seeds each):
+
+  | Course | Average | Slowest | Fell back to the simple course |
+  |---|---|---|---|
+  | Region 1, first course | 0.2 s | 0.8 s | 0 of 6 |
+  | Region 1, after 6 nodes | 3.2 s | 10.7 s | 0 of 6 |
+  | Region 1, hard, after 6 nodes | 4.6 s | 8.7 s | 0 of 6 |
+  | Region 2, first course | 3.5 s | 5.5 s | 0 of 6 |
+  | Region 2, after 3 nodes | 10.2 s | 31.1 s | 0 of 6 |
+  | Region 2, hard, after 3 nodes | 42.3 s | 77.7 s | 0 of 6 |
+  | Region 2, after 6 nodes | 42.9 s | 64.9 s | 2 of 6 |
+  | Region 2, hard, after 6 nodes | 58.3 s | 83.1 s | 4 of 6 |
+
+  Region two's later courses are too slow and sometimes fail all their checks (the game then uses a simple stand-in course). The bot here played with no upgrades; a real player arriving in region two has gear and upgrades, which helps the bot, but not enough to fix this. **The numbers are as signed off; the owner chooses what to change** (see the session summary for the options). The next course is still made while the loading screen shows; making it in the background while the player is on the map was not built yet.
+- **Testing aids** (U panel): in the Burrow, +10 blue stars, reset upgrades and abilities, start region two, show the save, damage the save, and fight the boss in a chosen arena; on the map, go to region two and fight the boss in a chosen arena; in a boss fight, jump the boss to phase 2, phase 3 or 1 health.
+- **The pixel font gained a % sign** (it showed as "?" before, also in Milestone 6 gear descriptions).
+- **In a town's Burrow**, press P to spend blue stars (the sheet left the key open).
 
 ---
 

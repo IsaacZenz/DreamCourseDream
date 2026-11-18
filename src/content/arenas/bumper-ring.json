@@ -7,7 +7,7 @@
  },
  "tiles": [
   ". . b6 b6 b6 b6 b6 b6 b6 b6 b6 . .",
-  ". g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 .",
+  ". b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6 .",
   "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
   "b6 g2 g2 b6 g2 g2 g2 g2 g2 b6 g2 g2 b6",
   "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
@@ -17,7 +17,7 @@
   "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
   "b6 g2 g2 b6 g2 g2 g2 g2 g2 b6 g2 g2 b6",
   "b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6",
-  ". g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 .",
+  ". b6 g2 g2 g2 g2 g2 g2 g2 g2 g2 b6 .",
   ". . b6 b6 b6 b6 b6 b6 b6 b6 b6 . ."
  ],
  "start": [
