@@ -1,6 +1,6 @@
 # Milestone 8 design sheet — Content and balance
 
-**Status: round 1 written 2026-11-18; endless mode added at the owner's request the same day (section 10a). Waiting for the owner's review.** Nothing on this sheet is built yet.
+**Status: round 1 written 2026-11-18; endless mode added at the owner's request the same day (section 10a) and agreed by the owner. Questions 1 to 10 are waiting for the owner's review.** Nothing on this sheet is built yet.
 
 How to review: read each section and change any number, name or rule you want. Section 12 lists the questions I need answered; each has a default I will use if you say "defaults are fine". Every number is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -320,7 +320,7 @@ A round clearing about 15 tiles across, Mother Bramble in the middle on flat gro
 
 **Decided (owner):** after the three regions the run goes on into endless mode. Each new region scales the same way the first three do (size, threat and toughness as separate dials), and each region's boss comes from the boss randomizer already planned.
 
-**Default (my proposal, owner may change):**
+**Agreed by the owner, 2026-11-18** (questions 11 to 13); the numbers are starting values:
 
 - **After Mother Bramble:** the "Run complete" screen records the win, then offers **Keep going** (region 4 starts at once, with the usual boss reward: full heal and a gear pick) or **Back to the Burrow** (the run ends as a win). Default: Keep going is selected.
 - **Endless regions are worked out by a rule, not written one by one.** Region 4 and later take region 3's numbers and add one step per region:
@@ -339,7 +339,7 @@ A round clearing about 15 tiles across, Mother Bramble in the middle on flat gro
   | Par kit (the course check's bot) | +1 max shots, +1 max health, +10% shot power | | |
   | Blue stars for the boss | +2 (region 3 gives 12) | 14 | 18 |
 
-- **Course size stops growing at region 3's size** (5 to 8 areas, side 10 to 16). This is the one place I suggest *not* scaling the same way, and here is why: size is what makes courses slow to make (region two needed fixing in Milestone 7, and region three is untested). If size kept growing, by region 5 or 6 the game would wait minutes for each course or fall back to the simple stand-in course. Threat and toughness keep growing with no speed cost worth worrying about, so endless still gets harder every region. If you want size to grow too, I would measure it and bring you numbers first.
+- **Decided (owner, 2026-11-18): course size stops growing at region 3's size; everything else keeps growing.** Course size stops growing at region 3's size (5 to 8 areas, side 10 to 16). This is the one place I suggest *not* scaling the same way, and here is why: size is what makes courses slow to make (region two needed fixing in Milestone 7, and region three is untested). If size kept growing, by region 5 or 6 the game would wait minutes for each course or fall back to the simple stand-in course. Threat and toughness keep growing with no speed cost worth worrying about, so endless still gets harder every region. If you want size to grow too, I would measure it and bring you numbers first.
 - **Bosses in endless:** every region's pool is **all bosses** (the Warden, Gloamshell, Mother Bramble, and any added later). The randomizer never picks the **same boss as the last region**, and never the same arena twice in a row (as now). Boss health follows the table above; Gloamshell and Mother Bramble scale by the same share as the Warden.
 - **The display** shows "REGION 4", "REGION 5" and so on. Until round 2 adds the theme switch, endless regions reuse the five looks in turn (round 2 will say which).
 - **Records:** the profile keeps the **deepest region reached** (`totals.bestRegion`, already saved) and shows it in the Burrow. Dying in endless is still death: carried items are lost, deposited blue stars stay.
@@ -376,9 +376,9 @@ A round clearing about 15 tiles across, Mother Bramble in the middle on flat gro
 | 8 | Fire and ice cancel each other; water puts out a burning ball | Yes |
 | 9 | Burner now burns what it hits for 1 turn, with no success roll (abilities do not roll; only weapon effects do) | Yes |
 | 10 | Names: Skitterling, Bramblehog, Glowmoth, Snapjaw, Puffcap, Sproutling, Frostback, Sparkback, Gloamshell, Mother Bramble, The Thicket | Keep |
-| 11 | Endless: after Mother Bramble, choose Keep going or Back to the Burrow | Yes, Keep going selected |
-| 12 | Endless: threat, toughness, boss health and the par kit keep growing each region, but **course size stops at region 3's** (speed) | Yes |
-| 13 | Endless boss pool: all bosses, never the same as the last region | Yes |
+| 11 | Endless: after Mother Bramble, choose Keep going or Back to the Burrow | Yes, Keep going selected. **Owner, 2026-11-18: agreed** |
+| 12 | Endless: threat, toughness, boss health and the par kit keep growing each region, but **course size stops at region 3's** (speed) | **Owner, 2026-11-18: yes. Course size caps at region 3; everything else keeps growing** |
+| 13 | Endless boss pool: all bosses, never the same as the last region | Yes. **Owner, 2026-11-18: agreed** |
 
 ---
 
