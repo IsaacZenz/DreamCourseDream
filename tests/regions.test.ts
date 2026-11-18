@@ -160,3 +160,23 @@ describe('the background bot plays at full health (owner, 2026-11-18: intentiona
     expect(p.health).toBe(p.stats.get('maxHealth'));
   });
 });
+
+describe('relaxed course check (owner, 2026-11-18)', () => {
+  it('the bot plays with the region par kit, not the player gear, ability or upgrades', async () => {
+    const { GEN } = await import('../src/content/gen');
+    const { setGear, addUpgrade } = await import('../src/sim/run');
+    const run = createRun('PAR', generateRunMap('PAR'));
+    const before = upcomingJobs(run);
+    expect(before[0]!.opts.loadout).toEqual({ ability: null, gear: { weapon: null, armour: null, bauble: null }, modifiers: [] });
+    setGear(run, 'iron-shell');
+    addUpgrade(run, 'deep-breath');
+    run.ability = 'hop';
+    // The player's kit does not change the course, so a course made ahead is never thrown away.
+    expect(upcomingJobs(run)).toEqual(before);
+    run.region = 2;
+    const mods = upcomingJobs(run)[0]!.opts.loadout.modifiers!.map((m) => [m.stat, m.amount]);
+    expect(mods).toEqual([['maxShots', 1], ['hitDamage', 1], ['shotPower', 0.1]]);
+    expect(GEN.bot.minHealthLeft).toBe(1);
+    expect(GEN.bot.shotScale).toBe(1.5);
+  });
+});

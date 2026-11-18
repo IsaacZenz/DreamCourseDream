@@ -106,7 +106,13 @@ export const GEN = {
   bot: {
     /** Default; the journey table above sets it per budget. */
     maxShots: 24,
-    minHealthLeft: 2,
+    /**
+     * Owner, 2026-11-18 (relaxed check): the bot only has to survive (1 health
+     * left, was 2) and gets 1.5 times the shot limit. The check proves a course
+     * can be beaten, not that it is comfortable: failing is part of a roguelike.
+     */
+    minHealthLeft: 1,
+    shotScale: 1.5,
     targetsPerTurn: 3,
     /** Angle offsets tried either side of a straight aim, in degrees. */
     angleOffsets: [-7, 0, 7],

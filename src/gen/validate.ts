@@ -75,7 +75,7 @@ export function generateCourse(seed: string, budget: number, tuning: Tuning, opt
         reject(extra);
         continue;
       }
-      const bot = opts.noBot ? null : playBot(r.course, tuning, seed, { maxShots: opts.size?.botShots ?? journeyRow(b).botShots, ...(opts.loadout && { loadout: opts.loadout }), ...(opts.enemyModifiers && { enemyModifiers: opts.enemyModifiers }) });
+      const bot = opts.noBot ? null : playBot(r.course, tuning, seed, { maxShots: Math.round((opts.size?.botShots ?? journeyRow(b).botShots) * GEN.bot.shotScale), ...(opts.loadout && { loadout: opts.loadout }), ...(opts.enemyModifiers && { enemyModifiers: opts.enemyModifiers }) });
       if (bot && !bot.passed) {
         reject(bot.reason);
         continue;

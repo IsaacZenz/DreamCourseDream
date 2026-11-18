@@ -435,6 +435,7 @@ Build in Milestone 3.
 - **Prices:** gear by rarity 10, 15, 25, 35, 50, 70 (owner, 2026-11-15; see `docs/plans/milestone-6.md` section 5.2), stat boost 12 rising by 6, heal 10, first reroll 3.
 - **Budget:** each course has a difficulty budget that rises with each node and jumps after each boss. Enemies, traits, obstacles and hazards each cost budget.
 - **Owner, 2026-11-17: size and toughness scale separately in every region** (DESIGN.md section 10). Course size (areas per journey, area size), threat budget and enemy toughness (region modifiers) are three dials set per region; see `docs/plans/milestone-7.md` section 7.4.
+- **Owner, 2026-11-18: the course check is relaxed.** The bot plays with a par kit per region (region 1 a fresh ball; region 2 max shots +1, hit damage +1, shot power +10%; region 3 also max shots +2 in all, shot power +20%, max health +2), needs 1 health left, and has 1.5 times the shot limit.
 - **Tier mix by region:** region 1 is mostly tiers 1–2; region 2 adds tier 3; region 3 adds tier 4.
 - **Owner, 2026-11-15 (Milestone 5 testing, before the run exists):** after winning a generated course, the next one's budget rises by a random 0 to 4 (seeded), capped at 40. The Milestone 5 generator rules are in `docs/plans/milestone-5.md`.
 - **Hard courses:** 150% of the normal budget, a guaranteed tier-up squad leader, better rewards.

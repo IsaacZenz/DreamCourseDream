@@ -106,6 +106,8 @@ FEATURES.md section 14 also asks for a guaranteed tier-up squad leader on hard c
 
 ### 4.3 The bot plays with your upgrades
 
+**Replaced by the owner, 2026-11-18:** the bot plays with the region's "par" kit instead of the player's upgrades, needs only 1 health left, and has 1.5 times the shot limit (Milestone 7 sheet section 7.4). The text below is kept for the record.
+
 Owner, 2026-11-15: when the run exists, the generator's bot should play with the upgrades the player has at that point. So:
 
 - The bot uses your **stats, gear and ability at the moment you enter the node**, but **full health** (otherwise a course entered on 1 health would almost never pass and generation would stall).

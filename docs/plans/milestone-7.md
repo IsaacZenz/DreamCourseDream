@@ -393,6 +393,7 @@ Each one climbs as you finish counted nodes in a region, and jumps at the start 
 | Most enemies on one course | 10 | 14 | 18 |
 | Enemy toughness | as built | +1 health on every enemy | +1 health and +1 attack damage |
 | Warden health | 12 | 18 | 24 |
+| Par kit: what the course check's bot plays with (owner, 2026-11-18) | a fresh ball | max shots +1, hit damage +1, shot power +10% | max shots +2, hit damage +1, shot power +20%, max health +2 |
 | Hard course | threat ×1.5 and +1 area | same | same |
 | Bot shot limit | from the number of areas | same | same |
 

@@ -259,12 +259,15 @@ export function dropWeights(run: RunState): number[] {
 }
 
 /**
- * What the generator's bot plays with: the player's stats, gear and ability at
- * this point, but full health (sheet section 4.3), so a course entered on low
- * health can still be generated.
+ * What the course check's bot plays with (owner, 2026-11-18): the region's
+ * "par" kit, not the player's own gear, ability and upgrades, and always at
+ * full health. A course is proven beatable for a player at par; a player
+ * behind par finds it harder. It also means a course made ahead never has to
+ * be made again because the player bought something.
  */
 export function botLoadoutOf(run: RunState): Loadout {
-  return { ability: run.ability, gear: { ...run.gear }, modifiers: upgradeModifiers(run) };
+  const modifiers: Modifier[] = regionDef(run).par.map((p) => ({ stat: p.stat, op: 'add', amount: p.amount, source: { kind: 'region', id: `par${run.region}` }, duration: { kind: 'run' } }));
+  return { ability: null, gear: { ...NO_GEAR }, modifiers };
 }
 
 /**
