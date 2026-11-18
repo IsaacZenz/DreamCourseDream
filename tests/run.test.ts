@@ -188,7 +188,7 @@ describe('run rules', () => {
     expect(run.counted).toBe(1);
   });
 
-  it('at countdown zero the boss is forced, with an optional last town first (owner); beating it wins the run', () => {
+  it('at countdown zero the boss is forced, with an optional last town first (owner); beating it leads to region two', () => {
     const run = newRun();
     for (let i = 0; i < 40 && run.countdown > 0; i++) {
       const next = choices(run).find((n) => n.type !== 'boss' && n.type !== 'shop') ?? choices(run)[0]!;
@@ -208,7 +208,8 @@ describe('run rules', () => {
     }
     expect(run.current!.type).toBe('boss');
     winCourse(run);
-    expect(run.status).toBe('won');
+    // Milestone 7: the region-one boss gives a gear pick, then region two starts.
+    expect(run.status).toBe('reward');
   });
 
   it('no last town is offered straight after leaving a town', () => {
@@ -242,9 +243,11 @@ describe('run rules', () => {
     run.countdown = 3;
     expect(typeOf(run, node)).toBe('boss');
     run.status = 'course';
-    run.current = { id: 'r9l1', row: 9, type: 'boss', early: true, budget: 20, courseSeed: 'X', gear: null };
+    run.current = { id: 'r9l1', row: 9, type: 'boss', early: true, budget: 20, courseSeed: 'X', gear: null, acorn: null, boss: null, arena: null };
     winCourse(run);
-    expect(run.blueStars).toBe(3);
+    // Owner, 2026-11-17: the boss's 5, plus 1 per countdown step left, deposited at once.
+    expect(run.blueStars).toBe(0);
+    expect(run.banked).toBe(8);
   });
 
   it('losing a course ends the run (owner: also when out of naps)', () => {
@@ -272,11 +275,12 @@ describe('run rules', () => {
 });
 
 describe('gear rarity', () => {
-  it('has 54 items: 3 per rarity in each category, with the owner prices', () => {
-    expect(GEAR_LIST.length).toBe(54);
-    for (const c of ['weapon', 'armour', 'bauble']) for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === c && g.rarity === r).length).toBe(3);
+  it('has 66 items: 3 weapons and (owner, 2026-11-17) 4 armour and 4 baubles per rarity, with the owner prices', () => {
+    expect(GEAR_LIST.length).toBe(66);
+    for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === 'weapon' && g.rarity === r).length).toBe(3);
+    for (const c of ['armour', 'bauble']) for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === c && g.rarity === r).length).toBe(4);
     expect(RARITIES.map((r) => RARITY_INFO[r].price)).toEqual([10, 15, 25, 35, 50, 70]);
-    expect(new Set(GEAR_LIST.map((g) => g.id)).size).toBe(54);
+    expect(new Set(GEAR_LIST.map((g) => g.id)).size).toBe(66);
   });
 
   it('drop luck moves 5 points up per +25%', () => {
@@ -317,7 +321,7 @@ describe('shop and cache', () => {
   function shopRun(): RunState {
     const run = newRun('SHOP');
     run.status = 'shop';
-    run.current = { id: 'r3l0', row: 3, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null };
+    run.current = { id: 'r3l0', row: 3, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, acorn: null, boss: null, arena: null };
     run.shop = { node: 'r3l0', offers: [], rerolls: 0, freeRerolls: 0, raised: false };
     run.shop.offers = [
       { kind: 'gear', id: 'studded-shell', sold: false },
@@ -385,7 +389,7 @@ describe('shop and cache', () => {
   it('cache: take one for free, which finishes the node and counts', () => {
     const run = newRun();
     run.status = 'cache';
-    run.current = { id: 'r2l1', row: 2, type: 'cache', early: false, budget: 0, courseSeed: '', gear: null };
+    run.current = { id: 'r2l1', row: 2, type: 'cache', early: false, budget: 0, courseSeed: '', gear: null, acorn: null, boss: null, arena: null };
     run.cache = { node: 'r2l1', offers: [{ kind: 'upgrade', id: 'long-arms', sold: false }] };
     expect(takeFromCache(run, 0)).toBeNull();
     expect(run.wallet).toBe(0);
@@ -490,7 +494,9 @@ describe('gear on a course', () => {
 
   it('Ember Coat sets the enemy burning; Burning does 1 damage at the start of the enemy turn', () => {
     const c = field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
-    const p = createPlay(c, T, { seed: 'e', loadout: { gear: { weapon: 'ember-coat', armour: null, bauble: null } } });
+    // A full wheel (owner, 2026-11-17: success rolls) so the burn always takes.
+    const full = [{ stat: 'rollSlices' as const, op: 'add' as const, amount: 10, source: { kind: 'run' as const, id: 'test' }, duration: { kind: 'run' as const } }];
+    const p = createPlay(c, T, { seed: 'e', loadout: { gear: { weapon: 'ember-coat', armour: null, bauble: null }, modifiers: full } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.6 }));
     expect(log).toContainEqual({ kind: 'status', target: 'trundler#0', status: 'burning' });

@@ -12,7 +12,8 @@ import { parseCourse, type Course } from '../sim/course.ts';
 import type { Loadout } from '../sim/play.ts';
 import { playBot, type BotResult } from './bot.ts';
 import { generateAttempt, type GenMeta } from './generate.ts';
-import { journeyRow } from './journey.ts';
+import { journeyRow, type JourneySize } from './journey.ts';
+import type { Modifier } from '../sim/stats.ts';
 import { checkStructure } from './structure.ts';
 
 export interface GenResult {
@@ -40,6 +41,10 @@ export interface GenOptions {
   readonly extraCheck?: (course: Course, attempt: number) => string | null;
   /** Milestone 6: the bot plays with this loadout (the player's upgrades, gear and ability; full health). */
   readonly loadout?: Loadout;
+  /** Milestone 7: the journey's size, set per region by the run (owner, 2026-11-17). Follows the budget if left out. */
+  readonly size?: JourneySize;
+  /** Milestone 7: region toughness, applied to every enemy (the bot plays against it too). */
+  readonly enemyModifiers?: readonly Modifier[];
 }
 
 function describe(rej: Record<string, number>): string {
@@ -55,7 +60,7 @@ export function generateCourse(seed: string, budget: number, tuning: Tuning, opt
   for (const [round, b] of rounds.entries()) {
     for (let a = 0; a < GEN.attempts; a++) {
       n++;
-      const r = generateAttempt(seed, b, round * GEN.attempts + a);
+      const r = generateAttempt(seed, b, round * GEN.attempts + a, opts.size);
       if (!r.ok) {
         reject(r.reason);
         continue;
@@ -70,7 +75,7 @@ export function generateCourse(seed: string, budget: number, tuning: Tuning, opt
         reject(extra);
         continue;
       }
-      const bot = opts.noBot ? null : playBot(r.course, tuning, seed, { maxShots: journeyRow(b).botShots, ...(opts.loadout && { loadout: opts.loadout }) });
+      const bot = opts.noBot ? null : playBot(r.course, tuning, seed, { maxShots: Math.round((opts.size?.botShots ?? journeyRow(b).botShots) * GEN.bot.shotScale), ...(opts.loadout && { loadout: opts.loadout }), ...(opts.enemyModifiers && { enemyModifiers: opts.enemyModifiers }) });
       if (bot && !bot.passed) {
         reject(bot.reason);
         continue;

@@ -101,6 +101,7 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
 - Topspin and backspin: on a lofted shot they add or remove speed on the first landing; on a ground shot they push forward or back for a short time after the shot. Side curve turns the ball's path and fades over time. Each has five levels (−2 to +2).
 - Bounce boost: press Space while the ball is in the air. It counts only if the ball lands within a short window after the press (0.15 s to start); one press per flight, so mashing does not work.
 - The aim guide runs the real simulation. It previews the planned shot from the pull, and keeps showing that plan while the meter charges. It stops after 4 tiles of travel (the "Guide length" stat will scale this from Milestone 3).
+- **Trapped rest (2026-11-18, fixing a freeze the owner found):** a ball on the ground that stays within 0.05 tiles of one spot for 0.5 s also counts as resting (`trapRadius`, `trapTime`, in the U panel). Before this, a ball at the bottom of a small pit, where four slopes meet, rocked there until the 30-second shot limit, and did the same on every later shot from that spot.
 - The last resting spot is only updated when the ball rests on a surface that can hold it (not water, boosters and other pads).
 - ~~Until Milestone 3, hazard surfaces behave like grass.~~ Hazard tiles work from Milestone 3; see section 7, "As built in Milestone 3".
 - **Decided (owner, 2026-11-14):** the arrow tiles (booster, and conveyor) must push **hard**. A ball rolling over a booster should clearly speed up in the arrow's direction, enough to change where the shot ends, not a gentle nudge. Built in Milestone 3, with the push strength as a tuning number so the owner can set it with the panel.
@@ -195,6 +196,7 @@ Each enemy type is a definition file entry: family, health, star value, radii, t
 - **Abilities:** defeating an ability-carrying enemy gives you its ability, replacing the one you hold. It is triggered with a key during a shot.
 - **Gear:** passive items in three categories: weapon, armour, bauble. The ball holds one of each. Rolling over gear of a held category swaps it automatically. Gear never needs a button; weapon effects trigger only on contact with an enemy.
 - **Run upgrades:** plain stackable stat boosts, separate from gear, with no slot limit.
+- **Decided (owner, 2026-11-17): success rolls.** A weapon's special effect only works if a spinning wheel lands on a filled slice: 10 slices, more filled on better weapons, one more per level of the permanent upgrade Knack, extra for one course from an acorn consumable. Against a boss the wheel has 20 slices. See FEATURES.md section 8.
 
 Full detail for gear, run upgrades, damage, enemy tiers, statuses, shops and permanent upgrades is in `docs/FEATURES.md`.
 
@@ -234,13 +236,16 @@ Gear examples are in `docs/FEATURES.md` section 8.
 
 **Default:**
 
-- Node types: Course, Hard course (tougher, better reward, a blue star chance), Shop, Cache (free gear or healing), Boss.
+- Node types: Course, Hard course (tougher, better reward; owner, 2026-11-17: 2 blue stars), Shop, Cache (free gear or healing), Boss.
 - Beating a boss gives blue stars, heals the player, and starts the next region with a harder generator budget and a new biome.
 - Fighting the boss early gives a bonus that scales with the countdown remaining.
 - ~~Blue stars come from bosses, hard courses, and rare hidden spots on normal courses.~~
-- **Decided (owner, 2026-11-15): blue star sources:** beating a course, beating a boss, and an extra-rare chance inside crates or under cracked ground. Amounts and chances go on the Milestone 7 sheet. Until then they are counted on the run summary only.
-- Blue stars earned during a run are kept even if the run ends in death.
-- Permanent upgrades are bought on a hub screen between runs: maximum health, maximum shots, gear slots, starting yellow stars, shop discount, a starting ability.
+- **Decided (owner, 2026-11-15): blue star sources:** beating a course, beating a boss, and an extra-rare chance inside crates or under cracked ground. **Owner, 2026-11-17:** course 1, hard course 2, boss 5 (region 1) and 8 (region 2), crates 2%, secured crates and cracked tiles 5% (times drop luck). Details in `docs/plans/milestone-7.md` section 4.
+- **Decided (owner, 2026-11-17): closing the game outside a town loses the run and everything collected in it, carried blue stars included.** Closing in a town keeps the run.
+- **Decided (owner, 2026-11-17): difficulty scales in two separate ways in every region:** courses get bigger (more and larger areas), and opponents get harder (more threat budget, and tougher enemies through region modifiers). The cap of 30 is lifted for later regions. Numbers in `docs/plans/milestone-7.md` section 7.4. **Owner, 2026-11-18:** the bot that checks a course (also when courses are made in the background) always plays at full health, whatever the player's health is now; this is intentional. **Owner, 2026-11-18, relaxed check (a roguelike: failing is expected):** the bot plays with the region's "par" kit, not the player's gear and upgrades; it only has to finish with 1 health (was 2); and it gets 1.5 times the shot limit. The check proves a course can be beaten, not that it is comfortable for the player as they are. Region two is 3 to 6 areas with threat capped at 36, and the next courses are made in the background while the player is on the map, in a town or playing a course.
+- **Decided (owner, 2026-11-17): each region's boss comes from a boss randomizer** (a seeded pick from that region's boss pool). Until Milestone 8 adds bosses, every pool holds only The Warden.
+- ~~Blue stars earned during a run are kept even if the run ends in death.~~ **Decided (owner, 2026-11-17): the blue star deposit.** Blue stars found on a run are carried, and go into the player's stash only when deposited, automatically, on reaching a town or beating a boss. Carried blue stars are lost on death or when the game is closed outside a town.
+- **Decided (owner, 2026-11-17): one home, the Burrow.** The hub screen between runs and the Burrow in towns are the same place: stored gear, the blue star stash, permanent upgrades and starting abilities. Permanent upgrades are bought there, between runs or (owner, 2026-11-17) in a town's Burrow mid-run, where they work at once: maximum health, maximum shots, gear slots, starting yellow stars, shop discount, a starting ability.
 
 ## 11. Procedural generation
 

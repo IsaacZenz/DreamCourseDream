@@ -1760,6 +1760,78 @@
         11
       ]
     },
+    "gear-grit-pads": {
+      "file": "sprites/gear-grit-pads.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-grit-vest": {
+      "file": "sprites/gear-grit-vest.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-grit-mail": {
+      "file": "sprites/gear-grit-mail.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-grit-plate": {
+      "file": "sprites/gear-grit-plate.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-gamblers-vest": {
+      "file": "sprites/gear-gamblers-vest.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-fortunes-mail": {
+      "file": "sprites/gear-fortunes-mail.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
     "gear-storm-cloak": {
       "file": "sprites/gear-storm-cloak.png",
       "frameWidth": 12,
@@ -1916,6 +1988,66 @@
         11
       ]
     },
+    "gear-brass-spinner": {
+      "file": "sprites/gear-brass-spinner.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-silver-spinner": {
+      "file": "sprites/gear-silver-spinner.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-gold-spinner": {
+      "file": "sprites/gear-gold-spinner.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-jewel-spinner": {
+      "file": "sprites/gear-jewel-spinner.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-hot-streak-charm": {
+      "file": "sprites/gear-hot-streak-charm.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
     "gear-pocket-pillow": {
       "file": "sprites/gear-pocket-pillow.png",
       "frameWidth": 12,
@@ -1942,6 +2074,18 @@
     },
     "gear-feather-charm": {
       "file": "sprites/gear-feather-charm.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-golden-spinner": {
+      "file": "sprites/gear-golden-spinner.png",
       "frameWidth": 12,
       "frameHeight": 12,
       "frames": [
@@ -2192,6 +2336,154 @@
         6
       ]
     },
+    "warden": {
+      "file": "sprites/warden.png",
+      "frameWidth": 44,
+      "frameHeight": 44,
+      "frames": [
+        "phase1",
+        "phase2",
+        "phase3"
+      ],
+      "anchor": [
+        22,
+        41
+      ]
+    },
+    "star-blue": {
+      "file": "sprites/star-blue.png",
+      "frameWidth": 11,
+      "frameHeight": 11,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        10
+      ]
+    },
+    "acorn-lucky": {
+      "file": "sprites/acorn-lucky.png",
+      "frameWidth": 10,
+      "frameHeight": 11,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        10
+      ]
+    },
+    "acorn-golden": {
+      "file": "sprites/acorn-golden.png",
+      "frameWidth": 10,
+      "frameHeight": 11,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        10
+      ]
+    },
+    "acorn-star": {
+      "file": "sprites/acorn-star.png",
+      "frameWidth": 10,
+      "frameHeight": 11,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        10
+      ]
+    },
+    "puff": {
+      "file": "sprites/puff.png",
+      "frameWidth": 16,
+      "frameHeight": 14,
+      "frames": [
+        "0",
+        "1",
+        "2"
+      ],
+      "anchor": [
+        8,
+        12
+      ]
+    },
+    "perm-vitality": {
+      "file": "sprites/perm-vitality.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-stamina": {
+      "file": "sprites/perm-stamina.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-head-start": {
+      "file": "sprites/perm-head-start.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-haggler": {
+      "file": "sprites/perm-haggler.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-fortune": {
+      "file": "sprites/perm-fortune.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "perm-knack": {
+      "file": "sprites/perm-knack.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
     "font": {
       "file": "sprites/font.png",
       "frameWidth": 4,
@@ -2248,7 +2540,8 @@
         "!",
         "'",
         ">",
-        "<"
+        "<",
+        "%"
       ],
       "anchor": [
         0,

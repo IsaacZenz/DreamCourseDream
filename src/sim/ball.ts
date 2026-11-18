@@ -161,6 +161,10 @@ export interface ShotState {
   readonly dirY: number;
   hasLanded: boolean;
   restSteps: number;
+  /** Trapped rest (2026-11-18): where the ball has stayed close to on the ground, and for how many steps. */
+  trapX: number;
+  trapY: number;
+  trapSteps: number;
   /** Steps left in which a landing gets boosted. 0 when no boost is armed. */
   boostArmed: number;
   /** One boost press per flight. Cleared on each landing. */
@@ -262,6 +266,9 @@ export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand, sca
     dirY,
     hasLanded: cmd.type === 'ground',
     restSteps: 0,
+    trapX: ball.x,
+    trapY: ball.y,
+    trapSteps: 0,
     boostArmed: 0,
     boostSpent: false,
     railArmed: 0,
@@ -452,13 +459,23 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     const holds = slope <= phys.friction;
     if (Math.hypot(b.vx, b.vy) < tuning.restSpeed && holds) s.restSteps++;
     else s.restSteps = 0;
-    if (s.restSteps >= Math.max(1, Math.round(tuning.restTime * STEPS_PER_SECOND))) {
+    // Trapped (found 2026-11-18): at the bottom of a small pit or a narrow valley the slope is too
+    // steep to "hold", but the ball only rocks back and forth on one spot. Staying within a tiny
+    // circle for long enough also counts as resting, so a shot never hangs until the time limit.
+    if (Math.hypot(b.x - s.trapX, b.y - s.trapY) <= tuning.trapRadius) s.trapSteps++;
+    else {
+      s.trapX = b.x;
+      s.trapY = b.y;
+      s.trapSteps = 0;
+    }
+    const trapped = s.trapSteps >= Math.max(1, Math.round(tuning.trapTime * STEPS_PER_SECOND));
+    if (trapped || s.restSteps >= Math.max(1, Math.round(tuning.restTime * STEPS_PER_SECOND))) {
       b.vx = 0;
       b.vy = 0;
       finish(s, SURFACES.get(now.tile.surface)?.sinks ? 'sunk' : 'rest');
       return;
     }
-  }
+  } else s.trapSteps = 0;
 
   if (s.step >= tuning.maxShotTime * STEPS_PER_SECOND) {
     finish(s, now && b.grounded && SURFACES.get(now.tile.surface)?.sinks ? 'sunk' : 'timeout');

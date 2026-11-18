@@ -5,6 +5,22 @@
  * enemy and object costs are the `cost` fields in objects.ts; hazard costs are
  * the `cost` fields in surfaces.ts.
  */
+/**
+ * How big a journey is, apart from how much is in it (owner, 2026-11-17: size
+ * and difficulty scale separately; Milestone 7 sheet section 7.4). The run
+ * sets this per region; without it, it follows the budget as in Milestone 5b.
+ */
+export interface JourneySize {
+  /** Number of areas, at random in this range. */
+  readonly areas: readonly [number, number];
+  /** An area is this many tiles on a side, at random in this range. */
+  readonly areaSize: readonly [number, number];
+  /** Most enemies on one course. */
+  readonly maxEnemies: number;
+  /** The bot's shot limit. */
+  readonly botShots: number;
+}
+
 export const GEN = {
   /** Structure check: the ball can climb a rise of up to this many height steps (half a tile; a lofted shot clears it). */
   climbSteps: 2,
@@ -90,7 +106,13 @@ export const GEN = {
   bot: {
     /** Default; the journey table above sets it per budget. */
     maxShots: 24,
-    minHealthLeft: 2,
+    /**
+     * Owner, 2026-11-18 (relaxed check): the bot only has to survive (1 health
+     * left, was 2) and gets 1.5 times the shot limit. The check proves a course
+     * can be beaten, not that it is comfortable: failing is part of a roguelike.
+     */
+    minHealthLeft: 1,
+    shotScale: 1.5,
     targetsPerTurn: 3,
     /** Angle offsets tried either side of a straight aim, in degrees. */
     angleOffsets: [-7, 0, 7],

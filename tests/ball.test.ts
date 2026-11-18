@@ -263,3 +263,23 @@ describe('ball physics', () => {
     expect(groundAt(c, 5, 5)).toBeNull();
   });
 });
+
+describe('a ball trapped in a pit comes to rest (found 2026-11-18: the game seemed to freeze)', () => {
+  it('four slopes meeting at one low point: the ball rocks there, then rests well before the time limit', async () => {
+    const { parseCourse } = await import('../src/sim/course');
+    const { DEFAULT_TUNING } = await import('../src/content/tuning');
+    const { startShot, stepShot } = await import('../src/sim/ball');
+    const { ballAtTile } = await import('../src/sim/ball');
+    // Flat ground at height 10 (a), with the corner shared by four tiles lowered to 8: a small pit.
+    const rows = ['ga ga ga ga', 'ga gaa8a gaaa8 ga', 'ga ga8aa g8aaa ga', 'ga ga ga ga'];
+    const r = parseCourse({ format: 3, name: 'pit', legend: { g: 'grass' }, tiles: rows, start: [0, 0], exit: [3, 3], quota: 0 });
+    if (!r.ok) throw new Error(r.errors.join('\n'));
+    const at = { ...ballAtTile(r.course, 1, 1), x: 1.9, y: 1.9 };
+    const s = startShot(DEFAULT_TUNING, at, { angle: Math.PI / 4, power: 0.05, type: 'ground', topSpin: 0, sideSpin: 0 });
+    let n = 0;
+    while (!s.outcome && n++ < 120 * 40) stepShot(r.course, DEFAULT_TUNING, s);
+    expect(s.outcome).toBe('rest');
+    expect(s.step).toBeLessThan(120 * 5);
+    expect(Math.hypot(s.ball.x - 2, s.ball.y - 2)).toBeLessThan(0.2);
+  });
+});

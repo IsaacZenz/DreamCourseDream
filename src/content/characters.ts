@@ -31,6 +31,9 @@ export const BALL_BASE_STATS: BaseStats = {
   shopPrices: 1,
   gearCapacity: 1,
   naps: RULES.naps,
+  rollSlices: 0,
+  bossSlices: 0,
+  startingStars: 0,
 };
 
 const defs: readonly CharacterDef[] = [

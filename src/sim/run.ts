@@ -19,7 +19,13 @@
  */
 import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY_ODDS, type GearCategory, type GearDef, type GearSlots } from '../content/gear.ts';
+import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
+import { BOSSES } from '../content/bosses.ts';
+import type { JourneySize } from '../content/gen.ts';
+import { LAST_REGION, REGIONS, botShotsFor, type RegionDef } from '../content/run.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
+import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
+import { buyUpgrade, permanentModifiers, type Profile } from './profile.ts';
 import { Rng } from './rng.ts';
 import { StatSheet, type Modifier } from './stats.ts';
 import type { Loadout } from './play.ts';
@@ -52,7 +58,8 @@ export function nodeById(map: RunMap, id: string): MapNode | undefined {
 // ---------------------------------------------------------------------------
 // State
 
-export type RunStatus = 'map' | 'course' | 'shop' | 'cache' | 'won' | 'lost';
+/** reward: the boss is beaten and the player picks 1 of 3 gear items before the next region (Milestone 7). */
+export type RunStatus = 'map' | 'course' | 'shop' | 'cache' | 'reward' | 'won' | 'lost';
 
 /** The node being played: where it is, what it is, and for courses the generator's seed and budget. */
 export interface CurrentNode {
@@ -65,10 +72,15 @@ export interface CurrentNode {
   readonly courseSeed: string;
   /** Gear item placed on this course, or null. */
   readonly gear: string | null;
+  /** Owner, 2026-11-17: the pocket acorn taken into this course, or null. */
+  readonly acorn: string | null;
+  /** Milestone 7: a boss fight's boss and arena (src/content/arenas), or null on other nodes. */
+  readonly boss: string | null;
+  readonly arena: string | null;
 }
 
 export interface Offer {
-  readonly kind: 'gear' | 'upgrade' | 'heal' | 'raise';
+  readonly kind: 'gear' | 'upgrade' | 'heal' | 'raise' | 'acorn';
   readonly id: string;
   sold: boolean;
 }
@@ -95,7 +107,10 @@ export interface RunState {
   readonly seed: string;
   /** The Burrow's contents. Changed only in a town; the caller saves it. */
   readonly burrow: Burrow;
-  readonly map: RunMap;
+  /** The region's map (a new one each region, Milestone 7). */
+  map: RunMap;
+  /** Region number, from 1 (Milestone 7: a new region starts after each boss). */
+  region: number;
   /** The last node finished, or null before row 1. */
   at: string | null;
   /** Nodes finished, in order. */
@@ -109,8 +124,20 @@ export interface RunState {
   counted: number;
   health: number;
   wallet: number;
-  /** Counted only until Milestone 7 gives them a wallet (sheet section 2.4). */
+  /**
+   * Blue stars carried (owner, 2026-11-17): found or earned on this run but
+   * not yet deposited. Deposited automatically on reaching a town or beating a
+   * boss; lost on death or closing the game outside a town.
+   */
   blueStars: number;
+  /** Blue stars deposited during this run (for the summary). */
+  banked: number;
+  /** Deposited but not yet added to the profile's stash; the caller takes them with `drainDeposit`. */
+  toStash: number;
+  /** Permanent upgrade levels this run uses (from the profile; raised when one is bought in a town). */
+  readonly permanent: Record<string, number>;
+  /** Bosses beaten on this run (the caller records them in the profile). */
+  readonly bossesBeaten: string[];
   ability: string | null;
   gear: { -readonly [C in GearCategory]: string | null };
   /** Times each run upgrade was bought (or taken from a cache). */
@@ -125,13 +152,28 @@ export interface RunState {
   endedBy: 'health' | 'shots' | 'boss' | null;
   /** The last town before the forced boss has been offered and visited (owner, 2026-11-15). */
   lastTownVisited: boolean;
+  /** Owner, 2026-11-17: an acorn bought in a shop, used when the next course starts. Holds one. */
+  pocket: string | null;
+  /** The boss reward: a pick of 1 from 3 gear items (Milestone 7 sheet section 2.7). */
+  reward: Offer[] | null;
+  /** The arena of the last boss fight (from the profile, then this run's), never used twice in a row. */
+  lastArena: string | null;
 }
 
-export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR): RunState {
+/** What a run starts with from the player's permanent progress (Milestone 7). */
+export interface RunStart {
+  readonly levels?: Readonly<Record<string, number>>;
+  readonly startAbility?: string | null;
+  /** The arena of the player's last boss fight, so the next one differs (owner, 2026-11-17). */
+  readonly lastArena?: string | null;
+}
+
+export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR, start: RunStart = {}): RunState {
   const run: RunState = {
     seed,
     burrow: { weapon: validGear(burrow.weapon, 'weapon'), armour: validGear(burrow.armour, 'armour'), bauble: validGear(burrow.bauble, 'bauble') },
     map,
+    region: 1,
     at: null,
     path: [],
     status: 'map',
@@ -142,7 +184,11 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     health: 0,
     wallet: 0,
     blueStars: 0,
-    ability: CHARACTERS.get(DEFAULT_CHARACTER)!.startingAbility,
+    banked: 0,
+    toStash: 0,
+    permanent: { ...(start.levels ?? {}) },
+    bossesBeaten: [],
+    ability: start.startAbility !== undefined && start.startAbility !== null ? start.startAbility : CHARACTERS.get(DEFAULT_CHARACTER)!.startingAbility,
     gear: { ...NO_GEAR },
     upgrades: {},
     bought: {},
@@ -151,8 +197,14 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     totals: { courses: 0, stars: 0 },
     endedBy: null,
     lastTownVisited: false,
+    pocket: null,
+    reward: null,
+    lastArena: start.lastArena ?? null,
   };
-  run.health = runStats(run).get('maxHealth');
+  const stats = runStats(run);
+  run.health = stats.get('maxHealth');
+  // Head Start (owner, 2026-11-17).
+  run.wallet = stats.get('startingStars');
   return run;
 }
 
@@ -170,7 +222,7 @@ function rngFor(run: RunState, label: string): Rng {
 // Stats
 
 function upgradeModifiers(run: RunState): Modifier[] {
-  const out: Modifier[] = [];
+  const out: Modifier[] = permanentModifiers(run.permanent);
   for (const u of UPGRADE_LIST) {
     for (let i = 0; i < (run.upgrades[u.id] ?? 0); i++) out.push({ stat: u.stat, op: u.op, amount: u.amount, source: { kind: 'run', id: u.id }, duration: { kind: 'run' } });
   }
@@ -198,16 +250,74 @@ function hasRunEffect(run: RunState, kind: string): boolean {
 
 /** What the ball brings into a course. */
 export function loadoutOf(run: RunState): Loadout {
-  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run) };
+  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run), acorn: run.current?.acorn ?? null, rarityWeights: dropWeights(run) };
+}
+
+/** Rarity weights for things dropped on a course (acorns): the run's odds column after drop luck. */
+export function dropWeights(run: RunState): number[] {
+  return rarityWeights(oddsColumn(run, false), runStats(run).get('dropLuck'));
 }
 
 /**
- * What the generator's bot plays with: the player's stats, gear and ability at
- * this point, but full health (sheet section 4.3), so a course entered on low
- * health can still be generated.
+ * What the course check's bot plays with (owner, 2026-11-18): the region's
+ * "par" kit, not the player's own gear, ability and upgrades, and always at
+ * full health. A course is proven beatable for a player at par; a player
+ * behind par finds it harder. It also means a course made ahead never has to
+ * be made again because the player bought something.
  */
 export function botLoadoutOf(run: RunState): Loadout {
-  return { ability: run.ability, gear: { ...run.gear }, modifiers: upgradeModifiers(run) };
+  const modifiers: Modifier[] = regionDef(run).par.map((p) => ({ stat: p.stat, op: 'add', amount: p.amount, source: { kind: 'region', id: `par${run.region}` }, duration: { kind: 'run' } }));
+  return { ability: null, gear: { ...NO_GEAR }, modifiers };
+}
+
+/**
+ * Everything the generator needs for the current course besides its seed and
+ * budget: the bot's loadout, the region's journey size and enemy toughness.
+ */
+export function genOptionsFor(run: RunState, type: NodeType = run.current?.type ?? 'course'): { loadout: Loadout; size: JourneySize; enemyModifiers: Modifier[] } {
+  return { loadout: botLoadoutOf(run), size: sizeFor(run, type), enemyModifiers: enemyModifiersFor(run) };
+}
+
+/** A node's course seed: the run seed plus the node (and the region from region two on, so regions differ). */
+export function courseSeedOf(run: RunState, node: MapNode): string {
+  const id = node.id;
+  const base = `${run.seed}-${id === 'boss' ? `BOSS${node.row}` : id === LAST_TOWN ? 'LASTTOWN' : id.toUpperCase()}`;
+  return run.region > 1 ? `${base}-${run.region}` : base;
+}
+
+/** Everything needed to make a node's course ahead of time (owner, 2026-11-18: make courses in the background). */
+export interface CourseJob {
+  readonly id: string;
+  readonly courseSeed: string;
+  readonly budget: number;
+  readonly opts: ReturnType<typeof genOptionsFor>;
+}
+
+/** The generated course a node would get if the player went there now; null for towns, caches and boss arenas. */
+export function courseJobFor(run: RunState, node: MapNode): CourseJob | null {
+  const type = typeOf(run, node);
+  if (type !== 'course' && type !== 'hard') return null;
+  return { id: node.id, courseSeed: courseSeedOf(run, node), budget: budgetFor(run, type), opts: genOptionsFor(run, type) };
+}
+
+/**
+ * The courses the player can go to next: from the map, the choices now; in a
+ * town or cache, the choices after leaving it; during a course, the choices
+ * after winning it with the loadout as it is now. A guess for a course in
+ * play: if the player ends with other gear, those courses are made again.
+ */
+export function upcomingJobs(run: RunState): CourseJob[] {
+  let ahead: RunState = run;
+  if (run.status !== 'map') {
+    if (run.status === 'reward' || run.status === 'won' || run.status === 'lost' || run.current?.type === 'boss') return [];
+    ahead = structuredClone(run);
+    if (ahead.status === 'shop') leaveShop(ahead);
+    else if (ahead.status === 'cache') leaveCache(ahead);
+    else if (ahead.status === 'course') finishCourse(ahead, { won: true, lostBy: null, health: ahead.health, wallet: ahead.wallet, ability: ahead.ability, gear: ahead.gear });
+  }
+  return choices(ahead)
+    .map((n) => courseJobFor(ahead, n))
+    .filter((j): j is CourseJob => j !== null);
 }
 
 /** Put on an item between courses (shop, cache, testing aid). The old one is lost. */
@@ -272,17 +382,52 @@ export function choices(run: RunState): MapNode[] {
   return here.links.map((id) => nodeById(run.map, id)!).filter(Boolean);
 }
 
-/** The budget of a course node (sheet section 4.1): 8 + 2 per counted node, hard courses ×1.5, capped. */
-export function budgetFor(run: RunState, type: NodeType): number {
-  const b = RUN.budget;
-  const plain = b.start + b.perNode * run.counted;
-  const scaled = type === 'hard' || type === 'boss' ? Math.floor(plain * b.hardScale) : plain;
-  return Math.min(b.cap, scaled);
+/** The region's numbers (Milestone 7 sheet section 7.4). Regions past the list use the last entry. */
+export function regionDef(run: RunState): RegionDef {
+  return REGIONS[Math.min(REGIONS.length, Math.max(1, run.region)) - 1]!;
 }
 
-/** Region 1 has an early and a late column of rarity odds (sheet section 5.2). */
+/**
+ * The threat budget of a course node: the region's start plus so much per
+ * counted node in the region, hard courses x1.5, capped (owner, 2026-11-17:
+ * region 1 is 8 + 2 per node, cap 30, as in Milestone 6).
+ */
+export function budgetFor(run: RunState, type: NodeType): number {
+  const t = regionDef(run).threat;
+  const plain = t.start + t.perNode * run.counted;
+  const scaled = type === 'hard' || type === 'boss' ? Math.floor(plain * RUN.budget.hardScale) : plain;
+  return Math.min(t.cap, scaled);
+}
+
+/** The journey's size for a course node: the region's areas and area size; hard courses one area more. */
+export function sizeFor(run: RunState, type: NodeType): JourneySize {
+  const r = regionDef(run);
+  const plain = Math.min(r.areas.max, r.areas.start + Math.floor(run.counted / r.areas.every));
+  const n = type === 'hard' || type === 'boss' ? plain + 1 : plain;
+  return { areas: [n, n], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(n) };
+}
+
+/** Region toughness: a modifier on every enemy (source "region"). */
+export function enemyModifiersFor(run: RunState): Modifier[] {
+  return regionDef(run).toughness.map((t) => ({ stat: t.stat, op: 'add' as const, amount: t.amount, source: { kind: 'region' as const, id: `region${run.region}` }, duration: { kind: 'forever' as const } }));
+}
+
+/** The boss randomizer (owner, 2026-11-17): a seeded pick from the region's boss pool. */
+export function bossOf(run: RunState): string {
+  return rngFor(run, `boss:${run.region}`).pick(regionDef(run).bosses);
+}
+
+/** Owner, 2026-11-17: a seeded pick from the boss's arena set, never the arena of the last boss fight. */
+export function pickArena(run: RunState): string {
+  const def = BOSSES.get(bossOf(run));
+  const all = def?.arenas ?? [];
+  const options = all.filter((a) => a !== run.lastArena);
+  return rngFor(run, `arena:${run.region}`).pick(options.length ? options : all);
+}
+
+/** Region 1 has an early and a late column of rarity odds (sheet section 5.2); later regions have their own. */
 function oddsColumn(run: RunState, better: boolean): number {
-  const base = run.counted >= RUN.lateAfter ? 1 : 0;
+  const base = run.region > 1 ? regionDef(run).oddsColumn : run.counted >= RUN.lateAfter ? 1 : 0;
   return Math.min(RARITY_ODDS.length - 1, base + (better ? 1 : 0));
 }
 
@@ -340,10 +485,17 @@ export function enterNode(run: RunState, id: string): CurrentNode {
     type,
     early: type === 'boss' && run.countdown > 0,
     budget: isCourse ? budgetFor(run, type) : 0,
-    courseSeed: `${run.seed}-${id === 'boss' ? `BOSS${node.row}` : id === LAST_TOWN ? 'LASTTOWN' : id.toUpperCase()}`,
+    courseSeed: courseSeedOf(run, node),
     gear,
+    acorn: isCourse ? run.pocket : null,
+    boss: type === 'boss' ? bossOf(run) : null,
+    arena: type === 'boss' ? pickArena(run) : null,
   };
+  if (run.current.arena) run.lastArena = run.current.arena;
+  if (isCourse) run.pocket = null;
   if (type === 'shop') {
+    // Owner, 2026-11-17: reaching a town deposits the blue stars carried.
+    deposit(run);
     run.status = 'shop';
     run.shop = { node: id, offers: [], rerolls: 0, freeRerolls: 0, raised: false };
     run.shop.offers = shopStock(run, run.shop, []);
@@ -380,6 +532,30 @@ export interface CourseOutcome {
   readonly wallet: number;
   readonly ability: string | null;
   readonly gear: GearSlots;
+  /** Blue stars picked up on the course (carried). */
+  readonly blueStars?: number;
+}
+
+/** Move the carried blue stars to the stash (owner, 2026-11-17: at a town, or on beating a boss). */
+export function deposit(run: RunState): number {
+  const n = run.blueStars;
+  run.blueStars = 0;
+  run.banked += n;
+  run.toStash += n;
+  return n;
+}
+
+/** Blue stars deposited since the last call, for the caller to add to the profile's stash. */
+export function drainDeposit(run: RunState): number {
+  const n = run.toStash;
+  run.toStash = 0;
+  return n;
+}
+
+/** Blue stars for beating the boss of a region (region 1 first). */
+export function bossBlueStars(region: number): number {
+  const list = BLUE_STARS.boss;
+  return list[Math.min(list.length, Math.max(1, region)) - 1]!;
 }
 
 /** Yellow stars for finishing a node of this type. */
@@ -400,12 +576,15 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   run.wallet = out.wallet;
   run.ability = out.ability;
   run.gear = { ...out.gear };
+  run.blueStars += out.blueStars ?? 0;
   if (!out.won) {
     run.status = 'lost';
     run.endedBy = out.lostBy ?? 'health';
     return;
   }
   run.totals.courses++;
+  if (cur.type === 'course') run.blueStars += BLUE_STARS.course;
+  else if (cur.type === 'hard') run.blueStars += BLUE_STARS.hard;
   run.wallet += rewardFor(cur.type);
   run.totals.stars += rewardFor(cur.type);
   // Granite Hide: heal after each course.
@@ -414,13 +593,63 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   }
   clampHealth(run);
   if (cur.type === 'boss') {
-    if (cur.early) run.blueStars += run.countdown * RUN.earlyBossBluePerStep;
+    // Owner, 2026-11-17: beating a boss deposits its reward and everything carried at once.
+    run.blueStars += bossBlueStars(run.region) + (cur.early ? run.countdown * BLUE_STARS.earlyPerStep : 0);
+    deposit(run);
+    run.bossesBeaten.push(bossOf(run));
+    // DESIGN.md open question 7: beating a boss heals fully.
+    run.health = runStats(run).get('maxHealth');
     run.current = null;
-    run.status = 'won';
-    run.endedBy = 'boss';
+    if (run.region >= LAST_REGION) {
+      run.status = 'won';
+      run.endedBy = 'boss';
+      return;
+    }
+    run.status = 'reward';
+    run.reward = bossReward(run);
     return;
   }
   arrive(run, true);
+}
+
+// ---------------------------------------------------------------------------
+// After the boss: the reward and the next region (Milestone 7 sheet section 7)
+
+/** Three gear items on the better odds column, all different. */
+function bossReward(run: RunState): Offer[] {
+  const rng = rngFor(run, `bossreward:${run.region}`);
+  const out: Offer[] = [];
+  for (let i = 0; i < 3; i++) {
+    const id = rollGear(run, rng, { better: true, exclude: out.map((o) => o.id) });
+    if (id) out.push({ kind: 'gear', id, sold: false });
+  }
+  return out;
+}
+
+/** Take reward `i` (or none, with null), then the next region starts on `nextMap` (src/gen/runMap.ts, region + 1). */
+export function takeBossReward(run: RunState, i: number | null, nextMap: RunMap): void {
+  if (run.status !== 'reward') return;
+  const offer = i === null ? undefined : run.reward?.[i];
+  if (offer) setGear(run, offer.id);
+  run.reward = null;
+  startRegion(run, run.region + 1, nextMap);
+}
+
+/** A new region: a new map from the run seed, the countdown back to 7, raises and counted nodes back to 0. */
+export function startRegion(run: RunState, region: number, map: RunMap): void {
+  run.region = region;
+  run.map = map;
+  run.at = null;
+  // The path is drawn on the region's map, so it starts again.
+  run.path.length = 0;
+  run.countdown = RUN.countdown;
+  run.raises = 0;
+  run.counted = 0;
+  run.lastTownVisited = false;
+  run.current = null;
+  run.shop = null;
+  run.cache = null;
+  run.status = 'map';
 }
 
 // ---------------------------------------------------------------------------
@@ -436,6 +665,7 @@ export function priceOf(run: RunState, offer: Offer): number {
   if (offer.kind === 'gear') base = GEAR.get(offer.id)!.price;
   else if (offer.kind === 'upgrade') base = upgradePrice(run, offer.id);
   else if (offer.kind === 'heal') base = RUN.shop.heal.price;
+  else if (offer.kind === 'acorn') base = ACORNS.get(offer.id)!.price;
   else base = RUN.shop.raise.price;
   return Math.max(0, Math.round(base * runStats(run).get('shopPrices')));
 }
@@ -476,9 +706,21 @@ function shopStock(run: RunState, shop: ShopState, keep: readonly Offer[]): Offe
   }
   const slot = RUN.shop.gearOffers + RUN.shop.upgradeOffers;
   const k = old(slot);
-  const raise = canRaise(run, shop) && rng.chance(0.5);
-  out.push(k ?? { kind: raise ? 'raise' : 'heal', id: raise ? 'raise' : 'heal', sold: false });
+  out.push(k ?? serviceOffer(run, shop, rng));
   return out;
+}
+
+/**
+ * The service slot (owner, 2026-11-17): Heal, Delay the Boss or an acorn, a
+ * third each. No raise when none are left; no acorn while the pocket is full.
+ */
+function serviceOffer(run: RunState, shop: ShopState, rng: Rng): Offer {
+  const kinds: ('heal' | 'raise' | 'acorn')[] = ['heal'];
+  if (canRaise(run, shop)) kinds.push('raise');
+  if (!run.pocket) kinds.push('acorn');
+  const kind = rng.pick(kinds);
+  if (kind === 'acorn') return { kind, id: ACORN_LIST[rng.weighted(acornWeights(dropWeights(run)))]!.id, sold: false };
+  return { kind, id: kind, sold: false };
 }
 
 /** Why an offer cannot be bought now, or null if it can. */
@@ -487,6 +729,7 @@ export function cannotBuy(run: RunState, offer: Offer, free = false): string | n
   if (!free && priceOf(run, offer) > run.wallet) return 'NOT ENOUGH STARS';
   if (offer.kind === 'heal' && run.health >= runStats(run).get('maxHealth')) return 'HEALTH IS FULL';
   if (offer.kind === 'raise' && run.shop && !canRaise(run, run.shop)) return 'NO RAISES LEFT';
+  if (offer.kind === 'acorn' && run.pocket) return 'POCKET IS FULL';
   return null;
 }
 
@@ -496,6 +739,8 @@ function applyOffer(run: RunState, offer: Offer): void {
   else if (offer.kind === 'heal') {
     run.health += run.status === 'cache' ? RUN.cache.heal : RUN.shop.heal.amount;
     clampHealth(run);
+  } else if (offer.kind === 'acorn') {
+    run.pocket = offer.id;
   } else {
     run.countdown++;
     run.raises++;
@@ -587,6 +832,24 @@ export function leaveCache(run: RunState): void {
   if (run.status !== 'cache') return;
   run.cache = null;
   arrive(run, true);
+}
+
+// ---------------------------------------------------------------------------
+// Permanent upgrades bought in a town's Burrow (owner, 2026-11-17, question I)
+
+/**
+ * Buy a permanent upgrade level in a town, mid-run: the profile pays from its
+ * stash and the level works at once for the rest of this run. Returns null,
+ * or why it could not be bought.
+ */
+export function buyPermanentInTown(run: RunState, profile: Profile, id: string): string | null {
+  if (run.status !== 'shop') return 'ONLY IN A TOWN';
+  const why = buyUpgrade(profile, id);
+  if (why) return why;
+  run.permanent[id] = (run.permanent[id] ?? 0) + 1;
+  run.health += PERMANENT_UPGRADES.get(id)?.heal ?? 0;
+  clampHealth(run);
+  return null;
 }
 
 // ---------------------------------------------------------------------------

@@ -6,6 +6,9 @@
  * Every number here is a starting value (FEATURES.md: "Every number in this
  * file is a starting value").
  */
+/** Enemies of this tier are bosses (FEATURES.md section 4): they use the boss wheel. */
+export const BOSS_TIER = 5;
+
 export const RULES = {
   /** Owner, 2026-11-15: naps (recover turns) allowed per course; the ball's base value of the "naps" stat. Running out of shots a third time fails the course. */
   naps: 2,
@@ -40,4 +43,7 @@ export const RULES = {
   bodyMaxTime: 10,
   /** Two rolling things that meet keep this fraction of their closing speed (ball and Lunger, Mole, seed). */
   bodyRestitution: 0.8,
+  /** Owner, 2026-11-17: success wheels (Milestone 7 sheet section 4b). Slices on a normal wheel and on the boss wheel. */
+  wheelSlices: 10,
+  bossWheelSlices: 20,
 } as const;

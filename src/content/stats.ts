@@ -21,6 +21,12 @@ export const STAT_IDS = [
   'gearCapacity',
   /** Owner, 2026-11-15: naps (recover turns) per course. A stat from Milestone 6 so gear can change it. */
   'naps',
+  /** Owner, 2026-11-17: extra filled slices on every success wheel (Knack, Spinner family). */
+  'rollSlices',
+  /** Owner, 2026-11-17: extra filled slices on the boss wheel only (Grit family). */
+  'bossSlices',
+  /** Owner, 2026-11-17: yellow stars in the wallet at the start of a run (Head Start). */
+  'startingStars',
   // Enemies
   'health',
   'moveRange',
@@ -52,6 +58,9 @@ export const STAT_DEFS: Readonly<Record<StatId, StatDef>> = {
   shopPrices: { name: 'Shop prices', min: 0.1, max: 10, whole: false },
   gearCapacity: { name: 'Gear capacity', min: 1, max: 3, whole: true },
   naps: { name: 'Naps', min: 0, max: 9, whole: true },
+  rollSlices: { name: 'Wheel slices', min: 0, max: 20, whole: true },
+  bossSlices: { name: 'Boss wheel slices', min: 0, max: 20, whole: true },
+  startingStars: { name: 'Starting stars', min: 0, max: 999, whole: true },
   health: { name: 'Health', min: 1, max: 999, whole: true },
   moveRange: { name: 'Move range', min: 0, max: 20, whole: false },
   attackDamage: { name: 'Attack damage', min: 0, max: 99, whole: true },

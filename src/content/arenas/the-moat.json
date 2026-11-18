@@ -1,0 +1,108 @@
+{
+ "format": 3,
+ "name": "Arena: The Moat",
+ "legend": {
+  "g": "grass",
+  "~": "water",
+  "^": "spring",
+  "<": {
+   "surface": "booster",
+   "dir": "ne"
+  },
+  ">": {
+   "surface": "booster",
+   "dir": "sw"
+  }
+ },
+ "tiles": [
+  "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+  "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+  "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+  "g2 g2 g2 ~0 ~0 ~0 >2 ~0 ~0 ~0 g2 g2 g2",
+  "g2 g2 g2 ~0 g2 g2 g2 g2 g2 ~0 g2 g2 g2",
+  "g2 g2 g2 ~0 g2 g2 g2 g2 g2 ~0 g2 g2 g2",
+  "g2 g2 ^2 ~0 g2 g2 g2 g2 g2 ~0 ^2 g2 g2",
+  "g2 g2 g2 ~0 g2 g2 g2 g2 g2 ~0 g2 g2 g2",
+  "g2 g2 g2 ~0 g2 g2 g2 g2 g2 ~0 g2 g2 g2",
+  "g2 g2 g2 ~0 ~0 ~0 <2 ~0 ~0 ~0 g2 g2 g2",
+  "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+  "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+  "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2"
+ ],
+ "start": [
+  6,
+  11
+ ],
+ "exit": [
+  6,
+  1
+ ],
+ "quota": 0,
+ "objects": [
+  {
+   "id": "warden",
+   "at": [
+    6,
+    6
+   ]
+  }
+ ],
+ "spawns": [
+  [
+   2,
+   2
+  ],
+  [
+   10,
+   2
+  ],
+  [
+   2,
+   10
+  ],
+  [
+   10,
+   10
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   11
+  ],
+  [
+   8,
+   11
+  ]
+ ],
+ "rails": [
+  [
+   [
+    0,
+    0
+   ],
+   [
+    12,
+    0
+   ],
+   [
+    12,
+    12
+   ],
+   [
+    0,
+    12
+   ],
+   [
+    0,
+    0
+   ]
+  ]
+ ]
+}

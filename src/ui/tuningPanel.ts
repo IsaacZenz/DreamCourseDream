@@ -45,6 +45,16 @@ export interface RunOptions {
   readonly onWin: () => void;
 }
 
+/** Milestone 7 testing aids (sheet section 8.2): buttons, and a choice of arena to fight the boss in. */
+export interface ProgressOptions {
+  readonly title: string;
+  readonly buttons: readonly { readonly label: string; readonly onClick: () => void }[];
+  readonly arenas?: readonly { id: string; label: string }[];
+  readonly onArena?: (id: string) => void;
+  /** Text shown below (the save, when asked for). */
+  readonly text?: string;
+}
+
 export class TuningPanel {
   private readonly root: HTMLDivElement;
   private readonly rows = new Map<string, { input: HTMLInputElement; value: HTMLSpanElement; name: HTMLSpanElement }>();
@@ -52,6 +62,7 @@ export class TuningPanel {
   private readonly tuning: Tuning;
   private benchBox: HTMLDivElement | null = null;
   private runBox: HTMLDivElement | null = null;
+  private progressBox: HTMLDivElement | null = null;
 
   constructor(tuning: Tuning) {
     this.tuning = tuning;
@@ -108,6 +119,10 @@ export class TuningPanel {
     this.runBox.className = 'bench';
     this.runBox.style.display = 'none';
     this.root.insertBefore(this.runBox, this.benchBox);
+    this.progressBox = document.createElement('div');
+    this.progressBox.className = 'bench';
+    this.progressBox.style.display = 'none';
+    this.root.insertBefore(this.progressBox, this.runBox);
 
     let group = '';
     for (const c of TUNING_CONTROLS) {
@@ -227,6 +242,39 @@ export class TuningPanel {
         opts.onCountdown(Number(count.value));
       }),
     );
+  }
+
+  setProgress(opts: ProgressOptions | null): void {
+    const box = this.progressBox;
+    if (!box) return;
+    box.replaceChildren();
+    box.style.display = opts ? 'block' : 'none';
+    if (!opts) return;
+    const h = document.createElement('h3');
+    h.textContent = opts.title;
+    box.append(h, ...opts.buttons.map((b) => this.button(b.label, b.onClick)));
+    if (opts.arenas && opts.onArena) {
+      const el = document.createElement('select');
+      for (const a of opts.arenas) {
+        const o = document.createElement('option');
+        o.value = a.id;
+        o.textContent = a.label;
+        el.appendChild(o);
+      }
+      box.append(document.createElement('br'), el, this.button('Fight the boss here', () => {
+        el.blur();
+        opts.onArena!(el.value);
+      }));
+    }
+    if (opts.text) {
+      const pre = document.createElement('pre');
+      pre.style.whiteSpace = 'pre-wrap';
+      pre.style.maxHeight = '160px';
+      pre.style.overflow = 'auto';
+      pre.style.fontSize = '10px';
+      pre.textContent = opts.text;
+      box.append(pre);
+    }
   }
 
   private button(text: string, onClick: () => void): HTMLButtonElement {

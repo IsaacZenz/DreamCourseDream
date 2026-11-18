@@ -64,6 +64,74 @@ export const RUN = {
   cache: { heal: 2 },
 } as const;
 
+/**
+ * Regions (Milestone 7 sheet section 7.4, owner 2026-11-17): course size,
+ * threat and enemy toughness scale separately in every region. Each climbs
+ * with the counted nodes finished in the region and jumps at the next one.
+ * Region 3 is written now for Milestone 8; in Milestone 7 the run ends after
+ * the boss of region `lastRegion`.
+ */
+export interface RegionDef {
+  /** Areas per journey: `start`, +1 every `every` counted nodes, at most `max`. Hard courses and the boss get +1. */
+  readonly areas: { readonly start: number; readonly every: number; readonly max: number };
+  /** Area side in tiles, at random in this range. */
+  readonly areaSize: readonly [number, number];
+  /** Threat budget (enemies, obstacles, hazards): start + perNode per counted node, hard courses x RUN.budget.hardScale, capped. */
+  readonly threat: { readonly start: number; readonly perNode: number; readonly cap: number };
+  readonly maxEnemies: number;
+  /** Added to every enemy in the region (source "region"). Bosses take `bossHealth` instead of the health part. */
+  readonly toughness: readonly { readonly stat: StatId; readonly amount: number }[];
+  /** The boss randomizer's pool (owner, 2026-11-17). Only the Warden until Milestone 8. */
+  readonly bosses: readonly string[];
+  /** The boss's health in this region. */
+  readonly bossHealth: number;
+  /** Which column of the gear rarity odds (gear.ts RARITY_ODDS) the region uses; region 1 also has a late column (RUN.lateAfter). */
+  readonly oddsColumn: number;
+  /**
+   * Owner, 2026-11-18: the "par" kit the course check's bot plays with in this
+   * region (stat additions), instead of the player's own gear and upgrades. A
+   * player behind par finds courses harder; upgrades are how they catch up.
+   */
+  readonly par: readonly { readonly stat: StatId; readonly amount: number }[];
+}
+
+export const REGIONS: readonly RegionDef[] = [
+  { areas: { start: 2, every: 2, max: 5 }, areaSize: [8, 14], threat: { start: 8, perNode: 2, cap: 30 }, maxEnemies: 10, toughness: [], bosses: ['warden'], bossHealth: 12, oddsColumn: 0, par: [] },
+  // Owner, 2026-11-18 (option A): 3 to 6 areas and threat capped at 36 (was 4 to 7 and 45), so courses can be made in time.
+  { areas: { start: 3, every: 2, max: 6 }, areaSize: [9, 15], threat: { start: 18, perNode: 3, cap: 36 }, maxEnemies: 14, toughness: [{ stat: 'health', amount: 1 }], bosses: ['warden'], bossHealth: 18, oddsColumn: 2,
+    par: [
+      { stat: 'maxShots', amount: 1 },
+      { stat: 'hitDamage', amount: 1 },
+      { stat: 'shotPower', amount: 0.1 },
+    ],
+  },
+  {
+    areas: { start: 5, every: 2, max: 8 },
+    areaSize: [10, 16],
+    threat: { start: 28, perNode: 3, cap: 60 },
+    maxEnemies: 18,
+    toughness: [
+      { stat: 'health', amount: 1 },
+      { stat: 'attackDamage', amount: 1 },
+    ],
+    bosses: ['warden'],
+    bossHealth: 24,
+    oddsColumn: 3,
+    par: [
+      { stat: 'maxShots', amount: 2 },
+      { stat: 'hitDamage', amount: 1 },
+      { stat: 'shotPower', amount: 0.2 },
+      { stat: 'maxHealth', amount: 2 },
+    ],
+  },
+];
+
+/** Milestone 7: beating this region's boss wins the run (region 3 comes in Milestone 8). */
+export const LAST_REGION = 2;
+
+/** The bot's shot limit for a journey of n areas (the Milestone 5b table: 2 areas 20, 3 areas 26, ... ). */
+export const botShotsFor = (areas: number): number => 8 + 6 * areas;
+
 /** Run upgrades (FEATURES.md section 9): one modifier each, lasting the run, stacking. */
 export interface UpgradeDef {
   readonly id: string;

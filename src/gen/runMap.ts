@@ -76,8 +76,9 @@ function rollType(rng: Rng, row: number, courseOnly: boolean): NodeType {
   return t;
 }
 
-export function generateRunMap(seed: string): RunMap {
-  const rng = Rng.fromSeed(seed).fork('map');
+/** The map of one region. Region 1 keeps the Milestone 6 fork ("map") so old seeds give the same map; later regions fork "map:<n>". */
+export function generateRunMap(seed: string, region = 1): RunMap {
+  const rng = Rng.fromSeed(seed).fork(region === 1 ? 'map' : `map:${region}`);
   const m = RUN.map;
   const rows: Draft[][] = [];
   // Row 1: three courses side by side.

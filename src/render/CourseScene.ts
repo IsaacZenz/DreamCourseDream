@@ -18,6 +18,7 @@ import {
   debugWin,
   drainLog,
   equipGear,
+  isBoss,
   isImmune,
   previewShot,
   shieldsLeft,
@@ -35,8 +36,14 @@ import type { TuningPanel } from '../ui/tuningPanel';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { UPGRADE_LIST } from '../content/run';
 import { placeGear } from '../gen/placeGear';
-import { addUpgrade, botLoadoutOf, debugSetCountdown, finishCourse, loadoutOf, rewardFor } from '../sim/run';
-import { activeRun, newRunSeed, session, startRun, type RunCourse } from './runSession';
+import { upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, regionDef, rewardFor } from '../sim/run';
+import { ARENAS } from '../content/arenas';
+import { activeRun, newRunSeed, persist, session, startRun, type RunCourse } from './runSession';
+import { ACORNS } from '../content/consumables';
+import { jobKey, madeCourse, prefetch, want, type Made } from './genQueue';
+import { BOSSES } from '../content/bosses';
+import { BLUE_STARS } from '../content/progress';
+import { LAST_REGION } from '../content/run';
 import { getPanel, getTuning, preloadAssets, shared } from './shared';
 import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
 import { frameIndex, type Manifest } from './manifest';
@@ -70,6 +77,11 @@ const METER_PLAN = 0xffffff;
 const STAR_FILL = 0xf8d030;
 const HEALTH_LOST = 0x403040;
 const GOOD = 0x80f080;
+/** Milestone 7 display colours: success wheel slices, the boss bar and the slam ring. */
+const WHEEL_FILLED = 0x40c060;
+const WHEEL_EMPTY = 0x404058;
+const BOSS_BAR = 0xe04040;
+const SLAM_RING = 0xff4030;
 const BAD = 0xff8080;
 const GUIDE_WARN = 0xf89038;
 const DEBUG_OUTER = 0xf8e048;
@@ -255,7 +267,14 @@ export class CourseScene extends Phaser.Scene {
     }
     const file = TEST_COURSES[this.courseIndex]!;
     let data: unknown = file.data;
-    if (this.runMode) {
+    const arena = this.runMode ? session.run!.current!.arena : null;
+    if (arena) {
+      // Milestone 7: a boss fight is in a hand-built arena, not generated.
+      data = ARENAS.get(arena)!.data;
+    } else if (this.runMode) {
+      // Made in the background already? Then no loading screen at all.
+      const ahead = this.runCourse() ? null : madeCourse(this.runKey());
+      if (ahead) this.storeRunCourse(ahead);
       const ready = this.runCourse();
       if (!ready) {
         this.course = null;
@@ -297,9 +316,11 @@ export class CourseScene extends Phaser.Scene {
     panel = getPanel();
 
     const run = this.runMode ? session.run : null;
-    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run) }) });
+    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: regionDef(run).bossHealth }) });
     this.runReported = false;
     this.setRunPanel();
+    // Owner, 2026-11-18: while this course is played, make the next ones in the background.
+    if (run && run.status === 'course') prefetch(upcomingJobs(run));
     if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
     // The first visit to the bench opens the panel, so the choices are easy to find.
     if (file.id === BENCH_ID && !benchShown) {
@@ -400,7 +421,7 @@ export class CourseScene extends Phaser.Scene {
   private runKey(): string {
     const run = session.run!;
     const cur = run.current!;
-    return `${cur.courseSeed}|${cur.budget}|${JSON.stringify(botLoadoutOf(run))}`;
+    return jobKey(cur.courseSeed, cur.budget, genOptionsFor(run));
   }
 
   private runCourse(): RunCourse | null {
@@ -418,31 +439,24 @@ export class CourseScene extends Phaser.Scene {
     const key = this.runKey();
     if (session.pending === key) return;
     session.pending = key;
-    const loadout = botLoadoutOf(run);
-    const done = (result: GenResult, ms: number) => {
+    const opts = genOptionsFor(run);
+    const done = (m: Made) => {
       if (session.pending !== key) return;
       session.pending = null;
-      let raw = result.raw;
-      let course = result.course;
-      if (cur.gear) ({ raw, course } = placeGear(raw, course, cur.gear, cur.courseSeed));
-      session.course = { key, raw, course, result, ms };
-      (result.fallback ? console.warn : console.info)(`${result.summary}, ${Math.round(ms)} ms${cur.gear ? `, gear: ${cur.gear}` : ''}`);
+      this.storeRunCourse(m);
       if (this.scene.isActive()) this.scene.restart({ run: true, debug: this.debugMode });
     };
-    try {
-      const worker = new Worker(new URL('./genWorker.ts', import.meta.url), { type: 'module' });
-      worker.onmessage = (e: MessageEvent<{ result: GenResult; ms: number }>) => {
-        worker.terminate();
-        done(e.data.result, e.data.ms);
-      };
-      worker.postMessage({ seed: cur.courseSeed, budget: cur.budget, tuning, loadout });
-    } catch {
-      this.time.delayedCall(50, () => {
-        const t0 = performance.now();
-        const result = generateCourse(cur.courseSeed, cur.budget, tuning!, { loadout });
-        done(result, performance.now() - t0);
-      });
-    }
+    // Owner, 2026-11-18: often it was made in the background already (genQueue.ts).
+    want(cur.courseSeed, cur.budget, opts, done);
+  }
+
+  /** A made course becomes the run's current course: its gear item (if any) is placed on it. */
+  private storeRunCourse({ result, ms }: Made): void {
+    const cur = session.run!.current!;
+    let raw = result.raw;
+    let course = result.course;
+    if (cur.gear) ({ raw, course } = placeGear(raw, course, cur.gear, cur.courseSeed));
+    session.course = { key: this.runKey(), raw, course, result, ms };
   }
 
   /** The course result goes back to the run, once. */
@@ -451,16 +465,30 @@ export class CourseScene extends Phaser.Scene {
     if (!this.runMode || this.runReported || !run || run.status !== 'course') return;
     this.runReported = true;
     const p = this.play;
-    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear });
+    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, blueStars: p.blueStars });
     session.course = null;
+    // A boss win deposits its blue stars at once (owner, 2026-11-17): save them now.
+    persist();
+  }
+
+  /** A minion vanishing when its boss falls. */
+  private puff(uid: string): void {
+    const e = this.play.enemies.find((x) => x.uid === uid);
+    if (!e) return;
+    const img = this.makeSprite('puff', '0');
+    const p = project(e.x, e.y, e.z / STEP_HEIGHT);
+    img.setPosition(Math.round(p.x), Math.round(p.y)).setDepth(this.standingDepth(e.x, e.y) + 0.1);
+    const entry = manifest.sprites.puff!;
+    [1, 2].forEach((f, i) => this.time.delayedCall(120 * (i + 1), () => img.setTexture('puff', frameIndex(entry, String(f)))));
+    this.time.delayedCall(400, () => img.destroy());
   }
 
   /** Key 7: start a run, or go back to the one in progress. */
   private openRun(): void {
     const run = activeRun();
     if (!run) {
-      startRun(newRunSeed());
-      this.scene.start('map');
+      // Milestone 7: runs start from the Burrow.
+      this.scene.start('burrow');
     } else if (run.status === 'course') {
       if (!this.runMode) this.scene.restart({ run: true, debug: this.debugMode });
     } else if (run.status === 'shop' || run.status === 'cache') this.scene.start('town');
@@ -502,6 +530,26 @@ export class CourseScene extends Phaser.Scene {
         this.endShot();
       },
     });
+    // Milestone 7: in a boss fight, jump the boss to a phase (sheet section 8.2).
+    const boss = this.runMode ? this.play.enemies.find((e) => isBoss(e)) : undefined;
+    const setHealth = (n: number) => () => {
+      if (!boss || boss.defeated) return;
+      boss.health = Math.min(n, boss.health);
+      boss.phase = Math.max(boss.phase, n <= boss.stats.get('health') / 3 ? 2 : n <= (boss.stats.get('health') * 2) / 3 ? 1 : 0);
+      boss.slamMark = null;
+    };
+    p.setProgress(
+      boss
+        ? {
+            title: 'Boss testing aids',
+            buttons: [
+              { label: 'Boss to phase 2', onClick: setHealth(Math.floor((boss.stats.get('health') * 2) / 3)) },
+              { label: 'Boss to phase 3', onClick: setHealth(Math.floor(boss.stats.get('health') / 3)) },
+              { label: 'Boss to 1 health', onClick: setHealth(1) },
+            ],
+          }
+        : null,
+    );
   }
 
   /** Make the course in a background worker (or right here if workers are not available), then start again. */
@@ -536,7 +584,7 @@ export class CourseScene extends Phaser.Scene {
     const cy = VIEW_HEIGHT / 2;
     this.cameras.main.setScroll(0, 0);
     const cur = this.runMode ? session.run?.current : null;
-    const what = cur ? `MAKING THE NEXT COURSE  ${cur.type === 'boss' ? 'BOSS (STAND-IN)' : cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  BUDGET ${cur.budget}` : `GENERATING THE JOURNEY  #${this.seed}  BUDGET ${genBudget}`;
+    const what = cur ? `MAKING THE NEXT COURSE  ${cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  BUDGET ${cur.budget}` : `GENERATING THE JOURNEY  #${this.seed}  BUDGET ${genBudget}`;
     const title = pixelText(this, manifest, 0, 0, what, { color: UI_TEXT, background: UI_BG }).setScrollFactor(0);
     title.setPosition(Math.round(cx - title.width / 2), cy - 40);
     const hint = pixelText(this, manifest, 0, 0, 'BIG COURSES TAKE A FEW SECONDS: THE BOT IS CHECKING IT CAN BE BEATEN', { color: UI_DIM, background: UI_BG }).setScrollFactor(0);
@@ -613,6 +661,8 @@ export class CourseScene extends Phaser.Scene {
     this.animateTiles();
     this.syncObjects();
     this.drawStatusHud();
+    this.drawBossHud();
+    this.animateWheels();
     if (this.message && this.time.now > this.messageUntil) {
       this.message.destroy();
       this.message = null;
@@ -829,7 +879,7 @@ export class CourseScene extends Phaser.Scene {
       // In-game cue: a sentinel's eyes flash (it blinks) when the ball comes near its inner radius.
       const inner = e.stats.get('innerRadius');
       const near = moving && inner > 0 && e.def.triggers.passBy !== 'none' && Math.hypot(ball.x - e.x, ball.y - e.y) < inner + 0.5;
-      show(e.uid, e.def.sprite, e.x, e.y, e.z, { alpha: near && Math.floor(now / 80) % 2 ? 0.45 : 1 });
+      show(e.uid, e.def.sprite, e.x, e.y, e.z, { alpha: near && Math.floor(now / 80) % 2 ? 0.45 : 1, ...(isBoss(e) && { frame: `phase${e.phase + 1}` }) });
       if (e.activated) show(`${e.uid}:alert`, 'alert', e.x, e.y, e.z, { lift: 18 + bob, depth: HUD_DEPTH - 10 });
       if (e.statuses.some((st) => st.id === 'stunned')) show(`${e.uid}:stun`, 'icon-stunned', e.x, e.y, e.z, { lift: 20, depth: HUD_DEPTH - 10 });
       if (e.statuses.some((st) => st.id === 'burning')) show(`${e.uid}:burn`, 'icon-burning', e.x, e.y, e.z, { lift: 31, depth: HUD_DEPTH - 10 });
@@ -1201,7 +1251,7 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage('+1 SHOT', GOOD);
           break;
         case 'damage': {
-          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED' }[e.cause];
+          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED' }[e.cause];
           this.queueMessage(`${what}! -${e.amount} HEALTH`, BAD);
           break;
         }
@@ -1283,6 +1333,32 @@ export class CourseScene extends Phaser.Scene {
         case 'echo':
           this.queueMessage('ECHO! THAT HIT COUNTS TWICE', 0xa080f0);
           break;
+        // Milestone 7.
+        case 'roll':
+          this.spinWheel(e);
+          break;
+        case 'blueStar':
+          this.queueMessage('+1 BLUE STAR! (CARRIED: DEPOSIT IT AT A TOWN)', 0x80c8ff);
+          break;
+        case 'acorn':
+          this.queueMessage(`${(ACORNS.get(e.item)?.name ?? 'ACORN').toUpperCase()}: +${e.slices} WHEEL SLICES THIS COURSE`, 0xf8d030);
+          break;
+        case 'slamMark':
+          this.queueMessage('THE WARDEN WINDS UP: GET OUT OF THE RING!', BAD);
+          break;
+        case 'slam':
+          if (!e.hit) this.queueMessage('SLAM! MISSED YOU', GOOD);
+          this.cameras.main.shake(180, 0.006);
+          break;
+        case 'summon':
+          this.queueMessage(`THE WARDEN CALLS A ${this.nameOf(e.enemy)}!`, GUIDE_WARN);
+          break;
+        case 'phase':
+          this.queueMessage(`THE WARDEN SHEDS A PLATE! PHASE ${e.phase + 1}`, 0xf8e048);
+          break;
+        case 'vanish':
+          this.puff(e.enemy);
+          break;
         case 'underwater':
           this.queueMessage('UNDER WATER: NEXT SHOT IS WEAKER', 0x80c8ff);
           break;
@@ -1296,7 +1372,110 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private nameOf(uid: string): string {
-    return (OBJECTS.get(uid.split('#')[0]!)?.name ?? 'ENEMY').toUpperCase();
+    return (OBJECTS.get(uid.replace(/^summon:/, '').split('#')[0]!)?.name ?? 'ENEMY').toUpperCase();
+  }
+
+  // -------------------------------------------------------------------------
+  // Success wheels (owner, 2026-11-17): the simulation has already decided; this only shows the spin.
+
+  private wheels: { c: Phaser.GameObjects.Container; hand: Phaser.GameObjects.Graphics; from: number; to: number; start: number; done: boolean; success: boolean; label: Phaser.GameObjects.Container }[] = [];
+
+  private spinWheel(e: Extract<PlayEvent, { kind: 'roll' }>): void {
+    const n = e.size;
+    const r = n > 10 ? 15 : 11;
+    // Which slices are filled is only for the look (sheet section 4b.1), so the display may pick them at random.
+    const order = Phaser.Utils.Array.Shuffle([...Array(n).keys()]);
+    const filled = new Set(order.slice(0, e.filled));
+    const pool = [...Array(n).keys()].filter((i) => filled.has(i) === e.success);
+    const target = pool.length ? pool[Math.floor(Math.random() * pool.length)]! : 0;
+    const slot = this.wheels.filter((w) => !w.done).length;
+    // Left of the power meter on the right edge.
+    const cx = VIEW_WIDTH - 46 - (slot % 4) * 36;
+    const cy = 52 + Math.floor(slot / 4) * 40;
+    const c = this.add.container(cx, cy).setScrollFactor(0).setDepth(HUD_DEPTH + 5);
+    const g = this.add.graphics();
+    const step = (Math.PI * 2) / n;
+    for (let i = 0; i < n; i++) {
+      g.fillStyle(filled.has(i) ? WHEEL_FILLED : WHEEL_EMPTY, 1);
+      g.slice(0, 0, r, i * step - Math.PI / 2, (i + 1) * step - Math.PI / 2, false).fillPath();
+    }
+    g.lineStyle(1, UI_BG, 1).strokeCircle(0, 0, r);
+    c.add(g);
+    const hand = this.add.graphics();
+    c.add(hand);
+    const word = ({ burn: 'BURN', stun: 'STUN', zap: 'ZAP', heal: 'HEAL', knock: 'KNOCK', echo: 'ECHO' } as const)[e.effect];
+    const label = pixelText(this, manifest, -r, r + 2, `${word} ${e.filled}/${n}${e.respun ? ' AGAIN' : ''}`, { color: UI_TEXT, background: UI_BG });
+    c.add(label);
+    // Two and a bit turns, ending in the middle of the target slice.
+    const to = Math.PI * 2 * 2 + (target + 0.5) * step;
+    this.wheels.push({ c, hand, from: 0, to, start: this.time.now, done: false, success: e.success, label });
+  }
+
+  private animateWheels(): void {
+    const SPIN = 600;
+    const HOLD = 700;
+    for (const w of this.wheels) {
+      const t = Math.min(1, (this.time.now - w.start) / SPIN);
+      const a = w.from + (w.to - w.from) * (1 - (1 - t) ** 3) - Math.PI / 2;
+      const r = 13;
+      w.hand.clear().lineStyle(2, 0xf8f8f8, 1).lineBetween(0, 0, Math.cos(a) * r, Math.sin(a) * r).fillStyle(0x202030, 1).fillCircle(0, 0, 2);
+      if (t >= 1 && !w.done) {
+        w.done = true;
+        w.label.destroy();
+        w.label = pixelText(this, manifest, -14, 17, w.success ? 'YES!' : 'MISS', { color: w.success ? GOOD : BAD, background: UI_BG });
+        w.c.add(w.label);
+      }
+      if (this.time.now - w.start > SPIN + HOLD) w.c.destroy();
+    }
+    this.wheels = this.wheels.filter((w) => this.time.now - w.start <= SPIN + HOLD);
+  }
+
+  // -------------------------------------------------------------------------
+  // Boss fights (Milestone 7): the health bar and the slam ring.
+
+  private bossHud: Phaser.GameObjects.Container | null = null;
+  private bossKey = '';
+  private slamGfx: Phaser.GameObjects.Graphics | null = null;
+
+  private drawBossHud(): void {
+    const boss = this.play.enemies.find((e) => isBoss(e));
+    if (!boss) return;
+    const full = boss.stats.get('health');
+    const key = `${boss.health},${boss.defeated},${boss.phase}`;
+    if (key !== this.bossKey) {
+      this.bossKey = key;
+      this.bossHud?.destroy();
+      const w = 160;
+      const x = Math.round((VIEW_WIDTH - w) / 2);
+      const c = this.add.container(x, 32).setScrollFactor(0).setDepth(HUD_DEPTH);
+      c.add(this.add.rectangle(0, 0, w, 15, UI_BG, 0.9).setOrigin(0, 0));
+      c.add(pixelText(this, manifest, 3, 2, `${boss.def.name.toUpperCase()}  ${boss.defeated ? 'BEATEN!' : `PHASE ${boss.phase + 1}`}`, { color: boss.defeated ? GOOD : BAD }));
+      const g = this.add.graphics();
+      g.fillStyle(METER_BG, 1).fillRect(3, 10, w - 6, 3);
+      g.fillStyle(BOSS_BAR, 1).fillRect(3, 10, Math.round(((w - 6) * boss.health) / full), 3);
+      // Phase marks at 2/3 and 1/3.
+      g.fillStyle(0xf8f8f8, 1);
+      for (const f of [2 / 3, 1 / 3]) g.fillRect(3 + Math.round((w - 6) * f), 9, 1, 5);
+      c.add(g);
+      c.add(pixelText(this, manifest, w - 30, 2, `${boss.health}/${full}`, { color: UI_TEXT }));
+      this.bossHud = c;
+    }
+    // The slam ring on the ground: an ellipse in screen space round the marked spot.
+    if (!this.slamGfx) this.slamGfx = this.add.graphics();
+    const g = this.slamGfx;
+    g.clear();
+    const m = boss.slamMark;
+    if (!m || boss.defeated) return;
+    const z = groundAt(this.play.course, m.x, m.y)?.h ?? 0;
+    const p = project(m.x, m.y, z / STEP_HEIGHT);
+    const pulse = 0.55 + 0.45 * Math.abs(Math.sin(this.time.now / 180));
+    // One tile is 32 pixels wide and 16 high on screen; the ring's radius is in tiles along each grid axis.
+    const rx = m.r * 16 * Math.SQRT2;
+    const ry = m.r * 8 * Math.SQRT2;
+    // Above every floor tile it spans (a ring covers several tiles), below the clouds and the HUD.
+    g.setDepth(OVERLAY_DEPTH - 30);
+    g.lineStyle(2, SLAM_RING, pulse).strokeEllipse(Math.round(p.x), Math.round(p.y), rx * 2, ry * 2);
+    g.fillStyle(SLAM_RING, 0.12 * pulse).fillEllipse(Math.round(p.x), Math.round(p.y), rx * 2, ry * 2);
   }
 
   private queueMessage(text: string, color: number): void {
@@ -1453,12 +1632,14 @@ export class CourseScene extends Phaser.Scene {
     const wild = this.time.now < this.wildUntil ? Math.floor(this.time.now / 90) % ABILITY_IDS.length : -1;
     const usedUp = p.abilityUsed && !!p.shot;
     const shields = shieldsLeft(p);
-    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, shields].join(',');
+    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, shields, p.blueStars, p.acornSlices].join(',');
     if (key === this.statusKey) return;
     this.statusKey = key;
     this.statusHud?.destroy();
     const c = this.add.container(2, 10).setScrollFactor(0).setDepth(HUD_DEPTH);
-    const bgW = 150;
+    // Wide enough for every heart and shot orb (permanent upgrades can add several), then the HP text.
+    const iconsW = 2 + maxHealth * 9 + 6 + maxShots * 9;
+    const bgW = Math.max(150, iconsW + 46);
     c.add(this.add.rectangle(0, 0, bgW, 19, UI_BG, 0.85).setOrigin(0, 0));
     const icon = (id: string, x: number, y: number, dim = false) => {
       const entry = manifest.sprites[id]!;
@@ -1478,15 +1659,22 @@ export class CourseScene extends Phaser.Scene {
     const barW = 48;
     const g = this.add.graphics();
     g.fillStyle(METER_BG, 1).fillRect(barX, barY, barW, 5);
-    const fill = p.quota > 0 ? Math.min(1, p.meter / p.quota) : 1;
+    const fill = p.bossExit ? (p.exitOpen ? 1 : 0) : p.quota > 0 ? Math.min(1, p.meter / p.quota) : 1;
     g.fillStyle(p.exitOpen ? GOOD : STAR_FILL, 1).fillRect(barX, barY, Math.round(barW * fill), 5);
     c.add(g);
-    const meterText = p.quota > 0 ? `${Math.min(p.meter, p.quota)}/${p.quota}${p.exitOpen ? ' OPEN' : ''}` : 'OPEN';
+    // Milestone 7: in a boss arena the exit opens when the boss falls, not from stars.
+    const meterText = p.bossExit ? (p.exitOpen ? 'OPEN' : 'BEAT BOSS') : p.quota > 0 ? `${Math.min(p.meter, p.quota)}/${p.quota}${p.exitOpen ? ' OPEN' : ''}` : 'OPEN';
     c.add(pixelText(this, manifest, barX + barW + 3, barY, meterText, { color: p.exitOpen ? GOOD : UI_TEXT }));
-    c.add(pixelText(this, manifest, 104, 2, `HP ${p.health}/${maxHealth}`, { color: UI_TEXT }));
+    c.add(pixelText(this, manifest, Math.max(104, x + 3), 2, `HP ${p.health}/${maxHealth}`, { color: UI_TEXT }));
     const starX = 94;
     icon('star-yellow', starX - 2, 9);
     c.add(pixelText(this, manifest, starX + 10, barY, this.runMode ? `${p.wallet}` : `${p.wallet}  #${this.seed}${this.isGenerated ? ` B${genBudget}` : ''}`, { color: UI_TEXT }));
+    // Milestone 7: blue stars carried (not yet deposited), and an acorn's extra slices this course.
+    if (this.runMode && session.run) {
+      icon('star-blue', starX + 22, 9);
+      c.add(pixelText(this, manifest, starX + 34, barY, `${session.run.blueStars + p.blueStars}`, { color: 0x80c8ff }));
+    }
+    if (p.acornSlices > 0) c.add(pixelText(this, manifest, 2, 20, `ACORN +${p.acornSlices} SLICES`, { color: STAR_FILL, background: UI_BG }));
     // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
     const slotX = bgW + 4;
     c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -1526,9 +1714,26 @@ export class CourseScene extends Phaser.Scene {
     const lines = cur
       ? won
         ? cur.type === 'boss'
-          ? ['BOSS BEATEN! (STAND-IN HARD COURSE)', '', 'THE RUN IS COMPLETE.', `SHOTS TAKEN: ${p.shotNumber}`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: RUN SUMMARY']
-          : ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `FINISH REWARD: +${rewardFor(cur.type)} STARS`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: BACK TO THE MAP']
-        : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', 'GEAR IN YOUR BURROW IS SAFE.', '', 'ENTER: RUN SUMMARY']
+          ? [
+              'THE WARDEN IS BEATEN!',
+              '',
+              `BLUE STARS: +${bossBlueStars(session.run!.region)}${cur.early ? ` +${session.run!.countdown} EARLY` : ''}, ALL DEPOSITED`,
+              'HEALED TO FULL',
+              `SHOTS TAKEN: ${p.shotNumber}`,
+              '',
+              session.run!.region >= LAST_REGION ? 'THE RUN IS COMPLETE. ENTER: RUN SUMMARY' : 'ENTER: PICK A REWARD, THEN REGION ' + (session.run!.region + 1),
+            ]
+          : [
+              'COURSE COMPLETE!',
+              '',
+              `SHOTS TAKEN: ${p.shotNumber}`,
+              `STARS: ${p.meter} (QUOTA ${p.quota})`,
+              `FINISH REWARD: +${rewardFor(cur.type)} STARS, +${cur.type === 'hard' ? BLUE_STARS.hard : BLUE_STARS.course} BLUE (CARRIED)`,
+              `HEALTH LEFT: ${p.health}`,
+              '',
+              'ENTER: BACK TO THE MAP',
+            ]
+        : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', 'CARRIED BLUE STARS ARE LOST.', 'GEAR IN YOUR BURROW IS SAFE.', '', 'ENTER: RUN SUMMARY']
       : won
       ? ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: NEXT COURSE   R: PLAY AGAIN']
       : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
@@ -1567,7 +1772,9 @@ export class CourseScene extends Phaser.Scene {
     this.drawStatusHud();
     const cur = this.runMode ? session.run?.current : null;
     const label = cur
-      ? `RUN #${session.run!.seed}  ${cur.type === 'boss' ? 'BOSS (STAND-IN)' : cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  ROW ${cur.row}  BUDGET ${cur.budget}`
+      ? cur.arena
+        ? `RUN #${session.run!.seed}  REGION ${session.run!.region}  ${BOSSES.get(cur.boss ?? '')?.name.toUpperCase() ?? 'BOSS'}  ARENA: ${ARENAS.get(cur.arena)!.name.toUpperCase()} (${ARENAS.get(cur.arena)!.gimmick.toUpperCase()})`
+        : `RUN #${session.run!.seed}  REGION ${session.run!.region}  ${cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  ROW ${cur.row}  BUDGET ${cur.budget}`
       : `${n} ${course.name}`;
     pixelText(this, manifest, 2, 2, label, { color: UI_TEXT, background: UI_BG })
       .setScrollFactor(0)

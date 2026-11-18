@@ -40,7 +40,7 @@ Nothing changes a stat directly. Everything applies a **modifier**:
 - which stat,
 - add or multiply,
 - the amount,
-- where it came from (permanent upgrade, run boost, gear, ability, status, trait),
+- where it came from (permanent upgrade, run boost, gear, ability, status, trait, region),
 - how long it lasts (forever, this run, this course, N turns, while equipped).
 
 Final value = (base + all adds) × all multipliers, then rounded and limited to that stat's minimum and maximum.
@@ -177,9 +177,17 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 
 | Working name | Gimmick | Milestone |
 |---|---|---|
-| The Warden | None. Three phases: slow slams, then summons, then both faster. | 7 |
+| The Warden | None. Three phases: slow slams, then summons, then both faster. Placeholder boss for every region until Milestone 8 (owner, 2026-11-17). | 7 |
 | Second boss | Shield that only drops after it attacks | 8 |
 | Third and final boss | Decide with the owner | 8 |
+
+**Decided (owner, 2026-11-17):**
+
+- **Boss randomizer:** each region's boss is a seeded pick from that region's boss pool. New bosses are added to the pools as data.
+- **Arenas:** five hand-picked arenas, each with its own gimmick or theme (Milestone 7: Bumper Ring, Sinkhole Bowl, Ice Rink, The Moat, Storm Steps). The same arena is never used twice in a row, also across runs.
+- **Boss wheel:** success rolls (section 8) against a boss use a 20-slice wheel instead of 10, with the same number of slices filled, so bosses are always harder to affect.
+- Summoned minions leave no flag pole (default kept).
+- **As built (2026-11-18), owner may change:** a boss takes one hit per shot (`hitsPerShot`), so the ball cannot rattle a dozen hits into it in one shot.
 
 ---
 
@@ -302,9 +310,13 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 - Rarity (owner, 2026-11-15): common, uncommon, rare, double rare, special rare, legendary, thought of in three pairs. Rarity sets price, how often it appears at each point in the run, and strength.
 - Sources: placed on courses, shops, caches, boss rewards, and the small enemy drop chance.
 
+### Success rolls (owner, 2026-11-17)
+
+A weapon's special effect (burn, stun, chain zap, heal, knock away, echo) only works if its **success roll** succeeds, shown by a spinning wheel of **10 slices**. Better weapons have more slices filled (by rarity: 2, 3, 4, 5, 6, 7). The permanent upgrade **Knack** fills one more slice per level, and the consumable **acorns** fill extra slices for one course. Against a boss the wheel has **20 slices**. Plain stat changes and elements always apply. Replaces the Milestone 6 fixed chances. Details in `docs/plans/milestone-7.md` section 4b. **Owner, 2026-11-17:** twelve new armour and bauble items with slice perks (the Grit and Spinner families, Gambler's Vest, Fortune's Mail, Hot Streak Charm, Golden Spinner; sheet section 4b.6), so armour and baubles have four items per rarity.
+
 ### Template (Default)
 
-id, name, icon id, category, rarity, element (weapons only, or none), modifiers while equipped, triggered effect (if any) and its trigger, price.
+id, name, icon id, category, rarity, element (weapons only, or none), modifiers while equipped, triggered effect (if any) and its trigger, slices filled on the success wheel (weapons; owner, 2026-11-17), price.
 
 ### Gear list, Milestone 6 (owner, 2026-11-15)
 
@@ -326,7 +338,7 @@ Replaces the six-item starter set. **Six rarities in three pairs**: (common, unc
 
 **Decided:** bought with blue stars. A levelled list plus one-time unlocks.
 
-**Default:** bought on the hub screen between runs.
+**Decided (owner, 2026-11-17):** bought in the Burrow (the home and hub screen), between runs or in a town mid-run, where they work at once. Each starting ability is bought separately, 8 blue stars each.
 
 ### Levelled list, Milestone 7
 
@@ -337,14 +349,15 @@ Replaces the six-item starter set. **Six rarities in three pairs**: (common, unc
 | Head Start | 3 | +10 starting yellow stars |
 | Haggler | 3 | −10% shop prices |
 | Fortune | 3 | +10% drop luck |
+| Knack (owner, 2026-11-17) | 5 | +1 filled slice on every success wheel |
 
-Cost rises with each level.
+Cost rises with each level. **Owner, 2026-11-17:** Vitality and Stamina 5, 8, 12, 16, 20; Head Start and Fortune 3, 6, 10; Haggler 4, 8, 12. **No refunds.**
 
 ### Unlocks
 
 | Unlock | Milestone |
 |---|---|
-| Start each run with a chosen ability | 7 |
+| Start each run with a chosen ability. **Owner, 2026-11-17:** each ability is bought separately; with more than one owned, the player chooses which to start with (a toggle) | 7 |
 | Second weapon, armour or bauble slot (one unlock per category) | 8 |
 | New gear and abilities added to the pool of things that can appear | 8 |
 | New characters | 8 |
@@ -355,6 +368,8 @@ Cost rises with each level.
 
 **Decided (owner, 2026-11-15): a shop node is a little town** with the shop and the player's **Burrow** (home base), entered and left as often as wanted, and a Continue signpost to carry on. Drawn in the game's pixel style.
 
+**Decided (owner, 2026-11-17): the Burrow is also the hub screen between runs** (one home: stored gear, blue star stash, permanent upgrades, starting abilities). Walking into a town deposits carried blue stars into the stash.
+
 **Decided (owner, 2026-11-15): the Burrow** stores one gear item per category. Stored gear is safe from death and waits there for later runs. In a town the player can store the item worn, take a stored one out, or swap them. The Burrow is saved in the browser (Milestone 6). In Milestone 7 the town also becomes the save point for a run in progress (leave at a town, carry on later; death still starts over).
 
 **Decided:** each shop sells a random handful. Stock can be rerolled for yellow stars.
@@ -362,7 +377,7 @@ Cost rises with each level.
 **Default:**
 
 - Five offers: two gear items, two stat boosts, one service.
-- Services: heal 2 health, or raise the boss countdown by 1.
+- Services: heal 2 health, or raise the boss countdown by 1. **Owner, 2026-11-17:** the service slot may also offer an acorn (a consumable, section 13).
 - Reroll price starts low and doubles with each reroll in the same shop.
 - Prices follow rarity and are multiplied by the shop prices stat.
 - The run shop takes yellow stars only. Blue stars are spent only on the hub screen.
@@ -401,10 +416,11 @@ For the ball, one turn is one shot. Build the system and Stunned in Milestone 4;
 | Pickup | Effect | Where it comes from |
 |---|---|---|
 | Yellow star | +1 to the meter and the wallet | Enemies, crates |
-| Blue star | +1 permanent currency | Owner, 2026-11-15: beating a course, beating a boss, and an extra-rare chance in crates or under cracked ground. Amounts on the Milestone 7 sheet |
+| Blue star | +1 permanent currency | Owner, 2026-11-15: beating a course, beating a boss, and an extra-rare chance in crates or under cracked ground. Owner, 2026-11-17: course 1, hard course 2, boss 5 (region 1) or 8 (region 2); crates 2%, secured crates and cracked tiles 5%, times drop luck |
 | Heart | +1 health | Crates, rare enemy drop |
 | Shot orb | +1 shot, up to the maximum | Crates, placed on courses |
 | Wild | A random ability (not the one held), replacing the current one | Small chance from secured crates, 10% times drop luck (owner, 2026-11-14) |
+| Acorn (consumable; owner, 2026-11-17) | Extra filled slices on success wheels for one course: Lucky +2, Golden +3, Star +5 | Crates and secured crates (rarer acorns rarer), and shops |
 
 Build in Milestone 3.
 
@@ -418,6 +434,8 @@ Build in Milestone 3.
 - **Run budget (owner, 2026-11-15):** 8 + 2 per course, hard course or cache finished (shops do not count), hard courses ×1.5, capped at 30 for now. Running out of naps on a run course ends the run.
 - **Prices:** gear by rarity 10, 15, 25, 35, 50, 70 (owner, 2026-11-15; see `docs/plans/milestone-6.md` section 5.2), stat boost 12 rising by 6, heal 10, first reroll 3.
 - **Budget:** each course has a difficulty budget that rises with each node and jumps after each boss. Enemies, traits, obstacles and hazards each cost budget.
+- **Owner, 2026-11-17: size and toughness scale separately in every region** (DESIGN.md section 10). Course size (areas per journey, area size), threat budget and enemy toughness (region modifiers) are three dials set per region; see `docs/plans/milestone-7.md` section 7.4.
+- **Owner, 2026-11-18: the course check is relaxed.** The bot plays with a par kit per region (region 1 a fresh ball; region 2 max shots +1, hit damage +1, shot power +10%; region 3 also max shots +2 in all, shot power +20%, max health +2), needs 1 health left, and has 1.5 times the shot limit.
 - **Tier mix by region:** region 1 is mostly tiers 1–2; region 2 adds tier 3; region 3 adds tier 4.
 - **Owner, 2026-11-15 (Milestone 5 testing, before the run exists):** after winning a generated course, the next one's budget rises by a random 0 to 4 (seeded), capped at 40. The Milestone 5 generator rules are in `docs/plans/milestone-5.md`.
 - **Hard courses:** 150% of the normal budget, a guaranteed tier-up squad leader, better rewards.
@@ -446,5 +464,5 @@ Opus: use the default and say that you did.
 | F4 | Squad theme share chance | 70% |
 | F5 | Which elements exist | Fire, ice, shock |
 | F6 | Can the boss countdown be bought back up in a shop? | Yes, +1, once per shop |
-| F7 | Do blue stars found during a run survive death? | Yes |
+| F7 | Do blue stars found during a run survive death? | **Answered (owner, 2026-11-17): no.** They are carried until deposited, automatically, at a town or on beating a boss; carried blue stars are lost on death or on closing the game outside a town |
 | F8 | Third boss and its gimmick | Decide in Milestone 8 |

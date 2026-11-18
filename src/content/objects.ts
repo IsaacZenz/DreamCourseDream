@@ -10,6 +10,7 @@
  * Every number is a starting value (Milestone 4 design sheet,
  * docs/plans/milestone-4.md, signed off by the owner 2026-11-14).
  */
+import { ACORN_LIST } from './consumables.ts';
 import { GEAR_LIST } from './gear.ts';
 import type { BaseStats } from './stats.ts';
 
@@ -53,7 +54,9 @@ export interface PickupDef {
   readonly name: string;
   readonly sprite: string;
   /** What touching it gives. A wild gives a random ability (owner, 2026-11-14). */
-  readonly effect: 'yellowStar' | 'heart' | 'shotOrb' | 'wild';
+  readonly effect: 'yellowStar' | 'heart' | 'shotOrb' | 'wild' | 'blueStar' | 'acorn';
+  /** Acorns (owner, 2026-11-17): extra filled slices on success wheels for the rest of the course. */
+  readonly slices?: number;
   /** Stars are gathered from further away (the "star reach" stat); others need a touch. */
   readonly usesStarReach: boolean;
 }
@@ -108,6 +111,10 @@ export interface BreakableDef {
   readonly drops: readonly string[];
   /** Chance of also dropping a Wild, times the ball's drop luck (owner, 2026-11-14: secured crates). */
   readonly wildChance: number;
+  /** Owner, 2026-11-17: chance of also dropping a blue star, times drop luck. */
+  readonly blueStarChance: number;
+  /** Owner, 2026-11-17: chance of also dropping an acorn, times drop luck (which acorn by the rarity odds). */
+  readonly acornChance: number;
   /** Null: flat on the floor, nothing to bump (cracked tile). */
   readonly shape: ObjectShape | null;
   readonly height: number;
@@ -187,7 +194,9 @@ export type Behaviour =
       readonly grace: number;
       readonly upShots: number;
       readonly hitWhileMoving: boolean;
-    };
+    }
+  /** A boss (Milestone 7): its phases, slams and summons are in bosses.ts under this id. Active from the start. */
+  | { readonly kind: 'boss'; readonly boss: string };
 
 /**
  * When touching the ball hurts it (the enemy's attack damage).
@@ -286,11 +295,14 @@ function carrier(id: string, name: string, ability: string): EnemyDef {
 }
 
 const defs: readonly ObjectDef[] = [
-  // Pickups (section 13). Blue stars come with permanent progress in Milestone 7.
+  // Pickups (section 13).
   { kind: 'pickup', id: 'yellow-star', name: 'Yellow star', sprite: 'star-yellow', effect: 'yellowStar', usesStarReach: true },
   { kind: 'pickup', id: 'heart', name: 'Heart', sprite: 'heart', effect: 'heart', usesStarReach: false },
   { kind: 'pickup', id: 'shot-orb', name: 'Shot orb', sprite: 'shot-orb', effect: 'shotOrb', usesStarReach: false },
   { kind: 'pickup', id: 'wild', name: 'Wild', sprite: 'wild', effect: 'wild', usesStarReach: false },
+  // Owner, 2026-11-17: blue stars are carried until deposited at a town or on beating a boss.
+  { kind: 'pickup', id: 'blue-star', name: 'Blue star', sprite: 'star-blue', effect: 'blueStar', usesStarReach: true },
+  ...ACORN_LIST.map((a): PickupDef => ({ kind: 'pickup', id: a.id, name: a.name, sprite: a.sprite, effect: 'acorn', usesStarReach: false, slices: a.slices })),
 
   // Static blockers (section 6). The post was renamed the tree stump (owner, 2026-11-14); same size.
   { kind: 'blocker', id: 'rock', name: 'Rock', sprite: 'rock', shape: { kind: 'round', r: 0.38 }, height: 0.5, bounce: 0.6, cost: 1 },
@@ -324,7 +336,7 @@ const defs: readonly ObjectDef[] = [
   },
 
   // Destructibles (section 6). Secured crate: owner, 2026-11-14.
-  { kind: 'breakable', id: 'crate', name: 'Crate', sprite: 'crate', health: 1, breakBy: 'hit', drops: ['yellow-star'], wildChance: 0, shape: { kind: 'box', hx: 0.4, hy: 0.4 }, height: 0.5, bounce: 0.6, cost: 1 },
+  { kind: 'breakable', id: 'crate', name: 'Crate', sprite: 'crate', health: 1, breakBy: 'hit', drops: ['yellow-star'], wildChance: 0, blueStarChance: 0.02, acornChance: 0.04, shape: { kind: 'box', hx: 0.4, hy: 0.4 }, height: 0.5, bounce: 0.6, cost: 1 },
   {
     kind: 'breakable',
     id: 'secured-crate',
@@ -334,12 +346,14 @@ const defs: readonly ObjectDef[] = [
     breakBy: 'hit',
     drops: ['yellow-star', 'yellow-star'],
     wildChance: 0.1,
+    blueStarChance: 0.05,
+    acornChance: 0.1,
     shape: { kind: 'box', hx: 0.4, hy: 0.4 },
     height: 0.5,
     bounce: 0.6,
     cost: 2,
   },
-  { kind: 'breakable', id: 'cracked-tile', name: 'Cracked tile', sprite: 'cracked-tile', health: 1, breakBy: 'anchor', drops: ['yellow-star', 'yellow-star'], wildChance: 0, shape: null, height: 0, bounce: 0, cost: 1 },
+  { kind: 'breakable', id: 'cracked-tile', name: 'Cracked tile', sprite: 'cracked-tile', health: 1, breakBy: 'anchor', drops: ['yellow-star', 'yellow-star'], wildChance: 0, blueStarChance: 0.05, acornChance: 0, shape: null, height: 0, bounce: 0, cost: 1 },
 
   // Thunder cloud (section 6, owner decisions 2026-11-14).
   { kind: 'cloud', id: 'thunder-cloud', name: 'Thunder cloud', sprite: 'thunder-cloud', half: 0.5, zapHeight: 0.5, damage: 1, throwSpeed: 6, throwHop: 2, driftSpeed: 1, cost: 2, driftCost: 3 },
@@ -433,6 +447,26 @@ const defs: readonly ObjectDef[] = [
     contact: 'moving',
     grantsAbility: null,
     cost: 3,
+  },
+  // The Warden (Milestone 7 sheet section 2). Health is set per region (run.ts REGIONS bossHealth).
+  {
+    kind: 'enemy',
+    id: 'warden',
+    name: 'The Warden',
+    sprite: 'warden',
+    family: 'sentinel',
+    tier: 5,
+    stats: { health: 12, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 0,
+    ...PLAIN,
+    shape: { kind: 'round', r: 0.9 },
+    height: 1.6,
+    bounce: 0.6,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'boss', boss: 'warden' },
+    contact: 'never',
+    grantsAbility: null,
+    cost: 0,
   },
   carrier('anchorback', 'Anchorback', 'anchor'),
   carrier('emberback', 'Emberback', 'burner'),

@@ -4,7 +4,9 @@ import { RUN, UPGRADE_LIST, UPGRADES } from '../content/run';
 import {
   addUpgrade,
   burrowSwap,
+  upcomingJobs,
   buy,
+  buyPermanentInTown,
   cannotBuy,
   debugAddStars,
   debugSetCountdown,
@@ -21,7 +23,10 @@ import {
 } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
-import { session, storeBurrow } from './runSession';
+import { persist, session, storeBurrow } from './runSession';
+import { prefetch } from './genQueue';
+import { drawRows, progressRows } from './progressMenu';
+import { ACORNS } from '../content/consumables';
 import { getPanel, preloadAssets, shared } from './shared';
 
 const UI_TEXT = 0xf0f0f0;
@@ -42,7 +47,7 @@ const RARITY_COLOR: Record<string, number> = {
   legendary: 0xf8e040,
 };
 
-type Mode = 'town' | 'shop' | 'burrow' | 'cache';
+type Mode = 'town' | 'shop' | 'burrow' | 'perm' | 'cache';
 const SPOTS = [
   { id: 'shop', label: 'SHOP', x: 86 },
   { id: 'burrow', label: 'BURROW', x: 196 },
@@ -97,6 +102,7 @@ export class TownScene extends Phaser.Scene {
     this.message = '';
     this.setupKeys(run);
     this.setRunPanel(run);
+    getPanel().setProgress(null);
     this.redraw(run);
   }
 
@@ -108,11 +114,16 @@ export class TownScene extends Phaser.Scene {
   }
 
   private redraw(run: RunState): void {
+    // Owner, 2026-11-15/17: the town is the save point. Every change here is saved at once.
+    persist();
+    // Owner, 2026-11-18: make the courses after this town in the background (again if the gear changed).
+    prefetch(upcomingJobs(run));
     this.tweens.killAll();
     this.children.removeAll(true);
     if (this.mode === 'town') this.drawTown(run);
     else if (this.mode === 'shop') this.drawShop(run);
     else if (this.mode === 'burrow') this.drawBurrow(run);
+    else if (this.mode === 'perm') this.drawPerm(run);
     else this.drawCache(run);
     this.drawTopBar(run);
     if (this.message) {
@@ -134,7 +145,7 @@ export class TownScene extends Phaser.Scene {
   private drawTopBar(run: RunState): void {
     this.add.rectangle(0, 0, VIEW_WIDTH, 15, UI_BG, 0.9).setOrigin(0, 0).setDepth(40);
     const stats = runStats(run);
-    const title = this.mode === 'cache' ? 'CACHE' : this.mode === 'shop' ? 'TOWN: SHOP' : this.mode === 'burrow' ? 'TOWN: YOUR BURROW' : 'TOWN';
+    const title = this.mode === 'cache' ? 'CACHE' : this.mode === 'shop' ? 'TOWN: SHOP' : this.mode === 'burrow' || this.mode === 'perm' ? 'TOWN: YOUR BURROW' : 'TOWN';
     this.text(3, 2, title, GOOD).setDepth(41);
     this.text(3, 8, `HP ${run.health}/${stats.get('maxHealth')}`, run.health <= 2 ? BAD : UI_TEXT).setDepth(41);
     this.text(46, 8, `STARS ${run.wallet}`, STAR).setDepth(41);
@@ -214,6 +225,10 @@ export class TownScene extends Phaser.Scene {
     if (o.kind === 'heal') {
       const amount = run.status === 'cache' ? RUN.cache.heal : RUN.shop.heal.amount;
       return { kind: 'SERVICE', name: 'Patch Up', rarity: 'SERVICE', rarityColor: UI_DIM, desc: `Heal ${amount} health`, icon: 'heart' };
+    }
+    if (o.kind === 'acorn') {
+      const a = ACORNS.get(o.id)!;
+      return { kind: 'CONSUMABLE', name: a.name, rarity: RARITY_INFO[a.rarity].name, rarityColor: RARITY_COLOR[a.rarity]!, desc: `+${a.slices} wheel slices next course`, icon: a.sprite };
     }
     return { kind: 'SERVICE', name: 'Delay the Boss', rarity: 'ONCE PER SHOP', rarityColor: UI_DIM, desc: 'Boss countdown +1', icon: 'node-boss' };
   }
@@ -344,7 +359,37 @@ export class TownScene extends Phaser.Scene {
     this.text(66, 38, 'WEARING', UI_DIM);
     this.text(248, 38, 'STORED', UI_DIM);
     GEAR_CATEGORIES.forEach((c, i) => this.drawBurrowRow(run, c, 46 + i * 44, i === this.sel));
-    this.help(['UP/DOWN: CHOOSE   ENTER: SWAP (STORE, TAKE OUT, OR BOTH)   ESC: BACK TO TOWN']);
+    this.text(6, 180, `BLUE STAR STASH: ${session.profile.stash} (YOUR BLUE STARS WERE DEPOSITED WHEN YOU ARRIVED)`, 0x80c8ff);
+    this.help(['UP/DOWN: CHOOSE   ENTER: SWAP (STORE, TAKE OUT, OR BOTH)   P: SPEND BLUE STARS   ESC: BACK TO TOWN']);
+  }
+
+  // Owner, 2026-11-17 (question I): permanent upgrades can be bought in a town's Burrow too, and work at once.
+
+  private permRows(run: RunState) {
+    return progressRows(session.profile, (id) => {
+      const err = buyPermanentInTown(run, session.profile, id);
+      if (!err) persist();
+      return err;
+    }, false);
+  }
+
+  private drawPerm(run: RunState): void {
+    this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, 0x2a1c10, 1).setOrigin(0, 0);
+    this.text(6, 19, `SPEND BLUE STARS. STASH: ${session.profile.stash}. UPGRADES WORK AT ONCE, FOR GOOD.`, 0x80c8ff);
+    drawRows(this, this.permRows(run), this.sel, 6, 28, VIEW_WIDTH - 12, 11, (i) => {
+      this.sel = i;
+      this.permSelected(run);
+    });
+    this.help(['UP/DOWN: CHOOSE   ENTER: BUY   ESC: BACK TO THE BURROW']);
+  }
+
+  private permSelected(run: RunState): void {
+    const r = this.permRows(run)[this.sel];
+    if (!r?.act) return;
+    const res = r.act();
+    if (res.ok) persist();
+    this.say(res.say, res.ok ? GOOD : BAD);
+    this.redraw(run);
   }
 
   private drawBurrowRow(run: RunState, c: GearCategory, y: number, selected: boolean): void {
@@ -378,7 +423,7 @@ export class TownScene extends Phaser.Scene {
     if (!burrowSwap(run, c)) {
       this.say('NOTHING TO SWAP', BAD);
     } else {
-      storeBurrow(run);
+      storeBurrow();
       const name = (id: string | null) => (id ? GEAR.get(id)!.name.toUpperCase() : '');
       this.say(worn && stored ? `SWAPPED: WEARING ${name(stored)}` : worn ? `${name(worn)} STORED SAFELY` : `NOW WEARING ${name(stored)}`, GOOD);
     }
@@ -401,13 +446,13 @@ export class TownScene extends Phaser.Scene {
     const kb = this.input.keyboard!;
     const move = (d: number) => () => {
       if (this.confirm) return;
-      const n = this.mode === 'town' ? SPOTS.length : this.mode === 'shop' ? run.shop!.offers.length : this.mode === 'cache' ? run.cache!.offers.length : GEAR_CATEGORIES.length;
+      const n = this.mode === 'town' ? SPOTS.length : this.mode === 'shop' ? run.shop!.offers.length : this.mode === 'cache' ? run.cache!.offers.length : this.mode === 'perm' ? this.permRows(run).length : GEAR_CATEGORIES.length;
       this.sel = (this.sel + d + n) % n;
       this.message = '';
       this.redraw(run);
     };
-    const horizontal = (d: number) => () => this.mode !== 'burrow' && move(d)();
-    const vertical = (d: number) => () => this.mode === 'burrow' && move(d)();
+    const horizontal = (d: number) => () => this.mode !== 'burrow' && this.mode !== 'perm' && move(d)();
+    const vertical = (d: number) => () => (this.mode === 'burrow' || this.mode === 'perm') && move(d)();
     kb.on('keydown-LEFT', horizontal(-1));
     kb.on('keydown-A', horizontal(-1));
     kb.on('keydown-RIGHT', horizontal(1));
@@ -426,6 +471,7 @@ export class TownScene extends Phaser.Scene {
       if (this.mode === 'town') this.enterSpot(run);
       else if (this.mode === 'shop') this.buySelected(run);
       else if (this.mode === 'cache') this.takeSelected(run);
+      else if (this.mode === 'perm') this.permSelected(run);
       else this.swapSelected(run);
     };
     kb.on('keydown-ENTER', ok);
@@ -437,7 +483,11 @@ export class TownScene extends Phaser.Scene {
         return;
       }
       this.message = '';
-      if (this.mode === 'shop' || this.mode === 'burrow') {
+      if (this.mode === 'perm') {
+        this.mode = 'burrow';
+        this.sel = 0;
+        this.redraw(run);
+      } else if (this.mode === 'shop' || this.mode === 'burrow') {
         this.sel = this.mode === 'shop' ? 0 : 1;
         this.mode = 'town';
         this.redraw(run);
@@ -459,6 +509,13 @@ export class TownScene extends Phaser.Scene {
       this.redraw(run);
     });
     kb.on('keydown-U', () => getPanel().toggle());
+    kb.on('keydown-P', () => {
+      if (this.mode !== 'burrow' || this.confirm) return;
+      this.mode = 'perm';
+      this.sel = 0;
+      this.message = '';
+      this.redraw(run);
+    });
   }
 
   /** Testing aids in the U panel. */
