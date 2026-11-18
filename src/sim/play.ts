@@ -894,7 +894,8 @@ function bodyWorld(play: PlayState, self: string): ShotWorld {
 
 /** The ball is still and nothing it set off is still rolling. */
 function settled(play: PlayState): boolean {
-  return !play.shot && play.seeds.length === 0 && play.enemies.every((e) => !e.body && e.popAt === null);
+  // A defeated enemy never holds up a turn (a Mole defeated while rumbling would otherwise wait forever).
+  return !play.shot && play.seeds.length === 0 && play.enemies.every((e) => e.defeated || (!e.body && e.popAt === null));
 }
 
 export function canShoot(play: PlayState): boolean {

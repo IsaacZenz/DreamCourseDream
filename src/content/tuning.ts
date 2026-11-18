@@ -70,6 +70,9 @@ export interface Tuning {
   restSpeed: number;
   /** Seconds the ball must stay slow before it counts as resting. */
   restTime: number;
+  /** A ball on the ground that stays within this many tiles of one spot for `trapTime` seconds rests too (a pit or narrow valley). */
+  trapRadius: number;
+  trapTime: number;
 
   // Bounce boost
   /** How long before landing a boost press still counts, in seconds. */
@@ -167,6 +170,8 @@ export const DEFAULT_TUNING: Tuning = {
   minBounceSpeed: 1.2,
   restSpeed: 0.2,
   restTime: 0.15,
+  trapRadius: 0.05,
+  trapTime: 0.5,
 
   boostWindow: 0.15,
   boostMultiplier: 1.6,
@@ -253,6 +258,8 @@ export const TUNING_CONTROLS: readonly TuningControl[] = [
   top('Bounce', 'minBounceSpeed', 0, 5, 0.05),
   top('Bounce', 'restSpeed', 0.01, 1, 0.01),
   top('Bounce', 'restTime', 0, 1, 0.01),
+  top('Bounce', 'trapRadius', 0.01, 0.3, 0.01),
+  top('Bounce', 'trapTime', 0.1, 3, 0.05),
   top('Boost', 'boostWindow', 0.02, 0.5, 0.01),
   top('Boost', 'boostMultiplier', 1, 3, 0.05),
   top('Boost', 'boostMinSpeed', 0, 15, 0.25),

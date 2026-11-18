@@ -145,3 +145,18 @@ describe('courses made ahead (owner, 2026-11-18, option B)', () => {
     expect(budgetFor(run, 'course')).toBe(36);
   });
 });
+
+describe('the background bot plays at full health (owner, 2026-11-18: intentional)', () => {
+  it('the course made ahead does not depend on the health the player has now', () => {
+    const run = createRun('HP', generateRunMap('HP'));
+    const before = upcomingJobs(run);
+    run.health = 1;
+    const after = upcomingJobs(run);
+    expect(after).toEqual(before);
+    expect(after[0]!.opts.loadout.health).toBeUndefined();
+    const r = parseCourse({ format: 2, name: 't', legend: { g: 'grass' }, tiles: ['g1 g1 g1'], start: [0, 0], exit: [2, 0], quota: 0 });
+    if (!r.ok) throw new Error();
+    const p = createPlay(r.course, DEFAULT_TUNING, { seed: 's', loadout: after[0]!.opts.loadout });
+    expect(p.health).toBe(p.stats.get('maxHealth'));
+  });
+});
