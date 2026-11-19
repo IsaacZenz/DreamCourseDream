@@ -44,9 +44,22 @@ export const RAIL = {
 
 /** Elements (FEATURES.md section 2, open question F5 default). */
 export type Element = 'fire' | 'ice' | 'shock';
+export const ELEMENT_IDS: readonly Element[] = ['fire', 'ice', 'shock'];
+
+/**
+ * What having an element means for an enemy (Milestone 8 sheet section 3).
+ * Owner, 2026-11-19: the elements form a circle: fire is weak to ice, ice is
+ * weak to shock, shock is weak to fire; each resists its own. When an enemy
+ * with an element hurts the ball, the ball also gets that element's status.
+ */
+export const ELEMENT_RULES: Readonly<Record<Element, { readonly weakTo: Element; readonly resists: Element; readonly contactStatus: string }>> = {
+  fire: { weakTo: 'ice', resists: 'fire', contactStatus: 'burning' },
+  ice: { weakTo: 'shock', resists: 'ice', contactStatus: 'chilled' },
+  shock: { weakTo: 'fire', resists: 'shock', contactStatus: 'stunned' },
+};
 
 /** Where a hit lands, for weak spots and guarded sides (FEATURES.md section 2). */
-export type Side = 'above' | 'behind' | 'front';
+export type Side = 'above' | 'behind' | 'front' | 'side';
 
 export interface PickupDef {
   readonly kind: 'pickup';
@@ -232,6 +245,8 @@ export interface EnemyDef {
   readonly passByGroundOnly: boolean;
   readonly behaviour: Behaviour;
   readonly contact: ContactWhen;
+  /** Milestone 8: a status the ball also gets when this enemy hurts it (Bristlecrawler: poisoned), or null. */
+  readonly contactStatus: string | null;
   /** Ability id given on defeat, or null. */
   readonly grantsAbility: string | null;
   readonly allowedTraits: readonly string[];
@@ -265,6 +280,7 @@ const PLAIN = {
   guardedSides: [],
   shield: false,
   passByGroundOnly: false,
+  contactStatus: null,
   allowedTraits: [],
   allowedGear: [],
   squadThemes: [],

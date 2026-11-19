@@ -139,6 +139,10 @@ export interface ShotScales {
   readonly power?: number;
   /** Multiplies the bounce boost's strength. 1 is normal. */
   readonly boost?: number;
+  /** Milestone 8: frozen water tiles (see ShotState.frozen). */
+  readonly frozen?: Readonly<Record<string, number>> | null;
+  /** Milestone 8: a Chilled ball rolls as if on ice. */
+  readonly iceRoll?: boolean;
 }
 
 export interface BallState {
@@ -196,7 +200,33 @@ export interface ShotState {
   burnMin: number;
   /** Tornado: the ball hovers at no lower than `floor` and ignores surfaces; the rules set its speed. */
   hover: { floor: number } | null;
+  /**
+   * Milestone 8: water tiles frozen by the Frost ability ("x,y" -> turns left),
+   * shared with the course rules. Frozen water is ice for everything here.
+   */
+  frozen: Readonly<Record<string, number>> | null;
+  /** Milestone 8: the ball is Chilled and rolls as if on ice (grass, rough and sand use ice's friction). */
+  iceRoll: boolean;
 }
+
+/** Surfaces a Chilled ball slides on as if they were ice (Milestone 8 sheet section 2). */
+const ICE_ROLL_SURFACES: ReadonlySet<string> = new Set(['grass', 'rough', 'sand']);
+
+/** The surface of a tile as this motion meets it: frozen water is ice (Milestone 8). */
+export function surfaceOf(s: Pick<ShotState, 'frozen'>, tile: Tile): string {
+  if (s.frozen && (s.frozen[`${tile.x},${tile.y}`] ?? 0) > 0) return 'ice';
+  return tile.surface;
+}
+
+/** Physics of a tile as this motion meets it: frozen water, and a Chilled ball's ice roll. */
+function physOf(tuning: Tuning, s: ShotState, tile: Tile) {
+  const surface = surfaceOf(s, tile);
+  const phys = surfacePhysics(tuning, surface);
+  if (s.iceRoll && ICE_ROLL_SURFACES.has(surface)) return { ...phys, friction: surfacePhysics(tuning, 'ice').friction };
+  return phys;
+}
+
+const sinksAt = (s: ShotState, tile: Tile) => !!SURFACES.get(surfaceOf(s, tile))?.sinks;
 
 /** Where the ground is under a point, or null if the point is off the course. */
 export interface Ground {
@@ -286,6 +316,8 @@ export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand, sca
     burnSteps: 0,
     burnMin: 0,
     hover: null,
+    frozen: scales.frozen ?? null,
+    iceRoll: scales.iceRoll ?? false,
   };
 }
 
@@ -359,7 +391,7 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     if (!g) {
       b.grounded = false;
     } else {
-      const phys = surfacePhysics(tuning, g.tile.surface);
+      const phys = physOf(tuning, s, g.tile);
       // Gravity along the slope.
       const k = 1 + g.sx * g.sx + g.sy * g.sy;
       b.vx += (-tuning.gravity * g.sx * DT) / k;
@@ -444,17 +476,17 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
   // An Anchor stop ends the motion at once, unless a pad (booster, conveyor, spring) acts on it.
   if (s.anchorStopped) {
     s.anchorStopped = false;
-    const effect = now ? SURFACES.get(now.tile.surface)?.effect : undefined;
+    const effect = now ? SURFACES.get(surfaceOf(s, now.tile))?.effect : undefined;
     const pad = effect === 'push' || effect === 'carry' || effect === 'launch';
     if (!pad && now) {
-      finish(s, SURFACES.get(now.tile.surface)?.sinks ? 'sunk' : 'rest');
+      finish(s, sinksAt(s, now.tile) ? 'sunk' : 'rest');
       return;
     }
   }
 
   // Rest: slow, on the ground, and the slope cannot overcome friction.
   if (b.grounded && now) {
-    const phys = surfacePhysics(tuning, now.tile.surface);
+    const phys = physOf(tuning, s, now.tile);
     const slope = Math.hypot(now.sx, now.sy);
     const holds = slope <= phys.friction;
     if (Math.hypot(b.vx, b.vy) < tuning.restSpeed && holds) s.restSteps++;
@@ -472,13 +504,13 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
     if (trapped || s.restSteps >= Math.max(1, Math.round(tuning.restTime * STEPS_PER_SECOND))) {
       b.vx = 0;
       b.vy = 0;
-      finish(s, SURFACES.get(now.tile.surface)?.sinks ? 'sunk' : 'rest');
+      finish(s, sinksAt(s, now.tile) ? 'sunk' : 'rest');
       return;
     }
   } else s.trapSteps = 0;
 
   if (s.step >= tuning.maxShotTime * STEPS_PER_SECOND) {
-    finish(s, now && b.grounded && SURFACES.get(now.tile.surface)?.sinks ? 'sunk' : 'timeout');
+    finish(s, now && b.grounded && sinksAt(s, now.tile) ? 'sunk' : 'timeout');
   }
 }
 
@@ -751,7 +783,7 @@ function moveAxis(course: Course, tuning: Tuning, s: ShotState, axis: 'x' | 'y',
     // Rolling enemies (owner, 2026-11-14): a drop or the edge of the course, and the edge of water, work as walls.
     if (near && (s.edgeWalls || s.waterWalls)) {
       const drop = s.edgeWalls && (!far || far.h < near.h - WALL_TOLERANCE);
-      const water = s.waterWalls && !!far && !!SURFACES.get(far.tile.surface)?.sinks && !SURFACES.get(near.tile.surface)?.sinks;
+      const water = s.waterWalls && !!far && sinksAt(s, far.tile) && !sinksAt(s, near.tile);
       if (drop || water) {
         const stopAt = line - sign * (r + 1e-6);
         const kb = 0.6;
@@ -796,10 +828,10 @@ function land(tuning: Tuning, s: ShotState, g: Ground): void {
     s.hasLanded = true;
     return;
   }
-  const phys = surfacePhysics(tuning, g.tile.surface);
+  const phys = physOf(tuning, s, g.tile);
   b.z = g.h;
   // Skipping across water (owner, 2026-11-15): fast and low, the ball bounces off the surface.
-  if (SURFACES.get(g.tile.surface)?.sinks) {
+  if (sinksAt(s, g.tile)) {
     const flat = Math.hypot(b.vx, b.vy);
     const boosted = s.boostArmed > 0;
     if (flat > tuning.waterSkipSpeed && Math.abs(b.vz) < flat * tuning.waterSkipAngle) {

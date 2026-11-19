@@ -1251,7 +1251,7 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage('+1 SHOT', GOOD);
           break;
         case 'damage': {
-          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED' }[e.cause];
+          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED', burn: 'BURNING', blast: 'BLAST', charge: 'CHARGED', bite: 'BITTEN' }[e.cause];
           this.queueMessage(`${what}! -${e.amount} HEALTH`, BAD);
           break;
         }

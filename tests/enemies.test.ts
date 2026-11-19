@@ -125,6 +125,7 @@ const TEST_ENEMY_BASE = {
   bounce: 0.6,
   passByGroundOnly: false,
   contact: 'never',
+  contactStatus: null,
   grantsAbility: null,
   allowedTraits: [],
   allowedGear: [],
