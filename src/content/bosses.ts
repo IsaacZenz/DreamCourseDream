@@ -43,22 +43,22 @@ export interface BossDef {
   readonly hitsPerShot: number;
 }
 
-const CARRIERS = ['anchorback', 'emberback', 'hopback', 'whirlback'];
+const CARRIERS = ['leadgrub', 'embergrub', 'hopgrub', 'whirlgrub'];
 const each = (ids: readonly string[], weight: number) => ids.map((id) => ({ id, weight }));
 
 const defs: readonly BossDef[] = [
   {
-    id: 'warden',
-    name: 'The Warden',
+    id: 'stagwarden',
+    name: 'The Stagwarden',
     gimmick: null,
     arenas: ['bumper-ring', 'sinkhole-bowl', 'ice-rink', 'the-moat', 'storm-steps'],
     phases: [
       // Phase 1: slow slams.
       { above: 2 / 3, slamRadius: 1.5, maxMinions: 0, pool: [] },
       // Phase 2: summons. Mossback 40%, a carrier 40% (10% each), Spitter 20%.
-      { above: 1 / 3, slamRadius: null, maxMinions: 3, pool: [{ id: 'mossback', weight: 40 }, ...each(CARRIERS, 10), { id: 'spitter', weight: 20 }] },
+      { above: 1 / 3, slamRadius: null, maxMinions: 3, pool: [{ id: 'snoozegrub', weight: 40 }, ...each(CARRIERS, 10), { id: 'spittlebug', weight: 20 }] },
       // Phase 3: both, faster. A carrier 50%, Spitter 25%, Lunger 25%.
-      { above: 0, slamRadius: 2.25, maxMinions: 2, pool: [...each(CARRIERS, 12.5), { id: 'spitter', weight: 25 }, { id: 'lunger', weight: 25 }] },
+      { above: 0, slamRadius: 2.25, maxMinions: 2, pool: [...each(CARRIERS, 12.5), { id: 'spittlebug', weight: 25 }, { id: 'pouncehopper', weight: 25 }] },
     ],
     slam: { damage: 1, knockSpeed: 6, knockHop: 2 },
     shed: ['heart', 'shot-orb'],

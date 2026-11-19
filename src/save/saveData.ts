@@ -14,7 +14,7 @@ import { PERMANENT_UPGRADES, STARTING_ABILITIES } from '../content/progress.ts';
 import { newProfile, type Profile } from '../sim/profile.ts';
 import type { RunMap, RunState } from '../sim/run.ts';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 /** A run without its map (the map is made again from the seed). */
 export type RunSnapshot = Omit<RunState, 'map'>;
@@ -46,9 +46,23 @@ const isStrOrNull = (v: unknown): v is string | null => v === null || typeof v =
 
 /**
  * Upgrades an older save to the current version, one step at a time. Each
- * entry turns version n into n + 1. Empty until the save format first changes.
+ * entry turns version n into n + 1.
  */
-const MIGRATIONS: readonly ((old: Obj) => Obj)[] = [];
+const MIGRATIONS: readonly ((old: Obj) => Obj)[] = [
+  // 1 -> 2 (Milestone 8, owner 2026-11-18): every enemy is an insect; the Warden is now the Stagwarden.
+  (old) => ({ ...renameIds(old, new Map([['warden', 'stagwarden']])), version: 2 }),
+];
+
+/** Every string equal to an old id, anywhere in the save, becomes the new id. */
+function renameIds(v: Obj, ids: ReadonlyMap<string, string>): Obj {
+  const walk = (x: unknown): unknown => {
+    if (typeof x === 'string') return ids.get(x) ?? x;
+    if (Array.isArray(x)) return x.map(walk);
+    if (isObj(x)) return Object.fromEntries(Object.entries(x).map(([k, y]) => [k, walk(y)]));
+    return x;
+  };
+  return walk(v) as Obj;
+}
 
 /** Read a save. Never throws: anything unreadable is started empty and listed in `broken`. */
 export function decodeSave(raw: string | null): Loaded {

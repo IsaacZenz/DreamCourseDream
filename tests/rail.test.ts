@@ -81,7 +81,7 @@ describe('guard rail', () => {
   });
 
   it('a Mole that stops on a rail tile burrows on a tile without one', () => {
-    const play = createPlay(course([[[6, 2], [6, 10]]], [{ id: 'mole', at: [4, 6] }]), T, { seed: 'R' });
+    const play = createPlay(course([[[6, 2], [6, 10]]], [{ id: 'mole-cricket', at: [4, 6] }]), T, { seed: 'R' });
     const mole = play.enemies[0]!;
     // Pretend it rolled to a stop on the rail and its time up is over.
     mole.burrowed = false;
@@ -121,8 +121,8 @@ describe('guard rails in course files', () => {
   });
 
   it('rejects a Trundler path that crosses a rail, and a Mole starting on one', () => {
-    expect(errors(base({ rails: [[[3, 0], [3, 5]]], objects: [{ id: 'trundler', at: [1, 2], path: [[5, 2]] }] })).join(' ')).toMatch(/crosses a guard rail/);
-    expect(errors(base({ rails: [[[3, 0], [3, 5]]], objects: [{ id: 'mole', at: [3, 2] }] })).join(' ')).toMatch(/may not start on a tile with a guard rail/);
-    expect(errors(base({ rails: [[[3, 0], [3, 5]]], objects: [{ id: 'trundler', at: [0, 2], path: [[2, 2]] }] }))).toEqual([]);
+    expect(errors(base({ rails: [[[3, 0], [3, 5]]], objects: [{ id: 'mudroller', at: [1, 2], path: [[5, 2]] }] })).join(' ')).toMatch(/crosses a guard rail/);
+    expect(errors(base({ rails: [[[3, 0], [3, 5]]], objects: [{ id: 'mole-cricket', at: [3, 2] }] })).join(' ')).toMatch(/may not start on a tile with a guard rail/);
+    expect(errors(base({ rails: [[[3, 0], [3, 5]]], objects: [{ id: 'mudroller', at: [0, 2], path: [[2, 2]] }] }))).toEqual([]);
   });
 });

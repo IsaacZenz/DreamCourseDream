@@ -17,7 +17,7 @@
   "quota": 7,
   "objects": [
     {
-      "id": "trundler",
+      "id": "mudroller",
       "at": [
         3,
         11
@@ -52,14 +52,14 @@
       "orient": "y"
     },
     {
-      "id": "emberback",
+      "id": "embergrub",
       "at": [
         13,
         12
       ]
     },
     {
-      "id": "spitter",
+      "id": "spittlebug",
       "at": [
         4,
         6
@@ -67,7 +67,7 @@
       "facing": "se"
     },
     {
-      "id": "lunger",
+      "id": "pouncehopper",
       "at": [
         11,
         7
@@ -75,21 +75,21 @@
       "facing": "sw"
     },
     {
-      "id": "mole",
+      "id": "mole-cricket",
       "at": [
         8,
         6
       ]
     },
     {
-      "id": "mole",
+      "id": "mole-cricket",
       "at": [
         2,
         9
       ]
     },
     {
-      "id": "anchorback",
+      "id": "leadgrub",
       "at": [
         8,
         8
@@ -115,7 +115,7 @@
       ]
     },
     {
-      "id": "hopback",
+      "id": "hopgrub",
       "at": [
         4,
         2
@@ -142,7 +142,7 @@
       ]
     },
     {
-      "id": "whirlback",
+      "id": "whirlgrub",
       "at": [
         13,
         2

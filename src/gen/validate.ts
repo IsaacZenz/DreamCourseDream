@@ -132,9 +132,9 @@ export function fallbackCourse(seed: string, budget: number): Record<string, unk
     exit: [13, 2],
     quota: 2,
     objects: [
-      { id: 'mossback', at: [5, 2] },
-      { id: 'mossback', at: [8, 1] },
-      { id: 'mossback', at: [10, 3] },
+      { id: 'snoozegrub', at: [5, 2] },
+      { id: 'snoozegrub', at: [8, 1] },
+      { id: 'snoozegrub', at: [10, 3] },
     ],
   };
 }

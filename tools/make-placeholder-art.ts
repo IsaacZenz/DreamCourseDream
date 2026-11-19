@@ -1017,18 +1017,18 @@ emit('shot-orb', drawShotOrb(), 9, 9, ['idle'], [4, 8]);
 emit('rock', drawRock(), 20, 14, ['idle'], [10, 10]);
 emit('stump', drawStump(), 10, 28, ['idle'], [5, 25]);
 emit('low-wall', drawLowWall(), 32, 20, ['idle'], [16, 12]);
-emit('mossback', drawMossback(), 18, 16, ['idle'], [9, 14]);
+emit('snoozegrub', drawMossback(), 18, 16, ['idle'], [9, 14]);
 // Milestone 4
-emit('trundler', drawTrundler(), 18, 16, ['idle'], [9, 14]);
-emit('spitter', drawSpitter(), 18, 18, ['idle'], [9, 16]);
-emit('lunger', drawLunger(), 18, 16, ['idle'], [9, 14]);
-emit('mole', drawMole(), 16, 14, ['idle'], [8, 12]);
+emit('mudroller', drawTrundler(), 18, 16, ['idle'], [9, 14]);
+emit('spittlebug', drawSpitter(), 18, 18, ['idle'], [9, 16]);
+emit('pouncehopper', drawLunger(), 18, 16, ['idle'], [9, 14]);
+emit('mole-cricket', drawMole(), 16, 14, ['idle'], [8, 12]);
 emit('molehill', drawMolehill(), 16, 8, ['idle'], [8, 6]);
 const mark = (color: string, pts: P[]) => (img: Image) => pts.forEach(([x, y]) => img.set(x, y, hex2(color)));
-emit('anchorback', drawCarrier('#4870b0', mark('#f8f8f8', [[11, 5], [11, 6], [11, 7], [11, 8], [10, 6], [12, 6], [9, 8], [13, 8]])), 18, 16, ['idle'], [9, 14]);
-emit('emberback', drawCarrier('#c85020', mark('#f8e040', [[11, 4], [10, 5], [12, 6], [10, 7], [11, 7], [12, 7], [11, 8]])), 18, 16, ['idle'], [9, 14]);
-emit('hopback', drawCarrier('#40a040', mark('#f8f8f8', [[11, 4], [10, 5], [12, 5], [11, 6], [11, 7], [11, 8]])), 18, 16, ['idle'], [9, 14]);
-emit('whirlback', drawCarrier('#7878b8', mark('#f8f8f8', [[9, 4], [10, 4], [11, 4], [12, 4], [13, 4], [10, 5], [11, 5], [12, 5], [11, 6], [11, 7]])), 18, 16, ['idle'], [9, 14]);
+emit('leadgrub', drawCarrier('#4870b0', mark('#f8f8f8', [[11, 5], [11, 6], [11, 7], [11, 8], [10, 6], [12, 6], [9, 8], [13, 8]])), 18, 16, ['idle'], [9, 14]);
+emit('embergrub', drawCarrier('#c85020', mark('#f8e040', [[11, 4], [10, 5], [12, 6], [10, 7], [11, 7], [12, 7], [11, 8]])), 18, 16, ['idle'], [9, 14]);
+emit('hopgrub', drawCarrier('#40a040', mark('#f8f8f8', [[11, 4], [10, 5], [12, 5], [11, 6], [11, 7], [11, 8]])), 18, 16, ['idle'], [9, 14]);
+emit('whirlgrub', drawCarrier('#7878b8', mark('#f8f8f8', [[9, 4], [10, 4], [11, 4], [12, 4], [13, 4], [10, 5], [11, 5], [12, 5], [11, 6], [11, 7]])), 18, 16, ['idle'], [9, 14]);
 emit('seed', drawSeed(), 6, 6, ['idle'], [3, 5]);
 emit('target-ring', drawTargetRing(), 26, 14, ['idle'], [13, 7]);
 emit('sliding-block', drawSlidingBlock(), 28, 22, ['idle'], [14, 14]);
@@ -1274,7 +1274,7 @@ function drawPuff(f: number): Image {
   return img;
 }
 
-emit('warden', sheet([0, 1, 2].map(drawWarden)), 44, 44, ['phase1', 'phase2', 'phase3'], [22, 41]);
+emit('stagwarden', sheet([0, 1, 2].map(drawWarden)), 44, 44, ['phase1', 'phase2', 'phase3'], [22, 41]);
 emit('star-blue', drawStar('#48a8f8'), 11, 11, ['idle'], [5, 10]);
 emit('acorn-lucky', drawAcorn('#7a5028', '#c89048', false), 10, 11, ['idle'], [5, 10]);
 emit('acorn-golden', drawAcorn('#a07020', '#f8d040', false), 10, 11, ['idle'], [5, 10]);

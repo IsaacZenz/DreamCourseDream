@@ -253,7 +253,7 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
       if (driftCost <= left) options.push({ weight: W.cloud!, item: () => { objects.push({ id: 'thunder-cloud', at: p, path: [lane[lane.length - 1]!], phase: place.float(0, 1) }); spend.obstacles += driftCost; for (const q of lane) used.add(key(q)); } });
       if (costOf('sliding-block') <= left) options.push({ weight: W.slider!, item: () => { objects.push({ id: 'sliding-block', at: p, path: [lane[lane.length - 1]!], phase: place.float(0, 1) }); spend.obstacles += costOf('sliding-block'); for (const q of lane) used.add(key(q)); } });
     }
-    if (carrier === 'anchorback' && costOf('cracked-tile') <= left) options.push({ weight: W.crack!, item: () => { objects.push({ id: 'cracked-tile', at: p }); spend.obstacles += costOf('cracked-tile'); used.add(key(p)); } });
+    if (carrier === 'leadgrub' && costOf('cracked-tile') <= left) options.push({ weight: W.crack!, item: () => { objects.push({ id: 'cracked-tile', at: p }); spend.obstacles += costOf('cracked-tile'); used.add(key(p)); } });
     // Hazard pads on flat tiles, never next to the start.
     const t = tileAt(p)!;
     if (shapeOf(t.corners) === '0000' && !near(p, start, 1)) {

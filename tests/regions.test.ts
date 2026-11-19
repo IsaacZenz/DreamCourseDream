@@ -78,7 +78,7 @@ describe('regions', () => {
   });
 
   it('region toughness reaches every enemy on a course', () => {
-    const r = parseCourse({ format: 2, name: 't', legend: { g: 'grass' }, tiles: ['g1 g1 g1', 'g1 g1 g1'], start: [0, 0], exit: [2, 1], quota: 0, objects: [{ id: 'trundler', at: [1, 1], path: [[1, 1]] }] });
+    const r = parseCourse({ format: 2, name: 't', legend: { g: 'grass' }, tiles: ['g1 g1 g1', 'g1 g1 g1'], start: [0, 0], exit: [2, 1], quota: 0, objects: [{ id: 'mudroller', at: [1, 1], path: [[1, 1]] }] });
     if (!r.ok) throw new Error();
     const run = createRun('R4', generateRunMap('R4'));
     run.region = 2;
@@ -100,7 +100,7 @@ describe('regions', () => {
   });
 
   it('every region names a boss pool with the Warden in it (owner: placeholder until Milestone 8)', () => {
-    for (const r of REGIONS) expect(r.bosses).toContain('warden');
+    for (const r of REGIONS) expect(r.bosses).toContain('stagwarden');
   });
 });
 

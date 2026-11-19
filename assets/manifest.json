@@ -958,8 +958,8 @@
         12
       ]
     },
-    "mossback": {
-      "file": "sprites/mossback.png",
+    "snoozegrub": {
+      "file": "sprites/snoozegrub.png",
       "frameWidth": 18,
       "frameHeight": 16,
       "frames": [
@@ -970,8 +970,8 @@
         14
       ]
     },
-    "trundler": {
-      "file": "sprites/trundler.png",
+    "mudroller": {
+      "file": "sprites/mudroller.png",
       "frameWidth": 18,
       "frameHeight": 16,
       "frames": [
@@ -982,8 +982,8 @@
         14
       ]
     },
-    "spitter": {
-      "file": "sprites/spitter.png",
+    "spittlebug": {
+      "file": "sprites/spittlebug.png",
       "frameWidth": 18,
       "frameHeight": 18,
       "frames": [
@@ -994,8 +994,8 @@
         16
       ]
     },
-    "lunger": {
-      "file": "sprites/lunger.png",
+    "pouncehopper": {
+      "file": "sprites/pouncehopper.png",
       "frameWidth": 18,
       "frameHeight": 16,
       "frames": [
@@ -1006,8 +1006,8 @@
         14
       ]
     },
-    "mole": {
-      "file": "sprites/mole.png",
+    "mole-cricket": {
+      "file": "sprites/mole-cricket.png",
       "frameWidth": 16,
       "frameHeight": 14,
       "frames": [
@@ -1030,8 +1030,8 @@
         6
       ]
     },
-    "anchorback": {
-      "file": "sprites/anchorback.png",
+    "leadgrub": {
+      "file": "sprites/leadgrub.png",
       "frameWidth": 18,
       "frameHeight": 16,
       "frames": [
@@ -1042,8 +1042,8 @@
         14
       ]
     },
-    "emberback": {
-      "file": "sprites/emberback.png",
+    "embergrub": {
+      "file": "sprites/embergrub.png",
       "frameWidth": 18,
       "frameHeight": 16,
       "frames": [
@@ -1054,8 +1054,8 @@
         14
       ]
     },
-    "hopback": {
-      "file": "sprites/hopback.png",
+    "hopgrub": {
+      "file": "sprites/hopgrub.png",
       "frameWidth": 18,
       "frameHeight": 16,
       "frames": [
@@ -1066,8 +1066,8 @@
         14
       ]
     },
-    "whirlback": {
-      "file": "sprites/whirlback.png",
+    "whirlgrub": {
+      "file": "sprites/whirlgrub.png",
       "frameWidth": 18,
       "frameHeight": 16,
       "frames": [
@@ -2336,8 +2336,8 @@
         6
       ]
     },
-    "warden": {
-      "file": "sprites/warden.png",
+    "stagwarden": {
+      "file": "sprites/stagwarden.png",
       "frameWidth": 44,
       "frameHeight": 44,
       "frames": [

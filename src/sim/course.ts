@@ -16,7 +16,7 @@
  *     "start": [1, 1],
  *     "exit": [2, 1],
  *     "quota": 0,
- *     "objects": [ { "id": "mossback", "at": [1, 0] }, { "id": "rock", "at": [0, 1] } ]
+ *     "objects": [ { "id": "snoozegrub", "at": [1, 0] }, { "id": "rock", "at": [0, 1] } ]
  *   }
  *
  * Each string in "tiles" is one grid row (grid y), with tiles separated by

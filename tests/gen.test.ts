@@ -174,7 +174,7 @@ describe('structure validator', () => {
       start: [0, 0],
       exit: [4, 0],
       quota: 1,
-      objects: [{ id: 'mossback', at: [10, 1] }],
+      objects: [{ id: 'snoozegrub', at: [10, 1] }],
     });
     expect(checkStructure(stars)).toEqual({ ok: false, reason: 'too few reachable stars' });
   });
@@ -197,7 +197,7 @@ describe('bot', () => {
       start: [0, 0],
       exit: [4, 0],
       quota: 1,
-      objects: [{ id: 'mossback', at: [10, 0] }],
+      objects: [{ id: 'snoozegrub', at: [10, 0] }],
     });
     const r = playBot(c, T, 'BOT');
     expect(r.passed).toBe(false);

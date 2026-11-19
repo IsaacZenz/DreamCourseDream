@@ -106,7 +106,7 @@ describe('course rules: shots and health', () => {
 });
 
 describe('shots back and naps (owner, 2026-11-15)', () => {
-  const two = () => corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0'], { quota: 2, objects: [{ id: 'mossback', at: [3, 1] }, { id: 'mossback', at: [5, 1] }] });
+  const two = () => corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0'], { quota: 2, objects: [{ id: 'snoozegrub', at: [3, 1] }, { id: 'snoozegrub', at: [5, 1] }] });
 
   it('each damaging hit gives one shot back, one per enemy hit in the same shot', () => {
     const p = play(two());
@@ -119,7 +119,7 @@ describe('shots back and naps (owner, 2026-11-15)', () => {
 
   it('a hit that does damage but does not defeat still gives a shot back', () => {
     // A Trundler has 2 health: one hit damages it without defeating it.
-    const p = play(corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0'], { quota: 1, objects: [{ id: 'trundler', at: [4, 1], path: [[4, 1]] }] }));
+    const p = play(corridor(['g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0', 'g0'], { quota: 1, objects: [{ id: 'mudroller', at: [4, 1], path: [[4, 1]] }] }));
     p.shots = 2;
     fire(p, shot({ power: 0.5 }));
     const t = p.enemies[0]!;
@@ -244,7 +244,7 @@ describe('course rules: blockers, enemies, stars and the exit', () => {
   });
 
   it('hitting a Mossback defeats it; its star counts at once; a flag goes up; the ball carries on', () => {
-    const c = corridor(Array(14).fill('g0'), { objects: [{ id: 'mossback', at: [4, 1] }], exit: [14, 1], quota: 1 });
+    const c = corridor(Array(14).fill('g0'), { objects: [{ id: 'snoozegrub', at: [4, 1] }], exit: [14, 1], quota: 1 });
     const p = play(c);
     const log = fire(p, shot({ power: 0.6 }));
     expect(log.some((e) => e.kind === 'defeat')).toBe(true);
@@ -329,7 +329,7 @@ describe('course rules: blockers, enemies, stars and the exit', () => {
   });
 
   it('the same seed and shots give exactly the same result, star drops included', () => {
-    const c = corridor(Array(14).fill('g0'), { objects: [{ id: 'mossback', at: [4, 1] }], exit: [14, 1], quota: 1 });
+    const c = corridor(Array(14).fill('g0'), { objects: [{ id: 'snoozegrub', at: [4, 1] }], exit: [14, 1], quota: 1 });
     const run = (seed: string) => {
       const p = play(c, seed);
       fire(p, shot({ power: 0.6, sideSpin: 0.5 }));
@@ -352,7 +352,7 @@ describe('the test courses', () => {
     const r = parseCourse(f.data);
     if (!r.ok) throw new Error(r.errors.join('\n'));
     const ids = new Set(r.course.objects.map((o) => o.id));
-    for (const id of ['mossback', 'yellow-star', 'heart', 'shot-orb', 'rock', 'stump', 'low-wall']) expect(ids).toContain(id);
+    for (const id of ['snoozegrub', 'yellow-star', 'heart', 'shot-orb', 'rock', 'stump', 'low-wall']) expect(ids).toContain(id);
     expect(r.course.quota).toBeGreaterThan(0);
   });
 
@@ -367,7 +367,7 @@ describe('the test courses', () => {
     // Owner, 2026-11-14: the post is now the tree stump.
     expect(bad({ objects: [{ id: 'post', at: [1, 0] }] }).join()).toMatch(/"post" was renamed; use "stump"/);
     expect(bad({ objects: [{ id: 'rock', at: [0, 0] }] }).join()).toMatch(/start tile/);
-    expect(bad({ quota: 2, objects: [{ id: 'mossback', at: [1, 0] }] }).join()).toMatch(/only offers 1/);
+    expect(bad({ quota: 2, objects: [{ id: 'snoozegrub', at: [1, 0] }] }).join()).toMatch(/only offers 1/);
   });
 });
 

@@ -40,7 +40,7 @@
  "quota": 0,
  "objects": [
   {
-   "id": "warden",
+   "id": "stagwarden",
    "at": [
     6,
     6

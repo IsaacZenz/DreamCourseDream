@@ -100,7 +100,7 @@ let tuning: Tuning | null = null;
 let panel: TuningPanel | null = null;
 
 /** The test bench: what stands at the centre, and the ability to start with. Kept across restarts. */
-const bench = { object: 'mossback', ability: '' };
+const bench = { object: 'snoozegrub', ability: '' };
 let benchShown = false;
 
 /** Generated courses (Milestone 5): the budget in use, and the last course made (kept so R does not regenerate). */

@@ -472,7 +472,7 @@ describe('gear on a course', () => {
   });
 
   it('Padded Lining ignores the first damage each course', () => {
-    const c = field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+    const c = field(10, 3, { objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
     const p = createPlay(c, T, { seed: 'l', loadout: { gear: { weapon: null, armour: 'padded-lining', bauble: null } } });
     expect(shieldsLeft(p)).toBe(1);
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
@@ -483,7 +483,7 @@ describe('gear on a course', () => {
   });
 
   it('Thorn Guard hurts back an enemy that hurts the ball', () => {
-    const c = field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+    const c = field(10, 3, { objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
     const p = createPlay(c, T, { seed: 't', loadout: { gear: { weapon: null, armour: 'thorn-guard', bauble: null } } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.6 }));
@@ -493,19 +493,19 @@ describe('gear on a course', () => {
   });
 
   it('Ember Coat sets the enemy burning; Burning does 1 damage at the start of the enemy turn', () => {
-    const c = field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+    const c = field(10, 3, { objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
     // A full wheel (owner, 2026-11-17: success rolls) so the burn always takes.
     const full = [{ stat: 'rollSlices' as const, op: 'add' as const, amount: 10, source: { kind: 'run' as const, id: 'test' }, duration: { kind: 'run' as const } }];
     const p = createPlay(c, T, { seed: 'e', loadout: { gear: { weapon: 'ember-coat', armour: null, bauble: null }, modifiers: full } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.6 }));
-    expect(log).toContainEqual({ kind: 'status', target: 'trundler#0', status: 'burning' });
-    expect(log).toContainEqual({ kind: 'statusDamage', enemy: 'trundler#0', status: 'burning', damage: 1 });
+    expect(log).toContainEqual({ kind: 'status', target: 'mudroller#0', status: 'burning' });
+    expect(log).toContainEqual({ kind: 'statusDamage', enemy: 'mudroller#0', status: 'burning', damage: 1 });
     expect(p.enemies[0]!.defeated).toBe(true);
   });
 
   it('Phoenix Plate saves the ball once and crumbles', () => {
-    const c = field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+    const c = field(10, 3, { objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
     const p = createPlay(c, T, { seed: 'p', loadout: { health: 1, gear: { weapon: null, armour: 'phoenix-plate', bauble: null } } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.6 }));

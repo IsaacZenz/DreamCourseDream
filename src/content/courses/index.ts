@@ -22,7 +22,7 @@ export const TEST_COURSES: readonly CourseFile[] = [
   { id: 'slopes-surfaces', data: slopesSurfaces },
   { id: 'enemies-abilities', data: enemiesAbilities },
   // The test bench: rebuilt by the game with the thing chosen in the tuning panel.
-  { id: BENCH_ID, data: benchCourse('mossback') },
+  { id: BENCH_ID, data: benchCourse('snoozegrub') },
   // A generated course (key 6): made by src/gen/ from the seed and budget.
   { id: GENERATED_ID, data: null },
 ];

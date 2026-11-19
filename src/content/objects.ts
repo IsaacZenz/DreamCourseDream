@@ -273,7 +273,7 @@ const PLAIN = {
 const ROUND_ENEMY = { shape: { kind: 'round', r: 0.3 }, height: 0.6, bounce: 0.6 } as const;
 const NO_TRIGGERS = { hit: 'none', rest: 'none', passBy: 'none' } as const;
 
-/** One Mossback copy per starter ability; grants it on defeat (FEATURES.md section 4). */
+/** One grub (a Snoozegrub copy) per starter ability; grants it on defeat (FEATURES.md section 4). */
 function carrier(id: string, name: string, ability: string): EnemyDef {
   return {
     kind: 'enemy',
@@ -364,9 +364,9 @@ const defs: readonly ObjectDef[] = [
   // Enemies (section 4). Owner, 2026-11-14: every enemy is worth 1 star for now.
   {
     kind: 'enemy',
-    id: 'mossback',
-    name: 'Mossback',
-    sprite: 'mossback',
+    id: 'snoozegrub',
+    name: 'Snoozegrub',
+    sprite: 'snoozegrub',
     family: 'sentinel',
     tier: 1,
     stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
@@ -381,9 +381,9 @@ const defs: readonly ObjectDef[] = [
   },
   {
     kind: 'enemy',
-    id: 'trundler',
-    name: 'Trundler',
-    sprite: 'trundler',
+    id: 'mudroller',
+    name: 'Mudroller',
+    sprite: 'mudroller',
     family: 'patroller',
     tier: 2,
     stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
@@ -398,9 +398,9 @@ const defs: readonly ObjectDef[] = [
   },
   {
     kind: 'enemy',
-    id: 'spitter',
-    name: 'Spitter',
-    sprite: 'spitter',
+    id: 'spittlebug',
+    name: 'Spittlebug',
+    sprite: 'spittlebug',
     family: 'sentinel',
     tier: 2,
     stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 8, outerRadius: 3.5, innerRadius: 1.5 },
@@ -415,9 +415,9 @@ const defs: readonly ObjectDef[] = [
   },
   {
     kind: 'enemy',
-    id: 'lunger',
-    name: 'Lunger',
-    sprite: 'lunger',
+    id: 'pouncehopper',
+    name: 'Pouncehopper',
+    sprite: 'pouncehopper',
     family: 'sentinel',
     tier: 2,
     stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 3, innerRadius: 1.25 },
@@ -432,9 +432,9 @@ const defs: readonly ObjectDef[] = [
   },
   {
     kind: 'enemy',
-    id: 'mole',
-    name: 'Mole',
-    sprite: 'mole',
+    id: 'mole-cricket',
+    name: 'Mole Cricket',
+    sprite: 'mole-cricket',
     family: 'sentinel',
     tier: 2,
     stats: { health: 1, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0.35 },
@@ -451,9 +451,9 @@ const defs: readonly ObjectDef[] = [
   // The Warden (Milestone 7 sheet section 2). Health is set per region (run.ts REGIONS bossHealth).
   {
     kind: 'enemy',
-    id: 'warden',
-    name: 'The Warden',
-    sprite: 'warden',
+    id: 'stagwarden',
+    name: 'The Stagwarden',
+    sprite: 'stagwarden',
     family: 'sentinel',
     tier: 5,
     stats: { health: 12, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
@@ -463,15 +463,15 @@ const defs: readonly ObjectDef[] = [
     height: 1.6,
     bounce: 0.6,
     triggers: NO_TRIGGERS,
-    behaviour: { kind: 'boss', boss: 'warden' },
+    behaviour: { kind: 'boss', boss: 'stagwarden' },
     contact: 'never',
     grantsAbility: null,
     cost: 0,
   },
-  carrier('anchorback', 'Anchorback', 'anchor'),
-  carrier('emberback', 'Emberback', 'burner'),
-  carrier('hopback', 'Hopback', 'hop'),
-  carrier('whirlback', 'Whirlback', 'tornado'),
+  carrier('leadgrub', 'Leadgrub', 'anchor'),
+  carrier('embergrub', 'Embergrub', 'burner'),
+  carrier('hopgrub', 'Hopgrub', 'hop'),
+  carrier('whirlgrub', 'Whirlgrub', 'tornado'),
 ];
 
 // Gear lying on a course (Milestone 6): one object per gear item, by the same id.
@@ -492,4 +492,17 @@ export function registerObjects(more: readonly ObjectDef[]): void {
 }
 
 /** Ids that course files may no longer use, with the reason. */
-export const RENAMED_OBJECTS: ReadonlyMap<string, string> = new Map([['post', 'stump']]);
+export const RENAMED_OBJECTS: ReadonlyMap<string, string> = new Map([
+  ['post', 'stump'],
+  // Owner, 2026-11-18: every enemy is an insect (Milestone 8 sheet section 7.0).
+  ['mossback', 'snoozegrub'],
+  ['anchorback', 'leadgrub'],
+  ['emberback', 'embergrub'],
+  ['hopback', 'hopgrub'],
+  ['whirlback', 'whirlgrub'],
+  ['trundler', 'mudroller'],
+  ['spitter', 'spittlebug'],
+  ['lunger', 'pouncehopper'],
+  ['mole', 'mole-cricket'],
+  ['warden', 'stagwarden'],
+]);

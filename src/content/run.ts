@@ -96,9 +96,9 @@ export interface RegionDef {
 }
 
 export const REGIONS: readonly RegionDef[] = [
-  { areas: { start: 2, every: 2, max: 5 }, areaSize: [8, 14], threat: { start: 8, perNode: 2, cap: 30 }, maxEnemies: 10, toughness: [], bosses: ['warden'], bossHealth: 12, oddsColumn: 0, par: [] },
+  { areas: { start: 2, every: 2, max: 5 }, areaSize: [8, 14], threat: { start: 8, perNode: 2, cap: 30 }, maxEnemies: 10, toughness: [], bosses: ['stagwarden'], bossHealth: 12, oddsColumn: 0, par: [] },
   // Owner, 2026-11-18 (option A): 3 to 6 areas and threat capped at 36 (was 4 to 7 and 45), so courses can be made in time.
-  { areas: { start: 3, every: 2, max: 6 }, areaSize: [9, 15], threat: { start: 18, perNode: 3, cap: 36 }, maxEnemies: 14, toughness: [{ stat: 'health', amount: 1 }], bosses: ['warden'], bossHealth: 18, oddsColumn: 2,
+  { areas: { start: 3, every: 2, max: 6 }, areaSize: [9, 15], threat: { start: 18, perNode: 3, cap: 36 }, maxEnemies: 14, toughness: [{ stat: 'health', amount: 1 }], bosses: ['stagwarden'], bossHealth: 18, oddsColumn: 2,
     par: [
       { stat: 'maxShots', amount: 1 },
       { stat: 'hitDamage', amount: 1 },
@@ -114,7 +114,7 @@ export const REGIONS: readonly RegionDef[] = [
       { stat: 'health', amount: 1 },
       { stat: 'attackDamage', amount: 1 },
     ],
-    bosses: ['warden'],
+    bosses: ['stagwarden'],
     bossHealth: 24,
     oddsColumn: 3,
     par: [

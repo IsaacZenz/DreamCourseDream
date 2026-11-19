@@ -29,7 +29,7 @@ const weapon = (id: string | null, armour: string | null = null, bauble: string 
 
 /** A Trundler standing still in front of the ball, hit once with a ground shot. */
 function hitOnce(seed: string, lo: Loadout): { play: PlayState; log: PlayEvent[] } {
-  const c = field({ objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+  const c = field({ objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
   const play = createPlay(c, T, { seed, loadout: lo });
   play.ball = { ...play.ball, x: 1.5, y: 2.5 };
   takeShot(play, { angle: 0, power: 0.6, type: 'ground', topSpin: 0, sideSpin: 0 });
@@ -58,10 +58,10 @@ describe('the success wheel', () => {
   });
 
   it('Knack and Spinners add to every wheel; Grit adds to the boss wheel only; Golden Spinner shrinks the boss wheel', () => {
-    let p = createPlay(field({ objects: [{ id: 'mossback', at: [6, 2] }] }), T, { seed: 'k', loadout: { gear: weapon('bonk-knob', 'grit-pads', 'brass-spinner'), modifiers: [slices(2)] } });
+    let p = createPlay(field({ objects: [{ id: 'snoozegrub', at: [6, 2] }] }), T, { seed: 'k', loadout: { gear: weapon('bonk-knob', 'grit-pads', 'brass-spinner'), modifiers: [slices(2)] } });
     expect(wheelFor(p, p.enemies[0]!)).toEqual({ filled: 5, size: 10 });
     expect(wheelFor(p, asBoss(p))).toEqual({ filled: 7, size: 20 });
-    p = createPlay(field({ objects: [{ id: 'mossback', at: [6, 2] }] }), T, { seed: 'k', loadout: { gear: weapon('echo-shell', null, 'golden-spinner') } });
+    p = createPlay(field({ objects: [{ id: 'snoozegrub', at: [6, 2] }] }), T, { seed: 'k', loadout: { gear: weapon('echo-shell', null, 'golden-spinner') } });
     expect(wheelFor(p, asBoss(p))).toEqual({ filled: 8, size: 15 });
   });
 
@@ -120,13 +120,13 @@ describe('the success wheel', () => {
 
 describe('acorns', () => {
   it('a pocket acorn is used as the course starts', () => {
-    const p = createPlay(field({ objects: [{ id: 'mossback', at: [6, 2] }] }), T, { seed: 'a', loadout: { gear: weapon('bonk-knob'), acorn: 'golden-acorn' } });
+    const p = createPlay(field({ objects: [{ id: 'snoozegrub', at: [6, 2] }] }), T, { seed: 'a', loadout: { gear: weapon('bonk-knob'), acorn: 'golden-acorn' } });
     expect(drainLog(p)).toContainEqual({ kind: 'acorn', item: 'golden-acorn', slices: 3 });
     expect(wheelFor(p, p.enemies[0]!).filled).toBe(5);
   });
 
   it('an acorn on the ground works at once for the rest of the course', () => {
-    const p = createPlay(field({ objects: [{ id: 'mossback', at: [8, 2] }, { id: 'star-acorn', at: [4, 2] }] }), T, { seed: 'b', loadout: { gear: weapon('bonk-knob') } });
+    const p = createPlay(field({ objects: [{ id: 'snoozegrub', at: [8, 2] }, { id: 'star-acorn', at: [4, 2] }] }), T, { seed: 'b', loadout: { gear: weapon('bonk-knob') } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     takeShot(p, { angle: 0, power: 0.4, type: 'ground', topSpin: 0, sideSpin: 0 });
     runShot(p);
