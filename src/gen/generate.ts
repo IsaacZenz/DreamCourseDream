@@ -12,6 +12,9 @@ import { heightChar, parseCourse, segmentsTouch, type Course } from '../sim/cour
 import { Rng } from '../sim/rng.ts';
 import { shapeOf, type Corners } from '../sim/tileShape.ts';
 import { buildTerrain, type Point, type Terrain, type TileSpec, type JourneySize } from './journey.ts';
+import { TRAIT_RULES } from '../content/enemyMods.ts';
+import { dressCost, fitDress, rollDress, rollRank, rollTheme, type Dress, type SquadTheme } from './dress.ts';
+import { enemyHiddenStars, enemyStarValue } from '../sim/course.ts';
 
 /** What the budget was spent on. */
 export interface Spend {
@@ -41,6 +44,8 @@ interface PlacedObject {
   drops?: string[];
   facing?: Direction;
   phase?: number;
+  /** Milestone 8: a dressed enemy's rank, traits, element, spot and gear. */
+  dress?: Dress;
 }
 
 const dist = (a: Point, b: Point) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -69,6 +74,10 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
   if (!tr.ok) return tr;
   const terrain = tr.terrain;
   const place = rng.fork('place');
+  // Milestone 8: dressing enemies has its own stream, so layouts do not shift when the mix changes.
+  const dressRng = rng.fork('dress');
+  const mix = size?.mix;
+  let oneLeaderLeft = !!(mix && size?.hard && mix.hardLeaders === 'one');
   const { width, height, start, exit } = terrain;
   const tiles = terrain.tiles.slice();
   const tileAt = (p: Point) => (p[0] < 0 || p[1] < 0 || p[0] >= width || p[1] >= height ? null : tiles[p[1] * width + p[0]]);
@@ -150,6 +159,22 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
     enemyCount++;
   };
 
+  /** Dress the enemy just placed (Milestone 8), paying any extra cost from what is left. */
+  const dressLast = (theme: SquadTheme, isLeader: boolean, room: number) => {
+    const o = objects[objects.length - 1]!;
+    const def = OBJECTS.get(o.id) as EnemyDef;
+    let rank = rollRank(dressRng, mix!);
+    if (isLeader) rank = Math.min(mix!.maxRank, rank + 1);
+    const explosiveNear = objects.some((q) => q !== o && q.dress?.traits.includes('explosive') && dist(q.at, o.at) < TRAIT_RULES.explosiveSpacing);
+    const d = fitDress(def, rollDress(dressRng, def, rank, theme, mix!, size?.oddsColumn ?? 0, explosiveNear), def.cost + room);
+    if (!d) return;
+    const extra = dressCost(def, d) - def.cost;
+    o.dress = d;
+    enemyLeft -= extra;
+    spend.enemies += extra;
+  };
+  const size_hard = !!size?.hard;
+
   // Ability carrier (60%) in the first or second area.
   let carrier: string | null = null;
   if (place.chance(GEN.carrierChance)) {
@@ -180,6 +205,16 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
       const anchor = place.pick(free);
       const size = place.int(GEN.squadMin, GEN.squadMax);
       let added = 0;
+      // Milestone 8: the squad's theme, and whether its first member leads it (one rank up).
+      const theme: SquadTheme = mix ? rollTheme(dressRng, mix) : { kind: 'none' };
+      let leader = false;
+      if (mix) {
+        if (size_hard && mix.hardLeaders === 'all') leader = true;
+        else if (oneLeaderLeft) {
+          leader = true;
+          oneLeaderLeft = false;
+        } else leader = dressRng.chance(mix.leader);
+      }
       for (let m = 0; m < size && share > 0 && enemyCount < maxEnemies; m++) {
         const reserve = Math.max(0, GEN.minEnemies - enemyCount - 1);
         const choices: { item: () => void; weight: number }[] = [];
@@ -204,6 +239,7 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
         if (!pick) break;
         const before = enemyLeft;
         pick();
+        if (mix) dressLast(theme, leader && added === 0, Math.max(0, Math.min(share - (before - enemyLeft), enemyLeft - reserve)));
         share -= before - enemyLeft;
         added++;
       }
@@ -296,19 +332,35 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
   }
 
   // ---- Quota: cracked-tile stars are a bonus ---------------------------------
-  let stars = 0;
+  // Owner, 2026-11-18: the quota must not get easier when some enemies are worth more. Take 60% of the
+  // star sources (each enemy, each star in a crate) and set the quota to what the richest that many give
+  // (Milestone 8 sheet section 4.0). With every source worth 1 this is the old 60% of the stars.
+  const sources: number[] = [];
   for (const o of objects) {
     const def = OBJECTS.get(o.id);
-    if (def?.kind === 'enemy') stars += def.starValue;
-    else if (def?.kind === 'breakable' && def.breakBy === 'hit') stars += (o.drops ?? def.drops).filter((d) => d === 'yellow-star').length;
+    if (def?.kind === 'enemy') {
+      const extras = { rank: o.dress?.rank ?? 0, traits: o.dress?.traits ?? [], element: o.dress?.element ?? null, spot: o.dress?.spot ?? null, gear: o.dress?.gear ?? null };
+      sources.push(enemyStarValue({ id: o.id, extras }) + enemyHiddenStars({ id: o.id, extras }));
+    } else if (def?.kind === 'breakable' && def.breakBy === 'hit') for (const d of o.drops ?? def.drops) if (d === 'yellow-star') sources.push(1);
   }
+  const stars = sources.reduce((a, b) => a + b, 0);
   if (stars < GEN.minQuota) return { ok: false, reason: 'too few stars' };
-  const quota = Math.min(stars, Math.max(GEN.minQuota, Math.round(stars * GEN.quotaShare)));
+  const quota = Math.min(stars, Math.max(GEN.minQuota, quotaFor(sources)));
 
   const raw = writeCourse(`Generated #${seed} B${budget}`, width, height, tiles, start, exit, quota, objects, terrain.rails);
   const parsed = parseCourse(raw);
   if (!parsed.ok) return { ok: false, reason: `bad course: ${parsed.errors[0]}` };
   return { ok: true, raw, course: parsed.course, meta: { seed, budget, attempt, terrain, spend, enemies: enemyCount, stars } };
+}
+
+/**
+ * The quota from the star sources (owner, 2026-11-18; sheet section 4.0):
+ * the stars from the richest 60% of them. You must still beat as many things
+ * as before, and the tough ones among them.
+ */
+export function quotaFor(sources: readonly number[]): number {
+  const n = Math.round(sources.length * GEN.quotaShare);
+  return [...sources].sort((a, b) => b - a).slice(0, n).reduce((a, b) => a + b, 0);
 }
 
 const LEGEND_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -366,6 +418,11 @@ export function writeCourse(
       ...(o.phase !== undefined && { phase: Math.round(o.phase * 100) / 100 }),
       ...(o.orient && { orient: o.orient }),
       ...(o.drops && { drops: o.drops }),
+      ...(o.dress?.rank && { rank: o.dress.rank }),
+      ...(o.dress?.traits.length && { traits: o.dress.traits }),
+      ...(o.dress?.element && { element: o.dress.element }),
+      ...(o.dress?.spot && { spot: o.dress.spot }),
+      ...(o.dress?.gear && { gear: o.dress.gear }),
     })),
     ...(rails.length && { rails: rails.map((l) => l.map((p) => [p[0], p[1]])) }),
   };

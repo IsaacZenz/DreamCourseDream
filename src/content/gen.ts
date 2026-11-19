@@ -5,6 +5,7 @@
  * enemy and object costs are the `cost` fields in objects.ts; hazard costs are
  * the `cost` fields in surfaces.ts.
  */
+import type { EnemyMix } from './enemyMods.ts';
 /**
  * How big a journey is, apart from how much is in it (owner, 2026-11-17: size
  * and difficulty scale separately; Milestone 7 sheet section 7.4). The run
@@ -19,6 +20,14 @@ export interface JourneySize {
   readonly maxEnemies: number;
   /** The bot's shot limit. */
   readonly botShots: number;
+  /**
+   * Milestone 8: how enemies are dressed (ranks, themes, leaders) in this
+   * region, whether this is a hard course, and the gear rarity column for
+   * carried gear. Left out: plain enemies, as before.
+   */
+  readonly mix?: EnemyMix;
+  readonly hard?: boolean;
+  readonly oddsColumn?: number;
 }
 
 export const GEN = {

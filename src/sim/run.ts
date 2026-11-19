@@ -22,6 +22,7 @@ import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY
 import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
 import { BOSSES } from '../content/bosses.ts';
 import type { JourneySize } from '../content/gen.ts';
+import { ENDLESS_MIX_STEP, REGION_MIXES, type EnemyMix } from '../content/enemyMods.ts';
 import { LAST_REGION, REGIONS, botShotsFor, type RegionDef } from '../content/run.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
 import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
@@ -404,7 +405,19 @@ export function sizeFor(run: RunState, type: NodeType): JourneySize {
   const r = regionDef(run);
   const plain = Math.min(r.areas.max, r.areas.start + Math.floor(run.counted / r.areas.every));
   const n = type === 'hard' || type === 'boss' ? plain + 1 : plain;
-  return { areas: [n, n], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(n) };
+  return { areas: [n, n], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(n), mix: mixFor(run.region), hard: type === 'hard' || type === 'boss', oddsColumn: oddsColumn(run, false) };
+}
+
+/**
+ * How the generator dresses enemies in a region (Milestone 8 sheet sections
+ * 4.1 and 5.2). Endless regions (owner, 2026-11-18) keep region three's mix and
+ * add more Veterans and Elites each region, up to a cap.
+ */
+export function mixFor(region: number): EnemyMix {
+  const last = REGION_MIXES[REGION_MIXES.length - 1]!;
+  if (region <= REGION_MIXES.length) return REGION_MIXES[Math.max(1, region) - 1]!;
+  const k = region - REGION_MIXES.length;
+  return { ...last, veteran: Math.min(ENDLESS_MIX_STEP.cap, last.veteran + k * ENDLESS_MIX_STEP.veteran), elite: Math.min(ENDLESS_MIX_STEP.cap, last.elite + k * ENDLESS_MIX_STEP.elite) };
 }
 
 /** Region toughness: a modifier on every enemy (source "region"). */

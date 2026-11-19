@@ -108,3 +108,31 @@ export interface EnemyExtras {
 }
 
 export const NO_EXTRAS: EnemyExtras = { rank: 0, traits: [], element: null, spot: null, gear: null };
+
+/**
+ * How a region's generator dresses its enemies (sheet sections 4.1 and 5.2).
+ * Each placed squad member is a Veteran with chance `veteran`, an Elite with
+ * chance `elite`; each squad has a leader one rank up with chance `leader`;
+ * each squad rolls a theme (none, an element, a trait), which each member
+ * takes with chance `themeShare` (open question F4 default: 70%).
+ */
+export interface EnemyMix {
+  readonly veteran: number;
+  readonly elite: number;
+  readonly leader: number;
+  readonly themes: { readonly none: number; readonly element: number; readonly trait: number };
+  readonly themeShare: number;
+  /** Hard courses: 'all' gives every squad a leader one rank up; 'one' gives the course a single Veteran leader (region 1). */
+  readonly hardLeaders: 'all' | 'one';
+  /** The highest rank in the region: a leader never goes above it (region 2 has no Elites). */
+  readonly maxRank: number;
+}
+
+export const REGION_MIXES: readonly EnemyMix[] = [
+  { veteran: 0, elite: 0, leader: 0, themes: { none: 0.8, element: 0.2, trait: 0 }, themeShare: 0.7, hardLeaders: 'one', maxRank: 1 },
+  { veteran: 0.15, elite: 0, leader: 0.5, themes: { none: 0.4, element: 0.3, trait: 0.3 }, themeShare: 0.7, hardLeaders: 'all', maxRank: 1 },
+  { veteran: 0.25, elite: 0.08, leader: 1, themes: { none: 0.2, element: 0.4, trait: 0.4 }, themeShare: 0.7, hardLeaders: 'all', maxRank: 2 },
+];
+
+/** Endless mode (owner, 2026-11-18; sheet section 10a): each region after the third adds this much, up to the cap. */
+export const ENDLESS_MIX_STEP = { veteran: 0.03, elite: 0.04, cap: 0.4 } as const;
