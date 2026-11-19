@@ -225,6 +225,8 @@ Gear examples are in `docs/FEATURES.md` section 8.
 
 **Decided:**
 
+- **Owner, 2026-11-19: in the finished game the map shows only the next choice.** The player sees the path already taken and the 1 to 3 nodes they can go to next, nothing further ahead. The boss countdown is still shown. For testing, the whole map stays visible: a testing switch in the U panel, on in test builds. Built in Milestone 8 round 3.
+
 - The run is a branching map of nodes. The player picks a path.
 - Node types are randomised. A shop is not guaranteed between courses. Sometimes the only choice is another course.
 - **Decided (owner, 2026-11-15):** the countdown starts at **7**, and the player always gets at least one optional town right before the forced boss (a "last town"), on top of any towns on the way. An early boss may still be offered.

@@ -175,6 +175,8 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] More gear and shop variety
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
 - [ ] Resolve the remaining open questions with the owner
+- [ ] Owner, 2026-11-19: boss introduction cutscene pop-ups (placeholder cards in round 1; art in Milestone 9)
+- [ ] Owner, 2026-11-19: the map shows only the path taken and the next 1 to 3 choices, with a testing switch to show the whole map (round 3)
 - [ ] Owner, 2026-11-18: endless mode after the third region: each new region scales the same way, bosses from the boss randomizer
 
 **Done when:** three regions and a final boss are playable and the owner judges the difficulty curve fair.
@@ -186,6 +188,9 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] Several art variants per theme for each larger advancement (owner, 2026-11-14)
 - [ ] Sound effects and music, original or correctly licensed
 - [ ] An animation and a sound for most actions (owner, 2026-11-14), including a slot-machine wheel for the Wild pickup
+- [ ] Owner, 2026-11-19: the armadillo's poses: stands when resting, curls into a ball for your shot, stands up on rest; when knocked outside your shot, a hurt pose and knocked onto its back like a tortoise, then flips up (FEATURES.md section 3)
+- [ ] Owner, 2026-11-19: the shop as a food stand with an animated shopkeeper (FEATURES.md section 11)
+- [ ] Owner, 2026-11-19: boss cutscene art for the three main bosses and the endless boss pop-up (FEATURES.md section 5)
 - [ ] Title screen, settings, a short tutorial course, controls help
 - [ ] Playtest with a few friends; fix what confuses them
 
@@ -261,3 +266,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-18 — Owner agreed the endless mode plan (round 1 sheet questions 11 to 13): course size caps at region 3's size, everything else keeps growing each region. Questions 1 to 10 of the round 1 sheet still open.
 - 2026-11-18 — Owner answers on the round 1 sheet: Milestone 8 in three rounds; Veterans and Elites worth 2 stars, with the quota no easier than now (new quota rule proposed, section 4.0); frozen water lasts 2 turns, re-freezing resets it; fire and ice cancel, water puts out burning; Burner burns for 1 turn; **every enemy is an insect** (villain theme chosen; new bug names proposed, section 7.0). Follow-ups written for shock's weakness (section 3), Explosive (section 5.1a), the final boss (section 7.0b) and boss order (section 7.0c). Not signed off yet.
 - 2026-11-19 — Owner answered the round 1 follow-ups: elements form a circle (fire weak to ice, ice to shock, shock to fire); Explosive option A (a blast never defeats an enemy); final boss the Brood Queen; boss order fixed for now (Stagwarden, Gloamhorn, Brood Queen); melting rules agreed; insect names kept for now. Owner asked for prices to rise with the extra stars: new gear prices by rarity and stat boosts dearer each region (sheet section 10b). All questions answered; **waiting for the owner's final sign-off** of the sheet.
+- 2026-11-19 — Owner decisions: the armadillo's poses (curled only for your own shot; knocked onto its back like a tortoise when hit outside it, then flips up), the shop as a food stand with an animated shopkeeper, boss introduction cutscene pop-ups for the three main bosses and the endless boss, and the finished game's map showing only the next 1 to 3 choices (whole map kept for testing). Recorded in DESIGN.md section 10, FEATURES.md sections 3, 5 and 11; placed in Milestone 8 round 1 (boss cards), round 3 (map) and Milestone 9 (art and animation).

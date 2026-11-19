@@ -80,7 +80,19 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 
 **Starter set:** one balanced character with the stats in section 1, no starting ability, no trait. Build in Milestone 3. Built as **Rollo** (working name) in `src/content/characters.ts`.
 
-**Owner idea, 2026-11-15 (planning only, for the Milestone 9 skin):** the hero is an armadillo. It stands on two legs, curls into a ball when launched, and pops back out of ball form when it stops. A ball-to-standing animation on every launch and stop, through the asset manifest like all art. Villains share a theme, still to choose: reptiles and amphibians led by an alligator, or insects. Nothing changes in the rules or the simulation.
+**Owner idea, 2026-11-15 (planning only, for the Milestone 9 skin):** the hero is an armadillo. It stands on two legs, curls into a ball when launched, and pops back out of ball form when it stops. A ball-to-standing animation on every launch and stop, through the asset manifest like all art. ~~Villains share a theme, still to choose: reptiles and amphibians led by an alligator, or insects.~~ (Owner, 2026-11-18: insects.) Nothing changes in the rules or the simulation.
+
+**Decided (owner, 2026-11-19): the armadillo's poses.**
+
+| When | Pose |
+|---|---|
+| Resting, aiming, charging | Standing on two legs |
+| Launched by your own shot, rolling or flying | Curled into a ball |
+| Comes to rest after your shot | Pops out and stands up |
+| **Knocked or hurt when it is not your shot** (a Mudroller, a sliding block, a blast, a slam, a charge) | **Not** curled: a hurt pose, then **knocked onto its back like a tortoise**, sliding or tumbling with legs in the air |
+| Comes to rest after being knocked | Lies on its back a moment, then flips over and stands up |
+
+**Default:** the poses are display only and do not change any rule; the flip back up takes about 0.5 s and does not delay your turn. The simulation already tells a knocked ball from a ball moving under your own shot (`knocked` in `src/sim/play.ts`, used by the "only your own action deals damage" rule), so no simulation change is needed. Art and animation in Milestone 9; round 1 of Milestone 8 checks every knock-back sets that flag (slams, charges, blasts, soldier rings).
 
 **Later examples, Milestone 8:** a heavy ball (more damage, less bounce, shorter shots); a light ball (more bounce, an extra shot, less health).
 
@@ -174,6 +186,8 @@ Tiers 3 and 4, traits, elements, squads and enemy gear are Milestone 8, but the 
 ### Template (Default)
 
 id, name, sprite id, health, phases (each with a health threshold, an attack pattern, and a list of enemies it summons), optional gimmick (a weak spot, a shield that must be broken a certain way, or none), arena layout set, element, rewards.
+
+**Decided (owner, 2026-11-19): boss introductions.** Each of the three main bosses (the Stagwarden, Gloamhorn, the Brood Queen) gets a short **cutscene pop-up** before its fight, showing the boss and its name. In endless mode a shared cutscene pop-up shows the boss that was picked, with the region number. **Default:** it plays before every boss fight, lasts about 3 seconds, and any key skips it. Round 1 of Milestone 8 builds it as a placeholder card (name, sprite, region); the real art and animation come in Milestone 9.
 
 **Default rules:**
 
@@ -391,6 +405,8 @@ Cost rises with each level. **Owner, 2026-11-17:** Vitality and Stamina 5, 8, 12
 - The run shop takes yellow stars only. Blue stars are spent only on the hub screen.
 
 Build in Milestone 6.
+
+**Decided (owner, 2026-11-19), for the Milestone 9 skin:** the shop is a **food stand** with a **shopkeeper**, who animates when you buy something (and, Default, when you reroll or cannot afford something). Display only; the shop's rules do not change. The shopkeeper's species is chosen with the theme in Milestone 9 (Default: a friendly animal, not an insect, since the insects are the villains).
 
 ---
 

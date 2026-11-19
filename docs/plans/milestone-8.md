@@ -14,7 +14,7 @@ Milestone 8 is the biggest milestone in the plan: eleven checklist items, each o
 |---|---|---|---|
 | **1 (this sheet)** | **Enemies, elements and bosses** | Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear; Poisoned, Burning, Chilled; more enemy types in both families; second and third boss; two of the remaining abilities (Frost and Static, because the elements need an ice and a shock source) | **Three regions and a final boss**, which is the milestone's "done when", then **endless mode** (owner, 2026-11-18; section 10a) |
 | 2 | Abilities and the world | The other four abilities (Burr, Kite, Gyre, Drift); linked objects (switches, gates, bridges); optional course modifiers; three biomes; the theme switch after each boss | Each region looks and plays differently |
-| 3 | Characters, gear and balance | Second gear slot unlocks; extra characters; more gear and shop variety; the balance pass with the bot; the remaining open questions | A fair difficulty curve, judged by you |
+| 3 | Characters, gear and balance | Second gear slot unlocks; extra characters; more gear and shop variety; the balance pass with the bot; the remaining open questions; **the map showing only the next 1 to 3 choices, with a testing switch for the whole map (owner, 2026-11-19)** | A fair difficulty curve, judged by you |
 
 Why this order: round 1 is what makes a full three-region run exist at all. Round 3's balance pass has to come last, because every new enemy, ability and item changes the difficulty.
 
@@ -464,6 +464,14 @@ A round clearing about 15 tiles across, with the Queen's mound in the middle on 
 **Owner, 2026-11-18: question 6 is open for discussion** (section 7.0c).
 
 ---
+
+### 10c. Boss introduction cards (owner, 2026-11-19)
+
+Before each boss fight a **pop-up** shows the boss: its sprite, its name and a one-line title (the Stagwarden, "Guard of the first wood"; Gloamhorn, "The charging shell"; the Brood Queen, "Mother of the swarm"). In endless mode one shared pop-up shows the boss that was picked and "REGION 4" and so on. **Default:** before every boss fight, about 3 seconds, any key skips. Round 1 builds it as a **placeholder card**; the real cutscene art and animation are Milestone 9.
+
+### 10d. Knock-backs and the armadillo (owner, 2026-11-19)
+
+In the finished game the hero curls into a ball only for your own shot; when knocked outside it, it is flipped onto its back like a tortoise (FEATURES.md section 3; art in Milestone 9). The simulation already marks a knocked ball. Round 1 makes sure **every new knock-back** sets that mark: Gloamhorn's charge, slams, Explosive blasts and the soldier ring, so the display can pick the right pose later and none of them lets a knocked ball deal damage.
 
 ### 10b. Shop prices (owner, 2026-11-19)
 
