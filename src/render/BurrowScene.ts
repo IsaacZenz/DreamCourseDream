@@ -6,12 +6,11 @@
  */
 import Phaser from 'phaser';
 import { GEAR, GEAR_CATEGORIES } from '../content/gear';
-import { ARENA_LIST } from '../content/arenas';
 import { buyUpgrade } from '../sim/profile';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
 import { drawRows, progressRows, type MenuRow } from './progressMenu';
-import { continueRun, debugBossFight, debugRegionTwo, newRunSeed, persist, resetProgress, session, startRun } from './runSession';
+import { BOSS_FIGHTS, continueRun, debugBossFight, debugRegionTwo, newRunSeed, persist, resetProgress, session, startRun } from './runSession';
 import { getPanel, preloadAssets, shared } from './shared';
 import { damageSave, rawSave } from '../save/store';
 
@@ -216,7 +215,7 @@ export class BurrowScene extends Phaser.Scene {
           },
         },
       ],
-      arenas: ARENA_LIST.map((a) => ({ id: a.id, label: `${a.name}: ${a.gimmick}` })),
+      arenas: BOSS_FIGHTS,
       onArena: (id) => {
         debugBossFight(id);
         this.scene.start('course', { run: true });

@@ -25,10 +25,11 @@ export type Rarity = (typeof RARITIES)[number];
 export const RARITY_INFO: Readonly<Record<Rarity, { readonly name: string; readonly pair: number; readonly price: number }>> = {
   common: { name: 'Common', pair: 1, price: 10 },
   uncommon: { name: 'Uncommon', pair: 1, price: 15 },
-  rare: { name: 'Rare', pair: 2, price: 25 },
-  doubleRare: { name: 'Double rare', pair: 2, price: 35 },
-  specialRare: { name: 'Special rare', pair: 3, price: 50 },
-  legendary: { name: 'Legendary', pair: 3, price: 70 },
+  // Owner, 2026-11-19: dearer high-rarity gear (was 25, 35, 50, 70), to match the extra stars Veterans and Elites give.
+  rare: { name: 'Rare', pair: 2, price: 30 },
+  doubleRare: { name: 'Double rare', pair: 2, price: 45 },
+  specialRare: { name: 'Special rare', pair: 3, price: 70 },
+  legendary: { name: 'Legendary', pair: 3, price: 100 },
 };
 
 /**

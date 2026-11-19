@@ -162,6 +162,16 @@ export interface EnemyState {
   readonly speedMul: number;
   /** Hurt by a blast (shown with a scorch mark). */
   scorched: boolean;
+  /** Milestone 8 bosses: actions taken (for turn-about attacks). */
+  bossTurns: number;
+  /** Gloamhorn: the way it will charge (shown as an arrow), and when (a clock step) for a same-turn charge. */
+  windup: { dx: number; dy: number } | null;
+  chargeAt: number | null;
+  /** Gloamhorn: its shell is open during the player's shot with this number (or earlier). */
+  shellOpenShot: number;
+  /** The Brood Queen: where her next acid globs land, and her next soldier ring. */
+  globMarks: { x: number; y: number }[];
+  ringMark: { x: number; y: number; r: number } | null;
 }
 
 /** An Explosive enemy's blast waiting for its fuse (Milestone 8 sheet section 5.1a). */
@@ -277,7 +287,7 @@ export type PlayEvent =
   | { kind: 'shotOrb' }
   | { kind: 'hit'; enemy: string; damage: number; blocked: boolean }
   | { kind: 'defeat'; enemy: string; stars: number }
-  | { kind: 'damage'; amount: number; cause: 'spikes' | 'sunk' | 'out' | 'enemy' | 'seed' | 'zap' | 'slam' | 'burn' | 'blast' | 'charge' | 'bite' }
+  | { kind: 'damage'; amount: number; cause: 'spikes' | 'sunk' | 'out' | 'enemy' | 'seed' | 'zap' | 'slam' | 'burn' | 'blast' | 'charge' | 'bite' | 'ring' }
   | { kind: 'exitOpen' }
   | { kind: 'recover' }
   | { kind: 'enemyTurn' }
@@ -372,7 +382,14 @@ export type PlayEvent =
   | { kind: 'freeze'; x: number; y: number }
   | { kind: 'melt'; x: number; y: number }
   /** Static: the field zapped an enemy. */
-  | { kind: 'staticZap'; enemy: string };
+  | { kind: 'staticZap'; enemy: string }
+  /** Gloamhorn: wound up (the arrow), charged, and its shell opened. */
+  | { kind: 'windup'; enemy: string; dx: number; dy: number }
+  | { kind: 'charge'; enemy: string }
+  | { kind: 'shellOpen'; enemy: string }
+  /** The Brood Queen: a soldier ring marked round the ball, and landing. */
+  | { kind: 'ringMark'; enemy: string; x: number; y: number; r: number }
+  | { kind: 'ring'; enemy: string; x: number; y: number; r: number; hit: boolean };
 
 /** What a success roll is for: the word shown on the wheel's filled slices. */
 export type RollEffect = 'burn' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
@@ -815,6 +832,12 @@ function newEnemy(play: PlayState, opts: PlayOptions, def: EnemyDef, o: CourseOb
     stars: def.kind === 'enemy' && (x.rank || x.gear) ? enemyStarValue(o) : def.starValue,
     speedMul: x.traits.includes('swift') ? TRAIT_RULES.swiftSpeed : 1,
     scorched: false,
+    bossTurns: 0,
+    windup: null,
+    chargeAt: null,
+    shellOpenShot: -1,
+    globMarks: [],
+    ringMark: null,
   };
   setElement(e, x.element ?? def.element);
   if (x.spot) {
@@ -987,7 +1010,9 @@ function obstaclesOf(play: PlayState): Obstacle[] {
   for (const e of play.enemies) {
     if (!standing(e)) continue;
     const knock = e.def.behaviour.kind === 'patrol' ? e.def.behaviour.knock : 0;
-    out.push({ id: e.uid, x: e.x, y: e.y, base: e.z, height: e.def.height, shape: e.def.shape, bounce: e.def.bounce, vx: e.vx, vy: e.vy, knock });
+    const gim = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss)?.gimmick : null;
+    const bounce = gim?.kind === 'shell' && play.shotNumber + (play.phase === 'aim' ? 1 : 0) > e.shellOpenShot ? gim.closedBounce : e.def.bounce;
+    out.push({ id: e.uid, x: e.x, y: e.y, base: e.z, height: e.def.height, shape: e.def.shape, bounce, vx: e.vx, vy: e.vy, knock });
   }
   for (const f of play.flags) {
     if (f.raised && f.solid) out.push({ id: f.uid, x: f.x, y: f.y, base: f.z, height: f.def.height, shape: f.def.shape, bounce: f.def.bounce });
@@ -1007,7 +1032,7 @@ function bodyWorld(play: PlayState, self: string): ShotWorld {
 /** The ball is still and nothing it set off is still rolling. */
 function settled(play: PlayState): boolean {
   // A defeated enemy never holds up a turn (a Mole defeated while rumbling would otherwise wait forever).
-  return !play.shot && play.seeds.length === 0 && play.blasts.length === 0 && play.enemies.every((e) => e.defeated || (!e.body && e.popAt === null));
+  return !play.shot && play.seeds.length === 0 && play.blasts.length === 0 && play.enemies.every((e) => e.defeated || (!e.body && e.popAt === null && e.chargeAt === null));
 }
 
 export function canShoot(play: PlayState): boolean {
@@ -1066,6 +1091,7 @@ export function tick(play: PlayState, input: TickInput = {}): void {
   popMoles(play);
   stepBlasts(play);
   if (play.status !== 'playing') return;
+  stepCharges(play);
   play.world.obstacles = obstaclesOf(play);
   knockRestingBall(play);
   if (play.shot) stepBall(play, input);
@@ -1411,14 +1437,24 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
   let counted = !play.knocked && play.clock - e.lastHitClock >= steps(RULES.hitCooldown);
   // Milestone 7: a boss takes only so many hits per shot.
   const bossDef = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss) : undefined;
+  // Gloamhorn (Milestone 8): its closed shell blocks every hit.
+  const gim = bossDef?.gimmick ?? null;
+  if (counted && gim?.kind === 'shell' && play.shotNumber > e.shellOpenShot) {
+    counted = false;
+    e.lastHitClock = play.clock;
+    play.log.push({ kind: 'hit', enemy: e.uid, damage: 0, blocked: true });
+  }
   if (counted && bossDef) {
     if (e.hitShot !== play.shotNumber) {
       e.hitShot = play.shotNumber;
       e.hitsInShot = 0;
     }
-    if (e.hitsInShot >= bossDef.hitsPerShot) counted = false;
+    const limit = gim?.kind === 'shell' ? gim.openHits : bossDef.hitsPerShot;
+    if (e.hitsInShot >= limit) counted = false;
     else e.hitsInShot++;
   }
+  // The Brood Queen (Milestone 8): her sides bite a ball that runs into them.
+  if (gim?.kind === 'crown' && s.ball.grounded && !e.defeated) damageBall(play, gim.biteDamage, 'bite', e);
   if (counted) {
     e.lastHitClock = play.clock;
     const { base: plain, element } = hitStats(play, s);
@@ -1826,23 +1862,122 @@ function bossPhaseCheck(play: PlayState, e: EnemyState): void {
   if (phase <= e.phase) return;
   e.phase = phase;
   e.slamMark = null;
+  e.ringMark = null;
+  e.globMarks = [];
+  e.windup = null;
+  e.chargeAt = null;
   play.log.push({ kind: 'phase', enemy: e.uid, phase });
   for (const id of def.shed) dropPickup(play, id, e.x, e.y, `${e.uid}:shed${phase}:${id}`);
 }
 
-/** One boss action on an enemy turn: land the old slam and mark a new one, and summon, as its phase says. */
+/**
+ * One boss action on an enemy turn, as its phase says: land what it marked
+ * last turn, then slam, charge, lob globs or ring the ball, and summon.
+ */
 function bossAction(play: PlayState, e: EnemyState): void {
   const def = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss) : undefined;
   if (!def) return;
   const phase = def.phases[e.phase]!;
+  e.bossTurns++;
   if (e.slamMark) landSlam(play, e, def);
-  if (phase.slamRadius !== null && play.status === 'playing') {
+  if (play.status !== 'playing') return;
+  // The Brood Queen: last turn's globs and ring land first.
+  if (e.globMarks.length) for (const m of e.globMarks.splice(0)) fireGlob(play, e, def, m);
+  if (e.ringMark) landRing(play, e, phase);
+  if (play.status !== 'playing') return;
+  if (phase.slamRadius !== null) {
     const b = ballNow(play);
     e.slamMark = { x: b.x, y: b.y, r: phase.slamRadius };
     play.log.push({ kind: 'slamMark', enemy: e.uid, ...e.slamMark });
   }
+  let summonNow = true;
+  if (phase.charge && def.charge) {
+    if (phase.charge === 'alternate' && e.windup) {
+      charge(play, e, def);
+      summonNow = false;
+    } else {
+      windUp(play, e);
+      if (phase.charge === 'every') {
+        e.chargeAt = play.clock + steps(def.charge.windupSeconds);
+        summonNow = false;
+      }
+    }
+  }
+  const turnAbout = phase.alternate && phase.globs && phase.ring;
+  const doGlobs = !!phase.globs && (!turnAbout || e.bossTurns % 2 === 1);
+  const doRing = !!phase.ring && (!turnAbout || e.bossTurns % 2 === 0);
+  const b = ballNow(play);
+  if (doGlobs && phase.globs) {
+    // At the ball's spot and to either side of it, across the line from the boss.
+    const dx = b.x - e.x;
+    const dy = b.y - e.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const px = -dy / d;
+    const py = dx / d;
+    for (let k = 0; k < phase.globs.count; k++) {
+      const off = (k - (phase.globs.count - 1) / 2) * phase.globs.spread;
+      e.globMarks.push({ x: b.x + px * off, y: b.y + py * off });
+    }
+    for (const m of e.globMarks) play.log.push({ kind: 'lobMark', enemy: e.uid, x: m.x, y: m.y });
+  }
+  if (doRing && phase.ring) {
+    e.ringMark = { x: b.x, y: b.y, r: phase.ring.radius };
+    play.log.push({ kind: 'ringMark', enemy: e.uid, ...e.ringMark });
+  }
   const alive = play.enemies.filter((m) => m.minion && !m.defeated).length;
-  if (alive < phase.maxMinions && phase.pool.length) summon(play, e, def, phase);
+  if (summonNow && alive < phase.maxMinions && phase.pool.length) summon(play, e, def, phase);
+}
+
+/** Gloamhorn turns towards the ball and shows the way it will charge. */
+function windUp(play: PlayState, e: EnemyState): void {
+  const b = ballNow(play);
+  const dx = b.x - e.x;
+  const dy = b.y - e.y;
+  const d = Math.hypot(dx, dy);
+  e.windup = d > 1e-6 ? { dx: dx / d, dy: dy / d } : { dx: e.fx, dy: e.fy };
+  e.fx = e.windup.dx;
+  e.fy = e.windup.dy;
+  play.log.push({ kind: 'windup', enemy: e.uid, dx: e.windup.dx, dy: e.windup.dy });
+}
+
+/** Gloamhorn charges along its wind-up line; when it stops, its shell opens for the player's next shot. */
+function charge(play: PlayState, e: EnemyState, def: BossDef): void {
+  const w = e.windup;
+  e.windup = null;
+  e.chargeAt = null;
+  if (!w || !def.charge) return;
+  launchEnemy(play, e, w.dx * def.charge.speed, w.dy * def.charge.speed);
+  play.log.push({ kind: 'charge', enemy: e.uid });
+}
+
+/** Same-turn charges whose wind-up time is over. */
+function stepCharges(play: PlayState): void {
+  for (const e of play.enemies) {
+    if (e.chargeAt === null || play.clock < e.chargeAt || e.defeated) continue;
+    const def = bossDefOf(play, e);
+    if (def) charge(play, e, def);
+    else e.chargeAt = null;
+  }
+}
+
+/** An acid glob lobbed at a marked spot (the Brood Queen). */
+function fireGlob(play: PlayState, e: EnemyState, def: BossDef, target: { x: number; y: number }): void {
+  if (!def.glob) return;
+  launchSeed(play, e, target, def.glob.loftAngle, def.glob.radius);
+}
+
+/** The soldier ring lands: damage and a status to a ball on the ground inside it (no knock). */
+function landRing(play: PlayState, e: EnemyState, phase: BossPhase): void {
+  const m = e.ringMark!;
+  e.ringMark = null;
+  const ring = phase.ring;
+  const b = ballNow(play);
+  const g = groundAt(play.course, b.x, b.y);
+  const hit = !!g && b.z <= g.h + 0.05 && Math.hypot(b.x - m.x, b.y - m.y) <= m.r;
+  play.log.push({ kind: 'ring', enemy: e.uid, x: m.x, y: m.y, r: m.r, hit });
+  if (!hit || !ring) return;
+  damageBall(play, ring.damage, 'ring', e);
+  if (play.status === 'playing') applyBallStatus(play, ring.status);
 }
 
 /** The slam lands on its ring: a ball on the ground inside it takes damage and is thrown out of the ring. */
@@ -2078,6 +2213,12 @@ export function lobSpeedFor(t: Tuning, d: number, angleDeg: number, h: number): 
 function fireSeed(play: PlayState, e: EnemyState, target: { x: number; y: number }): void {
   const bh = e.def.behaviour;
   if (bh.kind !== 'lob') return;
+  launchSeed(play, e, target, bh.loftAngle, bh.seedRadius);
+}
+
+/** Lob a seed (or a boss's glob) at a spot: it has ball physics and hurts the ball it hits. */
+function launchSeed(play: PlayState, e: EnemyState, target: { x: number; y: number }, loftAngle: number, seedRadius: number): void {
+  const bh = { loftAngle, seedRadius };
   const dx = target.x - e.x;
   const dy = target.y - e.y;
   const d = Math.hypot(dx, dy);
@@ -2094,6 +2235,7 @@ function fireSeed(play: PlayState, e: EnemyState, target: { x: number; y: number
   e.fx = ux;
   e.fy = uy;
   play.log.push({ kind: 'lob', enemy: e.uid });
+  play.world.obstacles = obstaclesOf(play);
 }
 
 /** Lungers, Moles and seeds roll with their own physics. */
@@ -2117,6 +2259,12 @@ function stepBodies(play: PlayState): void {
     if (body.outcome || body.step >= maxSteps) {
       e.body = null;
       e.z = heightAt(play.course, e.x, e.y);
+      // Gloamhorn: after a charge its shell opens for the player's next shot.
+      const g = bossDefOf(play, e)?.gimmick;
+      if (g?.kind === 'shell' && e.def.behaviour.kind === 'boss') {
+        e.shellOpenShot = play.shotNumber + 1;
+        play.log.push({ kind: 'shellOpen', enemy: e.uid });
+      }
       if (body.outcome === 'out' || body.outcome === 'sunk') {
         // Should not happen with walls at drops and water, but never leave an enemy off the course.
         const g = groundAt(play.course, e.x, e.y);
@@ -2187,7 +2335,19 @@ function meetBodies(play: PlayState): void {
     } else if (t.enemy) {
       const e = t.enemy;
       const bh = e.def.behaviour;
-      if (e.def.contact === 'moving') damageBall(play, e.stats.get('attackDamage'), 'enemy', e);
+      const ch = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss)?.charge : undefined;
+      if (ch) {
+        // A charging boss: 1 damage and the ball is knocked aside.
+        damageBall(play, ch.damage, 'charge', e);
+        if (play.status !== 'playing') return;
+        const a = Math.atan2(b.y - o.y, b.x - o.x);
+        b.vx = Math.cos(a) * ch.knockSpeed;
+        b.vy = Math.sin(a) * ch.knockSpeed;
+        b.vz = ch.knockHop;
+        b.grounded = false;
+        b.z += 0.001;
+        s.restSteps = 0;
+      } else if (e.def.contact === 'moving') damageBall(play, e.stats.get('attackDamage'), 'enemy', e);
       if ((bh.kind === 'launch' || bh.kind === 'burrow') && bh.hitWhileMoving && ballWasMoving) hitEnemy(play, e, s);
     }
     if (play.status !== 'playing') return;

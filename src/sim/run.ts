@@ -20,10 +20,10 @@
 import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY_ODDS, type GearCategory, type GearDef, type GearSlots } from '../content/gear.ts';
 import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
-import { BOSSES } from '../content/bosses.ts';
+import { BOSSES, BOSS_IDS, bossHealthIn } from '../content/bosses.ts';
 import type { JourneySize } from '../content/gen.ts';
 import { ENDLESS_MIX_STEP, REGION_MIXES, type EnemyMix } from '../content/enemyMods.ts';
-import { LAST_REGION, REGIONS, botShotsFor, type RegionDef } from '../content/run.ts';
+import { ENDLESS, LAST_REGION, REGIONS, botShotsFor, type RegionDef } from '../content/run.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
 import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
 import { buyUpgrade, permanentModifiers, type Profile } from './profile.ts';
@@ -159,6 +159,8 @@ export interface RunState {
   reward: Offer[] | null;
   /** The arena of the last boss fight (from the profile, then this run's), never used twice in a row. */
   lastArena: string | null;
+  /** Milestone 8: the final boss (region three) was beaten on this run: the run is won, and may carry on into endless mode. */
+  beatFinal: boolean;
 }
 
 /** What a run starts with from the player's permanent progress (Milestone 7). */
@@ -201,6 +203,7 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     pocket: null,
     reward: null,
     lastArena: start.lastArena ?? null,
+    beatFinal: false,
   };
   const stats = runStats(run);
   run.health = stats.get('maxHealth');
@@ -385,7 +388,37 @@ export function choices(run: RunState): MapNode[] {
 
 /** The region's numbers (Milestone 7 sheet section 7.4). Regions past the list use the last entry. */
 export function regionDef(run: RunState): RegionDef {
-  return REGIONS[Math.min(REGIONS.length, Math.max(1, run.region)) - 1]!;
+  return regionDefFor(run.region);
+}
+
+/**
+ * A region's numbers. Regions 1 to 3 are the table; endless regions (owner,
+ * 2026-11-18; sheet section 10a) take region three's and add one step per
+ * region, except course size, which stays at region three's.
+ */
+export function regionDefFor(region: number): RegionDef {
+  if (region <= REGIONS.length) return REGIONS[Math.max(1, region) - 1]!;
+  const last = REGIONS[REGIONS.length - 1]!;
+  const k = region - REGIONS.length;
+  const health = last.toughness.find((t) => t.stat === 'health')?.amount ?? 0;
+  const attack = last.toughness.find((t) => t.stat === 'attackDamage')?.amount ?? 0;
+  const par = last.par.map((p) => {
+    const step = ENDLESS.par.find((e) => e.stat === p.stat)?.amount ?? 0;
+    return { stat: p.stat, amount: p.amount + step * k };
+  });
+  for (const e of ENDLESS.par) if (!par.some((p) => p.stat === e.stat)) par.push({ stat: e.stat, amount: e.amount * k });
+  return {
+    ...last,
+    threat: { start: last.threat.start + ENDLESS.threatStart * k, perNode: last.threat.perNode, cap: last.threat.cap + ENDLESS.threatCap * k },
+    maxEnemies: last.maxEnemies + ENDLESS.maxEnemies * k,
+    // +1 health one region, +1 attack the next, health first.
+    toughness: [
+      { stat: 'health', amount: health + Math.ceil(k / 2) },
+      { stat: 'attackDamage', amount: attack + Math.floor(k / 2) },
+    ],
+    bosses: BOSS_IDS,
+    par,
+  };
 }
 
 /**
@@ -427,7 +460,17 @@ export function enemyModifiersFor(run: RunState): Modifier[] {
 
 /** The boss randomizer (owner, 2026-11-17): a seeded pick from the region's boss pool. */
 export function bossOf(run: RunState): string {
-  return rngFor(run, `boss:${run.region}`).pick(regionDef(run).bosses);
+  const pool = regionDef(run).bosses;
+  // Endless (owner, 2026-11-18): every boss, but never the one beaten in the region before.
+  const last = run.region > LAST_REGION ? run.bossesBeaten[run.bossesBeaten.length - 1] : undefined;
+  const options = pool.filter((b) => b !== last);
+  return rngFor(run, `boss:${run.region}`).pick(options.length ? options : pool);
+}
+
+/** The boss's health in the run's region (per boss; endless keeps growing). */
+export function bossHealthFor(run: RunState): number {
+  const def = BOSSES.get(run.current?.boss ?? bossOf(run));
+  return def ? bossHealthIn(def, run.region) : 12;
 }
 
 /** Owner, 2026-11-17: a seeded pick from the boss's arena set, never the arena of the last boss fight. */
@@ -568,7 +611,8 @@ export function drainDeposit(run: RunState): number {
 /** Blue stars for beating the boss of a region (region 1 first). */
 export function bossBlueStars(region: number): number {
   const list = BLUE_STARS.boss;
-  return list[Math.min(list.length, Math.max(1, region)) - 1]!;
+  if (region > list.length) return list[list.length - 1]! + ENDLESS.bossBlueStars * (region - list.length);
+  return list[Math.max(1, region) - 1]!;
 }
 
 /** Yellow stars for finishing a node of this type. */
@@ -609,17 +653,19 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
     // Owner, 2026-11-17: beating a boss deposits its reward and everything carried at once.
     run.blueStars += bossBlueStars(run.region) + (cur.early ? run.countdown * BLUE_STARS.earlyPerStep : 0);
     deposit(run);
-    run.bossesBeaten.push(bossOf(run));
+    run.bossesBeaten.push(cur.boss ?? bossOf(run));
     // DESIGN.md open question 7: beating a boss heals fully.
     run.health = runStats(run).get('maxHealth');
     run.current = null;
-    if (run.region >= LAST_REGION) {
+    run.reward = bossReward(run);
+    if (run.region === LAST_REGION) {
+      // The final boss: the run is won (Milestone 8). It may carry on into endless mode (keepGoing).
+      run.beatFinal = true;
       run.status = 'won';
       run.endedBy = 'boss';
       return;
     }
     run.status = 'reward';
-    run.reward = bossReward(run);
     return;
   }
   arrive(run, true);
@@ -637,6 +683,23 @@ function bossReward(run: RunState): Offer[] {
     if (id) out.push({ kind: 'gear', id, sold: false });
   }
   return out;
+}
+
+/**
+ * After the final boss (owner, 2026-11-18): carry on into endless mode. The
+ * boss reward (a gear pick) is offered as after any boss, then region four
+ * starts. Returns false if the run cannot carry on.
+ */
+export function keepGoing(run: RunState): boolean {
+  if (run.status !== 'won' || !run.beatFinal || run.region !== LAST_REGION) return false;
+  run.status = 'reward';
+  run.endedBy = null;
+  return true;
+}
+
+/** Endless mode: past the final boss's region. */
+export function isEndless(run: RunState): boolean {
+  return run.region > LAST_REGION;
 }
 
 /** Take reward `i` (or none, with null), then the next region starts on `nextMap` (src/gen/runMap.ts, region + 1). */
@@ -669,7 +732,8 @@ export function startRegion(run: RunState, region: number, map: RunMap): void {
 // The shop (sheet section 7)
 
 function upgradePrice(run: RunState, id: string): number {
-  return UPGRADE_PRICE.base + UPGRADE_PRICE.step * (run.bought[id] ?? 0);
+  // Owner, 2026-11-19: a little dearer in each region.
+  return UPGRADE_PRICE.base + UPGRADE_PRICE.perRegion * (Math.max(1, run.region) - 1) + UPGRADE_PRICE.step * (run.bought[id] ?? 0);
 }
 
 /** An offer's price in yellow stars, after the shop prices stat. */

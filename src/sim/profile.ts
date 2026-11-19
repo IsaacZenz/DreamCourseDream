@@ -23,11 +23,12 @@ export interface Profile {
   readonly bossesBeaten: string[];
   /** The arena of the last boss fight, so the next one differs (owner, 2026-11-17). */
   lastArena: string | null;
-  readonly totals: { runs: number; bossWins: number; bestRegion: number };
+  /** Milestone 8: `wins`, runs won by beating the final boss. */
+  readonly totals: { runs: number; bossWins: number; bestRegion: number; wins: number };
 }
 
 export function newProfile(): Profile {
-  return { stash: 0, levels: {}, abilities: [], startAbility: null, character: DEFAULT_CHARACTER, bossesBeaten: [], lastArena: null, totals: { runs: 0, bossWins: 0, bestRegion: 1 } };
+  return { stash: 0, levels: {}, abilities: [], startAbility: null, character: DEFAULT_CHARACTER, bossesBeaten: [], lastArena: null, totals: { runs: 0, bossWins: 0, bestRegion: 1, wins: 0 } };
 }
 
 /** Levels as permanent modifiers (FEATURES.md section 1). */

@@ -62,7 +62,7 @@ describe('regions', () => {
     expect(choices(run).length).toBeGreaterThan(0);
   });
 
-  it('region two: bigger start, more threat (18 + 3 per node, cap 36), +1 health on every enemy; its boss wins the run', () => {
+  it('region two: bigger start, more threat (18 + 3 per node, cap 36), +1 health on every enemy; then region three', () => {
     const run = createRun('R3', generateRunMap('R3'));
     beatBoss(run);
     takeBossReward(run, null, generateRunMap('R3', 2));
@@ -73,7 +73,8 @@ describe('regions', () => {
     expect(sizeFor(run, 'course').areaSize).toEqual([9, 15]);
     expect(enemyModifiersFor(run)).toEqual([{ stat: 'health', op: 'add', amount: 1, source: { kind: 'region', id: 'region2' }, duration: { kind: 'forever' } }]);
     beatBoss(run);
-    expect(run.status).toBe('won');
+    // Milestone 8: region two's boss no longer ends the run; region three follows.
+    expect(run.status).toBe('reward');
     expect(run.banked).toBe(5 + 8);
   });
 
@@ -99,8 +100,8 @@ describe('regions', () => {
     expect(ok).toBeGreaterThan(0);
   });
 
-  it('every region names a boss pool with the Warden in it (owner: placeholder until Milestone 8)', () => {
-    for (const r of REGIONS) expect(r.bosses).toContain('stagwarden');
+  it('owner, 2026-11-19 (round 1 question 6, B): the Stagwarden, then Gloamhorn, then the Brood Queen', () => {
+    expect(REGIONS.map((r) => r.bosses)).toEqual([['stagwarden'], ['gloamhorn'], ['brood-queen']]);
   });
 });
 

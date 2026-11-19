@@ -279,7 +279,8 @@ describe('gear rarity', () => {
     expect(GEAR_LIST.length).toBe(66);
     for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === 'weapon' && g.rarity === r).length).toBe(3);
     for (const c of ['armour', 'bauble']) for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === c && g.rarity === r).length).toBe(4);
-    expect(RARITIES.map((r) => RARITY_INFO[r].price)).toEqual([10, 15, 25, 35, 50, 70]);
+    // Owner, 2026-11-19 (Milestone 8): dearer high-rarity gear.
+    expect(RARITIES.map((r) => RARITY_INFO[r].price)).toEqual([10, 15, 30, 45, 70, 100]);
     expect(new Set(GEAR_LIST.map((g) => g.id)).size).toBe(66);
   });
 
@@ -383,7 +384,7 @@ describe('shop and cache', () => {
     const run = shopRun();
     setGear(run, 'four-leaf-clover');
     expect(rerollPrice(run)).toBe(0);
-    expect(priceOf(run, { kind: 'gear', id: 'iron-shell', sold: false })).toBe(19);
+    expect(priceOf(run, { kind: 'gear', id: 'iron-shell', sold: false })).toBe(23);
   });
 
   it('cache: take one for free, which finishes the node and counts', () => {

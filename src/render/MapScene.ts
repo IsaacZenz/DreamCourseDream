@@ -1,16 +1,15 @@
 import Phaser from 'phaser';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
-import { UPGRADE_LIST, UPGRADES, type NodeType } from '../content/run';
+import { LAST_REGION, UPGRADE_LIST, UPGRADES, type NodeType } from '../content/run';
 import { BOSSES } from '../content/bosses';
 import { ACORNS } from '../content/consumables';
 import { BLUE_STARS } from '../content/progress';
 import { generateRunMap } from '../gen/runMap';
 import { prefetch } from './genQueue';
-import { courseJobFor, type CourseJob, LAST_TOWN, addUpgrade, bossBlueStars, bossOf, regionDef, sizeFor, startRegion, takeBossReward, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
+import { courseJobFor, type CourseJob, LAST_TOWN, addUpgrade, bossBlueStars, bossOf, bossHealthFor, keepGoing, sizeFor, startRegion, takeBossReward, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
-import { debugBossFight, newRunSeed, persist, session, startRun } from './runSession';
-import { ARENA_LIST } from '../content/arenas';
+import { BOSS_FIGHTS, debugBossFight, newRunSeed, persist, session, startRun } from './runSession';
 import { getPanel, preloadAssets, shared } from './shared';
 
 const ROW_H = 26;
@@ -43,7 +42,7 @@ function nodeInfo(run: RunState, type: NodeType): string[] {
     case 'boss': {
       const boss = BOSSES.get(bossOf(run));
       return [
-        `${boss?.name.toUpperCase() ?? 'BOSS'}: ${regionDef(run).bossHealth} HEALTH`,
+        `${boss?.name.toUpperCase() ?? 'BOSS'}: ${bossHealthFor(run)} HEALTH`,
         `BEAT IT: +${bossBlueStars(run.region)} BLUE STARS`,
         ...(run.countdown > 0 ? [`EARLY: +${run.countdown * BLUE_STARS.earlyPerStep} MORE`] : []),
         'IN ONE OF FIVE ARENAS',
@@ -218,7 +217,7 @@ export class MapScene extends Phaser.Scene {
       c.add(pixelText(this, m, 4, y, text, { color }));
       y += 7;
     };
-    line(`RUN #${run.seed}  REGION ${run.region}`, UI_DIM);
+    line(`RUN #${run.seed}  REGION ${run.region}${run.region > LAST_REGION ? ' (ENDLESS)' : ''}`, UI_DIM);
     y += 2;
     line(`HEALTH ${run.health}/${stats.get('maxHealth')}`, run.health <= 2 ? BAD : UI_TEXT);
     line(`STARS ${run.wallet}`, STAR);
@@ -294,9 +293,17 @@ export class MapScene extends Phaser.Scene {
     kb.on('keydown-DOWN', look(1));
     const ok = () => {
       if (run.status === 'reward') return this.takeReward(run, this.rewardSel);
+      // Milestone 8 (owner, 2026-11-18): after the final boss, Enter carries on into endless mode.
+      if (run.status === 'won' && keepGoing(run)) {
+        persist();
+        return this.scene.restart();
+      }
       if (run.status === 'won' || run.status === 'lost') return this.scene.start('burrow');
       this.go(run);
     };
+    kb.on('keydown-B', () => {
+      if (run.status === 'won' || run.status === 'lost') this.scene.start('burrow');
+    });
     kb.on('keydown-ENTER', ok);
     kb.on('keydown-SPACE', ok);
     kb.on('keydown-ESC', () => run.status === 'reward' && this.takeReward(run, null));
@@ -361,7 +368,7 @@ export class MapScene extends Phaser.Scene {
     const h = 120;
     const c = this.add.container(Math.round((VIEW_WIDTH - w) / 2), Math.round((VIEW_HEIGHT - h) / 2)).setScrollFactor(0).setDepth(200);
     c.add(this.add.rectangle(0, 0, w, h, UI_BG, 0.97).setOrigin(0, 0).setStrokeStyle(1, GOOD));
-    c.add(pixelText(this, m, 8, 6, `THE WARDEN IS BEATEN! PICK ONE REWARD, THEN REGION ${run.region + 1}`, { color: GOOD }));
+    c.add(pixelText(this, m, 8, 6, `${(BOSSES.get(run.bossesBeaten[run.bossesBeaten.length - 1] ?? '')?.name ?? 'THE BOSS').toUpperCase()} IS BEATEN! PICK ONE REWARD, THEN REGION ${run.region + 1}${run.region + 1 > LAST_REGION ? ' (ENDLESS)' : ''}`, { color: GOOD }));
     offers.forEach((o, i) => {
       const g = GEAR.get(o.id)!;
       const x = 8 + i * 96;
@@ -410,7 +417,7 @@ export class MapScene extends Phaser.Scene {
                 },
               },
             ],
-            arenas: ARENA_LIST.map((a) => ({ id: a.id, label: `${a.name}: ${a.gimmick}` })),
+            arenas: BOSS_FIGHTS,
             onArena: (id) => {
               debugBossFight(id, run);
               this.scene.start('course', { run: true });
@@ -423,7 +430,8 @@ export class MapScene extends Phaser.Scene {
   private drawSummary(run: RunState): void {
     const m = shared.manifest;
     const won = run.status === 'won';
-    const reason = won ? `YOU BEAT THE BOSS OF REGION ${run.region}!` : run.endedBy === 'shots' ? 'OUT OF SHOTS WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.';
+    const reason = won ? `YOU BEAT ${(BOSSES.get(run.bossesBeaten[run.bossesBeaten.length - 1] ?? '')?.name ?? 'THE BOSS').toUpperCase()}, THE FINAL BOSS!` : run.endedBy === 'shots' ? 'OUT OF SHOTS WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.';
+    const endless = won && run.beatFinal && run.region === LAST_REGION;
     const gear = GEAR_CATEGORIES.map((c) => run.gear[c]).filter(Boolean).map((id) => GEAR.get(id!)!.name);
     const stored = GEAR_CATEGORIES.map((c) => run.burrow[c]).filter(Boolean).map((id) => GEAR.get(id!)!.name);
     const lines = [
@@ -436,7 +444,7 @@ export class MapScene extends Phaser.Scene {
       `GEAR HELD: ${gear.length ? gear.join(', ') : 'NONE'}${won ? '' : ' (LOST)'}`,
       `SAFE IN YOUR BURROW: ${stored.length ? stored.join(', ') : 'NOTHING'}`,
       '',
-      'ENTER: TO THE BURROW   N: NEW RUN   S: SAME SEED AGAIN',
+      endless ? 'ENTER: KEEP GOING (ENDLESS MODE)   B: BACK TO THE BURROW' : 'ENTER: TO THE BURROW   N: NEW RUN   S: SAME SEED AGAIN',
     ];
     const text = pixelText(this, m, 0, 0, lines.join('\n'), { color: won ? GOOD : BAD });
     const w = text.width + 16;

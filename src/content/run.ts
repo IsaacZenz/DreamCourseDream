@@ -81,10 +81,13 @@ export interface RegionDef {
   readonly maxEnemies: number;
   /** Added to every enemy in the region (source "region"). Bosses take `bossHealth` instead of the health part. */
   readonly toughness: readonly { readonly stat: StatId; readonly amount: number }[];
-  /** The boss randomizer's pool (owner, 2026-11-17). Only the Warden until Milestone 8. */
+  /**
+   * The boss randomizer's pool (owner, 2026-11-17). Owner, 2026-11-19 (round 1
+   * question 6, option B): one boss per region for now: the Stagwarden,
+   * Gloamhorn, the Brood Queen. Endless regions use every boss. Boss health is
+   * per boss (bosses.ts).
+   */
   readonly bosses: readonly string[];
-  /** The boss's health in this region. */
-  readonly bossHealth: number;
   /** Which column of the gear rarity odds (gear.ts RARITY_ODDS) the region uses; region 1 also has a late column (RUN.lateAfter). */
   readonly oddsColumn: number;
   /**
@@ -96,9 +99,9 @@ export interface RegionDef {
 }
 
 export const REGIONS: readonly RegionDef[] = [
-  { areas: { start: 2, every: 2, max: 5 }, areaSize: [8, 14], threat: { start: 8, perNode: 2, cap: 30 }, maxEnemies: 10, toughness: [], bosses: ['stagwarden'], bossHealth: 12, oddsColumn: 0, par: [] },
+  { areas: { start: 2, every: 2, max: 5 }, areaSize: [8, 14], threat: { start: 8, perNode: 2, cap: 30 }, maxEnemies: 10, toughness: [], bosses: ['stagwarden'], oddsColumn: 0, par: [] },
   // Owner, 2026-11-18 (option A): 3 to 6 areas and threat capped at 36 (was 4 to 7 and 45), so courses can be made in time.
-  { areas: { start: 3, every: 2, max: 6 }, areaSize: [9, 15], threat: { start: 18, perNode: 3, cap: 36 }, maxEnemies: 14, toughness: [{ stat: 'health', amount: 1 }], bosses: ['stagwarden'], bossHealth: 18, oddsColumn: 2,
+  { areas: { start: 3, every: 2, max: 6 }, areaSize: [9, 15], threat: { start: 18, perNode: 3, cap: 36 }, maxEnemies: 14, toughness: [{ stat: 'health', amount: 1 }], bosses: ['gloamhorn'], oddsColumn: 2,
     par: [
       { stat: 'maxShots', amount: 1 },
       { stat: 'hitDamage', amount: 1 },
@@ -114,8 +117,7 @@ export const REGIONS: readonly RegionDef[] = [
       { stat: 'health', amount: 1 },
       { stat: 'attackDamage', amount: 1 },
     ],
-    bosses: ['stagwarden'],
-    bossHealth: 24,
+    bosses: ['brood-queen'],
     oddsColumn: 3,
     par: [
       { stat: 'maxShots', amount: 2 },
@@ -126,8 +128,30 @@ export const REGIONS: readonly RegionDef[] = [
   },
 ];
 
-/** Milestone 7: beating this region's boss wins the run (region 3 comes in Milestone 8). */
-export const LAST_REGION = 2;
+/**
+ * Beating this region's boss (the final boss) wins the run (Milestone 8).
+ * Owner, 2026-11-18: the run may then carry on into endless mode.
+ */
+export const LAST_REGION = 3;
+
+/**
+ * Endless mode (owner, 2026-11-18; sheet section 10a): each region after the
+ * third takes region three's numbers plus one step per region. Course size
+ * stays at region three's (owner: course size caps at region 3; everything
+ * else keeps growing).
+ */
+export const ENDLESS = {
+  threatStart: 10,
+  threatCap: 12,
+  maxEnemies: 2,
+  /** Toughness: +1 health one region, +1 attack damage the next, in turn (health first). */
+  par: [
+    { stat: 'maxShots', amount: 1 },
+    { stat: 'maxHealth', amount: 1 },
+    { stat: 'shotPower', amount: 0.1 },
+  ],
+  bossBlueStars: 2,
+} as const;
 
 /** The bot's shot limit for a journey of n areas (the Milestone 5b table: 2 areas 20, 3 areas 26, ... ). */
 export const botShotsFor = (areas: number): number => 8 + 6 * areas;
@@ -145,8 +169,12 @@ export interface UpgradeDef {
   readonly desc: string;
 }
 
-/** The price of the first one, and how much it rises each time the same upgrade is bought in a run. */
-export const UPGRADE_PRICE = { base: 12, step: 6 } as const;
+/**
+ * The price of the first one, and how much it rises each time the same upgrade
+ * is bought in a run. Owner, 2026-11-19: a little dearer in each region:
+ * `perRegion` more for each region after the first (12, 16, 20, then on in endless).
+ */
+export const UPGRADE_PRICE = { base: 12, step: 6, perRegion: 4 } as const;
 
 export const UPGRADE_LIST: readonly UpgradeDef[] = [
   { id: 'tough-shell', name: 'Tough Shell', icon: 'upgrade-health', stat: 'maxHealth', op: 'add', amount: 1, heal: 1, desc: 'Max health +1 and heal 1' },

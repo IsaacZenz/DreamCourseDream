@@ -108,6 +108,7 @@ function readProfile(v: unknown): Profile | null {
   if (isNum(t.runs)) p.totals.runs = t.runs;
   if (isNum(t.bossWins)) p.totals.bossWins = t.bossWins;
   if (isNum(t.bestRegion)) p.totals.bestRegion = t.bestRegion;
+  if (isNum(t.wins)) p.totals.wins = t.wins;
   return p;
 }
 

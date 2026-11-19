@@ -36,8 +36,8 @@ import type { TuningPanel } from '../ui/tuningPanel';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { UPGRADE_LIST } from '../content/run';
 import { placeGear } from '../gen/placeGear';
-import { upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, regionDef, rewardFor } from '../sim/run';
-import { ARENAS } from '../content/arenas';
+import { upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, rewardFor, bossHealthFor } from '../sim/run';
+import { ARENAS, arenaData } from '../content/arenas';
 import { activeRun, newRunSeed, persist, session, startRun, type RunCourse } from './runSession';
 import { ACORNS } from '../content/consumables';
 import { jobKey, madeCourse, prefetch, want, type Made } from './genQueue';
@@ -270,7 +270,7 @@ export class CourseScene extends Phaser.Scene {
     const arena = this.runMode ? session.run!.current!.arena : null;
     if (arena) {
       // Milestone 7: a boss fight is in a hand-built arena, not generated.
-      data = ARENAS.get(arena)!.data;
+      data = arenaData(arena, session.run!.current!.boss ?? 'stagwarden');
     } else if (this.runMode) {
       // Made in the background already? Then no loading screen at all.
       const ahead = this.runCourse() ? null : madeCourse(this.runKey());
@@ -316,7 +316,7 @@ export class CourseScene extends Phaser.Scene {
     panel = getPanel();
 
     const run = this.runMode ? session.run : null;
-    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: regionDef(run).bossHealth }) });
+    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) }) });
     this.runReported = false;
     this.setRunPanel();
     // Owner, 2026-11-18: while this course is played, make the next ones in the background.
@@ -1251,7 +1251,7 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage('+1 SHOT', GOOD);
           break;
         case 'damage': {
-          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED', burn: 'BURNING', blast: 'BLAST', charge: 'CHARGED', bite: 'BITTEN' }[e.cause];
+          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED', burn: 'BURNING', blast: 'BLAST', charge: 'CHARGED', bite: 'BITTEN', ring: 'SOLDIER ANTS' }[e.cause];
           this.queueMessage(`${what}! -${e.amount} HEALTH`, BAD);
           break;
         }
