@@ -286,6 +286,17 @@ const PLAIN = {
   squadThemes: [],
 } as const;
 
+/**
+ * Traits and gear each enemy may roll (Milestone 8 sheet section 5.1). Grubs
+ * (Snoozegrub and the ability grubs) take only the four simple traits; a bug
+ * that never attacks carries only armour or a bauble.
+ */
+const GRUB_TRAITS = ['shielded', 'armoured', 'explosive', 'splitting'] as const;
+const ALL_TRAITS = ['shielded', 'armoured', 'swift', 'explosive', 'regenerating', 'splitting'] as const;
+const traitsWithout = (...no: string[]) => ALL_TRAITS.filter((t) => !no.includes(t));
+const PASSIVE_GEAR = ['armour', 'bauble'] as const;
+const ALL_GEAR = ['weapon', 'armour', 'bauble'] as const;
+
 const ROUND_ENEMY = { shape: { kind: 'round', r: 0.3 }, height: 0.6, bounce: 0.6 } as const;
 const NO_TRIGGERS = { hit: 'none', rest: 'none', passBy: 'none' } as const;
 
@@ -302,6 +313,8 @@ function carrier(id: string, name: string, ability: string): EnemyDef {
     starValue: 1,
     ...PLAIN,
     ...ROUND_ENEMY,
+    allowedTraits: GRUB_TRAITS,
+    allowedGear: PASSIVE_GEAR,
     triggers: NO_TRIGGERS,
     behaviour: { kind: 'none' },
     contact: 'never',
@@ -390,10 +403,32 @@ const defs: readonly ObjectDef[] = [
     ...PLAIN,
     ...ROUND_ENEMY,
     triggers: NO_TRIGGERS,
+    allowedTraits: GRUB_TRAITS,
+    allowedGear: PASSIVE_GEAR,
     behaviour: { kind: 'none' },
     contact: 'never',
     grantsAbility: null,
     cost: 1,
+  },
+  // Milestone 8: the Grublet, a tiny larva let out by a Splitting bug (sheet section 7.3). Not placed by the generator.
+  {
+    kind: 'enemy',
+    id: 'grublet',
+    name: 'Grublet',
+    sprite: 'grublet',
+    family: 'sentinel',
+    tier: 1,
+    stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    shape: { kind: 'round', r: 0.2 },
+    height: 0.4,
+    bounce: 0.6,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'none' },
+    contact: 'never',
+    grantsAbility: null,
+    cost: 0,
   },
   {
     kind: 'enemy',
@@ -407,6 +442,8 @@ const defs: readonly ObjectDef[] = [
     ...PLAIN,
     ...ROUND_ENEMY,
     triggers: NO_TRIGGERS,
+    allowedTraits: ALL_TRAITS,
+    allowedGear: ALL_GEAR,
     behaviour: { kind: 'patrol', speed: 1.5, knock: 5 },
     contact: 'survives',
     grantsAbility: null,
@@ -424,6 +461,8 @@ const defs: readonly ObjectDef[] = [
     ...PLAIN,
     ...ROUND_ENEMY,
     triggers: { hit: 'activated', rest: 'activated', passBy: 'activated' },
+    allowedTraits: traitsWithout('swift'),
+    allowedGear: ALL_GEAR,
     behaviour: { kind: 'lob', range: 8, loftAngle: 50, seedRadius: 0.12 },
     contact: 'never',
     grantsAbility: null,
@@ -441,6 +480,8 @@ const defs: readonly ObjectDef[] = [
     ...PLAIN,
     ...ROUND_ENEMY,
     triggers: { hit: 'activated', rest: 'activated', passBy: 'immediate' },
+    allowedTraits: ALL_TRAITS,
+    allowedGear: ALL_GEAR,
     behaviour: { kind: 'launch', maxSpeed: 10, hitWhileMoving: true },
     contact: 'moving',
     grantsAbility: null,
@@ -457,6 +498,9 @@ const defs: readonly ObjectDef[] = [
     starValue: 1,
     ...PLAIN,
     passByGroundOnly: true,
+    // 1 health, so no Regenerating; it pops out of the ground, so no Explosive or Splitting.
+    allowedTraits: ['shielded', 'armoured', 'swift'],
+    allowedGear: ALL_GEAR,
     ...ROUND_ENEMY,
     triggers: { hit: 'none', rest: 'none', passBy: 'immediate' },
     behaviour: { kind: 'burrow', launchSpeed: 6, launchUp: 10, delay: 0.3, grace: 0.15, upShots: 1, hitWhileMoving: false },

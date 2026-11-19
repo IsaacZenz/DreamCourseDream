@@ -67,7 +67,8 @@ import {
   type ShotState,
   type ShotWorld,
 } from './ball.ts';
-import { railTileList, railTiles, tileAt, type Course, type CourseObject, type GridPoint } from './course.ts';
+import { enemyStarValue, railTileList, railTiles, tileAt, type Course, type CourseObject, type GridPoint } from './course.ts';
+import { ENEMY_GEAR, NO_EXTRAS, SPOTS, TRAIT_RULES, rankDef, type TraitId } from '../content/enemyMods.ts';
 import { computeHit, wedgeOf } from './damage.ts';
 import { Rng, type Seed } from './rng.ts';
 import { StatSheet, type Modifier } from './stats.ts';
@@ -151,6 +152,26 @@ export interface EnemyState {
   weakSpots: Side[];
   guardedSides: Side[];
   shield: boolean;
+  /** Milestone 8: rank (0 standard, 1 Veteran, 2 Elite), traits and carried gear, from its course entry. */
+  readonly rank: number;
+  readonly traits: readonly TraitId[];
+  gear: string | null;
+  /** Yellow stars it is worth when defeated. */
+  readonly stars: number;
+  /** Swift: patrol speed multiplier. */
+  readonly speedMul: number;
+  /** Hurt by a blast (shown with a scorch mark). */
+  scorched: boolean;
+}
+
+/** An Explosive enemy's blast waiting for its fuse (Milestone 8 sheet section 5.1a). */
+export interface BlastState {
+  readonly uid: string;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  /** Clock step it goes off. */
+  readonly at: number;
 }
 
 export interface PickupState {
@@ -331,7 +352,17 @@ export type PlayEvent =
   /** A boss entered a new phase and shed a plate. */
   | { kind: 'phase'; enemy: string; phase: number }
   /** A minion vanished in a puff (its boss was defeated). */
-  | { kind: 'vanish'; enemy: string };
+  | { kind: 'vanish'; enemy: string }
+  // Milestone 8.
+  /** An Explosive enemy was defeated: its fuse is lit; the blast will reach `r`. */
+  | { kind: 'fuse'; enemy: string; x: number; y: number; r: number }
+  | { kind: 'blast'; uid: string; x: number; y: number; r: number }
+  /** A Splitting enemy let out a small one. */
+  | { kind: 'split'; enemy: string; into: string }
+  /** A Regenerating enemy healed 1. */
+  | { kind: 'regen'; enemy: string }
+  /** An enemy dropped the gear it carried. */
+  | { kind: 'gearDrop'; enemy: string; item: string };
 
 /** What a success roll is for: the word shown on the wheel's filled slices. */
 export type RollEffect = 'burn' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
@@ -370,6 +401,8 @@ export interface PlayState {
   readonly clouds: CloudState[];
   readonly flags: FlagState[];
   seeds: SeedState[];
+  /** Milestone 8: Explosive blasts waiting for their fuse. */
+  blasts: BlastState[];
   status: PlayStatus;
   /** Why the course was lost: health ran out, or shots ran out with no naps left (owner, 2026-11-15). */
   lostBy: 'health' | 'shots' | null;
@@ -587,6 +620,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     clouds: [],
     flags: [],
     seeds: [],
+    blasts: [],
     status: 'playing',
     lostBy: null,
     napsUsed: 0,
@@ -702,6 +736,17 @@ function newEnemy(play: PlayState, opts: PlayOptions, def: EnemyDef, o: CourseOb
   const boss = def.behaviour.kind === 'boss';
   const es = new StatSheet(def.stats);
   for (const m of opts.enemyModifiers ?? []) if (!(boss && m.stat === 'health')) es.add(m);
+  // Milestone 8: rank, traits and carried gear, as modifiers (FEATURES.md section 1).
+  const x = o.extras;
+  const rank = rankDef(x.rank);
+  const forever = { kind: 'forever' } as const;
+  if (rank) es.add({ stat: 'health', op: 'add', amount: rank.extraHealth, source: { kind: 'rank', id: rank.name }, duration: forever });
+  if (x.traits.includes('armoured')) es.add({ stat: 'health', op: 'add', amount: TRAIT_RULES.armouredHealth, source: { kind: 'trait', id: 'armoured' }, duration: forever });
+  const carried = x.gear ? GEAR.get(x.gear) : undefined;
+  if (carried) {
+    const bonus = ENEMY_GEAR.bonus[carried.category];
+    for (const stat of ['attackDamage', 'health'] as const) if (bonus[stat]) es.add({ stat, op: 'add', amount: bonus[stat], source: { kind: 'gear', id: carried.id }, duration: forever });
+  }
   if (boss && opts.bossHealth !== undefined) es.add({ stat: 'health', op: 'add', amount: opts.bossHealth - es.get('health'), source: { kind: 'region', id: 'boss' }, duration: { kind: 'forever' } });
   const [fx, fy] = facingVec(o.facing);
   const path = def.behaviour.kind === 'patrol' ? makePath(o.path) : null;
@@ -747,9 +792,20 @@ function newEnemy(play: PlayState, opts: PlayOptions, def: EnemyDef, o: CourseOb
     resists: [...def.resists],
     weakSpots: [...def.weakSpots],
     guardedSides: [...def.guardedSides],
-    shield: def.shield,
+    shield: def.shield || x.traits.includes('shielded'),
+    rank: x.rank,
+    traits: x.traits,
+    gear: x.gear,
+    stars: def.kind === 'enemy' && (x.rank || x.gear) ? enemyStarValue(o) : def.starValue,
+    speedMul: x.traits.includes('swift') ? TRAIT_RULES.swiftSpeed : 1,
+    scorched: false,
   };
-  setElement(e, def.element);
+  setElement(e, x.element ?? def.element);
+  if (x.spot) {
+    const sp = SPOTS[x.spot];
+    if (sp.weak && !e.weakSpots.includes(sp.weak)) e.weakSpots.push(sp.weak);
+    if (sp.guarded && !e.guardedSides.includes(sp.guarded)) e.guardedSides.push(sp.guarded);
+  }
   if (path) placeOnPath(play, e);
   return e;
 }
@@ -930,7 +986,7 @@ function bodyWorld(play: PlayState, self: string): ShotWorld {
 /** The ball is still and nothing it set off is still rolling. */
 function settled(play: PlayState): boolean {
   // A defeated enemy never holds up a turn (a Mole defeated while rumbling would otherwise wait forever).
-  return !play.shot && play.seeds.length === 0 && play.enemies.every((e) => e.defeated || (!e.body && e.popAt === null));
+  return !play.shot && play.seeds.length === 0 && play.blasts.length === 0 && play.enemies.every((e) => e.defeated || (!e.body && e.popAt === null));
 }
 
 export function canShoot(play: PlayState): boolean {
@@ -987,6 +1043,8 @@ export function tick(play: PlayState, input: TickInput = {}): void {
   play.clock++;
   moveThings(play);
   popMoles(play);
+  stepBlasts(play);
+  if (play.status !== 'playing') return;
   play.world.obstacles = obstaclesOf(play);
   knockRestingBall(play);
   if (play.shot) stepBall(play, input);
@@ -1059,7 +1117,7 @@ function moveThings(play: PlayState): void {
     if (e.defeated || !e.path || e.def.behaviour.kind !== 'patrol') continue;
     const px = e.x;
     const py = e.y;
-    if (!hasStatus(e.statuses, 'stunned') && !cannotMove(e)) e.pathDist += e.def.behaviour.speed * DT;
+    if (!hasStatus(e.statuses, 'stunned') && !cannotMove(e)) e.pathDist += e.def.behaviour.speed * e.speedMul * DT;
     placeOnPath(play, e);
     e.vx = (e.x - px) / DT;
     e.vy = (e.y - py) / DT;
@@ -1554,8 +1612,9 @@ function defeat(play: PlayState, e: EnemyState): void {
   e.activated = false;
   e.lobTarget = null;
   e.slamMark = null;
-  play.log.push({ kind: 'defeat', enemy: e.uid, stars: e.def.starValue });
-  addStars(play, e.def.starValue, e.x, e.y);
+  play.log.push({ kind: 'defeat', enemy: e.uid, stars: e.stars });
+  addStars(play, e.stars, e.x, e.y);
+  traitsOnDefeat(play, e);
   // Golden Tooth: extra stars in the wallet only.
   for (const fx of gearFx(play, 'starPerDefeat')) play.wallet += fx.stars;
   // Sunfire Crown: a burning enemy bursts when defeated.
@@ -1586,6 +1645,105 @@ function defeat(play: PlayState, e: EnemyState): void {
   });
   if (e.def.grantsAbility) giveAbility(play, e.def.grantsAbility, false);
   play.world.obstacles = obstaclesOf(play);
+}
+
+// ---------------------------------------------------------------------------
+// Traits, rank and carried gear on defeat (Milestone 8 sheet sections 4 and 5)
+
+function traitsOnDefeat(play: PlayState, e: EnemyState): void {
+  if (e.traits.includes('explosive')) {
+    play.blasts.push({ uid: `blast:${e.uid}`, x: e.x, y: e.y, z: e.z, at: play.clock + steps(TRAIT_RULES.blast.fuse) });
+    play.log.push({ kind: 'fuse', enemy: e.uid, x: e.x, y: e.y, r: TRAIT_RULES.blast.radius });
+  }
+  if (e.traits.includes('splitting')) split(play, e);
+  const luck = play.stats.get('dropLuck');
+  if (e.gear && play.rng.chance(ENEMY_GEAR.dropChance * luck)) {
+    play.gearItems.push({ uid: `gear-enemy:${e.uid}`, item: e.gear, x: e.x, y: e.y, z: heightAt(play.course, e.x, e.y), taken: false, lockUntil: 0 });
+    play.log.push({ kind: 'gearDrop', enemy: e.uid, item: e.gear });
+  }
+  const rank = rankDef(e.rank);
+  if (rank && rank.blueStarChance > 0 && play.rng.chance(rank.blueStarChance * luck)) dropPickup(play, 'blue-star', e.x, e.y, `${e.uid}:blue`);
+}
+
+/** Splitting: two small bugs pop out to either side (they do not split again). */
+function split(play: PlayState, e: EnemyState): void {
+  const def = OBJECTS.get(TRAIT_RULES.splitInto);
+  if (def?.kind !== 'enemy') return;
+  for (let k = 0; k < TRAIT_RULES.splitCount; k++) {
+    const side = k % 2 === 0 ? -1 : 1;
+    // To either side of the way it faced.
+    let cx = e.x - e.fy * side * TRAIT_RULES.splitOffset;
+    let cy = e.y + e.fx * side * TRAIT_RULES.splitOffset;
+    const t = tileAt(play.course, Math.floor(cx), Math.floor(cy));
+    if (!t || !SURFACES.get(surfaceOf({ frozen: play.frozen }, t))?.canHoldBall) {
+      cx = e.x + side * 0.35;
+      cy = e.y;
+    }
+    const o: CourseObject = { id: def.id, x: Math.floor(cx), y: Math.floor(cy), path: [], facing: e.place.facing, phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS };
+    const uid = `split:${e.uid}:${k}`;
+    play.enemies.push(newEnemy(play, { seed: play.seed, enemyModifiers: play.enemyModifiers }, def, o, uid, cx, cy, heightAt(play.course, cx, cy)));
+    play.log.push({ kind: 'split', enemy: e.uid, into: uid });
+  }
+}
+
+/**
+ * An Explosive blast goes off (owner, 2026-11-19, option A): it hurts the ball
+ * and pushes it away; it hurts other enemies but never defeats one (they stop
+ * at 1 health), so blasts cannot chain; it wakes sentinels; it cracks crates.
+ * Bosses are not hurt. No shots back.
+ */
+function goOff(play: PlayState, bl: BlastState): void {
+  const R = TRAIT_RULES.blast;
+  play.log.push({ kind: 'blast', uid: bl.uid, x: bl.x, y: bl.y, r: R.radius });
+  const b = ballNow(play);
+  const d = Math.hypot(b.x - bl.x, b.y - bl.y);
+  if (d <= R.radius && b.z <= bl.z + R.radius) {
+    damageBall(play, R.damage, 'blast');
+    if (play.status !== 'playing') return;
+    const s = ensureBallMoving(play);
+    const a = d > 1e-3 ? Math.atan2(b.y - bl.y, b.x - bl.x) : play.rng.float(0, Math.PI * 2);
+    s.ball.vx = Math.cos(a) * R.knockSpeed;
+    s.ball.vy = Math.sin(a) * R.knockSpeed;
+    s.ball.vz = R.knockHop;
+    s.ball.grounded = false;
+    s.ball.z += 0.001;
+    s.restSteps = 0;
+  }
+  for (const o of play.enemies) {
+    if (o.defeated || o.burrowed || isBoss(o) || Math.hypot(o.x - bl.x, o.y - bl.y) > R.radius) continue;
+    if (o.health > 1) {
+      const dmg = Math.min(R.damage, o.health - 1);
+      o.health -= dmg;
+      o.scorched = true;
+      play.log.push({ kind: 'hit', enemy: o.uid, damage: dmg, blocked: false });
+    }
+    wake(play, o);
+  }
+  for (const c of play.breakables) {
+    if (c.broken || c.def.breakBy !== 'hit' || Math.hypot(c.x - bl.x, c.y - bl.y) > R.radius) continue;
+    c.health = Math.max(0, c.health - R.damage);
+    if (c.health <= 0) breakIt(play, c);
+    else play.log.push({ kind: 'crateHit', uid: c.uid });
+  }
+}
+
+/** Blasts whose fuse has burnt down go off. */
+function stepBlasts(play: PlayState): void {
+  if (!play.blasts.length) return;
+  const due = play.blasts.filter((b) => play.clock >= b.at);
+  if (!due.length) return;
+  play.blasts = play.blasts.filter((b) => play.clock < b.at);
+  for (const bl of due) {
+    goOff(play, bl);
+    if (play.status !== 'playing') return;
+  }
+}
+
+/** A sentinel that something woke (a blast): it starts acting on enemy turns, as if hit, without acting at once. */
+function wake(play: PlayState, e: EnemyState): void {
+  if (e.defeated || e.activated || e.def.triggers.hit === 'none' || !actsOnTurns(e)) return;
+  e.activated = true;
+  play.log.push({ kind: 'activated', enemy: e.uid });
 }
 
 /** Stars to the meter and the wallet. Crown of Plenty doubles the wallet's share, except for a raised flag (its star was already counted once). */
@@ -1694,7 +1852,7 @@ function summon(play: PlayState, boss: EnemyState, def: BossDef, phase: BossPhas
   const id = phase.pool[play.rng.weighted(phase.pool.map((p) => p.weight))]!.id;
   const edef = OBJECTS.get(id);
   if (edef?.kind !== 'enemy') return;
-  const o: CourseObject = { id, x: spot.x, y: spot.y, path: [], facing: 'se', phase: 0, orient: 'x', drops: null };
+  const o: CourseObject = { id, x: spot.x, y: spot.y, path: [], facing: 'se', phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS };
   const cx = spot.x + 0.5;
   const cy = spot.y + 0.5;
   const uid = `summon:${id}#${play.summoned++}`;
@@ -1726,12 +1884,17 @@ function respond(play: PlayState, e: EnemyState, trigger: 'hit' | 'rest' | 'pass
   const r = e.def.triggers[trigger];
   if (r === 'none' || e.defeated) return;
   play.log.push({ kind: 'trigger', enemy: e.uid, trigger });
-  const acts = e.def.behaviour.kind === 'lob' || e.def.behaviour.kind === 'launch' || e.def.behaviour.kind === 'boss';
   if (r === 'immediate') act(play, e, true);
-  if ((r === 'activated' || r === 'immediate') && acts && !e.activated) {
+  if ((r === 'activated' || r === 'immediate') && actsOnTurns(e) && !e.activated) {
     e.activated = true;
     play.log.push({ kind: 'activated', enemy: e.uid });
   }
+}
+
+/** Behaviours that take actions on enemy turns once activated. */
+function actsOnTurns(e: EnemyState): boolean {
+  const k = e.def.behaviour.kind;
+  return k === 'lob' || k === 'launch' || k === 'boss';
 }
 
 /** One action. `now` means an immediate response mid-shot rather than an enemy turn. */
@@ -1764,7 +1927,7 @@ function act(play: PlayState, e: EnemyState, now: boolean): void {
   } else if (bh.kind === 'burrow') {
     // Owner, 2026-11-14: it waits a moment (the hill rumbles), then shoots up out of the ground.
     if (!e.burrowed || e.popAt !== null || cannotMove(e)) return;
-    e.popAt = play.clock + steps(bh.delay);
+    e.popAt = play.clock + steps(e.traits.includes('swift') ? TRAIT_RULES.swiftPopDelay : bh.delay);
     play.log.push({ kind: 'rumble', enemy: e.uid });
   }
   void now;
@@ -2386,8 +2549,19 @@ function startTurn(play: PlayState, kind: 'normal' | 'recover'): void {
       hurtEnemy(play, e, dmg);
     }
   }
+  // Regenerating (Milestone 8): 1 health back at the start of each enemy turn, not while burning.
+  for (const e of play.enemies) {
+    if (e.defeated || !e.traits.includes('regenerating') || hasStatus(e.statuses, 'burning')) continue;
+    const full = e.stats.get('health');
+    if (e.health >= full) continue;
+    e.health = Math.min(full, e.health + TRAIT_RULES.regenerate);
+    play.log.push({ kind: 'regen', enemy: e.uid });
+  }
   if (kind === 'normal') burrowMoles(play);
-  play.turnActions = play.enemies.filter((e) => !e.defeated && e.activated && !e.burrowed).map((e) => e.uid);
+  // Swift launchers act twice per enemy turn.
+  play.turnActions = play.enemies
+    .filter((e) => !e.defeated && e.activated && !e.burrowed)
+    .flatMap((e) => (e.traits.includes('swift') && e.def.behaviour.kind === 'launch' ? Array<string>(TRAIT_RULES.swiftActions).fill(e.uid) : [e.uid]));
 }
 
 function endTurn(play: PlayState): void {
