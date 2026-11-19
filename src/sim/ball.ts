@@ -451,7 +451,7 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
 
   moveAxis(course, tuning, s, 'x', b.vx * DT);
   moveAxis(course, tuning, s, 'y', b.vy * DT);
-  if (world) collideObstacles(tuning, s, world, zBefore);
+  if (world) collideObstacles(course, tuning, s, world, zBefore);
 
   const g = groundAt(course, b.x, b.y);
   if (b.grounded) {
@@ -546,7 +546,7 @@ function stepHover(course: Course, tuning: Tuning, s: ShotState, world: ShotWorl
   b.vz = 0;
   moveAxis(course, tuning, s, 'x', b.vx * DT);
   moveAxis(course, tuning, s, 'y', b.vy * DT);
-  if (world) collideObstacles(tuning, s, world, zBefore);
+  if (world) collideObstacles(course, tuning, s, world, zBefore);
   const g = groundAt(course, b.x, b.y);
   b.z = Math.max(g?.h ?? -Infinity, hover.floor);
   hover.floor = b.z;
@@ -663,7 +663,7 @@ export function nearestOnShape(shape: ObjectShape, ox: number, oy: number, px: n
  * circle; obstacles are circles or boxes. A ball coming down onto an
  * obstacle's top is thrown back up and off its side: nothing rests on top.
  */
-function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefore: number): void {
+function collideObstacles(course: Course, tuning: Tuning, s: ShotState, world: ShotWorld, zBefore: number): void {
   const b = s.ball;
   const r = s.radius;
   for (const o of world.obstacles) {
@@ -723,8 +723,12 @@ function collideObstacles(tuning: Tuning, s: ShotState, world: ShotWorld, zBefor
       continue;
     }
     // Side hit: step back out and mirror the speed into the obstacle (seen from the obstacle, if it moves).
-    b.x = cx + nx * (reach + 1e-4);
-    b.y = cy + ny * (reach + 1e-4);
+    // The step out goes through the wall check like any other move (found 2026-11-19): a patroller
+    // pushing a ball that rests against a wall used to place it past the wall line, and the ball
+    // then rolled up over the wall and off the course. Now the wall stops it, and it stays pinned
+    // until the patroller turns back.
+    moveAxis(course, tuning, s, 'x', cx + nx * (reach + 1e-4) - b.x);
+    moveAxis(course, tuning, s, 'y', cy + ny * (reach + 1e-4) - b.y);
     const ovx = o.vx ?? 0;
     const ovy = o.vy ?? 0;
     const vn = (b.vx - ovx) * nx + (b.vy - ovy) * ny;
