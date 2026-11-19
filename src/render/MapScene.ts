@@ -409,13 +409,13 @@ export class MapScene extends Phaser.Scene {
         ? {
             title: 'Region and boss testing aids',
             buttons: [
-              {
-                label: 'Go to region two now',
+              ...[2, 3, 4].map((r) => ({
+                label: `Go to region ${r === 4 ? 'four (endless)' : r === 3 ? 'three' : 'two'} now`,
                 onClick: () => {
-                  startRegion(run, 2, generateRunMap(run.seed, 2));
+                  startRegion(run, r, generateRunMap(run.seed, r));
                   this.scene.restart();
                 },
-              },
+              })),
             ],
             arenas: BOSS_FIGHTS,
             onArena: (id) => {

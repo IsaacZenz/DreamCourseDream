@@ -139,8 +139,10 @@ describe('The Warden', () => {
 
 describe('the arenas (owner, 2026-11-17: five, each with a gimmick)', () => {
   it('five arenas, all valid course files, the Warden in the middle and 6 to 8 spawn spots', () => {
-    expect(ARENA_LIST.map((a) => a.id)).toEqual(BOSSES.get('stagwarden')!.arenas);
-    for (const a of ARENA_LIST) {
+    // Milestone 8: the Queen's Mound is the Brood Queen's; the Stagwarden keeps the first five.
+    const five = ARENA_LIST.filter((a) => BOSSES.get('stagwarden')!.arenas.includes(a.id));
+    expect(five.map((a) => a.id)).toEqual(BOSSES.get('stagwarden')!.arenas);
+    for (const a of five) {
       const c = arena(a.id);
       expect(c.objects.find((o) => o.id === 'stagwarden')).toMatchObject({ x: 6, y: 6 });
       expect(c.spawns.length).toBeGreaterThanOrEqual(6);
@@ -175,7 +177,7 @@ describe('the arenas (owner, 2026-11-17: five, each with a gimmick)', () => {
 
   // CLAUDE.md rule 6: hand-built arenas are checked here, with a fresh ball. A short check keeps the
   // test run quick; `npm run arenas` plays 20 seeds per arena and reports the win rate.
-  for (const a of ARENA_LIST) {
+  for (const a of ARENA_LIST.filter((x) => BOSSES.get('stagwarden')!.arenas.includes(x.id))) {
     it(`the bot beats ${a.name} with a fresh ball`, () => {
       const c = arena(a.id);
       const seeds = [`${a.id}-0`, `${a.id}-1`, `${a.id}-2`];

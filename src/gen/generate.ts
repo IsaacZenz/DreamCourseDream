@@ -168,6 +168,7 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
     const explosiveNear = objects.some((q) => q !== o && q.dress?.traits.includes('explosive') && dist(q.at, o.at) < TRAIT_RULES.explosiveSpacing);
     const d = fitDress(def, rollDress(dressRng, def, rank, theme, mix!, size?.oddsColumn ?? 0, explosiveNear), def.cost + room);
     if (!d) return;
+    if (isLeader && d.rank > 0) oneLeaderLeft = false;
     const extra = dressCost(def, d) - def.cost;
     o.dress = d;
     enemyLeft -= extra;
@@ -210,10 +211,9 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
       let leader = false;
       if (mix) {
         if (size_hard && mix.hardLeaders === 'all') leader = true;
-        else if (oneLeaderLeft) {
-          leader = true;
-          oneLeaderLeft = false;
-        } else leader = dressRng.chance(mix.leader);
+        // Region one's single hard-course leader: offered to each squad until one can afford it.
+        else if (oneLeaderLeft) leader = true;
+        else leader = dressRng.chance(mix.leader);
       }
       for (let m = 0; m < size && share > 0 && enemyCount < maxEnemies; m++) {
         const reserve = Math.max(0, GEN.minEnemies - enemyCount - 1);

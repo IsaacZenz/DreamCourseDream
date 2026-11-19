@@ -192,13 +192,13 @@ export class BurrowScene extends Phaser.Scene {
             this.redraw();
           },
         },
-        {
-          label: 'Start region two now',
+        ...[2, 3, 4].map((r) => ({
+          label: `Start region ${r === 4 ? 'four (endless)' : r === 3 ? 'three' : 'two'} now`,
           onClick: () => {
-            debugRegionTwo();
+            debugRegionTwo(r);
             this.scene.start('map');
           },
-        },
+        })),
         {
           label: this.showSave ? 'Hide the save' : 'Show the save',
           onClick: () => {

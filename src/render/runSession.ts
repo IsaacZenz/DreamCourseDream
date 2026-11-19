@@ -151,10 +151,10 @@ export function debugBossFight(fight: string, run: RunState = startRun(newRunSee
   run.lastArena = arena;
 }
 
-/** A new run that starts in region two. */
-export function debugRegionTwo(): RunState {
+/** A new run that starts in region two (or another region: Milestone 8 adds three and four, the first endless region). */
+export function debugRegionTwo(region = 2): RunState {
   const run = startRun(newRunSeed());
-  startRegion(run, 2, generateRunMap(run.seed, 2));
+  startRegion(run, region, generateRunMap(run.seed, region));
   return run;
 }
 
