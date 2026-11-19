@@ -159,7 +159,9 @@ Early courses use mostly tiers 1 and 2. Later regions shift the mix upward (sect
 
 - **Veterans (tier 3) and Elites (tier 4) are worth 2 stars**; other enemies stay at 1. Collecting the quota must not become easier than it is now (proposed quota rule in `docs/plans/milestone-8.md` section 4.0, waiting for confirmation).
 - **Every enemy is an insect.** Existing enemies are renamed (Mossback → Snoozegrub, Trundler → Mudroller, Spitter → Spittlebug, Lunger → Pouncehopper, Mole → Mole Cricket, the carriers → grubs, the Warden → the Stagwarden); names under review in the sheet, section 7.0.
-- Explosive must not clear the board by accident (options in the sheet, section 5.1a).
+- Explosive must not clear the board by accident. **Owner, 2026-11-19:** a blast hurts the ball and nearby enemies but never defeats an enemy (it stops at 1 health), so blasts cannot chain (sheet section 5.1a).
+- **Owner, 2026-11-19: the elements form a circle.** Fire is weak to ice, ice is weak to shock, shock is weak to fire; each resists its own element.
+- **Owner, 2026-11-19: prices rise with the extra stars.** Gear by rarity 10, 15, 30, 45, 70, 100 (was 10, 15, 25, 35, 50, 70); stat boosts start at 12 in region 1, 16 in region 2, 20 in region 3, +4 per endless region (sheet section 10b).
 
 Tiers 3 and 4, traits, elements, squads and enemy gear are Milestone 8, but the template fields must exist from Milestone 4.
 
@@ -184,12 +186,12 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 | Working name | Gimmick | Milestone |
 |---|---|---|
 | The Warden | None. Three phases: slow slams, then summons, then both faster. Placeholder boss for every region until Milestone 8 (owner, 2026-11-17). | 7 |
-| Second boss | Shield that only drops after it attacks | 8 |
-| Third and final boss | Decide with the owner | 8 |
+| Second boss | Shield that only drops after it attacks: **Gloamhorn**, a rhinoceros beetle whose wing cases open after it charges | 8 |
+| Third and final boss | **Owner, 2026-11-19: the Brood Queen**, a giant queen ant and the bugs' leader; only hits from above (on her back) count, her sides bite | 8 |
 
 **Decided (owner, 2026-11-17):**
 
-- **Boss randomizer:** each region's boss is a seeded pick from that region's boss pool. New bosses are added to the pools as data.
+- **Boss randomizer:** each region's boss is a seeded pick from that region's boss pool. New bosses are added to the pools as data. **Owner, 2026-11-19:** for now each pool holds one boss: region 1 the Stagwarden, region 2 Gloamhorn, region 3 the Brood Queen.
 - **Arenas:** five hand-picked arenas, each with its own gimmick or theme (Milestone 7: Bumper Ring, Sinkhole Bowl, Ice Rink, The Moat, Storm Steps). The same arena is never used twice in a row, also across runs.
 - **Boss wheel:** success rolls (section 8) against a boss use a 20-slice wheel instead of 10, with the same number of slices filled, so bosses are always harder to affect.
 - Summoned minions leave no flag pole (default kept).
@@ -473,4 +475,4 @@ Opus: use the default and say that you did.
 | F5 | Which elements exist | Fire, ice, shock |
 | F6 | Can the boss countdown be bought back up in a shop? | Yes, +1, once per shop |
 | F7 | Do blue stars found during a run survive death? | **Answered (owner, 2026-11-17): no.** They are carried until deposited, automatically, at a town or on beating a boss; carried blue stars are lost on death or on closing the game outside a town |
-| F8 | Third boss and its gimmick | Decide in Milestone 8 |
+| F8 | Third boss and its gimmick | **Answered (owner, 2026-11-19):** the Brood Queen, hurt only from above |

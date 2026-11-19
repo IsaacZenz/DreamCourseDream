@@ -1,6 +1,6 @@
 # Milestone 8 design sheet — Content and balance
 
-**Status: round 1 written 2026-11-18; endless mode added at the owner's request the same day (section 10a) and agreed by the owner. Owner answered questions 1, 7, 8, 9 and 11 to 13 on 2026-11-18; questions 2 to 6 and 10 have follow-ups waiting (section 12).** Nothing on this sheet is built yet.
+**Status: round 1 sheet complete, 2026-11-19.** Every question in section 12 is answered by the owner. **Waiting for the owner's final sign-off** of the whole sheet, including the new shop prices (section 10b). Nothing is built yet.
 
 How to review: read each section and change any number, name or rule you want. Section 12 lists the questions I need answered; each has a default I will use if you say "defaults are fine". Every number is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -50,7 +50,7 @@ Stunned and Burning on enemies already exist. Round 1 adds the rest. For the bal
 
 | Status | On the ball, from | On an enemy, from |
 |---|---|---|
-| Poisoned | A Bristlecrawler's spines; a Stinkpuff's spores; the final boss's poison attack (if option A) | Nothing yet in round 1 (round 3 adds poison gear) |
+| Poisoned | A Bristlecrawler's spines; a Stinkpuff's spores; the Brood Queen's soldier ring | Nothing yet in round 1 (round 3 adds poison gear) |
 | Burning | Any **fire** enemy that hurts the ball | Fire gear (built); the Burner ability now burns what it hits for 1 turn (new, no roll needed) |
 | Chilled | Any **ice** enemy that hurts the ball | The **Frost** ability (section 6) |
 | Stunned | Any **shock** enemy that hurts the ball (lose 1 shot) | Knob gear and Anchor (built) |
@@ -64,17 +64,14 @@ The damage steps already handle weak (×2) and resistant (halved, rounded down).
 | Enemy element | Looks | Weak to | Resists | When it hurts the ball |
 |---|---|---|---|---|
 | Fire | Red-orange tint, small flame | Ice | Fire | Also **Burning** 2 turns |
-| Ice | Pale blue tint, frost crystals | Fire | Ice | Also **Chilled** 2 turns |
-| Shock | Yellow tint, sparks | (nothing) | Shock | Also **Stunned** (lose 1 shot) |
+| Ice | Pale blue tint, frost crystals | **Shock** | Ice | Also **Chilled** 2 turns |
+| Shock | Yellow tint, sparks | **Fire** | Shock | Also **Stunned** (lose 1 shot) |
 
-- An enemy that never hurts the ball (a Snoozegrub, a grub) still gets the weakness and resistance from its element, so a fire Snoozegrub takes double from Frost.
+- An enemy that never hurts the ball (a Snoozegrub, a grub) still gets the weakness and resistance from its element, so a fire Snoozegrub takes double from Frost, and an ice one double from Static.
 - **Your own hits get an element** from your weapon (built) or your current ability while it is active (Burner fire, Frost ice, Static shock). If both give one, the **ability wins** for that hit (Default).
 - The tint is a colour **set in the asset manifest per element**, not in game code, so the final art can replace it.
 
-**Owner, 2026-11-18 (question 3): shock enemies are weak to "the remaining element not tied to a weakness".** Read literally that is shock itself (fire and ice are already each other's weakness), which clashes with "an enemy resists its own element". Two ways to do what I think you mean; **waiting for your pick** (section 12, question 3):
-
-- **A. A circle (my recommendation).** Each element is exactly one weakness: **fire is weak to ice, ice is weak to shock, shock is weak to fire.** Every element is equally useful and none is the "safe" one. Changes one row above: ice enemies become weak to shock, not fire. Flavour: ice puts out fire, a jolt shatters ice, fire burns out a spark.
-- **B. Shock is weak to plain hits.** The leftover "attribute" is having no element at all. A shock enemy takes double from a hit with no element, which is most hits early in a run. Shock enemies become the easiest to beat by just hitting them, and the hardest to beat with gear.
+**Owner, 2026-11-19 (question 3): the elements form a circle.** Fire is weak to ice, ice is weak to shock, shock is weak to fire. Each element is exactly one weakness, so all three are equally useful. (Ice puts out fire, a jolt shatters ice, fire burns out a spark.) In practice: Frost is the answer to fire bugs, Static to ice bugs, and Burner or fire gear to shock bugs.
 
 ---
 
@@ -168,7 +165,7 @@ Each is a set of modifiers or one small rule. Each raises cost and star value.
 
 **Placement rule:** two Explosive enemies are never placed within 3 tiles of each other, so one fight never has two fuses going at once.
 
-**Other ways to do it, if you prefer** (section 12, question 4):
+**Owner, 2026-11-19: option A, as above** (a blast never defeats an enemy). The options not chosen, for the record:
 
 - **B. Blast hurts only the ball.** Simplest and safest, but the trait is then only a danger, never a tool.
 - **C. A blast can defeat enemies, but a bug defeated by a blast never explodes itself.** No chains, but a blast in a crowd of 1-health bugs can still take out three or four at once.
@@ -263,7 +260,7 @@ Every enemy, old and new, gets a bug identity and a bug name. **Rules and number
 | (new) Sproutling | **Grublet** | A tiny larva from a Splitting bug | A small Snoozegrub |
 | The Warden | **The Stagwarden** | A giant stag beetle, the guard of region one | Huge antlers it slams down; cracks in its shell per phase |
 | (new) Gloamshell | **Gloamhorn** | A giant rhinoceros beetle | Its wing cases (the hard shell) are shut; after a charge they **open**, showing its soft back. This is the "shield that drops after it attacks", made into a bug |
-| Final boss | **Open** (section 7.0b) | The leader of the bugs | |
+| Final boss | **The Brood Queen** (owner, 2026-11-19) | A giant queen ant, the leader of the bugs | Huge armoured body half sunk in her mound, a soft back on top, a crown of feelers |
 
 **Question 10:** these names? Change any you like.
 
@@ -273,21 +270,25 @@ Every enemy, old and new, gets a bug identity and a bug name. **Rules and number
 - Shielded: a tougher, shinier shell plate. Armoured: thicker plates. Swift: thin streaks behind it. Explosive: a swollen, glowing belly (like a bombardier beetle). Regenerating: a leafy green glow. Splitting: a bulging egg sac.
 - Veteran: a stripe on its shell. Elite: a little crown of horns.
 
-### 7.0b The final boss: options to discuss (question 5)
+### 7.0b The final boss (question 5)
+
+**Owner, 2026-11-19: A, the Brood Queen.** Full sheet in section 9. The options as they were offered:
 
 The final boss is the bugs' leader, the villain of the game. Three ideas, each with a different skill to master:
 
 | | **A. The Brood Queen** (my recommendation) | **B. The Mantis Regent** | **C. The Hive Matron** |
 |---|---|---|---|
 | Bug | A giant queen ant, sitting in her mound | A huge praying mantis | A queen wasp inside a wax hive |
-| Gimmick | **Only her back can be hurt, from above.** Her armoured sides bite (1 damage and blocked). Land on her with a lofted shot, a spring or Hop (the first draft's Mother Bramble rules, as a bug) | **Her scythes guard her front, and she turns to face you every turn.** Only hits from behind or the side count. She sweeps a cone in front of her | **A ring of wax cells surrounds her.** Break cells to open a gap, then hit her through it. The cells regrow when she changes phase; in phase 3 she flies out and stings |
+| Gimmick | **Only her back can be hurt, from above.** Her armoured sides bite (1 damage and blocked). Land on her with a lofted shot, a spring or Hop (the first draft's the Brood Queen rules, as a bug) | **Her scythes guard her front, and she turns to face you every turn.** Only hits from behind or the side count. She sweeps a cone in front of her | **A ring of wax cells surrounds her.** Break cells to open a gap, then hit her through it. The cells regrow when she changes phase; in phase 3 she flies out and stings |
 | Phases | Acid glob barrage (three at once) → soldier ant rings (poison) → both, plus summons | Scythe sweep → leaping strike across the arena → both, faster | Summons from the cells → cells regrow faster → flying sting dives |
 | Skill it tests | **Lofting and aim**: the skill no other boss asks for | **Positioning**, but Trapjaw and Gloamhorn already test "get behind it" | **Breaking things**, closest to a puzzle; uses crates' rules |
 | Arena | A clearing with four springs round her mound | Open and flat, with rails | A wax floor with cells; no water |
 
 Why A: the Stagwarden tests dodging, Gloamhorn tests timing and getting behind it, so the Brood Queen testing lofting gives each boss its own skill.
 
-### 7.0c Boss order: options to discuss (question 6)
+### 7.0c Boss order (question 6)
+
+**Owner, 2026-11-19: B, fixed order for now.** Region 1's pool holds the Stagwarden, region 2's holds Gloamhorn, region 3's holds the Brood Queen. When more bosses are added, they join a pool and the boss randomizer picks from it. The options as they were offered:
 
 There are two bosses for regions one and two (the Stagwarden and Gloamhorn), and your boss randomizer picks each region's boss from its pool.
 
@@ -388,44 +389,45 @@ So the rhythm is: dodge the charge, then punish the open shell from behind.
 
 ---
 
-## 9. Final boss (open question F8): first draft, on hold until question 5 is answered
+## 9. Final boss: the Brood Queen (open question F8; owner, 2026-11-19)
 
-This is the first draft (a plant called Mother Bramble). If you choose option A, the Brood Queen, these rules carry over with bug names: seeds become acid globs, the thorn ring becomes a ring of soldier ants, "crown" becomes "back", and The Thicket becomes her mound clearing.
+The leader of the bugs and the game's villain. **She can only be hurt from above**, so she tests lofting and aim, a skill neither of the other bosses asks for.
 
 ### 9.1 Template
 
 | Field | Value |
 |---|---|
-| id | `mother-bramble` |
-| name | Mother Bramble (working name) |
-| sprite id | `mother-bramble` (placeholder: a big thorny mound with a flower crown; three frames, the crown wilting as she weakens) |
-| health | **20** (region 3 only) |
-| element | none; **resists fire** (she is green and wet). Ice is normal |
-| size | round, radius 1.1 tiles, height **1.1** (low enough to land on top with a lofted shot, a spring or Hop) |
-| gimmick | **Only her crown can be hurt.** Every side is guarded by thorns: a ball hitting her side takes **1 damage** and is blocked. A hit **from above** (the ball was in the air just before contact) counts, and does normal damage. One hit per shot |
-| arena | **The Thicket** (new, section 9.3) |
-| rewards | **12 blue stars**, and **the run is won** (section 10) |
+| id | `brood-queen` |
+| name | The Brood Queen (working name) |
+| sprite id | `brood-queen` (placeholder: a big armoured ant body half sunk in a mound, a pale soft back on top; three frames, her crown of feelers drooping as she weakens) |
+| health | **20** in region 3; in endless mode it scales by the same share as the others (section 10a) |
+| element | none; not weak to or resisting anything |
+| size | round, radius 1.1 tiles, height **1.1** (low enough to land on with a lofted shot, a spring or Hop; the Stagwarden is 1.6) |
+| gimmick | **Only her back can be hurt.** Her armoured sides **bite**: a ball hitting her from the side takes **1 damage** and is blocked. A hit **from above** (the ball was in the air just before contact) counts and does normal damage. One hit per shot |
+| movement | none; she sits in her mound in the middle of the arena |
+| arena | **The Queen's Mound** (new, section 9.3) |
+| rewards | **12 blue stars**, a full heal, a gear pick of 1 from 3, and **the run is won** (section 10), then endless mode |
 
 ### 9.2 Phases
 
 | Phase | Health left | Each enemy turn |
 |---|---|---|
-| 1 — Seedfall | above 2/3 | **Lobs three globs**, like a Spittlebug, at the ball's spot and 1.5 tiles either side of it (marked one turn ahead) |
-| 2 — Thornring | 2/3 to 1/3 | **Thorn ring**: marks a ring round the ball (radius 1.75); next turn it lands: 1 damage and **Poisoned** 2 turns to a ball on the ground in it. Also summons one minion while fewer than 2 are alive (Stinkpuff 50%, a grub 50%) |
-| 3 — Overgrowth | below 1/3 | Seedfall and thorn ring on alternate turns, and summons while fewer than 3 are alive (Stinkpuff 30%, Bristlecrawler 30%, Trapjaw 20%, a grub 20%) |
+| 1 — Acid rain | above 2/3 | **Lobs three acid globs**, like a Spittlebug, at the ball's spot and 1.5 tiles to either side of it, marked one turn ahead. A glob that hits the ball does 1 damage |
+| 2 — Soldier ring | 2/3 to 1/3 | **Soldier ring**: marks a ring round the ball (radius 1.75); on her next turn a ring of soldier ants bursts up from the ground there: 1 damage and **Poisoned** 2 turns to a ball on the ground inside it. Also summons one minion while fewer than 2 are alive (Stinkpuff 50%, a grub 50%) |
+| 3 — The swarm | below 1/3 | Acid rain and the soldier ring on alternate turns, and summons while fewer than 3 are alive (Stinkpuff 30%, Bristlecrawler 30%, Trapjaw 20%, a grub 20%) |
 
-### 9.3 The Thicket (new arena)
+Phase change: she sheds a heart and a shot orb, like the others. Being poisoned lowers your hit damage, so a poisoned ball with no weapon does nothing to her for 2 shots: dodging the soldier ring matters.
 
-A round clearing about 15 tiles across, Mother Bramble in the middle on flat ground. **Four springs** at the corners of a square 3 tiles from her, so a ball rolled onto a spring can fly onto her crown. Two low ledges (1 step up) give lofted shots something to drop from. Rough ground round the edge; no water. Spawn spots: eight, on the outer ring. The arena check (`npm run arenas`) must show the bot winning at least half of 20 seeds, as for the others.
+### 9.3 The Queen's Mound (new arena)
 
-**Owner, 2026-11-18: question 5 is open for discussion** (section 7.0b). Everything in this section is **on hold**: the name, the look and maybe the gimmick change once you choose. The placeholder name below is from the first draft.
+A round clearing about 15 tiles across, with the Queen's mound in the middle on flat ground. **Four springs** at the corners of a square 3 tiles from her, so a ball rolled onto a spring flies up and can come down on her back. Two low ledges (1 step up) give lofted shots something to drop from. Rough ground round the edge; no water. Eight spawn spots on the outer ring. The arena check (`npm run arenas`) must show the bot winning at least half of 20 seeds, as for the other arenas.
 
 ---
 
 ## 10. Region three and the end of a run
 
 - **Region three opens** with the numbers you signed off in Milestone 7 (sheet section 7.4): 5 to 8 areas, area side 10 to 16, threat 28 + 3 per node capped at 60, at most 18 enemies, every enemy +1 health and +1 attack damage, rarity column 4, par kit max shots +2, hit damage +1, shot power +20%, max health +2.
-- **Boss pools:** region 1 and region 2: **The Stagwarden and Gloamhorn**, as decided in question 6 (section 7.0c). Region 3: **the final boss** only.
+- **Boss pools (owner, 2026-11-19, question 6 B):** region 1 the Stagwarden, region 2 Gloamhorn, region 3 the Brood Queen. Each pool grows as bosses are added.
 - **Beating the final boss wins the run:** a "Run complete" screen with the run's totals (courses, enemies, stars, blue stars). The profile records the win (`totals.wins`) and the first win. **Owner, 2026-11-18: the run then carries on into endless mode** (section 10a).
 
 ### 10a. Endless mode (owner, 2026-11-18)
@@ -463,6 +465,29 @@ A round clearing about 15 tiles across, Mother Bramble in the middle on flat gro
 
 ---
 
+### 10b. Shop prices (owner, 2026-11-19)
+
+**Owner:** Veterans and Elites put more yellow stars in the wallet, so **better gear costs more**, and **stat boosts get a little more expensive in each region**.
+
+**Gear (before the shop prices stat and Haggler):**
+
+| Rarity | Now | New |
+|---|---|---|
+| Common | 10 | 10 |
+| Uncommon | 15 | 15 |
+| Rare | 25 | **30** |
+| Double rare | 35 | **45** |
+| Special rare | 50 | **70** |
+| Legendary | 70 | **100** |
+
+Common and uncommon stay the same, so region one plays as it does now. The better rarities only become common in regions two and three, which is where the extra stars arrive.
+
+**Stat boosts:** the first one costs **12 in region 1, 16 in region 2, 20 in region 3**, and 4 more in each endless region. Buying the same boost again in a run still adds 6 each time, as now.
+
+**Unchanged:** heal (10), raising the boss countdown (8), acorns, rerolls (start at 3, double each time), boss reward picks and caches (free).
+
+The course check's bot does not shop, so none of this changes which courses pass. Round 3's balance pass measures stars earned against prices and adjusts these numbers if needed.
+
 ## 11. Generator and bot changes
 
 - The squad placer rolls the squad theme, the leader and each member's rank, traits, element, weak spot and gear, all from the seeded random number generator, and pays for them from the threat budget.
@@ -476,21 +501,23 @@ A round clearing about 15 tiles across, Mother Bramble in the middle on flat gro
 
 ## 12. Questions for the owner
 
+All answered.
+
 | # | Question | Answer |
 |---|---|---|
 | 1 | Split Milestone 8 into three rounds? | **Owner, 2026-11-18: yes** |
-| 2 | Star values | **Owner: Veterans and Elites 2 stars.** Quota must not get easier: the new quota rule (section 4.0). **Please confirm the rule**, and whether the extra star should also go to the wallet (default: yes) |
-| 3 | Shock enemies' weakness | **Owner: the leftover element.** **Please pick** A, a circle (fire weak to ice, ice weak to shock, shock weak to fire; recommended) or B, weak to plain hits (section 3) |
-| 4 | Explosive | **Owner: may hurt other enemies, but must not clear the board by accident.** **Please pick**: A, a blast never defeats an enemy (recommended), B, ball only, or C, defeats but never chains (section 5.1a) |
-| 5 | Final boss | **Open for discussion.** A, the Brood Queen (recommended), B, the Mantis Regent, or C, the Hive Matron (section 7.0b) |
-| 6 | Boss order in regions 1 and 2 | **Open for discussion.** A, once each, random; B, fixed order (recommended for now); or C, fully random (section 7.0c) |
-| 7 | Frozen water | **Owner: frozen for 2 turns; re-freezing resets to 2.** Melting details in section 6.1a (default: a ball on melting ice counts as stopping in water) |
-| 8 | Fire and ice cancel; water puts out a burning ball | **Owner: yes** |
-| 9 | Burner burns what it hits for 1 turn, no roll | **Owner: yes** |
-| 10 | Names | **Owner: every enemy is an insect.** New names in section 7.0. **Please review** |
-| 11 | Endless: Keep going or Back to the Burrow | **Owner: agreed** |
-| 12 | Endless: course size caps at region 3, everything else keeps growing | **Owner: yes** |
-| 13 | Endless boss pool: all bosses, never the same as the last region | **Owner: agreed** |
+| 2 | Star values | **Owner, 2026-11-18: Veterans and Elites 2 stars**, the quota no easier than now (rule in section 4.0, accepted by the owner when answering the wallet follow-up). **Owner, 2026-11-19:** the extra stars go to the wallet, and prices rise to match: dearer high-rarity gear, stat boosts dearer each region (section 10b) |
+| 3 | Shock enemies' weakness | **Owner, 2026-11-19: A, a circle.** Fire weak to ice, ice weak to shock, shock weak to fire |
+| 4 | Explosive | **Owner, 2026-11-19: A.** A blast never defeats an enemy (section 5.1a) |
+| 5 | Final boss | **Owner, 2026-11-19: A, the Brood Queen** (section 9) |
+| 6 | Boss order in regions 1 and 2 | **Owner, 2026-11-19: B, fixed for now.** Stagwarden, then Gloamhorn, then the Brood Queen |
+| 7 | Frozen water | **Owner, 2026-11-18: 2 turns, re-freezing resets it. 2026-11-19: melting rules (section 6.1a) agreed** |
+| 8 | Fire and ice cancel; water puts out a burning ball | **Owner, 2026-11-18: yes** |
+| 9 | Burner burns what it hits for 1 turn, no roll | **Owner, 2026-11-18: yes** |
+| 10 | Names | **Owner, 2026-11-19: the insect names work for now**; they may change later |
+| 11 | Endless: Keep going or Back to the Burrow | **Owner, 2026-11-18: agreed** |
+| 12 | Endless: course size caps at region 3, everything else keeps growing | **Owner, 2026-11-18: yes** |
+| 13 | Endless boss pool: all bosses, never the same as the last region | **Owner, 2026-11-18: agreed** |
 
 ## 13. What this needs in the code (for reference)
 
@@ -498,17 +525,19 @@ A round clearing about 15 tiles across, Mother Bramble in the middle on flat gro
 - **Ranks, traits and themes** as data in `src/content/` (a new `enemyMods.ts`), applied through the modifier system with sources "rank", "trait" and "gear".
 - **Enemy template:** `contactStatus`, element contact statuses, the `float` field on patrols, two new behaviours (`face`, `pulse`), the Explosive fuse and Splitting spawn as trait rules.
 - **Abilities:** `frost` and `static` effect kinds; frozen water as a course-level tile change.
-- **Bosses:** a `charge` attack and an "open shell" gimmick, multi-seed lobs and a status ring, in `src/content/bosses.ts` plus the code once; The Thicket arena file; boss pools per region and the no-repeat rule.
+- **Bosses:** a `charge` attack and an "open shell" gimmick, multi-glob lobs and a status ring, in `src/content/bosses.ts` plus the code once; the Queen's Mound arena file; boss pools per region (fixed for now) and, for endless, the not-the-last-boss rule.
 - **Run:** `LAST_REGION` becomes 3; a run-complete screen; profile `totals.wins`.
 - **Display:** element tints from the manifest; trait, rank and gear icons over enemies; status icons on the HUD; the charge arrow, the puff ring, the thorn ring, the frost trail and the static field.
-- **Placeholder sprites:** five enemies, the Grublet, two carriers, two bosses (with frames), two ability icons, three status icons, the frozen water tile, the explosion, and the new arena's look.
+- **Renames:** every old enemy id and the Warden's id, kept in the renamed list, with the save upgraded (`bossesBeaten`).
+- **Shop:** the new gear prices and the region step on stat boosts.
+- **Placeholder sprites:** five enemies, the Grublet, two grubs, two bosses (with frames), two ability icons, three status icons, the frozen water tile, the explosion, and the new arena's look.
 - **Tests:** each status, trait, rank and element rule on its own in Node; each new enemy and ability on the test bench; both bosses' gimmicks; the no-repeat boss pick; the seeded squad roll giving the same course for the same seed.
 
 ---
 
 ## 14. Done when (round 1)
 
-You can play a run through all three regions and beat the final boss, meeting the Stagwarden and Gloamhorn on the way, with Veterans, Elites, traits and elemental squads in regions two and three.
+You can play a run through all three regions and beat the Brood Queen, meeting the Stagwarden in region one and Gloamhorn in region two, with Veterans, Elites, traits and elemental squads in regions two and three.
 
 Things to check on purpose once it is built (test bench and real runs):
 
@@ -523,7 +552,7 @@ Things to check on purpose once it is built (test bench and real runs):
 - Split a Splitting enemy and collect both Grublets.
 - Freeze a river with Frost and rest on it; Static a group of three enemies; roll under a cloud with Static up.
 - Fight Gloamhorn: dodge a charge, then hit its open back. Try to hit it while closed.
-- Fight the final boss: hit her side (it hurts you), then land on her crown from a spring.
+- Fight the final boss: hit her side (it hurts you), then land on her back from a spring.
 - Win a full run and see the "Run complete" screen.
 - Choose Keep going: region 4 starts, enemies are tougher, the boss is a random pick that is not the final boss twice in a row.
 - Choose Back to the Burrow instead: the run ends as a win.
