@@ -164,10 +164,10 @@ After playing the first generator, the owner asked for larger, more open, much m
 ## Milestone 8 — Content and balance
 
 - [ ] **Plan gate:** design sheet for every new ability, enemy, trait, status, boss, linked object, biome, gear item and character in this milestone. (Round 1 sheet `docs/plans/milestone-8.md` signed off 2026-11-19; rounds 2 and 3 to come.) Owner signs it off before any of them is built. This milestone is large; it may be planned and built in several rounds, each with its own sheet.
-- [ ] Remaining abilities from DESIGN.md section 9
-- [ ] Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear and its drop chance
-- [ ] Remaining statuses: Poisoned, Burning, Chilled
-- [ ] More enemy types in both families; a second and third boss, one with a gimmick
+- [ ] Remaining abilities from DESIGN.md section 9 (round 1 built Frost and Static; Burr, Kite, Gyre and Drift are round 2)
+- [x] Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear and its drop chance (round 1)
+- [x] Remaining statuses: Poisoned, Burning, Chilled (round 1)
+- [x] More enemy types in both families; a second and third boss, one with a gimmick (round 1: five new bugs, Gloamhorn, the Brood Queen)
 - [ ] Linked objects (switches, gates, bridges); optional course modifiers
 - [ ] Second gear slot unlocks; extra characters
 - [ ] Three biomes with their own chunk sets
@@ -175,9 +175,9 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] More gear and shop variety
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
 - [ ] Resolve the remaining open questions with the owner
-- [ ] Owner, 2026-11-19: boss introduction cutscene pop-ups (placeholder cards in round 1; art in Milestone 9)
+- [x] Owner, 2026-11-19: boss introduction cutscene pop-ups (placeholder cards built in round 1; art in Milestone 9)
 - [ ] Owner, 2026-11-19: the map shows only the path taken and the next 1 to 3 choices, with a testing switch to show the whole map (round 3)
-- [ ] Owner, 2026-11-18: endless mode after the third region: each new region scales the same way, bosses from the boss randomizer
+- [x] Owner, 2026-11-18: endless mode after the third region: each new region scales the same way, bosses from the boss randomizer (round 1)
 
 **Done when:** three regions and a final boss are playable and the owner judges the difficulty curve fair.
 

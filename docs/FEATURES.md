@@ -173,6 +173,7 @@ Early courses use mostly tiers 1 and 2. Later regions shift the mix upward (sect
 - **Every enemy is an insect.** Existing enemies are renamed (Mossback → Snoozegrub, Trundler → Mudroller, Spitter → Spittlebug, Lunger → Pouncehopper, Mole → Mole Cricket, the carriers → grubs, the Warden → the Stagwarden); names under review in the sheet, section 7.0.
 - Explosive must not clear the board by accident. **Owner, 2026-11-19:** a blast hurts the ball and nearby enemies but never defeats an enemy (it stops at 1 health), so blasts cannot chain (sheet section 5.1a).
 - **Owner, 2026-11-19: the elements form a circle.** Fire is weak to ice, ice is weak to shock, shock is weak to fire; each resists its own element.
+- **Built 2026-11-19 (Milestone 8 round 1):** everything above, plus Frost and Static, Gloamhorn, the Brood Queen, region three and endless mode. Differences from the sheet are in `docs/plans/milestone-8.md` section 15 (for example: ball statuses count down as each shot is taken, and Burning hurts then).
 - **Owner, 2026-11-19: prices rise with the extra stars.** Gear by rarity 10, 15, 30, 45, 70, 100 (was 10, 15, 25, 35, 50, 70); stat boosts start at 12 in region 1, 16 in region 2, 20 in region 3, +4 per endless region (sheet section 10b).
 
 Tiers 3 and 4, traits, elements, squads and enemy gear are Milestone 8, but the template fields must exist from Milestone 4.

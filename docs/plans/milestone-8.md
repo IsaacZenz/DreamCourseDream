@@ -1,6 +1,6 @@
 # Milestone 8 design sheet — Content and balance
 
-**Status: round 1 signed off by the owner, 2026-11-19**, after two rounds of answers (section 12) and four additions (sections 10b to 10d). Being built.
+**Status: round 1 signed off by the owner, 2026-11-19**, after two rounds of answers (section 12) and four additions (sections 10b to 10d). **Built 2026-11-19** (section 15, as built). Waiting for the owner to play the test build.
 
 How to review: read each section and change any number, name or rule you want. Section 12 lists the questions I need answered; each has a default I will use if you say "defaults are fine". Every number is a starting value and goes into `src/content/` so it can be tuned later.
 
@@ -564,3 +564,63 @@ Things to check on purpose once it is built (test bench and real runs):
 - Win a full run and see the "Run complete" screen.
 - Choose Keep going: region 4 starts, enemies are tougher, the boss is a random pick that is not the final boss twice in a row.
 - Choose Back to the Burrow instead: the run ends as a win.
+
+---
+
+## 15. As built (round 1, 2026-11-19)
+
+Everything on the sheet is built. Differences, and choices the sheet left open (each a Default the owner may change):
+
+**Statuses**
+
+- **A ball status counts down each time you take a shot, and Burning hurts at that moment** (the sheet said "at the start of each shot, before you aim"). Counting at the shot keeps every status the same length however it landed (while you aim, during a shot, or on an enemy turn). A burn's damage is not stopped by the half-second immunity from an earlier hit.
+- A status that lands during your shot works at once (a chill makes the ball slide for the rest of that shot) and still lasts its full turns from the next shot.
+- **Front, back and side:** the front and the back are the 90-degree wedges ahead of and behind the way an enemy faces; everything else is its side.
+
+**Enemies**
+
+- Allowed traits follow the sheet's rules, with three small additions: the Glowmoth cannot split (the Grublets would hang in the air), the Stinkpuff and Mole Cricket cannot be Swift or Regenerating (1 health), and the Mole Cricket cannot be Explosive or Splitting. Bugs that never attack carry only armour or a bauble.
+- **The Glowmoth lowers no flags** (it flies over them) and casts a shadow, so its height is easy to read.
+- A bug whose front or back matters (Trapjaw, Bristlecrawler, a rolled guarded front or weak back) shows a small white wedge on the ground in front of it.
+- **Region one's hard-course Veteran leader** is offered to each squad until one can afford it. **A leader never goes above its region's top rank**, so region two has no Elites.
+- **Explosive:** crates in the blast take 1 damage. The blast reaches a ball within 1.5 tiles and no more than 1.5 tiles above the bug.
+- **Static** zaps through guards and shields (it is a field, not a contact); a boss still takes only one hit per shot from it.
+- **Frost** freezes the tile under the ball and the one 0.3 tiles ahead, so a fast ball does not drop in first. A melting tile under a resting ball counts as stopping in water (1 damage), as the sheet said.
+
+**Bosses, regions and endless**
+
+- **Boss health is per boss** (`src/content/bosses.ts`): the Stagwarden 12, 18, 24; Gloamhorn 8, 12, 16; the Brood Queen 12, 16, 20 (only her region three number is used now). In endless mode each boss adds a quarter of its region three health per region (the Stagwarden: +6, as the sheet's table).
+- **Gloamhorn's charge stops after 2 seconds.** Not on the sheet: in the Bumper Ring a charge bounced between bumpers for up to 10 seconds.
+- **A safety limit on speed (40 tiles a second)** for everything that moves. Found by the arena check: Gloamhorn wedged between a bumper and the wall gained speed on every bounce until the physics hung. Far above any real shot.
+- **The Brood Queen has no fire resistance** (the first draft's plant did).
+- **Arenas take any boss:** the arena files are drawn with one boss, and the boss of the fight takes its place (`arenaData` in `src/content/arenas/index.ts`).
+- **Save version 2:** an old save that beat "the Warden" now says the Stagwarden. The profile also counts runs won (`totals.wins`).
+- **Run complete:** Enter keeps going into endless mode, B goes back to the Burrow. The boss reward comes first, as after any boss.
+
+**Testing aids (U panel)**
+
+- Test bench: a rank, a trait and an element for the enemy at the centre (also `&rank=1|2&trait=<id>&element=fire|ice|shock` in the address).
+- In the Burrow: start region two, three or four (endless) now. On the map: go to region two, three or four now.
+- "Fight the boss here" lists every boss in each of its arenas (for example "Gloamhorn: Ice Rink"); the run moves to that boss's region.
+
+**Measurements**
+
+- **Arena check** (`npm run arenas`; the bot plays each boss at its own region's health with that region's par kit, 10 seeds; at least half must be won):
+
+  | Boss | Arena | Won | Shots on average |
+  |---|---|---|---|
+  | The Stagwarden (region 1) | Bumper Ring | 6/6 | 30 |
+  | | Sinkhole Bowl | 6/6 | 20 |
+  | | Ice Rink | 6/6 | 28 |
+  | | The Moat | 5/6 | 30 |
+  | | Storm Steps | 6/6 | 34 |
+  | Gloamhorn (region 2) | Bumper Ring | 10/10 | 23 |
+  | | Ice Rink | 7/10 | 17 |
+  | | Storm Steps | 6/10 | 20 |
+  | The Brood Queen (region 3) | The Queen's Mound | 7/10 | 50 |
+
+  The Brood Queen is a long fight (50 shots for the bot). That is for the balance pass in round 3.
+
+- **Course making times** (`node tools/region-timing.ts`, 6 seeds each): see the progress log in `docs/PLAN.md`.
+
+**Found, not fixed (outside this round):** a patroller whose path ends against a wall can push a resting ball over the wall and out of bounds (1 damage each time). It is older than Milestone 8; a separate task was suggested to the owner.
