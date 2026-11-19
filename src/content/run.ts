@@ -96,6 +96,11 @@ export interface RegionDef {
    * player behind par finds courses harder; upgrades are how they catch up.
    */
   readonly par: readonly { readonly stat: StatId; readonly amount: number }[];
+  /**
+   * Owner, 2026-11-19 (round 1, option C): gear the course check's bot wears in
+   * this region, one item per category (gear ids), or none.
+   */
+  readonly parGear?: { readonly weapon: string | null; readonly armour: string | null; readonly bauble: string | null };
 }
 
 export const REGIONS: readonly RegionDef[] = [
@@ -109,7 +114,8 @@ export const REGIONS: readonly RegionDef[] = [
     ],
   },
   {
-    areas: { start: 5, every: 2, max: 8 },
+    // Owner, 2026-11-19 (round 1, option A): 4 to 7 areas (was 5 to 8), so late courses can be made in time.
+    areas: { start: 4, every: 2, max: 7 },
     areaSize: [10, 16],
     threat: { start: 28, perNode: 3, cap: 60 },
     maxEnemies: 18,
@@ -119,12 +125,16 @@ export const REGIONS: readonly RegionDef[] = [
     ],
     bosses: ['brood-queen'],
     oddsColumn: 3,
+    // Owner, 2026-11-19 (round 1, option C): the bot also gets the Deep Breath and Tough Shell boosts on top
+    // (max shots +1, max health +1; was +2 and +2) and the best gear for clearing a course.
     par: [
-      { stat: 'maxShots', amount: 2 },
+      { stat: 'maxShots', amount: 3 },
       { stat: 'hitDamage', amount: 1 },
       { stat: 'shotPower', amount: 0.2 },
-      { stat: 'maxHealth', amount: 2 },
+      { stat: 'maxHealth', amount: 3 },
     ],
+    // Giant's Knuckle (hit damage +3), Bastion Plate (max health +3, first 2 damages ignored), Pocket Watch (max shots +2, an extra nap).
+    parGear: { weapon: 'giants-knuckle', armour: 'bastion-plate', bauble: 'pocket-watch' },
   },
 ];
 

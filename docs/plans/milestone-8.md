@@ -624,3 +624,11 @@ Everything on the sheet is built. Differences, and choices the sheet left open (
 - **Course making times** (`node tools/region-timing.ts`, 6 seeds each): see the progress log in `docs/PLAN.md`.
 
 **Found, not fixed (outside this round):** a patroller whose path ends against a wall can push a resting ball over the wall and out of bounds (1 damage each time). It is older than Milestone 8; a separate task was suggested to the owner.
+
+### 15a. Course making in region three (owner, 2026-11-19)
+
+The timings above showed late region three courses too big for the course check (hard after 6 nodes: 6 of 6 fell back to the stand-in course). **Owner: options A and C.**
+
+- **A:** region three has **4 to 7 areas** (was 5 to 8), and **a hard course never has more areas than its region's maximum** (every region). Endless regions keep region three's size.
+- **C:** from region three on, the course check's bot wears **the best gear for clearing a course**: Giant's Knuckle (weapon, hit damage +3), Bastion Plate (armour, max health +3, first 2 damages ignored) and Pocket Watch (bauble, max shots +2, an extra nap), **plus the Deep Breath and Tough Shell boosts** (max shots +1, max health +1) on top of region three's par kit. Endless regions keep the gear and add their own steps.
+- What this means for play: a course in region three is proven beatable by a well-equipped player. A player with weaker gear will find late region three harder; that is the roguelike side (upgrades are how you catch up), and round 3's balance pass looks at it.

@@ -271,7 +271,9 @@ export function dropWeights(run: RunState): number[] {
  */
 export function botLoadoutOf(run: RunState): Loadout {
   const modifiers: Modifier[] = regionDef(run).par.map((p) => ({ stat: p.stat, op: 'add', amount: p.amount, source: { kind: 'region', id: `par${run.region}` }, duration: { kind: 'run' } }));
-  return { ability: null, gear: { ...NO_GEAR }, modifiers };
+  // Owner, 2026-11-19 (round 1, option C): from region three on, the bot also wears the region's best gear.
+  const pg = regionDef(run).parGear;
+  return { ability: null, gear: pg ? { ...pg } : { ...NO_GEAR }, modifiers };
 }
 
 /**
@@ -437,7 +439,8 @@ export function budgetFor(run: RunState, type: NodeType): number {
 export function sizeFor(run: RunState, type: NodeType): JourneySize {
   const r = regionDef(run);
   const plain = Math.min(r.areas.max, r.areas.start + Math.floor(run.counted / r.areas.every));
-  const n = type === 'hard' || type === 'boss' ? plain + 1 : plain;
+  // Owner, 2026-11-19 (round 1, option A): a hard course has one area more, but never more than the region's maximum.
+  const n = type === 'hard' || type === 'boss' ? Math.min(r.areas.max, plain + 1) : plain;
   return { areas: [n, n], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(n), mix: mixFor(run.region), hard: type === 'hard' || type === 'boss', oddsColumn: oddsColumn(run, false) };
 }
 

@@ -38,7 +38,7 @@ for (const boss of BOSS_IDS.filter((b) => !only || b === only)) {
     let shots = 0;
     const t0 = performance.now();
     for (let i = 0; i < seeds; i++) {
-      const r = playBot(parsed.course, DEFAULT_TUNING, `${arena}-${boss}-${i}`, { maxShots: 80, bossHealth: bossHealthIn(def, region), loadout: { modifiers: par }, enemyModifiers: toughness });
+      const r = playBot(parsed.course, DEFAULT_TUNING, `${arena}-${boss}-${i}`, { maxShots: 80, bossHealth: bossHealthIn(def, region), loadout: { modifiers: par, ...(REGIONS[region - 1]!.parGear && { gear: REGIONS[region - 1]!.parGear }) }, enemyModifiers: toughness });
       if (r.won) {
         wins++;
         shots += r.shots;

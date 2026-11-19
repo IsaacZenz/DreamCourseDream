@@ -197,3 +197,29 @@ describe('a safety limit on speed (found while building Milestone 8)', () => {
     expect(Math.hypot(s.ball.vx, s.ball.vy, s.ball.vz)).toBeLessThanOrEqual(T.maxSpeed + 1e-9);
   });
 });
+
+describe('region three course check (owner, 2026-11-19: options A and C)', () => {
+  it('region three has 4 to 7 areas, and a hard course never goes past the maximum', async () => {
+    const { sizeFor } = await import('../src/sim/run');
+    const run = createRun('A', generateRunMap('A'));
+    run.region = 3;
+    expect(sizeFor(run, 'course').areas).toEqual([4, 4]);
+    run.counted = 8;
+    expect(sizeFor(run, 'course').areas).toEqual([7, 7]);
+    expect(sizeFor(run, 'hard').areas).toEqual([7, 7]);
+  });
+  it("the bot plays region three with the best gear and the extra shot and health boosts", async () => {
+    const { botLoadoutOf } = await import('../src/sim/run');
+    const { GEAR } = await import('../src/content/gear');
+    const run = createRun('C', generateRunMap('C'));
+    run.region = 3;
+    const lo = botLoadoutOf(run);
+    expect(lo.gear).toEqual({ weapon: 'giants-knuckle', armour: 'bastion-plate', bauble: 'pocket-watch' });
+    for (const id of Object.values(lo.gear!)) expect(GEAR.has(id!)).toBe(true);
+    const add = (stat: string) => lo.modifiers!.filter((m) => m.stat === stat).reduce((n, m) => n + m.amount, 0);
+    expect(add('maxShots')).toBe(3);
+    expect(add('maxHealth')).toBe(3);
+    run.region = 4;
+    expect(botLoadoutOf(run).gear).toEqual(lo.gear);
+  });
+});
