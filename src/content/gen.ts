@@ -80,10 +80,10 @@ export const GEN = {
   minEnemies: 3,
   maxEnemies: 10,
   /** Pick weights for squad members. Enemies not listed are never picked by the generator. */
-  enemyWeights: { snoozegrub: 3, mudroller: 2, spittlebug: 2, pouncehopper: 2, 'mole-cricket': 2 } as Record<string, number>,
+  enemyWeights: { snoozegrub: 3, mudroller: 2, spittlebug: 2, pouncehopper: 2, 'mole-cricket': 2, 'skitter-ant': 2, bristlecrawler: 2, glowmoth: 1, trapjaw: 2, stinkpuff: 2 } as Record<string, number>,
   /** Ability carriers (sheet section 4.2). */
   carrierChance: 0.6,
-  carriers: ['leadgrub', 'embergrub', 'hopgrub', 'whirlgrub'],
+  carriers: ['leadgrub', 'embergrub', 'hopgrub', 'whirlgrub', 'frostgrub', 'sparkgrub'],
   /** Obstacles and hazards (sheet section 4.4): pick weights per spot use. */
   obstacleWeights: { blocker: 3, crate: 2, hazard: 3, cloud: 2, slider: 1, gate: 1, crack: 1 } as Record<string, number>,
   blockers: ['rock', 'stump', 'low-wall'],

@@ -178,9 +178,19 @@ export type Behaviour =
   /**
    * Patroller: follows its `path` there and back at `speed`, all the time. It keeps
    * to its path when it meets the ball and knocks the ball away with `knock` extra
-   * speed (owner, 2026-11-14).
+   * speed (owner, 2026-11-14). Milestone 8: `float` tiles above the ground (the
+   * Glowmoth): a rolling ball goes under it, and it lowers no flags.
    */
-  | { readonly kind: 'patrol'; readonly speed: number; readonly knock: number }
+  | { readonly kind: 'patrol'; readonly speed: number; readonly knock: number; readonly float?: number }
+  /** Milestone 8 (Trapjaw): once active, turns to face the ball on each enemy turn. Never leaves its tile. */
+  | { readonly kind: 'face' }
+  /**
+   * Milestone 8 (Stinkpuff): once active, marks a ring of `radius` round itself
+   * each enemy turn and puffs it on the next; a ball resting on the ground in it
+   * gets `status`. Hit by the ball, it puffs at once within `hitRadius`, unless
+   * the hit came from above.
+   */
+  | { readonly kind: 'pulse'; readonly radius: number; readonly hitRadius: number; readonly status: string }
   /**
    * Marks the ball's spot with a ring; next enemy turn lobs a seed at it. The seed
    * has ball physics (owner, 2026-11-14). `range`: it waits if the ball is further.
@@ -216,7 +226,7 @@ export type Behaviour =
  * - survives: the ball hit it and it survived, or it ran into the ball (Trundler).
  * - moving: only while it is rolling (Lunger, Mole).
  */
-export type ContactWhen = 'never' | 'survives' | 'moving';
+export type ContactWhen = 'never' | 'survives' | 'moving' | 'front';
 
 export interface EnemyDef {
   readonly kind: 'enemy';
@@ -532,6 +542,118 @@ const defs: readonly ObjectDef[] = [
   carrier('embergrub', 'Embergrub', 'burner'),
   carrier('hopgrub', 'Hopgrub', 'hop'),
   carrier('whirlgrub', 'Whirlgrub', 'tornado'),
+  carrier('frostgrub', 'Frostgrub', 'frost'),
+  carrier('sparkgrub', 'Sparkgrub', 'static'),
+
+  // Milestone 8 round 1 (sheet section 7): five new bugs.
+  {
+    kind: 'enemy',
+    id: 'skitter-ant',
+    name: 'Skitter Ant',
+    sprite: 'skitter-ant',
+    family: 'patroller',
+    tier: 1,
+    stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    shape: { kind: 'round', r: 0.22 },
+    height: 0.4,
+    bounce: 0.6,
+    allowedTraits: traitsWithout('splitting', 'regenerating'),
+    allowedGear: PASSIVE_GEAR,
+    triggers: NO_TRIGGERS,
+    // A timing target: fast, knocks the ball about, never hurts it.
+    behaviour: { kind: 'patrol', speed: 2.8, knock: 3 },
+    contact: 'survives',
+    grantsAbility: null,
+    cost: 2,
+  },
+  {
+    kind: 'enemy',
+    id: 'bristlecrawler',
+    name: 'Bristlecrawler',
+    sprite: 'bristlecrawler',
+    family: 'patroller',
+    tier: 2,
+    stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    // Stinging bristles at its head; a soft rear.
+    guardedSides: ['front'],
+    weakSpots: ['behind'],
+    contactStatus: 'poisoned',
+    ...ROUND_ENEMY,
+    allowedTraits: ALL_TRAITS,
+    allowedGear: ALL_GEAR,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'patrol', speed: 1.2, knock: 5 },
+    contact: 'survives',
+    grantsAbility: null,
+    cost: 4,
+  },
+  {
+    kind: 'enemy',
+    id: 'glowmoth',
+    name: 'Glowmoth',
+    sprite: 'glowmoth',
+    family: 'patroller',
+    tier: 2,
+    stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    shape: { kind: 'round', r: 0.3 },
+    height: 0.4,
+    bounce: 0.5,
+    // 1 health: no Regenerating. It floats: no Splitting (the Grublets would hang in the air).
+    allowedTraits: ['shielded', 'armoured', 'swift', 'explosive'],
+    allowedGear: PASSIVE_GEAR,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'patrol', speed: 1, knock: 0, float: 0.9 },
+    contact: 'never',
+    grantsAbility: null,
+    cost: 3,
+  },
+  {
+    kind: 'enemy',
+    id: 'trapjaw',
+    name: 'Trapjaw',
+    sprite: 'trapjaw',
+    family: 'sentinel',
+    tier: 2,
+    stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 3, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    guardedSides: ['front'],
+    weakSpots: ['behind'],
+    ...ROUND_ENEMY,
+    allowedTraits: traitsWithout('swift'),
+    allowedGear: ALL_GEAR,
+    triggers: { hit: 'activated', rest: 'activated', passBy: 'none' },
+    behaviour: { kind: 'face' },
+    contact: 'front',
+    grantsAbility: null,
+    cost: 3,
+  },
+  {
+    kind: 'enemy',
+    id: 'stinkpuff',
+    name: 'Stinkpuff',
+    sprite: 'stinkpuff',
+    family: 'sentinel',
+    tier: 2,
+    stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 2.5, innerRadius: 1.2 },
+    starValue: 1,
+    ...PLAIN,
+    weakSpots: ['above'],
+    ...ROUND_ENEMY,
+    allowedTraits: ['shielded', 'armoured', 'explosive', 'splitting'],
+    allowedGear: PASSIVE_GEAR,
+    triggers: { hit: 'activated', rest: 'activated', passBy: 'activated' },
+    behaviour: { kind: 'pulse', radius: 1.5, hitRadius: 1.2, status: 'poisoned' },
+    contact: 'never',
+    grantsAbility: null,
+    cost: 3,
+  },
 ];
 
 // Gear lying on a course (Milestone 6): one object per gear item, by the same id.

@@ -362,7 +362,17 @@ export type PlayEvent =
   /** A Regenerating enemy healed 1. */
   | { kind: 'regen'; enemy: string }
   /** An enemy dropped the gear it carried. */
-  | { kind: 'gearDrop'; enemy: string; item: string };
+  | { kind: 'gearDrop'; enemy: string; item: string }
+  /** A Trapjaw turned to face the ball. */
+  | { kind: 'turn'; enemy: string }
+  /** A Stinkpuff marked the ring it will puff next turn, and puffed (`hit`: the ball was in it). */
+  | { kind: 'puffMark'; enemy: string; x: number; y: number; r: number }
+  | { kind: 'puff'; enemy: string; x: number; y: number; r: number; hit: boolean }
+  /** Frost froze a water tile; frozen water melted (the ball's turns ran out). */
+  | { kind: 'freeze'; x: number; y: number }
+  | { kind: 'melt'; x: number; y: number }
+  /** Static: the field zapped an enemy. */
+  | { kind: 'staticZap'; enemy: string };
 
 /** What a success roll is for: the word shown on the wheel's filled slices. */
 export type RollEffect = 'burn' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
@@ -425,6 +435,10 @@ export interface PlayState {
   ability: string | null;
   abilityUsed: boolean;
   tornado: TornadoState | null;
+  /** Milestone 8: Frost or Static while it lasts this shot (steps left; Static: enemies it already zapped). */
+  aura: { kind: 'frost' | 'static'; stepsLeft: number; zapped: string[] } | null;
+  /** The ball's turn (shot number) each frozen tile was last frozen in: that turn does not count towards melting. */
+  frozenAt: Record<string, number>;
   ballStatuses: StatusState[];
   /** Milestone 8: water tiles frozen by Frost, "x,y" -> the ball's turns left (owner, 2026-11-18: 2 turns). */
   frozen: Record<string, number>;
@@ -634,6 +648,8 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     ability: lo.ability !== undefined ? lo.ability : character.startingAbility,
     abilityUsed: false,
     tornado: null,
+    aura: null,
+    frozenAt: {},
     ballStatuses: [],
     frozen: {},
     gear: { weapon: startGear.weapon, armour: startGear.armour, bauble: startGear.bauble },
@@ -891,12 +907,17 @@ export function debugWin(play: PlayState): void {
   play.log.push({ kind: 'won' });
 }
 
+/** How high a patroller floats (the Glowmoth, Milestone 8). */
+function floatOf(e: EnemyState): number {
+  return e.def.behaviour.kind === 'patrol' ? (e.def.behaviour.float ?? 0) : 0;
+}
+
 function placeOnPath(play: PlayState, e: EnemyState): void {
   if (!e.path) return;
   const p = pathAt(e.path, e.pathDist);
   e.x = p.x;
   e.y = p.y;
-  e.z = heightAt(play.course, p.x, p.y);
+  e.z = heightAt(play.course, p.x, p.y) + floatOf(e);
   if (p.dx || p.dy) {
     e.fx = p.dx;
     e.fy = p.dy;
@@ -1207,6 +1228,8 @@ function stepBall(play: PlayState, input: TickInput): void {
     else if (e.kind === 'anchorStop') anchorEffects(play, e.x, e.y);
   }
   if (play.status !== 'playing') return;
+  stepAura(play, s);
+  if (play.status !== 'playing') return;
   if (tor && s.hover) {
     if (Math.hypot(s.ball.vx, s.ball.vy) > 1e-6) tor.heading = Math.atan2(s.ball.vy, s.ball.vx);
     if (--tor.stepsLeft <= 0) {
@@ -1224,6 +1247,7 @@ function finishBallMotion(play: PlayState): void {
   const outcome = s.outcome;
   play.shot = null;
   play.tornado = null;
+  play.aura = null;
   if (outcome === 'exit') {
     play.ball = { ...s.ball, vx: 0, vy: 0, vz: 0, grounded: true };
     play.status = 'won';
@@ -1373,8 +1397,10 @@ function hitStats(play: PlayState, s: ShotState): { base: number; element: Abili
     const fx = ABILITIES.get('tornado')!.effect;
     return { base: fx.kind === 'tornado' ? fx.damage : 1, element: weapon };
   }
-  const burning = s.burnSteps > 0;
-  return { base: play.stats.get('hitDamage'), element: burning ? (ABILITIES.get('burner')?.element ?? null) : weapon };
+  // Owner default (sheet section 3): an active ability's element wins over the weapon's.
+  const aura = play.aura ? (ABILITIES.get(play.aura.kind)?.element ?? null) : null;
+  const burning = s.burnSteps > 0 ? (ABILITIES.get('burner')?.element ?? null) : null;
+  return { base: play.stats.get('hitDamage'), element: burning ?? aura ?? weapon };
 }
 
 /** The ball hits an enemy (FEATURES.md section 2). Returns what the ball does next. */
@@ -1410,6 +1436,8 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
       { weakTo: e.weakTo, resists: e.resists, weakSpots: e.weakSpots, guardedSides: e.guardedSides, shieldUp: e.shield && e.shieldMotion !== play.motion },
     );
     if (res.shieldUsed) e.shieldMotion = play.motion;
+    // Stinkpuff (Milestone 8): hit, it puffs at once, unless the ball came down on its back.
+    if (e.def.behaviour.kind === 'pulse' && s.ball.grounded) puff(play, e, e.def.behaviour.hitRadius);
     // Echo Shell: the first hit each shot counts twice.
     // Owner, 2026-11-17: one success roll, on the first hit each shot.
     let echo = false;
@@ -1450,6 +1478,8 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
     damageBall(play, e.stats.get('attackDamage'), 'enemy', e);
     return e.def.behaviour.kind === 'patrol' ? 'knock' : 'bounce';
   }
+  // Trapjaw (Milestone 8): its front bites a ball that runs into it, unless the ball comes down from above.
+  if (e.def.contact === 'front' && s.ball.grounded && wedgeOf(s.ball.x, s.ball.y, e.x, e.y, e.fx, e.fy) === 'front') damageBall(play, e.stats.get('attackDamage'), 'bite', e);
   return 'bounce';
 }
 
@@ -1500,8 +1530,9 @@ function successRoll(play: PlayState, e: EnemyState, effect: RollEffect): boolea
 
 /** What the active ability does to an enemy it hits (Milestone 8: Frost chills). Filled in with the new abilities. */
 function abilityHitEffects(play: PlayState, e: EnemyState): void {
-  void play;
-  void e;
+  if (play.aura?.kind !== 'frost' || e.health <= 0) return;
+  const fx = ABILITIES.get('frost')!.effect;
+  if (fx.kind === 'frost') applyEnemyStatus(play, e, 'chilled', fx.chillTurns);
 }
 
 /** What the weapon does on a damaging hit (Milestone 6), before the enemy is checked for defeat. */
@@ -1894,7 +1925,7 @@ function respond(play: PlayState, e: EnemyState, trigger: 'hit' | 'rest' | 'pass
 /** Behaviours that take actions on enemy turns once activated. */
 function actsOnTurns(e: EnemyState): boolean {
   const k = e.def.behaviour.kind;
-  return k === 'lob' || k === 'launch' || k === 'boss';
+  return k === 'lob' || k === 'launch' || k === 'boss' || k === 'face' || k === 'pulse';
 }
 
 /** One action. `now` means an immediate response mid-shot rather than an enemy turn. */
@@ -1922,6 +1953,20 @@ function act(play: PlayState, e: EnemyState, now: boolean): void {
     e.fy = dy / d;
     launchEnemy(play, e, (dx / d) * speed, (dy / d) * speed);
     play.log.push({ kind: 'launch', enemy: e.uid });
+  } else if (bh.kind === 'face') {
+    // Trapjaw: turns to face the ball (not while chilled).
+    if (cannotMove(e)) return;
+    const b = ballNow(play);
+    const d = Math.hypot(b.x - e.x, b.y - e.y);
+    if (d < 1e-6) return;
+    e.fx = (b.x - e.x) / d;
+    e.fy = (b.y - e.y) / d;
+    play.log.push({ kind: 'turn', enemy: e.uid });
+  } else if (bh.kind === 'pulse') {
+    // Stinkpuff: puff the ring marked last turn, then mark the next one.
+    if (e.slamMark) puff(play, e, e.slamMark.r);
+    e.slamMark = { x: e.x, y: e.y, r: bh.radius };
+    play.log.push({ kind: 'puffMark', enemy: e.uid, x: e.x, y: e.y, r: bh.radius });
   } else if (bh.kind === 'boss') {
     bossAction(play, e);
   } else if (bh.kind === 'burrow') {
@@ -1931,6 +1976,18 @@ function act(play: PlayState, e: EnemyState, now: boolean): void {
     play.log.push({ kind: 'rumble', enemy: e.uid });
   }
   void now;
+}
+
+/** A Stinkpuff puffs: a ball on the ground within `r` gets its status (no damage). */
+function puff(play: PlayState, e: EnemyState, r: number): void {
+  const bh = e.def.behaviour;
+  if (bh.kind !== 'pulse') return;
+  e.slamMark = null;
+  const b = ballNow(play);
+  const g = groundAt(play.course, b.x, b.y);
+  const hit = !!g && b.z <= g.h + 0.3 && Math.hypot(b.x - e.x, b.y - e.y) <= r;
+  play.log.push({ kind: 'puff', enemy: e.uid, x: e.x, y: e.y, r, hit });
+  if (hit) applyBallStatus(play, bh.status);
 }
 
 /** Moles whose wait is over shoot out of the ground: up in the air and off in a random direction. */
@@ -2155,7 +2212,8 @@ function zapClouds(play: PlayState): void {
       s.ball.z += 0.001;
       s.restSteps = 0;
     };
-    if (!play.zapped.includes(c.uid) && under(ballNow(play))) {
+    // Static (Milestone 8): a charged ball passes under a thunder cloud unharmed.
+    if (!play.zapped.includes(c.uid) && play.aura?.kind !== 'static' && under(ballNow(play))) {
       const s = ensureBallMoving(play);
       play.zapped.push(c.uid);
       if (s.hover) {
@@ -2213,7 +2271,8 @@ function updateFlags(play: PlayState): void {
   let changed = false;
   // An enemy entering a raised flag's tile lowers it: the star is lost again.
   for (const e of play.enemies) {
-    if (e.defeated || e.burrowed) continue;
+    // A floating Glowmoth flies over flags without touching them.
+    if (e.defeated || e.burrowed || floatOf(e) > 0) continue;
     const key = tileKeyOf(e.x, e.y);
     if (key === e.tileKey) continue;
     e.tileKey = key;
@@ -2331,6 +2390,8 @@ export function useAbility(play: PlayState): boolean {
     b.grounded = false;
     b.z += 0.001;
     s.restSteps = 0;
+  } else if (fx.kind === 'frost' || fx.kind === 'static') {
+    play.aura = { kind: fx.kind, stepsLeft: steps(fx.time), zapped: [] };
   } else if (fx.kind === 'tornado') {
     const sp = Math.hypot(b.vx, b.vy);
     const heading = sp > 1e-6 ? Math.atan2(b.vy, b.vx) : Math.atan2(s.dirY, s.dirX);
@@ -2338,6 +2399,100 @@ export function useAbility(play: PlayState): boolean {
     play.tornado = { stepsLeft: steps(fx.time), heading, speed: fx.speed, wanderIn: steps(fx.wanderEvery) };
   }
   return true;
+}
+
+/** Frost and Static while they last (Milestone 8 sheet section 6). */
+function stepAura(play: PlayState, s: ShotState): void {
+  const a = play.aura;
+  if (!a) return;
+  if (a.stepsLeft-- <= 0) {
+    play.aura = null;
+    return;
+  }
+  const b = s.ball;
+  if (a.kind === 'frost') {
+    const fx = ABILITIES.get('frost')!.effect;
+    if (fx.kind !== 'frost') return;
+    // Water the ball touches turns to ice: under it, and a little ahead so a fast ball does not drop in first.
+    const sp = Math.hypot(b.vx, b.vy);
+    const ahead = sp > 1e-6 ? fx.lookAhead / sp : 0;
+    for (const [x, y] of [
+      [b.x, b.y],
+      [b.x + b.vx * ahead, b.y + b.vy * ahead],
+    ] as const) {
+      const g = groundAt(play.course, x, y);
+      if (!g || b.z > g.h + 0.15 || !SURFACES.get(g.tile.surface)?.sinks) continue;
+      const key = `${g.tile.x},${g.tile.y}`;
+      if (!play.frozen[key]) play.log.push({ kind: 'freeze', x: g.tile.x, y: g.tile.y });
+      // Owner, 2026-11-18: frozen for 2 turns; freezing it again resets the 2 turns.
+      play.frozen[key] = fx.freezeTurns;
+      play.frozenAt[key] = play.shotNumber;
+    }
+    return;
+  }
+  const fx = ABILITIES.get('static')!.effect;
+  if (fx.kind !== 'static') return;
+  for (const e of play.enemies) {
+    if (e.defeated || e.burrowed || a.zapped.includes(e.uid)) continue;
+    if (Math.hypot(e.x - b.x, e.y - b.y) > fx.radius + enemyRadius(e) || Math.abs(e.z - b.z) > 1.2) continue;
+    a.zapped.push(e.uid);
+    play.log.push({ kind: 'staticZap', enemy: e.uid });
+    fieldHit(play, e, fx.damage, 'shock');
+    if (play.status !== 'playing') return;
+  }
+}
+
+/**
+ * A hit from an ability's field (Static): your own action, so it counts like a
+ * hit (shots back, triggers, stars), with its element; position, guards and
+ * shields do not matter. A boss still takes only so many hits per shot.
+ */
+function fieldHit(play: PlayState, e: EnemyState, base: number, element: Element): void {
+  const bossDef = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss) : undefined;
+  if (bossDef) {
+    if (e.hitShot !== play.shotNumber) {
+      e.hitShot = play.shotNumber;
+      e.hitsInShot = 0;
+    }
+    if (e.hitsInShot >= bossDef.hitsPerShot) return;
+    e.hitsInShot++;
+  }
+  const res = computeHit({ base, element, fromAbove: false, fromBehind: false }, { weakTo: e.weakTo, resists: e.resists, weakSpots: [], guardedSides: [], shieldUp: false });
+  let damage = res.damage;
+  const chill = damage > 0 ? e.statuses.find((st) => STATUSES.get(st.id)?.nextHitDouble) : undefined;
+  if (chill) {
+    damage *= 2;
+    endEnemyStatus(play, e, chill.id);
+  }
+  e.health = Math.max(0, e.health - damage);
+  play.log.push({ kind: 'hit', enemy: e.uid, damage, blocked: false });
+  if (damage > 0) gainShots(play, RULES.shotsPerHit);
+  if (e.health <= 0) defeat(play, e);
+  else {
+    bossPhaseCheck(play, e);
+    respond(play, e, 'hit');
+  }
+}
+
+/**
+ * After the ball's turn: frozen water ages (owner, 2026-11-18: 2 turns; the
+ * turn it was frozen in does not count; a nap counts). Melted water under a
+ * resting ball counts as stopping in water.
+ */
+function ageIce(play: PlayState): void {
+  for (const key of Object.keys(play.frozen)) {
+    if (play.frozenAt[key] === play.shotNumber && play.turn !== 'recover') continue;
+    play.frozen[key]!--;
+    if (play.frozen[key]! > 0) continue;
+    delete play.frozen[key];
+    delete play.frozenAt[key];
+    const [x, y] = key.split(',').map(Number) as [number, number];
+    play.log.push({ kind: 'melt', x, y });
+    if (Math.floor(play.ball.x) === x && Math.floor(play.ball.y) === y && !play.shot) {
+      damageBall(play, RULES.sinkDamage, 'sunk');
+      play.log.push({ kind: 'underwater' });
+    }
+  }
 }
 
 /** Anchor stop: break a cracked tile under the ball; stun enemies nearby (ground pound). */
@@ -2490,6 +2645,8 @@ function advance(play: PlayState): void {
 function afterShot(play: PlayState): void {
   restTriggers(play);
   tickBallStatuses(play);
+  ageIce(play);
+  if (play.status !== 'playing') return;
   play.stats.tickTurn();
   play.turnQueue = ['normal'];
   if (play.shots <= 0) {
@@ -2570,6 +2727,9 @@ function endTurn(play: PlayState): void {
     e.stats.tickTurn();
   }
   if (play.turn === 'recover') {
+    // A nap counts as a turn for frozen water (Milestone 8).
+    ageIce(play);
+    if (play.status !== 'playing') return;
     // DESIGN.md section 6, open question 3: recovering refills all the shots.
     play.shots = play.stats.get('maxShots');
     play.napsUsed++;

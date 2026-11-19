@@ -49,4 +49,4 @@ export const PERMANENT_UPGRADES: ReadonlyMap<string, PermanentUpgradeDef> = new 
 /** Owner, 2026-11-17: each starting ability is bought separately, once. */
 export const ABILITY_PRICE = 8;
 /** Abilities that can be bought as a starting ability (the built ones; Milestone 8 adds more as data). */
-export const STARTING_ABILITIES: readonly string[] = ['anchor', 'burner', 'hop', 'tornado'];
+export const STARTING_ABILITIES: readonly string[] = ['anchor', 'burner', 'hop', 'tornado', 'frost', 'static'];

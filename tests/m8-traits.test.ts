@@ -14,7 +14,7 @@ function field(w: number, h: number, objects: unknown[] = []): Course {
   const rows: string[] = [];
   for (let y = 0; y < h + 2; y++) {
     const row: string[] = [];
-    for (let x = 0; x < w + 2; x++) row.push(x === 0 || y === 0 || x === w + 1 || y === h + 1 ? 'g2' : 'g1');
+    for (let x = 0; x < w + 2; x++) row.push(x === 0 || y === 0 || x === w + 1 || y === h + 1 ? 'g5' : 'g1');
     rows.push(row.join(' '));
   }
   const r = parseCourse({ format: 3, name: 'm8 traits', legend: { g: 'grass' }, tiles: rows, start: [1, 2], exit: [w, h], quota: 0, objects });

@@ -19,7 +19,7 @@ function field(w: number, h: number, objects: unknown[] = [], set: Record<string
     const row: string[] = [];
     for (let x = 0; x < w + 2; x++) {
       const edge = x === 0 || y === 0 || x === w + 1 || y === h + 1;
-      row.push(set[`${x},${y}`] ?? (edge ? 'g2' : 'g1'));
+      row.push(set[`${x},${y}`] ?? (edge ? 'g5' : 'g1'));
     }
     rows.push(row.join(' '));
   }
