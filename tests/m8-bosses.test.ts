@@ -186,3 +186,14 @@ describe('shop prices (owner, 2026-11-19)', () => {
 
 void canShoot;
 void tick;
+
+describe('a safety limit on speed (found while building Milestone 8)', () => {
+  it('nothing moves faster than tuning.maxSpeed, so a body wedged between bumpers cannot speed up forever', async () => {
+    const { startBody, stepShot } = await import('../src/sim/ball');
+    const r = parseCourse({ format: 3, name: 'cap', legend: { g: 'grass' }, tiles: ['g1 g1 g1', 'g1 g1 g1', 'g1 g1 g1'], start: [0, 0], exit: [2, 2], quota: 0 });
+    if (!r.ok) throw new Error();
+    const s = startBody(T, { x: 1.5, y: 1.5, z: 0.25, vx: 0, vy: 0, vz: 0, grounded: true }, { vx: 500, vy: 0, vz: 0 });
+    stepShot(r.course, T, s);
+    expect(Math.hypot(s.ball.vx, s.ball.vy, s.ball.vz)).toBeLessThanOrEqual(T.maxSpeed + 1e-9);
+  });
+});

@@ -348,6 +348,14 @@ export function startBody(tuning: Tuning, from: BallState, v: { vx: number; vy: 
 export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: StepInput = {}, world?: ShotWorld): void {
   if (s.outcome) return;
   const b = s.ball;
+  // A safety limit on speed (Milestone 8): bumpers give back more than they get, so something wedged between them could speed up forever.
+  const cap = tuning.maxSpeed ?? 40;
+  const sp = Math.hypot(b.vx, b.vy, b.vz);
+  if (sp > cap) {
+    b.vx *= cap / sp;
+    b.vy *= cap / sp;
+    b.vz *= cap / sp;
+  }
   const zBefore = b.z;
   const eventsBefore = s.events.length;
   const t = s.step * DT;

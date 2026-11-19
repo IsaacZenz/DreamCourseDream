@@ -73,6 +73,12 @@ export interface Tuning {
   /** A ball on the ground that stays within this many tiles of one spot for `trapTime` seconds rests too (a pit or narrow valley). */
   trapRadius: number;
   trapTime: number;
+  /**
+   * Milestone 8, a safety limit: nothing moves faster than this, in tiles per
+   * second. Far above any shot; it stops a big boss wedged between bumpers
+   * from gaining speed on every bounce until the physics hangs.
+   */
+  maxSpeed: number;
 
   // Bounce boost
   /** How long before landing a boost press still counts, in seconds. */
@@ -172,6 +178,7 @@ export const DEFAULT_TUNING: Tuning = {
   restTime: 0.15,
   trapRadius: 0.05,
   trapTime: 0.5,
+  maxSpeed: 40,
 
   boostWindow: 0.15,
   boostMultiplier: 1.6,
