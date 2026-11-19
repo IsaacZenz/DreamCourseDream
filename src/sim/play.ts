@@ -931,7 +931,7 @@ export function debugWin(play: PlayState): void {
 }
 
 /** How high a patroller floats (the Glowmoth, Milestone 8). */
-function floatOf(e: EnemyState): number {
+export function floatOf(e: EnemyState): number {
   return e.def.behaviour.kind === 'patrol' ? (e.def.behaviour.float ?? 0) : 0;
 }
 
@@ -1011,7 +1011,7 @@ function obstaclesOf(play: PlayState): Obstacle[] {
     if (!standing(e)) continue;
     const knock = e.def.behaviour.kind === 'patrol' ? e.def.behaviour.knock : 0;
     const gim = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss)?.gimmick : null;
-    const bounce = gim?.kind === 'shell' && play.shotNumber + (play.phase === 'aim' ? 1 : 0) > e.shellOpenShot ? gim.closedBounce : e.def.bounce;
+    const bounce = gim?.kind === 'shell' && !shellIsOpen(play, e) ? gim.closedBounce : e.def.bounce;
     out.push({ id: e.uid, x: e.x, y: e.y, base: e.z, height: e.def.height, shape: e.def.shape, bounce, vx: e.vx, vy: e.vy, knock });
   }
   for (const f of play.flags) {
@@ -1517,6 +1517,11 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
   // Trapjaw (Milestone 8): its front bites a ball that runs into it, unless the ball comes down from above.
   if (e.def.contact === 'front' && s.ball.grounded && wedgeOf(s.ball.x, s.ball.y, e.x, e.y, e.fx, e.fy) === 'front') damageBall(play, e.stats.get('attackDamage'), 'bite', e);
   return 'bounce';
+}
+
+/** Gloamhorn's shell is open now, or will be for the shot being aimed (Milestone 8). */
+export function shellIsOpen(play: PlayState, e: EnemyState): boolean {
+  return play.shotNumber + (play.phase === 'aim' ? 1 : 0) <= e.shellOpenShot;
 }
 
 /** Bosses use the boss wheel (owner, 2026-11-17). Bosses are tier 5 (FEATURES.md section 4). */
@@ -2256,7 +2261,8 @@ function stepBodies(play: PlayState): void {
     e.x = body.ball.x;
     e.y = body.ball.y;
     e.z = body.ball.z;
-    if (body.outcome || body.step >= maxSteps) {
+    const ch = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss)?.charge : undefined;
+    if (body.outcome || body.step >= maxSteps || (ch && body.step >= steps(ch.maxSeconds))) {
       e.body = null;
       e.z = heightAt(play.course, e.x, e.y);
       // Gloamhorn: after a charge its shell opens for the player's next shot.

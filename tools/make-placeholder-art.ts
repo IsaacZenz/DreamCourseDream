@@ -881,7 +881,7 @@ function drawStump(): Image {
 
 function drawIcon(kind: string): Image {
   const img = new Image(10, 10);
-  blob(img, 5, 5, 5, 5, { anchor: '#4060a0', burner: '#c04020', hop: '#40a040', tornado: '#7a7ab0', stunned: '#a09030', wild: '#b040c0' }[kind] ?? '#808080', '#101018');
+  blob(img, 5, 5, 5, 5, { anchor: '#4060a0', burner: '#c04020', hop: '#40a040', tornado: '#7a7ab0', stunned: '#a09030', wild: '#b040c0', frost: '#78b8e8', static: '#d8b020', poisoned: '#70a030', chilled: '#a8d8f8' }[kind] ?? '#808080', '#101018');
   const w = hex2('#f8f8f8');
   const marks: Record<string, P[]> = {
     anchor: [[5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [4, 3], [6, 3], [3, 6], [7, 6], [4, 7], [6, 7]],
@@ -890,6 +890,11 @@ function drawIcon(kind: string): Image {
     tornado: [[2, 3], [3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [3, 4], [4, 4], [5, 4], [6, 4], [4, 5], [5, 5], [6, 5], [4, 6], [5, 6], [5, 7]],
     stunned: [[3, 3], [7, 3], [5, 2], [2, 5], [8, 5], [5, 5], [3, 7], [7, 7]],
     wild: [[4, 2], [5, 2], [6, 2], [6, 3], [6, 4], [5, 5], [5, 6], [5, 8]],
+    // Milestone 8: a snowflake, a zigzag, a skull-ish drop, an ice crystal.
+    frost: [[5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [5, 8], [2, 5], [3, 5], [4, 5], [6, 5], [7, 5], [8, 5], [3, 3], [7, 3], [3, 7], [7, 7]],
+    static: [[6, 1], [5, 2], [4, 3], [5, 4], [6, 4], [5, 5], [4, 6], [5, 7], [4, 8]],
+    poisoned: [[5, 2], [4, 3], [6, 3], [3, 4], [7, 4], [3, 5], [7, 5], [4, 6], [5, 6], [6, 6], [4, 8], [6, 8]],
+    chilled: [[5, 2], [4, 3], [6, 3], [3, 4], [5, 4], [7, 4], [4, 5], [6, 5], [5, 6], [5, 7]],
   };
   for (const [x, y] of marks[kind] ?? []) img.set(x, y, w);
   return img;
@@ -1288,9 +1293,195 @@ const PERM_LOOK: Record<string, [string, readonly P[]]> = {
 };
 for (const [id, [base, mark]] of Object.entries(PERM_LOOK)) emit(id, drawPerm(base, mark), 12, 12, ['idle'], [6, 6]);
 
+
+// ---------------------------------------------------------------------------
+// Milestone 8 round 1 (sheet section 7.0): the insect cast's new bugs, the two
+// new bosses, ability, status, trait and rank icons. All placeholders, drawn
+// from simple shapes; the Milestone 9 art replaces them file for file.
+
+function legs(img: Image, pts: readonly P[], color = '#201810'): void {
+  for (const [x, y] of pts) img.set(x, y, hex2(color));
+}
+
+function drawSkitterAnt(): Image {
+  // A small, quick worker ant: three round segments and thin legs.
+  const img = new Image(16, 12);
+  legs(img, [[3, 10], [5, 11], [7, 10], [9, 11], [11, 10], [13, 11], [2, 9], [14, 9]]);
+  blob(img, 12, 7, 3.5, 3, '#a03020', '#200808');
+  blob(img, 8, 7, 2, 2, '#a03020', '#200808');
+  blob(img, 4, 6, 3, 2.8, '#b84030', '#200808');
+  eyes(img, [[3, 5], [5, 5]], '#f8f8f8');
+  legs(img, [[2, 2], [3, 3], [5, 2], [5, 3]], '#401010');
+  return img;
+}
+
+function drawBristlecrawler(): Image {
+  // A green caterpillar: segments, stinging bristles at its head (the front, on the left), a soft rear.
+  const img = new Image(22, 14);
+  for (const [cx, r] of [[18, 3.2], [14.5, 3.6], [11, 3.8], [7.5, 4]] as P[]) blob(img, cx, 8, r, r * 0.9, '#58a838', '#183010');
+  blob(img, 4, 8, 3.5, 3.4, '#e0b040', '#302008');
+  eyes(img, [[3, 7], [5, 7]]);
+  const spine = hex2('#f8f0d0');
+  for (const [x, y] of [[1, 3], [3, 2], [5, 2], [7, 2], [0, 6], [8, 3], [2, 4], [6, 3]] as P[]) img.set(x, y, spine);
+  for (const [x, y] of [[11, 5], [14, 5], [18, 6]] as P[]) img.set(x, y, hex2('#a8e070'));
+  return img;
+}
+
+function drawGlowmoth(): Image {
+  // A floating moth: pale wings, a glowing belly.
+  const img = new Image(20, 14);
+  blob(img, 5, 6, 5, 4.5, '#e8e0b0', '#403820');
+  blob(img, 15, 6, 5, 4.5, '#e8e0b0', '#403820');
+  for (const [x, y] of [[4, 5], [16, 5], [5, 7], [15, 7]] as P[]) img.set(x, y, hex2('#a89870'));
+  blob(img, 10, 8, 2.5, 4.5, '#f8f070', '#605010');
+  eyes(img, [[9, 5], [11, 5]]);
+  legs(img, [[8, 1], [9, 2], [12, 1], [11, 2]], '#403820');
+  return img;
+}
+
+function drawTrapjaw(): Image {
+  // A trap-jaw ant: a big head with long mandibles at the front (the left), a narrow back.
+  const img = new Image(20, 16);
+  legs(img, [[6, 14], [9, 15], [12, 14], [15, 15], [17, 13]]);
+  blob(img, 15, 9, 4, 3.6, '#704020', '#200c04');
+  blob(img, 8, 9, 5, 4.5, '#905028', '#200c04');
+  eyes(img, [[6, 7], [9, 7]], '#f8f8f8');
+  const jaw = hex2('#f0d8a0');
+  for (const [x, y] of [[3, 8], [2, 8], [1, 7], [0, 6], [3, 11], [2, 11], [1, 12], [0, 13], [1, 6], [1, 13]] as P[]) img.set(x, y, jaw);
+  return img;
+}
+
+function drawStinkpuff(): Image {
+  // A stink bug: a shield-shaped back with a vent on top, a small head.
+  const img = new Image(18, 15);
+  legs(img, [[3, 13], [6, 14], [11, 14], [14, 13]]);
+  rows(img, 2, 2, ['....oooooooo...', '..oo33333333oo.', '.o3344444443333o', 'o334444444433332', 'o333444443333320', '.o33333333333o..', '..oo33333333oo..', '....oo3333oo....', '......oooo......'], '#7a8a38', {}, '#202008');
+  blob(img, 4, 9, 2.5, 2.2, '#5a6a28', '#202008');
+  eyes(img, [[3, 8], [5, 8]], '#f8f070');
+  for (const [x, y] of [[10, 4], [9, 5], [11, 5], [10, 6]] as P[]) img.set(x, y, hex2('#c8e060'));
+  return img;
+}
+
+function drawGrublet(): Image {
+  const img = new Image(10, 8);
+  blob(img, 5, 5, 4.5, 3, '#e8d8b0', '#403020');
+  for (const x of [3, 5, 7]) img.set(x, 4, hex2('#c0a880'));
+  eyes(img, [[2, 4]]);
+  return img;
+}
+
+/** Gloamhorn: a giant rhinoceros beetle. Closed, its wing cases are shut; open, they lift and show its soft back. */
+function drawGloamhorn(phase: number, open: boolean): Image {
+  const img = new Image(40, 36);
+  legs(img, [[6, 33], [7, 34], [14, 34], [26, 34], [33, 33], [34, 34]]);
+  if (open) {
+    // The soft back, pale, with the wing cases raised to either side.
+    blob(img, 21, 20, 14, 11, '#e8c8a0', '#302010');
+    blob(img, 8, 13, 7, 9, '#283048', '#0c0c18');
+    blob(img, 34, 13, 6, 9, '#283048', '#0c0c18');
+  } else {
+    blob(img, 21, 20, 16, 12, '#283048', '#0c0c18');
+    for (let y = 9; y < 32; y++) if (img.get(21, y)[3] > 0) img.set(21, y, hex2('#0c0c18'));
+    for (const [x, y] of [[14, 13], [15, 12], [26, 12], [27, 13]] as P[]) img.set(x, y, hex2('#6878a8'));
+  }
+  // Head and horn at the front (lower left).
+  blob(img, 8, 26, 6, 5, '#384060', '#0c0c18');
+  const horn = hex2('#d8d0c0');
+  for (const [x, y] of [[4, 22], [3, 21], [3, 20], [2, 19], [2, 18], [5, 23]] as P[]) img.set(x, y, horn);
+  const glow = hex2(phase === 2 ? '#f84020' : '#f8c030');
+  img.set(7, 25, glow);
+  img.set(10, 25, glow);
+  // Scratches as it loses health.
+  const cracks: P[] = [[17, 16], [18, 17], [25, 18], [24, 19], [30, 22], [29, 23], [13, 21]];
+  cracks.slice(0, phase * 3).forEach(([x, y]) => img.set(x, y, hex2('#90a0c8')));
+  return img;
+}
+
+/** The Brood Queen: a giant queen ant half sunk in her mound, a pale soft back on top, a crown of feelers that droops as she weakens. */
+function drawBroodQueen(phase: number): Image {
+  const img = new Image(48, 42);
+  blob(img, 24, 32, 23, 9, '#8a6038', '#2a1808');
+  blob(img, 26, 22, 15, 11, '#7a3428', '#200808');
+  blob(img, 27, 18, 9, 6, '#f0d8c0', '#503020');
+  blob(img, 11, 26, 7, 6, '#8a3c2c', '#200808');
+  eyes(img, [[8, 24], [12, 24]], phase === 2 ? '#f84020' : '#f8e050');
+  const feeler = hex2('#f8d040');
+  const droop = phase;
+  for (let k = 0; k < 6; k++) {
+    img.set(8 - Math.floor(k / 2), 19 - k + Math.floor((droop * k) / 3), feeler);
+    img.set(13 + Math.floor(k / 2), 19 - k + Math.floor((droop * k) / 3), feeler);
+  }
+  for (const [x, y] of [[3, 37], [10, 39], [40, 38], [44, 35], [18, 40]] as P[]) img.set(x, y, hex2('#b08858'));
+  return img;
+}
+
+/** A small badge over an enemy: its traits and rank (sheet section 7.0a). */
+function drawBadge(kind: string): Image {
+  const img = new Image(7, 7);
+  const colors: Record<string, string> = {
+    shielded: '#58a8f8', armoured: '#a0a0b0', swift: '#f8f8f8', explosive: '#f86020', regenerating: '#58d858', splitting: '#e8d8b0',
+  };
+  blob(img, 3.5, 3.5, 3.5, 3.5, colors[kind] ?? '#808080', '#101018');
+  const w = hex2('#101018');
+  const marks: Record<string, P[]> = {
+    shielded: [[3, 2], [2, 3], [4, 3], [3, 4]],
+    armoured: [[2, 2], [3, 2], [4, 2], [2, 3], [4, 3], [3, 4]],
+    swift: [[1, 3], [2, 3], [3, 3], [4, 2], [4, 4]],
+    explosive: [[3, 1], [3, 2], [2, 3], [4, 3], [3, 5]],
+    regenerating: [[3, 2], [2, 3], [3, 3], [4, 3], [3, 4]],
+    splitting: [[2, 3], [4, 3]],
+  };
+  for (const [x, y] of marks[kind] ?? []) img.set(x, y, w);
+  return img;
+}
+
+function drawRank(elite: boolean): Image {
+  // Veteran: a stripe. Elite: a little crown of horns.
+  const img = new Image(9, 5);
+  const gold = hex2('#f8d040');
+  const edge = hex2('#402800');
+  if (elite) rows(img, 0, 0, ['o.o.o.o.o', 'o4o4o4o4o', 'o4444444o', 'o4444444o', 'ooooooooo'], '#f8d040', {}, '#402800');
+  else {
+    for (let x = 0; x < 9; x++) for (let y = 1; y < 4; y++) img.set(x, y, y === 2 ? gold : edge);
+  }
+  return img;
+}
+
+function drawFacingMark(): Image {
+  // A small wedge on the ground ahead of a bug with a front that matters.
+  const img = new Image(7, 5);
+  rows(img, 0, 0, ['...o...', '..o4o..', '.o444o.', 'o44444o', 'ooooooo'], '#f8f8f8', {}, '#303040');
+  return img;
+}
+
+emit('skitter-ant', drawSkitterAnt(), 16, 12, ['idle'], [8, 10]);
+emit('bristlecrawler', drawBristlecrawler(), 22, 14, ['idle'], [11, 12]);
+emit('glowmoth', drawGlowmoth(), 20, 14, ['idle'], [10, 12]);
+emit('trapjaw', drawTrapjaw(), 20, 16, ['idle'], [10, 14]);
+emit('stinkpuff', drawStinkpuff(), 18, 15, ['idle'], [9, 13]);
+emit('grublet', drawGrublet(), 10, 8, ['idle'], [5, 7]);
+emit('frostgrub', drawCarrier('#90c8f0', mark('#f8f8f8', [[11, 4], [11, 5], [11, 6], [11, 7], [11, 8], [9, 6], [10, 6], [12, 6], [13, 6], [10, 5], [12, 7]])), 18, 16, ['idle'], [9, 14]);
+emit('sparkgrub', drawCarrier('#e8c830', mark('#302000', [[12, 4], [11, 5], [10, 6], [11, 6], [12, 6], [11, 7], [10, 8]])), 18, 16, ['idle'], [9, 14]);
+emit(
+  'gloamhorn',
+  sheet([...[0, 1, 2].map((p) => drawGloamhorn(p, false)), ...[0, 1, 2].map((p) => drawGloamhorn(p, true))]),
+  40,
+  36,
+  ['phase1', 'phase2', 'phase3', 'open1', 'open2', 'open3'],
+  [20, 33],
+);
+emit('brood-queen', sheet([0, 1, 2].map(drawBroodQueen)), 48, 42, ['phase1', 'phase2', 'phase3'], [24, 36]);
+for (const k of ['frost', 'static', 'poisoned', 'chilled']) emit(`icon-${k}`, drawIcon(k), 10, 10, ['idle'], [5, 5]);
+for (const t of ['shielded', 'armoured', 'swift', 'explosive', 'regenerating', 'splitting']) emit(`trait-${t}`, drawBadge(t), 7, 7, ['idle'], [3, 6]);
+emit('rank-veteran', drawRank(false), 9, 5, ['idle'], [4, 4]);
+emit('rank-elite', drawRank(true), 9, 5, ['idle'], [4, 4]);
+emit('facing-mark', drawFacingMark(), 7, 5, ['idle'], [3, 2]);
+
 const font = drawFont();
 emit('font', font.img, 4, 6, font.frames, [0, 0]);
 
-const manifest: Manifest = { version: 1, sprites };
+// Milestone 8 (sheet section 3): the tint of an enemy with an element, set here so the final art can change it.
+const tints = { fire: '#ff9060', ice: '#a0d8ff', shock: '#fff070' };
+const manifest: Manifest = { version: 1, sprites, tints };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 console.log(`Wrote ${Object.keys(sprites).length} sprites to assets/sprites and assets/manifest.json`);

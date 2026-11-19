@@ -52,7 +52,7 @@ export interface BossDef {
   /** A slam marks a ring round the resting ball; it lands on the next enemy turn. */
   readonly slam: { readonly damage: number; readonly knockSpeed: number; readonly knockHop: number };
   /** Milestone 8: the charge (Gloamhorn). */
-  readonly charge?: { readonly speed: number; readonly damage: number; readonly knockSpeed: number; readonly knockHop: number; readonly windupSeconds: number };
+  readonly charge?: { readonly speed: number; readonly damage: number; readonly knockSpeed: number; readonly knockHop: number; readonly windupSeconds: number; readonly maxSeconds: number };
   /** Milestone 8: acid globs (the Brood Queen), lobbed like a Spittlebug's spit. */
   readonly glob?: { readonly loftAngle: number; readonly radius: number };
   /** Dropped near it when it enters a new phase ("sheds a plate"). */
@@ -118,7 +118,8 @@ const defs: readonly BossDef[] = [
       { above: 0, slamRadius: null, maxMinions: 0, pool: [], charge: 'every' },
     ],
     slam: NO_SLAM,
-    charge: { speed: 9, damage: 1, knockSpeed: 7, knockHop: 1.5, windupSeconds: 1 },
+    // A charge stops after maxSeconds even on ice or among bumpers (as built: without it, one charge in the Bumper Ring bounced for 10 s).
+    charge: { speed: 9, damage: 1, knockSpeed: 7, knockHop: 1.5, windupSeconds: 1, maxSeconds: 2 },
     shed: ['heart', 'shot-orb'],
     minionsLeaveFlag: false,
     spawnClear: 1,

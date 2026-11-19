@@ -2484,6 +2484,289 @@
         6
       ]
     },
+    "skitter-ant": {
+      "file": "sprites/skitter-ant.png",
+      "frameWidth": 16,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        8,
+        10
+      ]
+    },
+    "bristlecrawler": {
+      "file": "sprites/bristlecrawler.png",
+      "frameWidth": 22,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        11,
+        12
+      ]
+    },
+    "glowmoth": {
+      "file": "sprites/glowmoth.png",
+      "frameWidth": 20,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        12
+      ]
+    },
+    "trapjaw": {
+      "file": "sprites/trapjaw.png",
+      "frameWidth": 20,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        14
+      ]
+    },
+    "stinkpuff": {
+      "file": "sprites/stinkpuff.png",
+      "frameWidth": 18,
+      "frameHeight": 15,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        13
+      ]
+    },
+    "grublet": {
+      "file": "sprites/grublet.png",
+      "frameWidth": 10,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        7
+      ]
+    },
+    "frostgrub": {
+      "file": "sprites/frostgrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "sparkgrub": {
+      "file": "sprites/sparkgrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "gloamhorn": {
+      "file": "sprites/gloamhorn.png",
+      "frameWidth": 40,
+      "frameHeight": 36,
+      "frames": [
+        "phase1",
+        "phase2",
+        "phase3",
+        "open1",
+        "open2",
+        "open3"
+      ],
+      "anchor": [
+        20,
+        33
+      ]
+    },
+    "brood-queen": {
+      "file": "sprites/brood-queen.png",
+      "frameWidth": 48,
+      "frameHeight": 42,
+      "frames": [
+        "phase1",
+        "phase2",
+        "phase3"
+      ],
+      "anchor": [
+        24,
+        36
+      ]
+    },
+    "icon-frost": {
+      "file": "sprites/icon-frost.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-static": {
+      "file": "sprites/icon-static.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-poisoned": {
+      "file": "sprites/icon-poisoned.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-chilled": {
+      "file": "sprites/icon-chilled.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "trait-shielded": {
+      "file": "sprites/trait-shielded.png",
+      "frameWidth": 7,
+      "frameHeight": 7,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        6
+      ]
+    },
+    "trait-armoured": {
+      "file": "sprites/trait-armoured.png",
+      "frameWidth": 7,
+      "frameHeight": 7,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        6
+      ]
+    },
+    "trait-swift": {
+      "file": "sprites/trait-swift.png",
+      "frameWidth": 7,
+      "frameHeight": 7,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        6
+      ]
+    },
+    "trait-explosive": {
+      "file": "sprites/trait-explosive.png",
+      "frameWidth": 7,
+      "frameHeight": 7,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        6
+      ]
+    },
+    "trait-regenerating": {
+      "file": "sprites/trait-regenerating.png",
+      "frameWidth": 7,
+      "frameHeight": 7,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        6
+      ]
+    },
+    "trait-splitting": {
+      "file": "sprites/trait-splitting.png",
+      "frameWidth": 7,
+      "frameHeight": 7,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        6
+      ]
+    },
+    "rank-veteran": {
+      "file": "sprites/rank-veteran.png",
+      "frameWidth": 9,
+      "frameHeight": 5,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        4
+      ]
+    },
+    "rank-elite": {
+      "file": "sprites/rank-elite.png",
+      "frameWidth": 9,
+      "frameHeight": 5,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        4
+      ]
+    },
+    "facing-mark": {
+      "file": "sprites/facing-mark.png",
+      "frameWidth": 7,
+      "frameHeight": 5,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        2
+      ]
+    },
     "font": {
       "file": "sprites/font.png",
       "frameWidth": 4,
@@ -2548,5 +2831,10 @@
         0
       ]
     }
+  },
+  "tints": {
+    "fire": "#ff9060",
+    "ice": "#a0d8ff",
+    "shock": "#fff070"
   }
 }
