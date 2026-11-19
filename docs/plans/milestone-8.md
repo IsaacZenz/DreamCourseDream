@@ -1,6 +1,6 @@
 # Milestone 8 design sheet — Content and balance
 
-**Status: round 1 sheet complete, 2026-11-19.** Every question in section 12 is answered by the owner. **Waiting for the owner's final sign-off** of the whole sheet, including the new shop prices (section 10b). Nothing is built yet.
+**Status: round 1 signed off by the owner, 2026-11-19**, after two rounds of answers (section 12) and four additions (sections 10b to 10d). Being built.
 
 How to review: read each section and change any number, name or rule you want. Section 12 lists the questions I need answered; each has a default I will use if you say "defaults are fine". Every number is a starting value and goes into `src/content/` so it can be tuned later.
 
