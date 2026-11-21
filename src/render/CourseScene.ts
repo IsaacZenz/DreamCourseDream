@@ -44,7 +44,7 @@ import { placeGear } from '../gen/placeGear';
 import { mixFor, regionDefFor, upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, rewardFor, bossHealthFor } from '../sim/run';
 import { ARENAS, arenaData } from '../content/arenas';
 import { activeRun, newRunSeed, persist, session, startRun, type RunCourse } from './runSession';
-import { ACORNS } from '../content/consumables';
+import { ACORNS, FOODS } from '../content/consumables';
 import { jobKey, madeCourse, prefetch, want, type Made } from './genQueue';
 import { BOSSES } from '../content/bosses';
 import { BLUE_STARS } from '../content/progress';
@@ -523,7 +523,7 @@ export class CourseScene extends Phaser.Scene {
     if (!this.runMode || this.runReported || !run || run.status !== 'course') return;
     this.runReported = true;
     const p = this.play;
-    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, blueStars: p.blueStars });
+    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, blueStars: p.blueStars, found: p.found });
     session.course = null;
     // A boss win deposits its blue stars at once (owner, 2026-11-17): save them now.
     persist();
@@ -1472,6 +1472,9 @@ export class CourseScene extends Phaser.Scene {
           break;
         case 'acorn':
           this.queueMessage(`${(ACORNS.get(e.item)?.name ?? 'ACORN').toUpperCase()}: +${e.slices} WHEEL SLICES THIS COURSE`, 0xf8d030);
+          break;
+        case 'foodFound':
+          this.queueMessage(`FOUND ${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()}: IT GOES IN YOUR BAG AFTER THE COURSE`, 0xf8d030);
           break;
         case 'slamMark':
           this.queueMessage('THE WARDEN WINDS UP: GET OUT OF THE RING!', BAD);

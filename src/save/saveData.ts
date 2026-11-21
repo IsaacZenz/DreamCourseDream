@@ -12,9 +12,10 @@
 import { GEAR, GEAR_CATEGORIES, NO_GEAR, type GearSlots } from '../content/gear.ts';
 import { PERMANENT_UPGRADES, STARTING_ABILITIES } from '../content/progress.ts';
 import { newProfile, type Profile } from '../sim/profile.ts';
-import type { RunMap, RunState } from '../sim/run.ts';
+import { openFoodShop, type RunMap, type RunState } from '../sim/run.ts';
+import { FOODS } from '../content/consumables.ts';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 /** A run without its map (the map is made again from the seed). */
 export type RunSnapshot = Omit<RunState, 'map'>;
@@ -51,6 +52,15 @@ const isStrOrNull = (v: unknown): v is string | null => v === null || typeof v =
 const MIGRATIONS: readonly ((old: Obj) => Obj)[] = [
   // 1 -> 2 (Milestone 8, owner 2026-11-18): every enemy is an insect; the Warden is now the Stagwarden.
   (old) => ({ ...renameIds(old, new Map([['warden', 'stagwarden']])), version: 2 }),
+  // 2 -> 3 (round 2a, owner 2026-11-21): the pocket acorn moves into the food bag; the town gets a food shop
+  // (opened again on load) and its gear shop keeps only gear.
+  (old) => {
+    const run = old.run;
+    if (!isObj(run)) return { ...old, version: 3 };
+    const { pocket, ...rest } = run;
+    const shop = isObj(run.shop) ? { ...run.shop, offers: Array.isArray(run.shop.offers) ? run.shop.offers.filter((o) => isObj(o) && o.kind === 'gear') : [] } : run.shop;
+    return { ...old, version: 3, run: { ...rest, shop, bag: typeof pocket === 'string' ? [{ id: pocket, courses: 1 }] : [], fed: [], found: [], foodShop: null } };
+  },
 ];
 
 /** Every string equal to an old id, anywhere in the save, becomes the new id. */
@@ -134,7 +144,12 @@ function readRun(v: unknown): RunSnapshot | null {
   for (const k of ['countdown', 'raises', 'counted', 'health', 'wallet', 'blueStars', 'banked', 'toStash', 'region']) if (!isNum(v[k])) return null;
   for (const k of ['path', 'bossesBeaten']) if (!Array.isArray(v[k])) return null;
   for (const k of ['upgrades', 'bought', 'totals', 'permanent', 'gear', 'burrow']) if (!isObj(v[k])) return null;
-  if (!isStrOrNull(v.at) || !isStrOrNull(v.ability) || !isStrOrNull(v.pocket ?? null)) return null;
+  if (!isStrOrNull(v.at) || !isStrOrNull(v.ability)) return null;
+  // Round 2a: the food bag and the foods eaten.
+  if (!Array.isArray(v.bag) || !Array.isArray(v.fed) || !Array.isArray(v.found)) return null;
+  for (const b of [...v.bag, ...v.found]) if (!isObj(b) || typeof b.id !== 'string' || !FOODS.has(b.id) || !isNum(b.courses)) return null;
+  for (const f of v.fed) if (!isObj(f) || typeof f.id !== 'string' || !FOODS.has(f.id) || !isNum(f.left)) return null;
+  if (v.foodShop !== null && v.foodShop !== undefined && (!isObj(v.foodShop) || !Array.isArray(v.foodShop.offers))) return null;
   for (const c of GEAR_CATEGORIES) if (gearOrNull((v.gear as Obj)[c], c) === undefined) return null;
   const shop = v.shop;
   if (!Array.isArray(shop.offers) || !isNum(shop.rerolls) || !isNum(shop.freeRerolls) || typeof shop.raised !== 'boolean') return null;
@@ -150,5 +165,8 @@ export function snapshotRun(run: RunState): RunSnapshot {
 
 /** Put a saved run back together with its map (made again from the seed). */
 export function restoreRun(snap: RunSnapshot, map: RunMap): RunState {
-  return { ...(JSON.parse(JSON.stringify(snap)) as RunSnapshot), map } as RunState;
+  const run = { ...(JSON.parse(JSON.stringify(snap)) as RunSnapshot), map } as RunState;
+  // A run saved before round 2a has no food shop yet: open it (made from the seed, as on arrival).
+  if (run.status === 'shop' && !run.foodShop) openFoodShop(run);
+  return run;
 }

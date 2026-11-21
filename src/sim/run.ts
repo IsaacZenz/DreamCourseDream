@@ -19,7 +19,7 @@
  */
 import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY_ODDS, type GearCategory, type GearDef, type GearSlots } from '../content/gear.ts';
-import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
+import { ACORN_LIST, ACORNS, ACORN_SHOP_WEIGHT, FOOD, FOOD_LIST, FOODS, acornWeights, isInstantFood } from '../content/consumables.ts';
 import { BOSSES, BOSS_IDS, bossHealthIn } from '../content/bosses.ts';
 import type { JourneySize } from '../content/gen.ts';
 import { ENDLESS_MIX_STEP, REGION_MIXES, type EnemyMix } from '../content/enemyMods.ts';
@@ -73,18 +73,37 @@ export interface CurrentNode {
   readonly courseSeed: string;
   /** Gear item placed on this course, or null. */
   readonly gear: string | null;
-  /** Owner, 2026-11-17: the pocket acorn taken into this course, or null. */
-  readonly acorn: string | null;
   /** Milestone 7: a boss fight's boss and arena (src/content/arenas), or null on other nodes. */
   readonly boss: string | null;
   readonly arena: string | null;
 }
 
+/**
+ * Something for sale or to take. Round 2a: the food shop sells 'food' (a food
+ * id from consumables.ts, with how many courses it lasts); the gear shop sells
+ * 'gear'. The cache still offers gear, an upgrade (for the run) or a heal.
+ */
 export interface Offer {
-  readonly kind: 'gear' | 'upgrade' | 'heal' | 'raise' | 'acorn';
+  readonly kind: 'gear' | 'upgrade' | 'heal' | 'raise' | 'acorn' | 'food';
   readonly id: string;
   sold: boolean;
+  /** Food: how many courses it lasts once eaten (0 for Apple and Garlic, which work at once). */
+  readonly courses?: number;
 }
+
+/** A food in the bag (round 2a sheet section 4.1). `courses` is 0 for Apple and Garlic. */
+export interface BagItem {
+  readonly id: string;
+  readonly courses: number;
+}
+
+/** A food eaten and still working: `left` courses to go, counting the next one. */
+export interface FedFood {
+  readonly id: string;
+  left: number;
+}
+
+export type ShopKind = 'food' | 'gear';
 
 export interface ShopState {
   readonly node: string;
@@ -153,8 +172,14 @@ export interface RunState {
   endedBy: 'health' | 'shots' | 'boss' | null;
   /** The last town before the forced boss has been offered and visited (owner, 2026-11-15). */
   lastTownVisited: boolean;
-  /** Owner, 2026-11-17: an acorn bought in a shop, used when the next course starts. Holds one. */
-  pocket: string | null;
+  /** Round 2a (owner, 2026-11-21): the food bag, at most FOOD.bagSlots. Replaces the single pocket acorn. */
+  bag: BagItem[];
+  /** Foods eaten and still working. */
+  fed: FedFood[];
+  /** Food found on the last course with no room in the bag: the player swaps it in or leaves it. */
+  found: BagItem[];
+  /** The town's food shop (the gear shop is `shop`). */
+  foodShop: ShopState | null;
   /** The boss reward: a pick of 1 from 3 gear items (Milestone 7 sheet section 2.7). */
   reward: Offer[] | null;
   /** The arena of the last boss fight (from the profile, then this run's), never used twice in a row. */
@@ -200,7 +225,10 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     totals: { courses: 0, stars: 0 },
     endedBy: null,
     lastTownVisited: false,
-    pocket: null,
+    bag: [],
+    fed: [],
+    found: [],
+    foodShop: null,
     reward: null,
     lastArena: start.lastArena ?? null,
     beatFinal: false,
@@ -230,6 +258,11 @@ function upgradeModifiers(run: RunState): Modifier[] {
   for (const u of UPGRADE_LIST) {
     for (let i = 0; i < (run.upgrades[u.id] ?? 0); i++) out.push({ stat: u.stat, op: u.op, amount: u.amount, source: { kind: 'run', id: u.id }, duration: { kind: 'run' } });
   }
+  // Round 2a: stat foods eaten and still working (each one stacks).
+  run.fed.forEach((f, k) => {
+    const u = FOODS.get(f.id)?.kind === 'stat' ? UPGRADES.get(f.id) : undefined;
+    if (u) out.push({ stat: u.stat, op: u.op, amount: u.amount, source: { kind: 'run', id: `food:${f.id}:${k}` }, duration: { kind: 'run' } });
+  });
   return out;
 }
 
@@ -254,7 +287,8 @@ function hasRunEffect(run: RunState, kind: string): boolean {
 
 /** What the ball brings into a course. */
 export function loadoutOf(run: RunState): Loadout {
-  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run), acorn: run.current?.acorn ?? null, rarityWeights: dropWeights(run) };
+  const acorns = run.fed.filter((f) => FOODS.get(f.id)?.kind === 'acorn').map((f) => f.id);
+  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run), acorns, rarityWeights: dropWeights(run) };
 }
 
 /** Rarity weights for things dropped on a course (acorns): the run's odds column after drop luck. */
@@ -546,18 +580,17 @@ export function enterNode(run: RunState, id: string): CurrentNode {
     budget: isCourse ? budgetFor(run, type) : 0,
     courseSeed: courseSeedOf(run, node),
     gear,
-    acorn: isCourse ? run.pocket : null,
     boss: type === 'boss' ? bossOf(run) : null,
     arena: type === 'boss' ? pickArena(run) : null,
   };
   if (run.current.arena) run.lastArena = run.current.arena;
-  if (isCourse) run.pocket = null;
   if (type === 'shop') {
     // Owner, 2026-11-17: reaching a town deposits the blue stars carried.
     deposit(run);
     run.status = 'shop';
     run.shop = { node: id, offers: [], rerolls: 0, freeRerolls: 0, raised: false };
     run.shop.offers = shopStock(run, run.shop, []);
+    openFoodShop(run);
   } else if (type === 'cache') {
     run.status = 'cache';
     run.cache = { node: id, offers: cacheStock(run, id) };
@@ -593,6 +626,8 @@ export interface CourseOutcome {
   readonly gear: GearSlots;
   /** Blue stars picked up on the course (carried). */
   readonly blueStars?: number;
+  /** Round 2a: food picked up on the course (acorn ids); it goes into the bag afterwards. */
+  readonly found?: readonly string[];
 }
 
 /** Move the carried blue stars to the stash (owner, 2026-11-17: at a town, or on beating a boss). */
@@ -643,6 +678,7 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
     return;
   }
   run.totals.courses++;
+  afterCourse(run, out.found ?? []);
   if (cur.type === 'course') run.blueStars += BLUE_STARS.course;
   else if (cur.type === 'hard') run.blueStars += BLUE_STARS.hard;
   run.wallet += rewardFor(cur.type);
@@ -727,32 +763,50 @@ export function startRegion(run: RunState, region: number, map: RunMap): void {
   run.lastTownVisited = false;
   run.current = null;
   run.shop = null;
+  run.foodShop = null;
   run.cache = null;
   run.status = 'map';
 }
 
 // ---------------------------------------------------------------------------
-// The shop (sheet section 7)
+// The shops (Milestone 6 sheet section 7; round 2a sheet section 3, owner
+// 2026-11-21): every town has a gear shop (`run.shop`, gear only) and a food
+// shop (`run.foodShop`). Each has its own stock and its own rerolls.
 
-function upgradePrice(run: RunState, id: string): number {
-  // Owner, 2026-11-19: a little dearer in each region.
-  return UPGRADE_PRICE.base + UPGRADE_PRICE.perRegion * (Math.max(1, run.region) - 1) + UPGRADE_PRICE.step * (run.bought[id] ?? 0);
+function shopOf(run: RunState, which: ShopKind): ShopState | null {
+  return which === 'food' ? run.foodShop : run.shop;
+}
+
+/** How many courses a food lasts: 1, 2 or 3 (owner, 2026-11-21: 50%, 30%, 20%). */
+function rollCourses(rng: Rng): number {
+  return 1 + rng.weighted(FOOD.durationWeights);
+}
+
+/** A food's price in yellow stars before the shop prices stat (sheet section 4.5). */
+function foodPrice(run: RunState, id: string, courses: number): number {
+  const f = FOODS.get(id);
+  if (!f) return 0;
+  if (f.kind === 'heal') return FOOD.applePrice;
+  if (f.kind === 'raise') return FOOD.garlicPrice;
+  const one = f.kind === 'acorn' ? (FOOD.acornPrice[id] ?? 0) : FOOD.statPrice + FOOD.statPricePerRegion * (Math.max(1, run.region) - 1);
+  return Math.round(one * (FOOD.durationPrice[Math.max(1, courses) - 1] ?? 1));
 }
 
 /** An offer's price in yellow stars, after the shop prices stat. */
 export function priceOf(run: RunState, offer: Offer): number {
   let base: number;
   if (offer.kind === 'gear') base = GEAR.get(offer.id)!.price;
-  else if (offer.kind === 'upgrade') base = upgradePrice(run, offer.id);
+  else if (offer.kind === 'food') base = foodPrice(run, offer.id, offer.courses ?? 0);
+  else if (offer.kind === 'upgrade') base = UPGRADE_PRICE.base + UPGRADE_PRICE.perRegion * (Math.max(1, run.region) - 1);
   else if (offer.kind === 'heal') base = RUN.shop.heal.price;
   else if (offer.kind === 'acorn') base = ACORNS.get(offer.id)!.price;
   else base = RUN.shop.raise.price;
   return Math.max(0, Math.round(base * runStats(run).get('shopPrices')));
 }
 
-/** The next reroll's price: 3, then 6, 12... Four-Leaf Clover makes the first one in each shop free. */
-export function rerollPrice(run: RunState): number {
-  const shop = run.shop;
+/** The next reroll's price in one shop: 3, then 6, 12... Four-Leaf Clover makes the first one in each shop free. */
+export function rerollPrice(run: RunState, which: ShopKind = 'gear'): number {
+  const shop = shopOf(run, which);
   if (!shop) return 0;
   if (shop.rerolls === 0 && hasRunEffect(run, 'freeReroll')) return 0;
   const paid = shop.rerolls - shop.freeRerolls;
@@ -763,64 +817,90 @@ function canRaise(run: RunState, shop: ShopState): boolean {
   return !shop.raised && run.raises < RUN.maxRaises;
 }
 
-/** Fill every unsold slot: two gear items, two upgrades, one service. */
+/** Fill every unsold slot of the gear shop with gear (round 2a: 3 items, gear only). */
 function shopStock(run: RunState, shop: ShopState, keep: readonly Offer[]): Offer[] {
   const rng = rngFor(run, `shop:${shop.node}:${shop.rerolls}`);
-  const old = (i: number) => keep[i] && keep[i]!.sold ? keep[i]! : null;
   const out: Offer[] = [];
   const takenGear = keep.filter((o) => o.sold && o.kind === 'gear').map((o) => o.id);
-  for (let i = 0; i < RUN.shop.gearOffers; i++) {
-    const k = old(i);
-    if (k) {
+  for (let i = 0; i < FOOD.gearOffers; i++) {
+    const k = keep[i];
+    if (k && k.sold) {
       out.push(k);
       continue;
     }
     const id = rollGear(run, rng, { exclude: [...takenGear, ...out.filter((o) => o.kind === 'gear').map((o) => o.id)] });
-    out.push(id ? { kind: 'gear', id, sold: false } : { kind: 'heal', id: 'heal', sold: false });
+    if (id) out.push({ kind: 'gear', id, sold: false });
   }
-  const ups = rng.shuffle([...UPGRADE_LIST.map((u) => u.id)]);
-  for (let i = 0; i < RUN.shop.upgradeOffers; i++) {
-    const slot = RUN.shop.gearOffers + i;
-    const k = old(slot);
-    out.push(k ?? { kind: 'upgrade', id: ups.find((u) => !out.some((o) => o.kind === 'upgrade' && o.id === u))!, sold: false });
-  }
-  const slot = RUN.shop.gearOffers + RUN.shop.upgradeOffers;
-  const k = old(slot);
-  out.push(k ?? serviceOffer(run, shop, rng));
   return out;
 }
 
+/** Open the town's food shop. */
+export function openFoodShop(run: RunState): void {
+  const node = run.shop?.node ?? run.current?.id ?? 'town';
+  run.foodShop = { node, offers: [], rerolls: 0, freeRerolls: 0, raised: false };
+  run.foodShop.offers = foodStock(run, run.foodShop, []);
+}
+
 /**
- * The service slot (owner, 2026-11-17): Heal, Delay the Boss or an acorn, a
- * third each. No raise when none are left; no acorn while the pocket is full.
+ * Fill every unsold slot of the food shop (sheet section 4.4): picked by
+ * weight, no food twice; no Apple at full health, no Garlic when no raise is
+ * left; which acorn follows the region's rarity odds. Each food rolls how many
+ * courses it lasts.
  */
-function serviceOffer(run: RunState, shop: ShopState, rng: Rng): Offer {
-  const kinds: ('heal' | 'raise' | 'acorn')[] = ['heal'];
-  if (canRaise(run, shop)) kinds.push('raise');
-  if (!run.pocket) kinds.push('acorn');
-  const kind = rng.pick(kinds);
-  if (kind === 'acorn') return { kind, id: ACORN_LIST[rng.weighted(acornWeights(dropWeights(run)))]!.id, sold: false };
-  return { kind, id: kind, sold: false };
+function foodStock(run: RunState, shop: ShopState, keep: readonly Offer[]): Offer[] {
+  const rng = rngFor(run, `food:${shop.node}:${shop.rerolls}`);
+  const out: Offer[] = [];
+  for (let i = 0; i < FOOD.foodOffers; i++) {
+    const k = keep[i];
+    if (k && k.sold) {
+      out.push(k);
+      continue;
+    }
+    const has = (id: string) => out.some((o) => o.id === id) || keep.some((o) => o.sold && o.id === id);
+    const hasAcorn = out.some((o) => FOODS.get(o.id)?.kind === 'acorn');
+    const options: { id: string; weight: number }[] = [];
+    for (const f of FOOD_LIST) {
+      if (f.kind === 'acorn' || has(f.id)) continue;
+      if (f.kind === 'heal' && run.health >= runStats(run).get('maxHealth')) continue;
+      if (f.kind === 'raise' && !canRaise(run, shop)) continue;
+      options.push({ id: f.id, weight: f.weight });
+    }
+    if (!hasAcorn) options.push({ id: 'acorn', weight: ACORN_SHOP_WEIGHT });
+    if (!options.length) break;
+    let id = options[rng.weighted(options.map((o) => o.weight))]!.id;
+    if (id === 'acorn') id = ACORN_LIST[rng.weighted(acornWeights(dropWeights(run)))]!.id;
+    out.push({ kind: 'food', id, sold: false, courses: isInstantFood(id) ? 0 : rollCourses(rng) });
+  }
+  return out;
 }
 
 /** Why an offer cannot be bought now, or null if it can. */
 export function cannotBuy(run: RunState, offer: Offer, free = false): string | null {
   if (offer.sold) return 'SOLD';
   if (!free && priceOf(run, offer) > run.wallet) return 'NOT ENOUGH STARS';
+  if (offer.kind === 'food') {
+    if (run.bag.length >= FOOD.bagSlots) return 'BAG IS FULL';
+    if (FOODS.get(offer.id)?.kind === 'raise' && run.foodShop && !canRaise(run, run.foodShop)) return 'NO RAISES LEFT';
+    return null;
+  }
   if (offer.kind === 'heal' && run.health >= runStats(run).get('maxHealth')) return 'HEALTH IS FULL';
   if (offer.kind === 'raise' && run.shop && !canRaise(run, run.shop)) return 'NO RAISES LEFT';
-  if (offer.kind === 'acorn' && run.pocket) return 'POCKET IS FULL';
+  if (offer.kind === 'acorn' && run.bag.length >= FOOD.bagSlots) return 'BAG IS FULL';
   return null;
 }
 
 function applyOffer(run: RunState, offer: Offer): void {
   if (offer.kind === 'gear') setGear(run, offer.id);
-  else if (offer.kind === 'upgrade') addUpgrade(run, offer.id);
+  else if (offer.kind === 'food') {
+    run.bag.push({ id: offer.id, courses: offer.courses ?? 0 });
+    // Garlic: once per shop, as Delay the Boss was.
+    if (FOODS.get(offer.id)?.kind === 'raise' && run.foodShop) run.foodShop.raised = true;
+  } else if (offer.kind === 'upgrade') addUpgrade(run, offer.id);
   else if (offer.kind === 'heal') {
     run.health += run.status === 'cache' ? RUN.cache.heal : RUN.shop.heal.amount;
     clampHealth(run);
   } else if (offer.kind === 'acorn') {
-    run.pocket = offer.id;
+    run.bag.push({ id: offer.id, courses: 1 });
   } else {
     run.countdown++;
     run.raises++;
@@ -828,39 +908,105 @@ function applyOffer(run: RunState, offer: Offer): void {
   }
 }
 
-/** Buy offer `i` in the shop. Returns null, or the reason it could not be bought. */
-export function buy(run: RunState, i: number): string | null {
-  const shop = run.shop;
+/** Buy offer `i` in one of the town's shops. Returns null, or the reason it could not be bought. */
+export function buy(run: RunState, i: number, which: ShopKind = 'gear'): string | null {
+  const shop = shopOf(run, which);
   const offer = shop?.offers[i];
   if (!shop || run.status !== 'shop' || !offer) return 'NOTHING THERE';
   const why = cannotBuy(run, offer);
   if (why) return why;
   run.wallet -= priceOf(run, offer);
-  if (offer.kind === 'upgrade') run.bought[offer.id] = (run.bought[offer.id] ?? 0) + 1;
   applyOffer(run, offer);
   offer.sold = true;
-  // A raise bought means the service slot cannot offer another one; nothing else changes.
   return null;
 }
 
-/** Replace every unsold offer. Returns null, or why it could not be done. */
-export function reroll(run: RunState): string | null {
-  const shop = run.shop;
+/** Replace every unsold offer in one shop. Returns null, or why it could not be done. */
+export function reroll(run: RunState, which: ShopKind = 'gear'): string | null {
+  const shop = shopOf(run, which);
   if (!shop || run.status !== 'shop') return 'NOT IN A SHOP';
-  const price = rerollPrice(run);
+  const price = rerollPrice(run, which);
   if (price > run.wallet) return 'NOT ENOUGH STARS';
   run.wallet -= price;
   if (price === 0) shop.freeRerolls++;
   shop.rerolls++;
-  shop.offers = shopStock(run, shop, shop.offers);
+  shop.offers = which === 'food' ? foodStock(run, shop, shop.offers) : shopStock(run, shop, shop.offers);
   return null;
 }
 
-/** Leave the shop. Owner, 2026-11-15: a shop does not lower the boss countdown. */
+/** Leave the town. Owner, 2026-11-15: a shop does not lower the boss countdown. */
 export function leaveShop(run: RunState): void {
   if (run.status !== 'shop') return;
   run.shop = null;
+  run.foodShop = null;
   arrive(run, false);
+}
+
+// ---------------------------------------------------------------------------
+// The food bag (round 2a sheet section 4; owner, 2026-11-21)
+
+/** Food can be eaten between courses: on the map or in a town. Never during a course. */
+export function canEat(run: RunState): boolean {
+  return run.status === 'map' || run.status === 'shop';
+}
+
+/** Why bag item `i` cannot be eaten now, or null. */
+export function cannotEat(run: RunState, i: number): string | null {
+  const item = run.bag[i];
+  if (!item) return 'NOTHING THERE';
+  if (!canEat(run)) return 'NOT DURING A COURSE';
+  const kind = FOODS.get(item.id)?.kind;
+  if (kind === 'heal' && run.health >= runStats(run).get('maxHealth')) return 'HEALTH IS FULL';
+  if (kind === 'raise' && run.raises >= RUN.maxRaises) return 'NO RAISES LEFT';
+  return null;
+}
+
+/**
+ * Eat bag item `i` (owner, 2026-11-21: any number before a course). Apple and
+ * Garlic work at once; the rest work from the next course for as many courses
+ * as they last. Returns null, or why it could not be eaten.
+ */
+export function eat(run: RunState, i: number): string | null {
+  const why = cannotEat(run, i);
+  if (why) return why;
+  const item = run.bag.splice(i, 1)[0]!;
+  const f = FOODS.get(item.id)!;
+  if (f.kind === 'heal') {
+    run.health += FOOD.appleHeal;
+  } else if (f.kind === 'raise') {
+    run.countdown++;
+    run.raises++;
+  } else {
+    run.fed.push({ id: item.id, left: Math.max(1, item.courses) });
+    // Mushroom Stew also heals when eaten (as Tough Shell did when bought).
+    if (f.kind === 'stat') run.health += UPGRADES.get(item.id)?.heal ?? 0;
+  }
+  clampHealth(run);
+  return null;
+}
+
+/**
+ * After a course is won: every food eaten counts one course down and stops
+ * working at 0 (max health trimmed); food found on the course goes into the
+ * bag, or waits in `found` for the player to swap it in or leave it.
+ */
+function afterCourse(run: RunState, found: readonly string[]): void {
+  for (const f of run.fed) f.left--;
+  run.fed = run.fed.filter((f) => f.left > 0);
+  clampHealth(run);
+  const rng = rngFor(run, `found:${run.region}:${run.counted}:${run.totals.courses}`);
+  for (const id of found) {
+    const item: BagItem = { id, courses: isInstantFood(id) ? 0 : rollCourses(rng) };
+    if (run.bag.length < FOOD.bagSlots) run.bag.push(item);
+    else run.found.push(item);
+  }
+}
+
+/** The bag was full when food was found: put it in place of bag item `replace`, or leave it (null). */
+export function keepFound(run: RunState, replace: number | null): void {
+  const item = run.found.shift();
+  if (!item || replace === null || !run.bag[replace]) return;
+  run.bag[replace] = item;
 }
 
 // ---------------------------------------------------------------------------

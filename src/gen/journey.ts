@@ -901,6 +901,14 @@ function stampMoat(
         else if (avoid.some((a) => Math.abs(a[0] - p[0]) <= GEN.padRadius && Math.abs(a[1] - p[1]) <= GEN.padRadius)) ok = false;
       }
     }
+    // One row of plain ground beyond each side of the moat, so a bridge never leads straight into a pond or a pit.
+    for (let s = spanFrom; s <= spanTo && ok; s++) {
+      for (const d of [d0 - 1, d0 + mw]) {
+        const p = at(s, d);
+        const t = board.tiles.get(key(p[0], p[1]));
+        if (!t || !SURFACES.get(t.surface)?.canHoldBall || (reserved.has(key(p[0], p[1])) && t.surface !== 'grass')) ok = false;
+      }
+    }
     if (!ok) continue;
     const b0 = rng.int(spanFrom + 1, Math.max(spanFrom + 1, spanTo - bw));
     for (let s = spanFrom; s <= spanTo; s++) {

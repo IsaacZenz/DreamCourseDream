@@ -351,8 +351,10 @@ export type PlayEvent =
   | { kind: 'roll'; enemy: string; effect: RollEffect; filled: number; size: number; success: boolean; respun: boolean }
   /** A blue star picked up: carried until deposited at a town or on beating a boss. */
   | { kind: 'blueStar'; x: number; y: number }
-  /** An acorn picked up, or the pocket acorn used at the start: extra slices for this course. */
+  /** An acorn eaten before the course is working: extra slices for this course. */
   | { kind: 'acorn'; item: string; slices: number }
+  /** Round 2a: food picked up on a course. It cannot be eaten here; it goes into the bag afterwards. */
+  | { kind: 'foodFound'; item: string }
   /** A boss marked a ring where its next slam lands (Milestone 7). */
   | { kind: 'slamMark'; enemy: string; x: number; y: number; r: number }
   /** A boss's slam landed; `hit` if the ball was inside the ring on the ground. */
@@ -470,6 +472,8 @@ export interface PlayState {
   leechShot: number;
   /** Owner, 2026-11-17: extra filled slices on success wheels from acorns this course. */
   acornSlices: number;
+  /** Round 2a: food picked up on this course (food ids), for the bag afterwards. */
+  found: string[];
   /** Fortune's Mail: failed rolls spun again this course. */
   respinsUsed: number;
   /** Hot Streak Charm: successful rolls in shot number `streakShot`. */
@@ -518,8 +522,8 @@ export interface Loadout {
   readonly wallet?: number;
   /** Run upgrades: modifiers that last the run. */
   readonly modifiers?: readonly Modifier[];
-  /** Owner, 2026-11-17: the pocket acorn used as the course starts (its id), or none. */
-  readonly acorn?: string | null;
+  /** Round 2a: acorns eaten and still working (ids; the same one twice counts twice). */
+  readonly acorns?: readonly string[];
   /** Rarity weights (in the order of RARITIES) for things dropped on this course, such as acorns. Region 1's early odds if left out. */
   readonly rarityWeights?: readonly number[];
 }
@@ -675,6 +679,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     echoShot: -1,
     leechShot: -1,
     acornSlices: 0,
+    found: [],
     respinsUsed: 0,
     streakShot: -1,
     streak: 0,
@@ -739,11 +744,12 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
   play.world.contact = (o, s) => onBallContact(play, o, s);
   // Moss Plate: heal at the start of each course.
   for (const fx of gearFx(play, 'healAtStart')) play.health = Math.min(play.stats.get('maxHealth'), play.health + fx.amount);
-  // Owner, 2026-11-17: a pocket acorn bought in a shop is used as the course starts.
-  const pocket = lo.acorn ? ACORNS.get(lo.acorn) : undefined;
-  if (pocket) {
-    play.acornSlices += pocket.slices;
-    play.log.push({ kind: 'acorn', item: pocket.id, slices: pocket.slices });
+  // Round 2a: acorns eaten from the bag work on every course they last.
+  for (const id of lo.acorns ?? []) {
+    const a = ACORNS.get(id);
+    if (!a) continue;
+    play.acornSlices += a.slices;
+    play.log.push({ kind: 'acorn', item: a.id, slices: a.slices });
   }
   return play;
 }
@@ -2500,8 +2506,9 @@ function collectPickups(play: PlayState): void {
       play.blueStars++;
       play.log.push({ kind: 'blueStar', x: p.x, y: p.y });
     } else if (p.def.effect === 'acorn') {
-      play.acornSlices += p.def.slices ?? 0;
-      play.log.push({ kind: 'acorn', item: p.def.id, slices: p.def.slices ?? 0 });
+      // Owner, 2026-11-21: nothing is eaten during a course. The acorn goes into the bag afterwards.
+      play.found.push(p.def.id);
+      play.log.push({ kind: 'foodFound', item: p.def.id });
     } else if (p.def.effect === 'wild') {
       // Owner, 2026-11-14: a random ability, never the one already held.
       const options = ABILITY_IDS.filter((id) => id !== play.ability);

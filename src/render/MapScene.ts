@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { LAST_REGION, UPGRADE_LIST, UPGRADES, type NodeType } from '../content/run';
 import { BOSSES } from '../content/bosses';
-import { ACORNS } from '../content/consumables';
+import { FOOD, FOODS } from '../content/consumables';
+import { BagMenu } from './bagMenu';
 import { BLUE_STARS } from '../content/progress';
 import { generateRunMap } from '../gen/runMap';
 import { prefetch } from './genQueue';
@@ -92,7 +93,15 @@ export class MapScene extends Phaser.Scene {
     this.setProgressPanel(run);
     if (run.status === 'won' || run.status === 'lost') this.drawSummary(run);
     if (run.status === 'reward') this.drawReward(run);
+    // Round 2a: food found on the last course with a full bag: swap it in or leave it.
+    this.bag = new BagMenu(this, () => {
+      this.bag.draw(run);
+      this.drawPanel(run);
+    });
+    if (run.found.length && run.status === 'map') this.bag.show(run);
   }
+
+  private bag!: BagMenu;
 
   private nodeXY(row: number, lane: number): { x: number; y: number } {
     const x = lane < 0 ? MAP_X + LANE_W * 1.5 : MAP_X + lane * LANE_W;
@@ -222,7 +231,9 @@ export class MapScene extends Phaser.Scene {
     line(`HEALTH ${run.health}/${stats.get('maxHealth')}`, run.health <= 2 ? BAD : UI_TEXT);
     line(`STARS ${run.wallet}`, STAR);
     line(`BLUE: ${run.blueStars} CARRIED, ${session.profile.stash} SAFE`, 0x80c8ff);
-    if (run.pocket) line(`POCKET: ${ACORNS.get(run.pocket)?.name.toUpperCase()}`, STAR);
+    // Round 2a: the food bag and what is working now.
+    line(`BAG ${run.bag.length}/${FOOD.bagSlots}: ${run.bag.map((b) => FOODS.get(b.id)?.name.toUpperCase()).join(', ') || 'EMPTY'}`, STAR);
+    if (run.fed.length) line(`EATEN: ${run.fed.map((f) => `${FOODS.get(f.id)?.name.toUpperCase()} ${f.left}`).join(', ')}`, GOOD);
     line(run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS NEXT!', 0xff8080);
     line(`COURSES DONE ${run.totals.courses}`, UI_DIM);
     y += 3;
@@ -253,7 +264,7 @@ export class MapScene extends Phaser.Scene {
       line(n.id === LAST_TOWN ? 'NEXT: LAST TOWN' : `NEXT: ${NODE_NAME[type]}`, GOOD);
       for (const l of n.id === LAST_TOWN ? ['OPTIONAL: SHOP AND BURROW', 'BEFORE THE BOSS'] : nodeInfo(run, type)) line(l, UI_DIM);
     }
-    const help = run.status === 'map' ? ['ARROWS: CHOOSE  ENTER: GO', 'UP/DOWN: LOOK AHEAD', 'U: TEST PANEL  1-6: TEST COURSES'] : ['N: NEW RUN  S: SAME SEED'];
+    const help = run.status === 'map' ? ['ARROWS: CHOOSE  ENTER: GO', 'B: BAG (EAT FOOD)  UP/DOWN: LOOK', 'U: TEST PANEL  1-6: TEST COURSES'] : ['N: NEW RUN  S: SAME SEED'];
     help.forEach((h, i) => c.add(pixelText(this, m, 4, VIEW_HEIGHT - 7 * (help.length - i) - 2, h, { color: UI_DIM })));
     this.panelBox = c;
   }
@@ -278,6 +289,7 @@ export class MapScene extends Phaser.Scene {
       this.cameras.main.setScroll(0, this.scrollY);
     };
     const pick = (d: number) => () => {
+      if (this.bag.key(run, d < 0 ? 'left' : 'right')) return;
       if (run.status !== 'reward') return move(d)();
       const n = run.reward?.length ?? 0;
       if (!n) return;
@@ -292,6 +304,7 @@ export class MapScene extends Phaser.Scene {
     kb.on('keydown-W', look(-1));
     kb.on('keydown-DOWN', look(1));
     const ok = () => {
+      if (this.bag.key(run, 'ok')) return;
       if (run.status === 'reward') return this.takeReward(run, this.rewardSel);
       // Milestone 8 (owner, 2026-11-18): after the final boss, Enter carries on into endless mode.
       if (run.status === 'won' && keepGoing(run)) {
@@ -303,10 +316,17 @@ export class MapScene extends Phaser.Scene {
     };
     kb.on('keydown-B', () => {
       if (run.status === 'won' || run.status === 'lost') this.scene.start('burrow');
+      else if (run.status === 'map') {
+        if (this.bag.open && !run.found.length) this.bag.key(run, 'back');
+        else if (!this.bag.open) this.bag.show(run);
+      }
     });
     kb.on('keydown-ENTER', ok);
     kb.on('keydown-SPACE', ok);
-    kb.on('keydown-ESC', () => run.status === 'reward' && this.takeReward(run, null));
+    kb.on('keydown-ESC', () => {
+      if (this.bag.key(run, 'back')) return;
+      if (run.status === 'reward') this.takeReward(run, null);
+    });
     kb.on('keydown-U', () => getPanel().toggle());
     const course = (i: number) => () => this.scene.start('course', { courseIndex: i });
     ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'].forEach((k, i) => kb.on(`keydown-${k}`, course(i)));

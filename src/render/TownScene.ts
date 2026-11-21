@@ -20,13 +20,15 @@ import {
   takeFromCache,
   type Offer,
   type RunState,
+  type ShopKind,
 } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
 import { persist, session, storeBurrow } from './runSession';
 import { prefetch } from './genQueue';
 import { drawRows, progressRows } from './progressMenu';
-import { ACORNS } from '../content/consumables';
+import { ACORNS, FOOD, FOODS } from '../content/consumables';
+import { BagMenu, foodDesc, lastsText } from './bagMenu';
 import { getPanel, preloadAssets, shared } from './shared';
 
 const UI_TEXT = 0xf0f0f0;
@@ -48,10 +50,12 @@ const RARITY_COLOR: Record<string, number> = {
 };
 
 type Mode = 'town' | 'shop' | 'burrow' | 'perm' | 'cache';
+// Round 2a (owner, 2026-11-21): two shops, food and gear.
 const SPOTS = [
-  { id: 'shop', label: 'SHOP', x: 86 },
-  { id: 'burrow', label: 'BURROW', x: 196 },
-  { id: 'continue', label: 'CONTINUE', x: 312 },
+  { id: 'food', label: 'FOOD', x: 56 },
+  { id: 'gear', label: 'GEAR', x: 146 },
+  { id: 'burrow', label: 'BURROW', x: 236 },
+  { id: 'continue', label: 'CONTINUE', x: 326 },
 ] as const;
 
 /** Split text into lines of at most `n` characters, at spaces. */
@@ -80,6 +84,9 @@ export class TownScene extends Phaser.Scene {
   private message = '';
   private messageColor = UI_TEXT;
   private confirm: { lines: string[]; yes: () => void } | null = null;
+  /** Which shop is open in 'shop' mode. */
+  private which: ShopKind = 'gear';
+  private bag!: BagMenu;
 
   constructor() {
     super('town');
@@ -100,6 +107,7 @@ export class TownScene extends Phaser.Scene {
     this.sel = 0;
     this.confirm = null;
     this.message = '';
+    this.bag = new BagMenu(this, () => this.redraw(run));
     this.setupKeys(run);
     this.setRunPanel(run);
     getPanel().setProgress(null);
@@ -131,6 +139,7 @@ export class TownScene extends Phaser.Scene {
       t.setPosition(Math.round((VIEW_WIDTH - t.width) / 2), VIEW_HEIGHT - 26).setDepth(50);
     }
     if (this.confirm) this.drawConfirm(this.confirm.lines);
+    this.bag?.draw(run);
   }
 
   private text(x: number, y: number, s: string, color = UI_TEXT): Phaser.GameObjects.Container {
@@ -145,11 +154,12 @@ export class TownScene extends Phaser.Scene {
   private drawTopBar(run: RunState): void {
     this.add.rectangle(0, 0, VIEW_WIDTH, 15, UI_BG, 0.9).setOrigin(0, 0).setDepth(40);
     const stats = runStats(run);
-    const title = this.mode === 'cache' ? 'CACHE' : this.mode === 'shop' ? 'TOWN: SHOP' : this.mode === 'burrow' || this.mode === 'perm' ? 'TOWN: YOUR BURROW' : 'TOWN';
+    const title = this.mode === 'cache' ? 'CACHE' : this.mode === 'shop' ? (this.which === 'food' ? 'TOWN: FOOD SHOP' : 'TOWN: GEAR SHOP') : this.mode === 'burrow' || this.mode === 'perm' ? 'TOWN: YOUR BURROW' : 'TOWN';
     this.text(3, 2, title, GOOD).setDepth(41);
     this.text(3, 8, `HP ${run.health}/${stats.get('maxHealth')}`, run.health <= 2 ? BAD : UI_TEXT).setDepth(41);
     this.text(46, 8, `STARS ${run.wallet}`, STAR).setDepth(41);
     this.text(100, 8, run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS NEXT', 0xff8080).setDepth(41);
+    this.text(150, 8, `BAG ${run.bag.length}/${FOOD.bagSlots} (B)`, STAR).setDepth(41);
     let x = VIEW_WIDTH - 3 * 14 - 2;
     for (const c of GEAR_CATEGORIES) {
       const id = run.gear[c];
@@ -173,13 +183,15 @@ export class TownScene extends Phaser.Scene {
     for (let y = 120; y < VIEW_HEIGHT; y += 8) for (let x = 0; x < VIEW_WIDTH; x += 8) g.fillStyle(((x + y) / 8) % 2 ? 0x58a848 : 0x4c9840, 1).fillRect(x, y, 8, 8);
     g.fillStyle(0xb08850, 1).fillRect(0, 156, VIEW_WIDTH, 14);
     g.fillStyle(0x987040, 1).fillRect(0, 168, VIEW_WIDTH, 2);
+    // Both shops use the shop building for now (Milestone 9 gives each its own look).
     this.add.image(SPOTS[0].x, 152, 'town-shop', 0).setOrigin(0.5, 1);
-    this.add.image(SPOTS[1].x, 154, 'town-burrow', 0).setOrigin(0.5, 1);
-    this.add.image(SPOTS[2].x, 158, 'town-sign', 0).setOrigin(0.5, 1);
+    this.add.image(SPOTS[1].x, 152, 'town-shop', 0).setOrigin(0.5, 1).setTint(0xb8c8f0);
+    this.add.image(SPOTS[2].x, 154, 'town-burrow', 0).setOrigin(0.5, 1);
+    this.add.image(SPOTS[3].x, 158, 'town-sign', 0).setOrigin(0.5, 1);
     SPOTS.forEach((s, i) => {
       const t = pixelText(this, shared.manifest, 0, 0, s.label, { color: i === this.sel ? SELECT : UI_TEXT, background: UI_BG });
       t.setPosition(Math.round(s.x - t.width / 2), 174);
-      const hit = this.add.rectangle(s.x, 120, 70, 110, 0, 0).setInteractive({ useHandCursor: true });
+      const hit = this.add.rectangle(s.x, 120, 60, 110, 0, 0).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', () => {
         this.sel = i;
         this.enterSpot(run);
@@ -191,9 +203,9 @@ export class TownScene extends Phaser.Scene {
     this.add.image(s.x, 163, 'ball', 0).setOrigin(0.5, 1);
     const cur = this.add.image(s.x, 104 - (s.id === 'continue' ? -14 : s.id === 'burrow' ? -12 : 0), 'cursor', 0);
     this.tweens.add({ targets: cur, y: cur.y - 3, duration: 300, yoyo: true, repeat: -1 });
-    const hint = s.id === 'shop' ? 'BUY GEAR, UPGRADES AND SERVICES' : s.id === 'burrow' ? 'STORE GEAR SAFELY. IT SURVIVES IF YOU DIE' : 'LEAVE TOWN AND GO ON WITH THE JOURNEY';
+    const hint = s.id === 'food' ? 'BUY FOOD FOR YOUR BAG. EAT IT BEFORE A COURSE' : s.id === 'gear' ? 'BUY GEAR' : s.id === 'burrow' ? 'STORE GEAR SAFELY. IT SURVIVES IF YOU DIE' : 'LEAVE TOWN AND GO ON WITH THE JOURNEY';
     this.text(3, 186, hint, UI_TEXT);
-    this.help(['LEFT/RIGHT: WALK   ENTER: GO IN   U: TEST PANEL']);
+    this.help(['LEFT/RIGHT: WALK   ENTER: GO IN   B: BAG (EAT FOOD)   U: TEST PANEL']);
   }
 
   private enterSpot(run: RunState): void {
@@ -204,15 +216,27 @@ export class TownScene extends Phaser.Scene {
       this.scene.start('map');
       return;
     }
-    this.mode = s.id;
+    if (s.id === 'food' || s.id === 'gear') {
+      this.which = s.id;
+      this.mode = 'shop';
+    } else this.mode = s.id;
     this.sel = 0;
     this.redraw(run);
+  }
+
+  private shopNow(run: RunState) {
+    return (this.which === 'food' ? run.foodShop : run.shop)!;
   }
 
   // -------------------------------------------------------------------------
   // Cards (shop and cache)
 
   private offerLines(run: RunState, o: Offer): { kind: string; name: string; rarity: string; rarityColor: number; desc: string; icon: string } {
+    if (o.kind === 'food') {
+      const f = FOODS.get(o.id)!;
+      const item = { id: o.id, courses: o.courses ?? 0 };
+      return { kind: 'FOOD', name: f.name, rarity: lastsText(item), rarityColor: STAR, desc: foodDesc(o.id).toLowerCase(), icon: f.icon };
+    }
     if (o.kind === 'gear') {
       const g = GEAR.get(o.id)!;
       return { kind: g.category.toUpperCase(), name: g.name, rarity: RARITY_INFO[g.rarity].name, rarityColor: RARITY_COLOR[g.rarity]!, desc: g.desc, icon: g.icon };
@@ -263,16 +287,19 @@ export class TownScene extends Phaser.Scene {
   }
 
   private drawShop(run: RunState): void {
-    const shop = run.shop!;
-    this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, 0x2a2238, 1).setOrigin(0, 0);
-    const w = 71;
+    const shop = this.shopNow(run);
+    this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, this.which === 'food' ? 0x2a2a1c : 0x2a2238, 1).setOrigin(0, 0);
+    const w = this.which === 'food' ? 86 : 100;
+    const gap = 6;
+    const x0 = Math.round((VIEW_WIDTH - (shop.offers.length * (w + gap) - gap)) / 2);
     shop.offers.forEach((o, i) =>
-      this.drawCard(run, o, 6 + i * 75, 22, w, 140, i === this.sel, false, () => {
+      this.drawCard(run, o, x0 + i * (w + gap), 22, w, 140, i === this.sel, false, () => {
         this.sel = i;
         this.buySelected(run);
       }),
     );
-    const rp = rerollPrice(run);
+    if (this.which === 'food') this.text(6, 166, `BAG ${run.bag.length}/${FOOD.bagSlots}. FOOD GOES IN YOUR BAG. EAT IT BEFORE A COURSE (B).`, UI_DIM);
+    const rp = rerollPrice(run, this.which);
     this.help([`LEFT/RIGHT: CHOOSE   ENTER: BUY   R: REROLL (${rp === 0 ? 'FREE' : `${rp} STARS`})   ESC: BACK TO TOWN`]);
   }
 
@@ -301,7 +328,7 @@ export class TownScene extends Phaser.Scene {
   }
 
   private buySelected(run: RunState): void {
-    const o = run.shop!.offers[this.sel];
+    const o = this.shopNow(run).offers[this.sel];
     if (!o) return;
     const why = cannotBuy(run, o);
     if (why) {
@@ -310,7 +337,7 @@ export class TownScene extends Phaser.Scene {
       return;
     }
     this.withGearCheck(run, o, () => {
-      const err = buy(run, this.sel);
+      const err = buy(run, this.sel, this.which);
       this.say(err ?? `BOUGHT ${this.offerLines(run, o).name.toUpperCase()}`, err ? BAD : GOOD);
       this.redraw(run);
     });
@@ -446,12 +473,15 @@ export class TownScene extends Phaser.Scene {
     const kb = this.input.keyboard!;
     const move = (d: number) => () => {
       if (this.confirm) return;
-      const n = this.mode === 'town' ? SPOTS.length : this.mode === 'shop' ? run.shop!.offers.length : this.mode === 'cache' ? run.cache!.offers.length : this.mode === 'perm' ? this.permRows(run).length : GEAR_CATEGORIES.length;
+      const n = this.mode === 'town' ? SPOTS.length : this.mode === 'shop' ? this.shopNow(run).offers.length : this.mode === 'cache' ? run.cache!.offers.length : this.mode === 'perm' ? this.permRows(run).length : GEAR_CATEGORIES.length;
       this.sel = (this.sel + d + n) % n;
       this.message = '';
       this.redraw(run);
     };
-    const horizontal = (d: number) => () => this.mode !== 'burrow' && this.mode !== 'perm' && move(d)();
+    const horizontal = (d: number) => () => {
+      if (this.bag.key(run, d < 0 ? 'left' : 'right')) return;
+      if (this.mode !== 'burrow' && this.mode !== 'perm') move(d)();
+    };
     const vertical = (d: number) => () => (this.mode === 'burrow' || this.mode === 'perm') && move(d)();
     kb.on('keydown-LEFT', horizontal(-1));
     kb.on('keydown-A', horizontal(-1));
@@ -462,6 +492,7 @@ export class TownScene extends Phaser.Scene {
     kb.on('keydown-DOWN', vertical(1));
     kb.on('keydown-S', vertical(1));
     const ok = () => {
+      if (this.bag.key(run, 'ok')) return;
       if (this.confirm) {
         const yes = this.confirm.yes;
         this.confirm = null;
@@ -477,6 +508,7 @@ export class TownScene extends Phaser.Scene {
     kb.on('keydown-ENTER', ok);
     kb.on('keydown-SPACE', ok);
     kb.on('keydown-ESC', () => {
+      if (this.bag.key(run, 'back')) return;
       if (this.confirm) {
         this.confirm = null;
         this.redraw(run);
@@ -488,7 +520,7 @@ export class TownScene extends Phaser.Scene {
         this.sel = 0;
         this.redraw(run);
       } else if (this.mode === 'shop' || this.mode === 'burrow') {
-        this.sel = this.mode === 'shop' ? 0 : 1;
+        this.sel = this.mode === 'shop' ? (this.which === 'food' ? 0 : 1) : 2;
         this.mode = 'town';
         this.redraw(run);
       } else if (this.mode === 'cache') {
@@ -502,9 +534,14 @@ export class TownScene extends Phaser.Scene {
         this.redraw(run);
       }
     });
+    kb.on('keydown-B', () => {
+      if (this.confirm || this.mode === 'cache') return;
+      if (this.bag.open) this.bag.key(run, 'back');
+      else this.bag.show(run);
+    });
     kb.on('keydown-R', () => {
-      if (this.mode !== 'shop' || this.confirm) return;
-      const err = reroll(run);
+      if (this.mode !== 'shop' || this.confirm || this.bag.open) return;
+      const err = reroll(run, this.which);
       this.say(err ?? 'NEW STOCK!', err ? BAD : GOOD);
       this.redraw(run);
     });
