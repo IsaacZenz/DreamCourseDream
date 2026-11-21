@@ -95,6 +95,8 @@ export class TuningPanel {
   botPlays = false;
   /** Milestone 8b: pick courses on the old map screen and use the old town street instead of walking (a testing view). */
   useMapScreen = false;
+  /** Owner, 2026-11-21: draw flat grass, rough and sand tiles slightly raised at random (looks only). */
+  groundBumps = true;
   private botButton: HTMLButtonElement | null = null;
   setBotPlays(on: boolean): void {
     this.botPlays = on;
@@ -151,7 +153,12 @@ export class TuningPanel {
       this.useMapScreen = !this.useMapScreen;
       mapScreen.textContent = `Use the map screen: ${this.useMapScreen ? 'ON' : 'off'}`;
     });
-    head.append(copy, reset, scenery, theme, bot, mapScreen);
+    const bumps = this.button('Ground bumps: ON', () => {
+      this.groundBumps = !this.groundBumps;
+      bumps.textContent = `Ground bumps: ${this.groundBumps ? 'ON' : 'off'}`;
+      this.onTheme?.();
+    });
+    head.append(copy, reset, scenery, theme, bot, mapScreen, bumps);
     this.root.appendChild(head);
     this.benchBox = document.createElement('div');
     this.benchBox.className = 'bench';

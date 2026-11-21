@@ -7,7 +7,7 @@ import { Rng } from '../sim/rng';
 import { SeedViewer } from '../ui/seedViewer';
 import { BENCH_ID, benchChoices, benchCourse } from '../content/courses/testBench';
 import { SURFACES } from '../content/surfaces';
-import { parseCourse, railTileList, type Course } from '../sim/course';
+import { parseCourse, railTileList, tileAt, type Course } from '../sim/course';
 import { STEP_HEIGHT, type Tuning } from '../content/tuning';
 import { DT, groundAt, type BallState, type ShotCommand, type ShotType } from '../sim/ball';
 import {
@@ -35,7 +35,7 @@ import {
 import { STATUSES } from '../content/statuses';
 import { RANKS, TRAITS, TRAIT_RULES } from '../content/enemyMods';
 import { ELEMENT_IDS, OBJECTS, RAIL } from '../content/objects';
-import { SCENERY } from '../content/scenery';
+import { GROUND_BUMPS, SCENERY } from '../content/scenery';
 import { COURSE_MODS, type CourseMod } from '../content/modifiers';
 import type { Direction } from '../content/surfaces';
 import { courseModBanner, courseModShort } from './courseModView';
@@ -56,7 +56,7 @@ import { BOSSES } from '../content/bosses';
 import { BLUE_STARS } from '../content/progress';
 import { LAST_REGION } from '../content/run';
 import { getPanel, getTuning, preloadAssets, shared } from './shared';
-import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
+import { buildDrawList, bumpTopDepth, courseBounds, groundBump, pickTile, project, tileDepth, type Placement } from './iso';
 import { frameIndex, themedSprite, type Manifest } from './manifest';
 import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
 import { pixelText } from './pixelText';
@@ -491,6 +491,7 @@ export class CourseScene extends Phaser.Scene {
       tiles.forEach((t, k) => {
         const z = groundAt(course, t.x + 0.5, t.y + 0.5)?.h ?? 0;
         const p = project(t.x + 0.5, t.y + 0.5, z / STEP_HEIGHT);
+        p.y -= this.bumpAt(t.x + 0.5, t.y + 0.5);
         this.makeSprite(RAIL.postSprite).setPosition(p.x, p.y).setDepth(this.standingDepth(t.x + 0.5, t.y + 0.5));
         const n = tiles[k + 1];
         if (!n) return;
@@ -502,6 +503,7 @@ export class CourseScene extends Phaser.Scene {
           const y = t.y + 0.5 + dy * f;
           const h = groundAt(course, x, y)?.h ?? z;
           const q = project(x, y, h / STEP_HEIGHT);
+          q.y -= this.bumpAt(x, y);
           this.makeSprite(RAIL.barSprite, frame).setPosition(q.x, q.y).setDepth(this.standingDepth(x, y));
         }
       });
@@ -521,6 +523,7 @@ export class CourseScene extends Phaser.Scene {
       const def = SCENERY.get(s.id)!;
       const z = groundAt(course, s.x, s.y)?.h ?? 0;
       const p = project(s.x, s.y, z / STEP_HEIGHT);
+      p.y -= this.bumpAt(s.x, s.y);
       const frame = manifest.sprites[this.sprite(def.sprite)]?.frames[0] ?? 'idle';
       // Lying on the ground, under everything standing; fireflies float above what stands on their tile.
       const depth = def.floats ? this.standingDepth(s.x, s.y) + 0.2 : tileDepth(Math.floor(s.x), Math.floor(s.y), 'arrow') + 0.5;
@@ -948,6 +951,14 @@ export class CourseScene extends Phaser.Scene {
       .setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight)
       .setDepth(p.depth);
     this.tileImgs.push(img);
+    // Owner, 2026-11-21: ground bumps, for looks only.
+    const t = p.kind === 'top' && panel?.groundBumps !== false ? tileAt(this.course!, p.tile.x, p.tile.y) : null;
+    const lift = t ? groundBump(t) : 0;
+    if (lift && t) {
+      const depth = bumpTopDepth(this.course!, t);
+      this.tileImgs.push(this.add.image(p.x, p.y, id, frameIndex(entry, p.frame)).setOrigin(img.originX, img.originY).setDepth(depth - 0.01).setTint(GROUND_BUMPS.edgeTint));
+      img.setDepth(depth).y -= lift;
+    }
     // Animated overlays (water shimmer, Milestone 5b) have frames "<shape>~1", "<shape>~2", ...
     if (entry.frames.includes(`${p.frame}~1`)) this.animated.push({ img, frame: p.frame, entry });
   }
@@ -1125,6 +1136,7 @@ export class CourseScene extends Phaser.Scene {
       const entry = manifest.sprites[themedId]!;
       if (img.texture.key !== themedId || opts.frame) img.setTexture(themedId, frameIndex(entry, opts.frame ?? entry.frames[0]!));
       const p = project(x, y, z / STEP_HEIGHT);
+      p.y -= this.bumpAt(x, y, z);
       img
         .setVisible(true)
         .setAlpha(opts.alpha ?? 1)
@@ -1224,6 +1236,7 @@ export class CourseScene extends Phaser.Scene {
       const c = play.course;
       const t = groundAt(c, c.exit.x + 0.5, c.exit.y + 0.5);
       const p = project(c.exit.x + 0.5, c.exit.y + 0.5, (t?.h ?? 0) / STEP_HEIGHT);
+      p.y -= this.bumpAt(c.exit.x + 0.5, c.exit.y + 0.5);
       const entry = manifest.sprites.exit!;
       this.exitImg
         .setTexture('exit', frameIndex(entry, play.exitOpen ? 'open' : 'closed'))
@@ -1234,12 +1247,26 @@ export class CourseScene extends Phaser.Scene {
   }
 
   /** Put the ball and its shadow on screen. Heights in the sim are tiles; the screen uses steps. */
+  /**
+   * Owner, 2026-11-21: pixels a thing at (x, y), at height z (tiles), is drawn
+   * raised because its tile is drawn raised (ground bumps). Fades out as it
+   * rises above the ground, so flying things do not jump between tiles.
+   */
+  private bumpAt(x: number, y: number, z?: number): number {
+    if (panel?.groundBumps === false || !this.course) return 0;
+    const g = groundAt(this.course, x, y);
+    if (!g) return 0;
+    return groundBump(g.tile) * Math.max(0, 1 - ((z ?? g.h) - g.h) / 0.25);
+  }
+
   private drawBall(b: BallState): void {
     const course = this.course!;
     const tx = Math.floor(b.x);
     const ty = Math.floor(b.y);
-    const p = project(b.x, b.y, b.z / STEP_HEIGHT);
     const g = groundAt(course, b.x, b.y);
+    // Owner, 2026-11-21: on a tile drawn raised (ground bumps), the ball is drawn raised too.
+    const p = project(b.x, b.y, b.z / STEP_HEIGHT);
+    p.y -= this.bumpAt(b.x, b.y, b.z);
     // In water the ball is drawn under the see-through surface; flying over it, on top.
     const inWater = !!g && !!SURFACES.get(g.tile.surface)?.sinks && b.z <= g.h + 0.05;
     const overWater = !!g && !!SURFACES.get(g.tile.surface)?.overlaySprite && !inWater;
@@ -1260,6 +1287,7 @@ export class CourseScene extends Phaser.Scene {
       .setAlpha(isImmune(this.play) && Math.floor(this.time.now / 70) % 2 ? 0.35 : 1);
     if (g && g.h <= b.z + 0.01 && !inWater) {
       const sp = project(b.x, b.y, g.h / STEP_HEIGHT);
+      sp.y -= this.bumpAt(b.x, b.y);
       this.shadowImg.setVisible(true).setPosition(Math.round(sp.x), Math.round(sp.y)).setDepth(tileDepth(tx, ty, 'shadow'));
     } else {
       this.shadowImg.setVisible(false);

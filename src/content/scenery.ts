@@ -29,3 +29,17 @@ export const SCENERY: ReadonlyMap<string, SceneryDef> = new Map(SCENERY_LIST.map
 
 /** Surfaces scenery may stand on. */
 export const SCENERY_SURFACES: ReadonlySet<string> = new Set(['grass', 'rough', 'sand']);
+
+/**
+ * Ground bumps (owner, 2026-11-21): for looks only, each flat grass, rough or
+ * sand tile is drawn raised by 0, 1 or 2 pixels, picked from its spot, so the
+ * ground looks less flat. Slopes are never raised (they must read as smooth).
+ * The ball, the physics and the course check never see it. The U panel can turn it off.
+ */
+export const GROUND_BUMPS = {
+  surfaces: ['grass', 'rough', 'sand'] as readonly string[],
+  /** Chance of each lift in pixels: [0 px, 1 px, 2 px]. */
+  weights: [0.45, 0.35, 0.2] as readonly number[],
+  /** The tile is drawn again at its true spot underneath, darkened by this tint, to make the little edge. */
+  edgeTint: 0x9a9a9a,
+} as const;

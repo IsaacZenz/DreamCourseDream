@@ -3,7 +3,7 @@ import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { UPGRADE_LIST } from '../content/run';
 import { FOOD } from '../content/consumables';
 import { OBJECTS, RAIL } from '../content/objects';
-import { SCENERY } from '../content/scenery';
+import { GROUND_BUMPS, SCENERY } from '../content/scenery';
 import { PROPS, type PlaceKind, type TriggerKind } from '../content/places';
 import { townFor } from '../content/places/index';
 import { themeForRegion } from '../content/biomes';
@@ -11,7 +11,7 @@ import { BOSSES } from '../content/bosses';
 import { LAST_REGION } from '../content/run';
 import { STEP_HEIGHT } from '../content/tuning';
 import { groundAt } from '../sim/ball';
-import { railTileList } from '../sim/course';
+import { railTileList, tileAt } from '../sim/course';
 import { triggerCentre, type Place, type Point, type Trigger } from '../sim/place';
 import { createWalker, placeWalker, stepWalker, walkFrame, walkHeight, type Facing, type Walker } from '../sim/walk';
 import { buildCrossroads, loadPlace } from '../gen/crossroads';
@@ -20,7 +20,7 @@ import { addUpgrade, bossOf, choices, debugVisit, courseJobFor, courseModFor, de
 import { courseModLabel } from './courseModView';
 import { BagMenu } from './bagMenu';
 import { prefetch } from './genQueue';
-import { buildDrawList, courseBounds, project, tileDepth } from './iso';
+import { buildDrawList, bumpTopDepth, courseBounds, groundBump, project, tileDepth } from './iso';
 import { frameIndex, themedSprite } from './manifest';
 import { NODE_NAME, nodeInfo } from './MapScene';
 import { goRun } from './nav';
@@ -241,6 +241,13 @@ export class PlaceScene extends Phaser.Scene {
     return (groundAt(this.place.ground, x, y)?.h ?? 0) / STEP_HEIGHT;
   }
 
+  /** Where a thing standing on the ground at (x, y) is drawn, raised with its tile (ground bumps, owner 2026-11-21). */
+  private onGround(x: number, y: number): { x: number; y: number } {
+    const p = project(x, y, this.groundZ(x, y));
+    const t = getPanel().groundBumps ? tileAt(this.place.ground, Math.floor(x), Math.floor(y)) : null;
+    return { x: p.x, y: p.y - (t ? groundBump(t) : 0) };
+  }
+
   private drawWorld(): void {
     const m = shared.manifest;
     this.world = this.add.container(0, 0).setScale(ZOOM);
@@ -253,13 +260,22 @@ export class PlaceScene extends Phaser.Scene {
       const id = this.sprite(p.sprite);
       const img = this.image(p.sprite, p.frame, p.x, p.y, p.depth);
       const entry = m.sprites[id]!;
+      // Owner, 2026-11-21: ground bumps, for looks only.
+      const t = p.kind === 'top' && getPanel().groundBumps ? tileAt(g, p.tile.x, p.tile.y) : null;
+      const lift = t ? groundBump(t) : 0;
+      if (lift && t) {
+        const depth = bumpTopDepth(g, t);
+        this.image(p.sprite, p.frame, p.x, p.y, depth - 0.01).setTint(GROUND_BUMPS.edgeTint);
+        img.setDepth(depth).y -= lift;
+      }
       if (entry.frames.includes(`${p.frame}~1`)) this.animatedTiles.push({ img, frame: p.frame, frames: entry.frames, id });
     }
     // Fences: guard rails, drawn as on a course.
     for (const line of g.rails) {
       const tiles = railTileList(line);
       tiles.forEach((t, k) => {
-        this.image(RAIL.postSprite, 'idle', project(t.x + 0.5, t.y + 0.5, this.groundZ(t.x + 0.5, t.y + 0.5)).x, project(t.x + 0.5, t.y + 0.5, this.groundZ(t.x + 0.5, t.y + 0.5)).y, this.standingDepth(t.x + 0.5, t.y + 0.5));
+        const post = this.onGround(t.x + 0.5, t.y + 0.5);
+        this.image(RAIL.postSprite, 'idle', post.x, post.y, this.standingDepth(t.x + 0.5, t.y + 0.5));
         const n = tiles[k + 1];
         if (!n) return;
         const dx = n.x - t.x;
@@ -268,7 +284,7 @@ export class PlaceScene extends Phaser.Scene {
         for (const f of [0.125, 0.375, 0.625, 0.875]) {
           const x = t.x + 0.5 + dx * f;
           const y = t.y + 0.5 + dy * f;
-          const q = project(x, y, this.groundZ(x, y));
+          const q = this.onGround(x, y);
           this.image(RAIL.barSprite, frame, q.x, q.y, this.standingDepth(x, y));
         }
       });
@@ -279,13 +295,13 @@ export class PlaceScene extends Phaser.Scene {
       if (!def) continue;
       const x = o.x + 0.5;
       const y = o.y + 0.5;
-      const q = project(x, y, this.groundZ(x, y));
+      const q = this.onGround(x, y);
       this.image(def.sprite, m.sprites[this.sprite(def.sprite)]?.frames[0] ?? 'idle', q.x, q.y, this.standingDepth(x, y));
     }
     // Scenery, lying on the ground; fireflies float and flicker.
     g.scenery.forEach((s, k) => {
       const def = SCENERY.get(s.id)!;
-      const q = project(s.x, s.y, this.groundZ(s.x, s.y));
+      const q = this.onGround(s.x, s.y);
       const depth = def.floats ? this.standingDepth(s.x, s.y) + 0.2 : tileDepth(Math.floor(s.x), Math.floor(s.y), 'arrow') + 0.5;
       const img = this.image(def.sprite, m.sprites[this.sprite(def.sprite)]?.frames[0] ?? 'idle', q.x, q.y, depth);
       if (def.frameMs) this.sceneryAnims.push({ img, id: this.sprite(def.sprite), frameMs: def.frameMs, offset: k * 97 });
@@ -295,7 +311,7 @@ export class PlaceScene extends Phaser.Scene {
       const def = PROPS.get(p.id)!;
       const entry = m.sprites[def.sprite];
       const frame = p.id === 'chest' ? (session.run?.status === 'cache' ? 'closed' : 'open') : (entry?.frames[0] ?? 'idle');
-      const q = project(p.x, p.y, this.groundZ(p.x, p.y));
+      const q = this.onGround(p.x, p.y);
       const fp = def.footprint;
       if (fp?.kind === 'box' && fp.hx >= 0.5) {
         const img = this.image(def.sprite, frame, q.x, q.y, this.standingDepth(p.x + fp.hx - 0.05, p.y + fp.hy - 0.05), !!def.themed);
@@ -332,6 +348,9 @@ export class PlaceScene extends Phaser.Scene {
     const w = this.walker;
     const h = walkHeight(this.place, w.x, w.y) ?? 0;
     const p = project(w.x, w.y, h);
+    // Owner, 2026-11-21: standing on a tile drawn raised (ground bumps), the armadillo is drawn raised too.
+    const under = getPanel().groundBumps ? tileAt(this.place.ground, Math.floor(w.x), Math.floor(w.y)) : null;
+    if (under) p.y -= groundBump(under);
     const left = w.facing[1] === 'l';
     const id = left ? 'armadillo-left' : 'armadillo';
     const entry = shared.manifest.sprites[id]!;

@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { TEST_COURSES } from '../src/content/courses';
 import { SURFACES } from '../src/content/surfaces';
-import { parseCourse, type Course } from '../src/sim/course';
+import { parseCourse, type Course, type Tile } from '../src/sim/course';
 import { SHAPES } from '../src/sim/tileShape';
-import { buildDrawList, faceBands, pickTile, project } from '../src/render/iso';
+import { buildDrawList, faceBands, groundBump, pickTile, project } from '../src/render/iso';
 import type { Manifest } from '../src/render/manifest';
 
 const manifest = JSON.parse(readFileSync('assets/manifest.json', 'utf8')) as Manifest;
@@ -112,5 +112,38 @@ describe('pickTile', () => {
     // (1,1) is in front, so it wins.
     expect(pickTile(c, 0, 4)).toMatchObject({ x: 1, y: 1 });
     expect(pickTile(c, 500, 500)).toBeNull();
+  });
+});
+
+describe('ground bumps (owner, 2026-11-21: looks only, flat tiles only)', () => {
+  const tile = (surface: string, corners: [number, number, number, number], x = 3, y = 4) => {
+    const res = parseCourse({ format: 3, name: 't', legend: { g: surface === 'water' ? 'grass' : surface, w: 'water' }, tiles: [`g2 g2 g2`], start: [0, 0], exit: [2, 0], quota: 0 });
+    if (!res.ok) throw new Error(res.errors.join(' '));
+    const shape = corners.map((c) => c - Math.min(...corners)).join('') as Tile['shape'];
+    return { ...res.course.tiles[0]!, surface, corners, shape, x, y } as Tile;
+  };
+
+  it('lifts flat grass, rough and sand by 0 to 2 pixels, the same every time', () => {
+    const lifts = new Map<number, number>();
+    for (let x = 0; x < 40; x++) {
+      for (let y = 0; y < 40; y++) {
+        const t = tile('grass', [2, 2, 2, 2], x, y);
+        const a = groundBump(t);
+        expect(groundBump(t)).toBe(a);
+        lifts.set(a, (lifts.get(a) ?? 0) + 1);
+      }
+    }
+    expect([...lifts.keys()].sort()).toEqual([0, 1, 2]);
+    // Roughly the weights 45 / 35 / 20 out of 100.
+    expect(lifts.get(0)! / 1600).toBeGreaterThan(0.35);
+    expect(lifts.get(2)! / 1600).toBeLessThan(0.3);
+  });
+
+  it('never lifts slopes, or other surfaces', () => {
+    for (let x = 0; x < 30; x++) {
+      expect(groundBump(tile('grass', [3, 3, 2, 2], x, 1))).toBe(0);
+      expect(groundBump(tile('ice', [2, 2, 2, 2], x, 1))).toBe(0);
+      expect(groundBump(tile('path', [2, 2, 2, 2], x, 1))).toBe(0);
+    }
   });
 });
