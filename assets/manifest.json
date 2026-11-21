@@ -659,6 +659,42 @@
         16
       ]
     },
+    "tile-path": {
+      "file": "sprites/tile-path.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
     "tile-warp": {
       "file": "sprites/tile-warp.png",
       "frameWidth": 32,
@@ -3068,6 +3104,198 @@
         2
       ]
     },
+    "armadillo": {
+      "file": "sprites/armadillo.png",
+      "frameWidth": 14,
+      "frameHeight": 20,
+      "frames": [
+        "dr-stand",
+        "dr-step1",
+        "dr-step2",
+        "ur-stand",
+        "ur-step1",
+        "ur-step2"
+      ],
+      "anchor": [
+        7,
+        19
+      ]
+    },
+    "armadillo-left": {
+      "file": "sprites/armadillo-left.png",
+      "frameWidth": 14,
+      "frameHeight": 20,
+      "frames": [
+        "dl-stand",
+        "dl-step1",
+        "dl-step2",
+        "ul-stand",
+        "ul-step1",
+        "ul-step2"
+      ],
+      "anchor": [
+        6,
+        19
+      ]
+    },
+    "place-food-hut": {
+      "file": "sprites/place-food-hut.png",
+      "frameWidth": 64,
+      "frameHeight": 72,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        32,
+        55
+      ]
+    },
+    "place-gear-shop": {
+      "file": "sprites/place-gear-shop.png",
+      "frameWidth": 64,
+      "frameHeight": 72,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        32,
+        55
+      ]
+    },
+    "place-burrow": {
+      "file": "sprites/place-burrow.png",
+      "frameWidth": 64,
+      "frameHeight": 48,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        32,
+        31
+      ]
+    },
+    "place-signpost": {
+      "file": "sprites/place-signpost.png",
+      "frameWidth": 28,
+      "frameHeight": 32,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        14,
+        31
+      ]
+    },
+    "place-lamp": {
+      "file": "sprites/place-lamp.png",
+      "frameWidth": 8,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        26
+      ]
+    },
+    "place-barrel": {
+      "file": "sprites/place-barrel.png",
+      "frameWidth": 12,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        12
+      ]
+    },
+    "place-boss-gate": {
+      "file": "sprites/place-boss-gate.png",
+      "frameWidth": 64,
+      "frameHeight": 84,
+      "frames": [
+        "closed",
+        "open"
+      ],
+      "anchor": [
+        32,
+        67
+      ]
+    },
+    "place-chest": {
+      "file": "sprites/place-chest.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "closed",
+        "open"
+      ],
+      "anchor": [
+        9,
+        11
+      ]
+    },
+    "place-tee-mat": {
+      "file": "sprites/place-tee-mat.png",
+      "frameWidth": 26,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        13,
+        7
+      ]
+    },
+    "place-practice-flag": {
+      "file": "sprites/place-practice-flag.png",
+      "frameWidth": 12,
+      "frameHeight": 26,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        2,
+        24
+      ]
+    },
+    "room-food": {
+      "file": "sprites/room-food.png",
+      "frameWidth": 384,
+      "frameHeight": 216,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "room-gear": {
+      "file": "sprites/room-gear.png",
+      "frameWidth": 384,
+      "frameHeight": 216,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "room-burrow": {
+      "file": "sprites/room-burrow.png",
+      "frameWidth": 384,
+      "frameHeight": 216,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
     "font": {
       "file": "sprites/font.png",
       "frameWidth": 4,
@@ -3756,6 +3984,42 @@
     },
     "tile-bridge@bog": {
       "file": "sprites/tile-bridge@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-path@bog": {
+      "file": "sprites/tile-path@bog.png",
       "frameWidth": 32,
       "frameHeight": 24,
       "frames": [
@@ -4823,6 +5087,42 @@
         16
       ]
     },
+    "tile-path@thornwood": {
+      "file": "sprites/tile-path@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
     "tile-warp@thornwood": {
       "file": "sprites/tile-warp@thornwood.png",
       "frameWidth": 32,
@@ -5822,6 +6122,42 @@
     },
     "tile-bridge@night": {
       "file": "sprites/tile-bridge@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-path@night": {
+      "file": "sprites/tile-path@night.png",
       "frameWidth": 32,
       "frameHeight": 24,
       "frames": [
@@ -6889,6 +7225,42 @@
         16
       ]
     },
+    "tile-path@underground": {
+      "file": "sprites/tile-path@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
     "tile-warp@underground": {
       "file": "sprites/tile-warp@underground.png",
       "frameWidth": 32,
@@ -7922,6 +8294,42 @@
         16
       ]
     },
+    "tile-path@starfall": {
+      "file": "sprites/tile-path@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
     "tile-warp@starfall": {
       "file": "sprites/tile-warp@starfall.png",
       "frameWidth": 32,
@@ -8921,6 +9329,42 @@
     },
     "tile-bridge@spooky": {
       "file": "sprites/tile-bridge@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-path@spooky": {
+      "file": "sprites/tile-path@spooky.png",
       "frameWidth": 32,
       "frameHeight": 24,
       "frames": [
