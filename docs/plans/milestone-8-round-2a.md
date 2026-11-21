@@ -1,6 +1,6 @@
 # Milestone 8 round 2a design sheet: livelier terrain, two shops and the food bag
 
-**Status: waiting for the owner to review. Nothing on this sheet is built yet.** Owner changes so far (2026-11-21): eat any number of foods before a course; spike moats can appear in region 2, rarely; region 1 gets a very small number of extra obstacles.
+**Status: signed off by the owner, 2026-11-21 ("Go"). Building.** Owner changes so far (2026-11-21): eat any number of foods before a course; spike moats can appear in region 2, rarely; region 1 gets a very small number of extra obstacles.
 
 How to review: change any number, name or rule you want. Section 8 lists the open questions. Each one has a default that I will use if you say "defaults are fine". Every number is a starting value. They all live in `src/content/`, so they can be tuned later without touching the physics or the generator.
 
@@ -330,4 +330,4 @@ The course check's bot is not affected: it plays with the region's par kit, not 
 
 ## 9. Sign-off
 
-Owner answered all ten questions, 2026-11-21 (section 8). Section 2.6 (scenery) was added from the answer to Q9 and is waiting for a final go.
+Owner answered all ten questions, 2026-11-21 (section 8). Section 2.6 (scenery) was added from the answer to Q9. **Signed off by the owner, 2026-11-21 ("Go").**
