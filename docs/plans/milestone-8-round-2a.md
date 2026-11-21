@@ -115,6 +115,22 @@ These are cheap variety using surfaces that already exist.
 | Rough patch | 3 × 3 to 5 × 4, rough | slows the ball; no art needed |
 | Ice patch | 2 × 2 to 4 × 3, ice | the ball slides; Frost and Chilled already use ice |
 
+### 2.5 Set piece weights by region
+
+| Set piece | Region 1 | Region 2 | Region 3 |
+|---|---|---|---|
+| Pond with island | 2 | 2 | 1 |
+| Spike pit | 1 | 1 | 3 |
+| Sand field | 3 | 2 | 1 |
+| Booster or conveyor run | 2 | 2 | 2 |
+| Moat with bridge | – | 3 | 3 |
+| Dead tree grove | – | 2 | 3 |
+| Rough patch | – | 2 | 1 |
+| Spike strip | – | – | 3 |
+| Ice patch | – | – | 2 |
+
+Region 1's column is today's, unchanged. One area never gets the same set piece twice.
+
 ### 2.6 Scenery (owner, 2026-11-21: build it now, placeholder art, to test how it spreads over a course)
 
 Small things on the ground that **do not touch the ball**: it rolls straight through them, and enemies ignore them. They are placed by the generator from the course seed, so the same seed always gives the same scenery. They are for looks only: the physics and the course check never see them, so scenery cannot make a course harder or slower to make.
@@ -141,22 +157,6 @@ Where it goes:
 - Drawn under the ball and enemies.
 
 A U-panel switch hides all scenery, so you can compare a course with and without it.
-
-### 2.5 Set piece weights by region
-
-| Set piece | Region 1 | Region 2 | Region 3 |
-|---|---|---|---|
-| Pond with island | 2 | 2 | 1 |
-| Spike pit | 1 | 1 | 3 |
-| Sand field | 3 | 2 | 1 |
-| Booster or conveyor run | 2 | 2 | 2 |
-| Moat with bridge | – | 3 | 3 |
-| Dead tree grove | – | 2 | 3 |
-| Rough patch | – | 2 | 1 |
-| Spike strip | – | – | 3 |
-| Ice patch | – | – | 2 |
-
-Region 1's column is today's, unchanged. One area never gets the same set piece twice.
 
 ---
 
