@@ -2720,6 +2720,54 @@
         14
       ]
     },
+    "burrgrub": {
+      "file": "sprites/burrgrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "glidegrub": {
+      "file": "sprites/glidegrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "gyregrub": {
+      "file": "sprites/gyregrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "driftgrub": {
+      "file": "sprites/driftgrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
     "sparkgrub": {
       "file": "sprites/sparkgrub.png",
       "frameWidth": 18,
@@ -2801,6 +2849,54 @@
     },
     "icon-chilled": {
       "file": "sprites/icon-chilled.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-burr": {
+      "file": "sprites/icon-burr.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-kite": {
+      "file": "sprites/icon-kite.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-gyre": {
+      "file": "sprites/icon-gyre.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-drift": {
+      "file": "sprites/icon-drift.png",
       "frameWidth": 10,
       "frameHeight": 10,
       "frames": [

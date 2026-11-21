@@ -589,6 +589,11 @@ const defs: readonly ObjectDef[] = [
   carrier('whirlgrub', 'Whirlgrub', 'tornado'),
   carrier('frostgrub', 'Frostgrub', 'frost'),
   carrier('sparkgrub', 'Sparkgrub', 'static'),
+  // Round 2b (sheet section 1.5).
+  carrier('burrgrub', 'Burrgrub', 'burr'),
+  carrier('glidegrub', 'Glidegrub', 'kite'),
+  carrier('gyregrub', 'Gyregrub', 'gyre'),
+  carrier('driftgrub', 'Driftgrub', 'drift'),
 
   // Milestone 8 round 1 (sheet section 7): five new bugs.
   {

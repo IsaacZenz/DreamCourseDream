@@ -51,6 +51,7 @@ import {
   DT,
   ballAtTile,
   endHover,
+  stick,
   endShot,
   groundAt,
   nearestOnShape,
@@ -274,6 +275,12 @@ export interface SeedState {
   readonly shot: ShotState;
 }
 
+/** Round 2b: Gyre (steering) and Drift (floating) while they last, in steps. */
+export interface SteerState {
+  readonly kind: 'gyre' | 'drift';
+  stepsLeft: number;
+}
+
 export interface TornadoState {
   stepsLeft: number;
   heading: number;
@@ -459,6 +466,8 @@ export interface PlayState {
   ability: string | null;
   abilityUsed: boolean;
   tornado: TornadoState | null;
+  /** Round 2b: Gyre or Drift while it lasts this shot. */
+  steering: SteerState | null;
   /** Milestone 8: Frost or Static while it lasts this shot (steps left; Static: enemies it already zapped). */
   aura: { kind: 'frost' | 'static'; stepsLeft: number; zapped: string[] } | null;
   /** The ball's turn (shot number) each frozen tile was last frozen in: that turn does not count towards melting. */
@@ -547,8 +556,10 @@ export interface TickInput {
   readonly boost?: boolean;
   /** Ability key pressed this step. */
   readonly ability?: boolean;
-  /** Tornado steering: -1 left, 1 right, 0 none. */
+  /** Tornado and Gyre steering: -1 left, 1 right, 0 none. */
   readonly steer?: number;
+  /** Drift: the direction pressed, in screen terms (x right, y down), each -1, 0 or 1. */
+  readonly move?: { readonly x: number; readonly y: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -682,6 +693,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     ability: lo.ability !== undefined ? lo.ability : character.startingAbility,
     abilityUsed: false,
     tornado: null,
+    steering: null,
     aura: null,
     frozenAt: {},
     ballStatuses: [],
@@ -1268,6 +1280,7 @@ function stepBall(play: PlayState, input: TickInput): void {
     }
     setHeading(s, tor.heading, tor.speed);
   }
+  steerBall(play, s, input);
   const before = s.events.length;
   stepShot(play.course, play.tuning, s, input.boost ? { boost: true } : {}, play.world);
   for (const e of s.events.slice(before)) {
@@ -1285,7 +1298,50 @@ function stepBall(play: PlayState, input: TickInput): void {
       play.tornado = null;
     }
   }
+  endSteering(play, s);
   checkExit(play, s);
+}
+
+/**
+ * Gyre turns the ball's heading with Left/Right; Drift moves the floating ball
+ * in screen directions (round 2b sheet sections 1.3 and 1.4).
+ */
+function steerBall(play: PlayState, s: ShotState, input: TickInput): void {
+  const st = play.steering;
+  if (!st) return;
+  const b = s.ball;
+  const fx = ABILITIES.get(st.kind)!.effect;
+  if (fx.kind === 'gyre') {
+    const turn = ((input.steer ?? 0) * fx.turnRate * Math.PI * DT) / 180;
+    if (turn) {
+      const c = Math.cos(turn);
+      const sn = Math.sin(turn);
+      const vx = b.vx * c - b.vy * sn;
+      b.vy = b.vx * sn + b.vy * c;
+      b.vx = vx;
+    }
+  } else if (fx.kind === 'drift' && s.hover) {
+    // Screen right is grid (+1, -1); screen down is grid (+1, +1) (iso.ts).
+    const mx = input.move?.x ?? 0;
+    const my = input.move?.y ?? 0;
+    let gx = mx + my;
+    let gy = -mx + my;
+    const len = Math.hypot(gx, gy);
+    if (len > 0) {
+      gx /= len;
+      gy /= len;
+    }
+    b.vx = gx * fx.speed;
+    b.vy = gy * fx.speed;
+  }
+}
+
+/** Gyre and Drift count down; Drift then drops straight down with no speed. */
+function endSteering(play: PlayState, s: ShotState): void {
+  const st = play.steering;
+  if (!st || --st.stepsLeft > 0) return;
+  if (st.kind === 'drift' && s.hover) endHover(play.course, s, 0);
+  play.steering = null;
 }
 
 /** The ball's motion ended: rest, sink, fall out, or drop into the exit. */
@@ -1294,6 +1350,7 @@ function finishBallMotion(play: PlayState): void {
   const outcome = s.outcome;
   play.shot = null;
   play.tornado = null;
+  play.steering = null;
   play.aura = null;
   if (outcome === 'exit') {
     play.ball = { ...s.ball, vx: 0, vy: 0, vz: 0, grounded: true };
@@ -2594,7 +2651,10 @@ function giveAbility(play: PlayState, id: string, wild: boolean): void {
 
 /** Can the held ability be used right now? Once per shot, while the ball moves. */
 export function canUseAbility(play: PlayState): boolean {
-  return !!play.ability && !play.abilityUsed && !!play.shot && !play.shot.outcome && play.status === 'playing';
+  if (!play.ability || play.abilityUsed || !play.shot || play.shot.outcome || play.status !== 'playing') return false;
+  // Kite only works in the air (round 2b sheet 1.2); on the ground it is not used up.
+  if (play.ability === 'kite' && play.shot.ball.grounded && !play.shot.hover) return false;
+  return true;
 }
 
 export function useAbility(play: PlayState): boolean {
@@ -2628,6 +2688,29 @@ export function useAbility(play: PlayState): boolean {
     s.restSteps = 0;
   } else if (fx.kind === 'frost' || fx.kind === 'static') {
     play.aura = { kind: fx.kind, stepsLeft: steps(fx.time), zapped: [] };
+  } else if (fx.kind === 'burr') {
+    // Rolling: the ground is what it touches, so it sticks at once. In the air: the first thing it touches.
+    if (s.hover) {
+      endHover(play.course, s, 0);
+      play.tornado = null;
+    }
+    const g = groundAt(play.course, b.x, b.y);
+    if (b.grounded && g) stick(s, g);
+    else s.sticky = steps(fx.time);
+  } else if (fx.kind === 'kite') {
+    s.glide = steps(fx.time);
+    s.glideGravity = fx.gravityScale;
+    s.glideMaxFall = fx.maxFall;
+  } else if (fx.kind === 'gyre') {
+    play.steering = { kind: 'gyre', stepsLeft: steps(fx.time) };
+  } else if (fx.kind === 'drift') {
+    const g = groundAt(play.course, b.x, b.y);
+    b.vx = 0;
+    b.vy = 0;
+    b.vz = 0;
+    s.hover = { floor: (g ? Math.max(b.z, g.h) : b.z) + (b.grounded ? fx.lift : 0) };
+    b.grounded = false;
+    play.steering = { kind: 'drift', stepsLeft: steps(fx.time) };
   } else if (fx.kind === 'tornado') {
     const sp = Math.hypot(b.vx, b.vy);
     const heading = sp > 1e-6 ? Math.atan2(b.vy, b.vx) : Math.atan2(s.dirY, s.dirX);

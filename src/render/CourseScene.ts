@@ -277,6 +277,8 @@ export class CourseScene extends Phaser.Scene {
     this.thumb = params.get('thumb') === '1';
     // ?bench=<object id> opens the test bench with that thing at its centre (for example ?course=test-bench&bench=rail).
     if (!benchShown && params.get('bench') !== null) bench.object = params.get('bench')!;
+    // ?ability=<id> starts the test bench holding that ability (round 2b testing aid).
+    if (!benchShown && params.get('ability')) bench.ability = params.get('ability')!;
     // Milestone 8: &rank=1|2, &trait=<id>, &element=fire|ice|shock for the enemy on the bench.
     if (!benchShown) for (const k of ['rank', 'trait', 'element'] as const) if (params.get(k) !== null) bench[k] = params.get(k)!;
     const urlDebug = params.get('debug');
@@ -1256,8 +1258,12 @@ export class CourseScene extends Phaser.Scene {
       }
       if (!stepped) this.prevBall = { ...ballNow(this.play) };
       stepped = true;
-      const steer = this.play.tornado ? (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0) : 0;
-      const input = { ...(this.boostQueued && { boost: true }), ...(this.abilityQueued && { ability: true }), ...(steer && { steer }) };
+      // Tornado and Gyre steer with Left/Right; Drift moves in screen directions with the arrows or W A S D (round 2b).
+      const lr = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
+      const ud = (k.down.isDown || k.s.isDown ? 1 : 0) - (k.up.isDown || k.w.isDown ? 1 : 0);
+      const steer = this.play.tornado || this.play.steering?.kind === 'gyre' ? lr : 0;
+      const drift = this.play.steering?.kind === 'drift' && (lr || ud) ? { x: lr, y: ud } : undefined;
+      const input = { ...(this.boostQueued && { boost: true }), ...(this.abilityQueued && { ability: true }), ...(steer && { steer }), ...(drift && { move: drift }) };
       this.boostQueued = false;
       this.abilityQueued = false;
       const shot = this.play.shot;

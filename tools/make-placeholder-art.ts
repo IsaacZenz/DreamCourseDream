@@ -938,7 +938,7 @@ function drawStump(): Image {
 
 function drawIcon(kind: string): Image {
   const img = new Image(10, 10);
-  blob(img, 5, 5, 5, 5, { anchor: '#4060a0', burner: '#c04020', hop: '#40a040', tornado: '#7a7ab0', stunned: '#a09030', wild: '#b040c0', frost: '#78b8e8', static: '#d8b020', poisoned: '#70a030', chilled: '#a8d8f8' }[kind] ?? '#808080', '#101018');
+  blob(img, 5, 5, 5, 5, { anchor: '#4060a0', burner: '#c04020', hop: '#40a040', tornado: '#7a7ab0', stunned: '#a09030', wild: '#b040c0', frost: '#78b8e8', static: '#d8b020', poisoned: '#70a030', chilled: '#a8d8f8', burr: '#8a6a30', kite: '#e07890', gyre: '#30a0a0', drift: '#a0a0e0' }[kind] ?? '#808080', '#101018');
   const w = hex2('#f8f8f8');
   const marks: Record<string, P[]> = {
     anchor: [[5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [4, 3], [6, 3], [3, 6], [7, 6], [4, 7], [6, 7]],
@@ -952,6 +952,11 @@ function drawIcon(kind: string): Image {
     static: [[6, 1], [5, 2], [4, 3], [5, 4], [6, 4], [5, 5], [4, 6], [5, 7], [4, 8]],
     poisoned: [[5, 2], [4, 3], [6, 3], [3, 4], [7, 4], [3, 5], [7, 5], [4, 6], [5, 6], [6, 6], [4, 8], [6, 8]],
     chilled: [[5, 2], [4, 3], [6, 3], [3, 4], [5, 4], [7, 4], [4, 5], [6, 5], [5, 6], [5, 7]],
+    // Round 2b: a burr (spiky dot), a kite (diamond), a spiral arrow, a feather-ish float.
+    burr: [[5, 2], [5, 8], [2, 5], [8, 5], [3, 3], [7, 3], [3, 7], [7, 7], [4, 4], [5, 4], [6, 4], [4, 5], [5, 5], [6, 5], [4, 6], [5, 6], [6, 6]],
+    kite: [[5, 1], [4, 2], [6, 2], [3, 3], [7, 3], [4, 4], [6, 4], [5, 5], [5, 6], [6, 7], [5, 8]],
+    gyre: [[3, 3], [4, 2], [5, 2], [6, 2], [7, 3], [7, 4], [7, 5], [6, 6], [5, 6], [4, 5], [5, 4], [2, 3], [3, 4]],
+    drift: [[2, 4], [3, 3], [4, 3], [5, 4], [6, 4], [7, 3], [8, 3], [2, 7], [3, 6], [4, 6], [5, 7], [6, 7], [7, 6], [8, 6]],
   };
   for (const [x, y] of marks[kind] ?? []) img.set(x, y, w);
   return img;
@@ -1520,6 +1525,11 @@ emit('trapjaw', drawTrapjaw(), 20, 16, ['idle'], [10, 14]);
 emit('stinkpuff', drawStinkpuff(), 18, 15, ['idle'], [9, 13]);
 emit('grublet', drawGrublet(), 10, 8, ['idle'], [5, 7]);
 emit('frostgrub', drawCarrier('#90c8f0', mark('#f8f8f8', [[11, 4], [11, 5], [11, 6], [11, 7], [11, 8], [9, 6], [10, 6], [12, 6], [13, 6], [10, 5], [12, 7]])), 18, 16, ['idle'], [9, 14]);
+// Round 2b carriers: the grub with its ability's colour and mark.
+emit('burrgrub', drawCarrier('#8a6a30', mark('#f8f8f8', [[11, 4], [11, 8], [9, 6], [13, 6], [10, 5], [11, 5], [12, 5], [10, 6], [11, 6], [12, 6], [10, 7], [11, 7], [12, 7]])), 18, 16, ['idle'], [9, 14]);
+emit('glidegrub', drawCarrier('#e07890', mark('#f8f8f8', [[11, 3], [10, 4], [12, 4], [9, 5], [13, 5], [10, 6], [12, 6], [11, 7], [11, 8]])), 18, 16, ['idle'], [9, 14]);
+emit('gyregrub', drawCarrier('#30a0a0', mark('#f8f8f8', [[10, 4], [11, 4], [12, 4], [13, 5], [13, 6], [12, 7], [11, 7], [10, 6], [11, 5]])), 18, 16, ['idle'], [9, 14]);
+emit('driftgrub', drawCarrier('#a0a0e0', mark('#f8f8f8', [[9, 5], [10, 4], [11, 5], [12, 4], [13, 5], [9, 8], [10, 7], [11, 8], [12, 7], [13, 8]])), 18, 16, ['idle'], [9, 14]);
 emit('sparkgrub', drawCarrier('#e8c830', mark('#302000', [[12, 4], [11, 5], [10, 6], [11, 6], [12, 6], [11, 7], [10, 8]])), 18, 16, ['idle'], [9, 14]);
 emit(
   'gloamhorn',
@@ -1530,7 +1540,7 @@ emit(
   [20, 33],
 );
 emit('brood-queen', sheet([0, 1, 2].map(drawBroodQueen)), 48, 42, ['phase1', 'phase2', 'phase3'], [24, 36]);
-for (const k of ['frost', 'static', 'poisoned', 'chilled']) emit(`icon-${k}`, drawIcon(k), 10, 10, ['idle'], [5, 5]);
+for (const k of ['frost', 'static', 'poisoned', 'chilled', 'burr', 'kite', 'gyre', 'drift']) emit(`icon-${k}`, drawIcon(k), 10, 10, ['idle'], [5, 5]);
 for (const t of ['shielded', 'armoured', 'swift', 'explosive', 'regenerating', 'splitting']) emit(`trait-${t}`, drawBadge(t), 7, 7, ['idle'], [3, 6]);
 emit('rank-veteran', drawRank(false), 9, 5, ['idle'], [4, 4]);
 emit('rank-elite', drawRank(true), 9, 5, ['idle'], [4, 4]);

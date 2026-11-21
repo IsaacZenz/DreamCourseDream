@@ -40,7 +40,19 @@ export type AbilityEffect =
    * the ball does `damage` once to each enemy inside it; the ball passes under
    * thunder clouds unharmed while it is up.
    */
-  | { readonly kind: 'static'; readonly time: number; readonly radius: number; readonly damage: number };
+  | { readonly kind: 'static'; readonly time: number; readonly radius: number; readonly damage: number }
+  /** Burr (round 2b sheet 1.1): for `time` seconds the first thing touched holds the ball (any slope). On the ground: sticks at once. */
+  | { readonly kind: 'burr'; readonly time: number }
+  /** Kite (1.2): in the air only; until landing or `time` seconds, gravity x `gravityScale` and the fall is capped at `maxFall` tiles/s. */
+  | { readonly kind: 'kite'; readonly time: number; readonly gravityScale: number; readonly maxFall: number }
+  /** Gyre (1.3): for `time` seconds Left/Right turn the heading by up to `turnRate` degrees a second; speed unchanged. */
+  | { readonly kind: 'gyre'; readonly time: number; readonly turnRate: number }
+  /**
+   * Drift (1.4): the ball stops and floats (lifted `lift` tiles off the ground)
+   * for `time` seconds, moved in screen directions at `speed` tiles/s by the
+   * arrow keys; then it drops straight down.
+   */
+  | { readonly kind: 'drift'; readonly time: number; readonly speed: number; readonly lift: number };
 
 export interface AbilityDef {
   readonly id: string;
@@ -74,6 +86,11 @@ const defs: readonly AbilityDef[] = [
     usesPerShot: 1,
   },
   { id: 'frost', name: 'Frost', icon: 'icon-frost', activation: 'key', effect: { kind: 'frost', time: 2.5, freezeTurns: 2, chillTurns: 2, lookAhead: 0.3 }, duration: 2.5, element: 'ice', modifiers: [], usesPerShot: 1 },
+  // Round 2b (sheet section 1; owner, 2026-11-21: defaults).
+  { id: 'burr', name: 'Burr', icon: 'icon-burr', activation: 'key', effect: { kind: 'burr', time: 3 }, duration: 3, element: null, modifiers: [], usesPerShot: 1 },
+  { id: 'kite', name: 'Kite', icon: 'icon-kite', activation: 'key', effect: { kind: 'kite', time: 3, gravityScale: 0.25, maxFall: 1.5 }, duration: 3, element: null, modifiers: [], usesPerShot: 1 },
+  { id: 'gyre', name: 'Gyre', icon: 'icon-gyre', activation: 'key', effect: { kind: 'gyre', time: 3, turnRate: 150 }, duration: 3, element: null, modifiers: [], usesPerShot: 1 },
+  { id: 'drift', name: 'Drift', icon: 'icon-drift', activation: 'key', effect: { kind: 'drift', time: 1.5, speed: 4, lift: 0.5 }, duration: 1.5, element: null, modifiers: [], usesPerShot: 1 },
   { id: 'static', name: 'Static', icon: 'icon-static', activation: 'key', effect: { kind: 'static', time: 1.5, radius: 1, damage: 1 }, duration: 1.5, element: 'shock', modifiers: [], usesPerShot: 1 },
 ];
 
