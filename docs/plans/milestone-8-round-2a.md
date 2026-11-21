@@ -115,6 +115,33 @@ These are cheap variety using surfaces that already exist.
 | Rough patch | 3 × 3 to 5 × 4, rough | slows the ball; no art needed |
 | Ice patch | 2 × 2 to 4 × 3, ice | the ball slides; Frost and Chilled already use ice |
 
+### 2.6 Scenery (owner, 2026-11-21: build it now, placeholder art, to test how it spreads over a course)
+
+Small things on the ground that **do not touch the ball**: it rolls straight through them, and enemies ignore them. They are placed by the generator from the course seed, so the same seed always gives the same scenery. They are for looks only: the physics and the course check never see them, so scenery cannot make a course harder or slower to make.
+
+| Prop | Id | Regions | Placeholder look |
+|---|---|---|---|
+| Grass tuft | `tuft` | 1, 2, 3 | a few green blades |
+| Flowers | `flowers` | 1, 2 | small coloured dots |
+| Pebbles | `pebbles` | 1, 2, 3 | two or three grey dots |
+| Mushrooms | `mushrooms` | 2, 3 | small caps |
+| Fallen leaves | `leaves` | 2, 3 | brown flecks |
+| Bones | `bones` | 3 | a small white bone |
+
+| | Region 1 | Region 2 | Region 3 and endless |
+|---|---|---|---|
+| Scenery per 100 tiles | 4 | 6 | 8 |
+| Clusters | groups of 1 to 3 | groups of 1 to 4 | groups of 1 to 4 |
+| Pick weights | tuft 4, flowers 3, pebbles 2 | tuft 3, flowers 2, pebbles 2, mushrooms 2, leaves 2 | tuft 2, pebbles 2, mushrooms 2, leaves 2, bones 2 |
+
+Where it goes:
+- Only on grass, rough and sand. Never on water, spikes, bridges, arrow tiles, springs, warps, bumpers, the start or exit tile, or a tile that holds an object.
+- Not on steep slopes (it would look like it is sliding off).
+- Clusters sit on neighbouring tiles, so it looks natural rather than evenly sprinkled.
+- Drawn under the ball and enemies.
+
+A U-panel switch hides all scenery, so you can compare a course with and without it.
+
 ### 2.5 Set piece weights by region
 
 | Set piece | Region 1 | Region 2 | Region 3 |
@@ -175,15 +202,15 @@ Each food in a shop or a crate comes with a duration of **1, 2 or 3 courses**. L
 
 | Duration | Chance | Shown as |
 |---|---|---|
-| 1 course | 60% | one pip |
+| 1 course | 50% (owner, 2026-11-21; was 60%) | one pip |
 | 2 courses | 30% | two pips |
-| 3 courses | 10% | three pips |
+| 3 courses | 20% (owner, 2026-11-21; was 10%) | three pips |
 
 - The course you eat it before counts as the first.
 - A boss fight counts as a course. A town or a cache does not.
 - When it runs out, its effect goes. If max health drops, health is trimmed to the new maximum.
 - Foods stack, whether eaten together or on different courses (two Chili Peppers give +20%), each with its own count.
-- Apple and Garlic act at once when eaten and have no duration.
+- Apple and Garlic act at once when eaten and have no duration. **Owner, 2026-11-21:** Garlic works exactly as Delay the Boss did (no duration roll, same limits).
 
 ### 4.3 The foods
 
@@ -251,6 +278,7 @@ The course check's bot is not affected: it plays with the region's par kit, not 
 | Detail dial, new set pieces, weights | `src/content/run.ts` (per region), `src/content/landforms.ts`, `src/content/gen.ts`, `src/gen/journey.ts`, `src/gen/generate.ts` |
 | Bridge surface | `src/content/surfaces.ts`, placeholder art via `tools/make-placeholder-art.ts`, asset manifest |
 | Dead tree | `src/content/objects.ts`, placeholder art |
+| Scenery | a new scenery list in `src/content/` (props, regions, weights, density), placed by `src/gen/`, drawn by `src/render/` only; placeholder art |
 | Food, bag, durations | `src/content/consumables.ts` (food list, durations, prices), `src/sim/stats.ts` (the "courses" duration), `src/sim/run.ts` (bag, eating, two shops, save migration) |
 | Screens | the town screen (two shop buttons), the shop screen (food or gear), a "before the course" panel to eat from the bag, bag shown in the run HUD |
 
@@ -265,6 +293,7 @@ The course check's bot is not affected: it plays with the region's par kit, not 
 - Ball on a bridge, off a bridge into water, spikes and sand; rolling enemy at a bridge edge (tests).
 - Food: a 3-slot bag; any number eaten before a course; none during a course; found food goes into the bag; swap or leave when full; durations count down by courses and effects go when they run out; max health trimmed; stacking; Apple and Garlic at once (tests).
 - Two shops with 4 and 3 offers and separate rerolls (tests).
+- Scenery: the same seed gives the same scenery; the density per region is inside 20% of section 2.6; never on a forbidden tile; a ball rolls through a prop as if it were not there (tests).
 - A saved run with an old pocket acorn loads, with the acorn in the bag (test).
 - Checked in a browser with screenshots: a region-three course with a bridge, a grove and a spike strip; the town with two shops; the eat panel.
 
@@ -278,6 +307,7 @@ The course check's bot is not affected: it plays with the region's par kit, not 
 4. Buy food in a shop, fill the bag and pick up an acorn from a crate. Does the swap-or-leave choice make sense?
 5. Eat a 3-course food and check that its effect lasts exactly three courses. Eat two foods at once and check both work.
 6. Watch your wallet over a run. Is food cheap enough that you actually buy it?
+7. Look at the scenery across a whole course. Is it too sparse, too busy, or too even? Use the U-panel switch to compare with and without it.
 
 ---
 
@@ -285,19 +315,19 @@ The course check's bot is not affected: it plays with the region's par kit, not 
 
 | # | Question | Default |
 |---|---|---|
-| Q1 | Duration chances 60% / 30% / 10% for 1 / 2 / 3 courses? | Yes |
-| Q2 | Foods stack (the same food twice gives double)? | Yes |
-| Q3 | Prices in section 4.5? | Yes |
-| Q4 | Detail targets: region 2 about 3 times today's obstacles, region 3 about 5 times? | Yes |
-| Q5 | Rails on bridges half the time, open the other half? | Yes |
-| Q6 | Spikes as a moat filling: region 2 10% of moats, region 3 40%? | Yes |
-| Q7 | Food found in a crate also rolls 1 to 3 courses with the same chances? | Yes |
-| Q8 | Garlic: still at most once per shop and 3 times per region? | Yes |
-| Q9 | Scenery that does not block the ball (grass tufts, flowers, bones) waits for Milestone 9 art? | Yes, it is art only |
-| Q10 | Region 1's extra obstacles: 0.5 per 100 tiles (about 1 to 3 rocks or stumps per course), no dead trees? | Yes |
+| Q1 | Duration chances for 1 / 2 / 3 courses? | **Owner: 50% / 30% / 20%** |
+| Q2 | Foods stack (the same food twice gives double)? | **Owner: yes for now; to be tested** |
+| Q3 | Prices in section 4.5? | **Owner: yes** |
+| Q4 | Detail targets: region 2 about 3 times today's obstacles, region 3 about 5 times? | **Owner: yes** |
+| Q5 | Rails on bridges half the time, open the other half? | **Owner: yes** |
+| Q6 | Spikes as a moat filling: region 2 10% of moats, region 3 40%? | **Owner: yes** |
+| Q7 | Food found in a crate also rolls 1 to 3 courses with the same chances? | **Owner: yes** |
+| Q8 | Garlic: still at most once per shop and 3 times per region? | **Owner: works exactly as before, no duration roll** |
+| Q9 | Scenery that does not block the ball now or in Milestone 9? | **Owner: now, with placeholder art, to test its spread (section 2.6)** |
+| Q10 | Region 1's extra obstacles: 0.5 per 100 tiles (about 1 to 3 rocks or stumps per course), no dead trees? | **Owner: yes** |
 
 ---
 
 ## 9. Sign-off
 
-_(to be filled in when the owner signs off)_
+Owner answered all ten questions, 2026-11-21 (section 8). Section 2.6 (scenery) was added from the answer to Q9 and is waiting for a final go.
