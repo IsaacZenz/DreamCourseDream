@@ -24,6 +24,11 @@ export const WALK = {
   maxStep: 1,
   /** Walking frames: one step every this many seconds. */
   stepSeconds: 0.16,
+  /**
+   * How close the camera is (sheet section 1.5): 2 is every art pixel drawn 2 by 2.
+   * Owner, 2026-11-21: "a hair too zoomed in", so 1.5. A whole number keeps every pixel the same size.
+   */
+  cameraZoom: 1.5,
 } as const;
 
 /** Ground the armadillo walks on. Water, spikes and pads block it. */

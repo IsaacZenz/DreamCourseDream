@@ -4,7 +4,7 @@ import { UPGRADE_LIST } from '../content/run';
 import { FOOD } from '../content/consumables';
 import { OBJECTS, RAIL } from '../content/objects';
 import { GROUND_BUMPS, SCENERY } from '../content/scenery';
-import { PROPS, type PlaceKind, type TriggerKind } from '../content/places';
+import { PROPS, WALK, type PlaceKind, type TriggerKind } from '../content/places';
 import { townFor } from '../content/places/index';
 import { themeForRegion } from '../content/biomes';
 import { BOSSES } from '../content/bosses';
@@ -36,8 +36,8 @@ const GOOD = 0x80f080;
 const BAD = 0xff8080;
 const STAR = 0xf8d030;
 const BOSS_RED = 0xe84040;
-/** Camera zoom (sheet section 1.5): every art pixel is 2 by 2 screen pixels. */
-const ZOOM = 2;
+/** Camera zoom (sheet section 1.5), from the walking numbers. */
+const ZOOM = WALK.cameraZoom;
 const STEP = 1 / 60;
 const UI_DEPTH = 1000;
 /** The address's ?place= testing aid is used once per page load. */
@@ -63,6 +63,8 @@ const NEAR_LABEL: Partial<Record<TriggerKind, string>> = {
 
 interface Sign {
   readonly at: Point;
+  /** The destination's map icon, shown above the signpost (sheet section 3.3). */
+  readonly icon?: string;
   readonly title: string;
   readonly color: number;
   readonly lines: readonly string[];
@@ -114,7 +116,14 @@ export class PlaceScene extends Phaser.Scene {
   private animatedTiles: { img: Phaser.GameObjects.Image; frame: string; frames: readonly string[]; id: string }[] = [];
   private animPhase = -1;
   private sceneryAnims: { img: Phaser.GameObjects.Image; id: string; frameMs: number; offset: number }[] = [];
-  private boundsPx = { left: 0, top: 0, right: 0, bottom: 0 };
+  /**
+   * Owner, 2026-11-21: the camera at 1.5 (not a whole number). Drawing each tile
+   * scaled by 1.5 left thin seams between tiles, so the place is drawn at its
+   * own size onto one picture every frame, and that picture is scaled instead.
+   */
+  private canvas!: Phaser.GameObjects.RenderTexture;
+  /** Where the place's own (0, 0) sits on that picture. */
+  private origin = { x: 0, y: 0 };
 
   constructor() {
     super('place');
@@ -169,6 +178,7 @@ export class PlaceScene extends Phaser.Scene {
     persist();
     if (kind === 'town') prefetch(upcomingJobs(run));
     if (kind === 'crossroads') prefetch(this.options.map((n) => courseJobFor(run, n)).filter((j): j is CourseJob => j !== null));
+    this.paint();
     this.updateCamera(true);
   }
 
@@ -204,6 +214,7 @@ export class PlaceScene extends Phaser.Scene {
         const lines = n.id === LAST_TOWN ? ['OPTIONAL: SHOP AND BURROW', 'BEFORE THE BOSS'] : nodeInfo(run, type);
         this.signs.push({
           at: x.signs[i]!,
+          icon: n.id === LAST_TOWN ? 'node-shop' : `node-${type}`,
           title: n.id === LAST_TOWN ? 'LAST TOWN' : NODE_NAME[type],
           color: type === 'boss' ? BOSS_RED : type === 'hard' ? 0xf8a040 : GOOD,
           lines: [...lines, ...(mod ? [courseModLabel(mod)] : [])],
@@ -250,7 +261,8 @@ export class PlaceScene extends Phaser.Scene {
 
   private drawWorld(): void {
     const m = shared.manifest;
-    this.world = this.add.container(0, 0).setScale(ZOOM);
+    this.world = this.make.container({ x: 0, y: 0 }, false);
+    this.events.once('shutdown', () => this.world.destroy());
     this.animatedTiles = [];
     this.sceneryAnims = [];
     this.bigProps = [];
@@ -319,10 +331,21 @@ export class PlaceScene extends Phaser.Scene {
       } else if (p.id === 'tee-mat') this.image(def.sprite, frame, q.x, q.y, tileDepth(Math.floor(p.x), Math.floor(p.y), 'arrow'), false);
       else this.image(def.sprite, frame, q.x, q.y, this.standingDepth(p.x, p.y), !!def.themed);
     }
+    // Each crossroads signpost shows its destination's map icon, bobbing above the board.
+    for (const s of this.signs) {
+      if (!s.icon || !m.sprites[s.icon]) continue;
+      const q = this.onGround(s.at.x, s.at.y);
+      const icon = this.image(s.icon, 'idle', q.x, q.y - 38, this.standingDepth(s.at.x, s.at.y) + 0.01, false);
+      this.tweens.add({ targets: icon, y: icon.y - 2, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
     this.heroShadow = this.image('ball-shadow', 'idle', 0, 0, 0, false).setScale(1.6, 1.4);
     this.hero = this.image('armadillo', 'dr-stand', 0, 0, 0, false);
     const b = courseBounds(g);
-    this.boundsPx = { left: b.left * ZOOM - 24, top: b.top * ZOOM - 40, right: b.right * ZOOM + 24, bottom: b.bottom * ZOOM + 24 };
+    this.origin = { x: Math.ceil(24 - b.left), y: Math.ceil(56 - b.top) };
+    const w = Math.ceil(b.right - b.left + 48);
+    const h = Math.ceil(b.bottom - b.top + 80);
+    this.canvas = this.add.renderTexture(0, 0, w, h).setOrigin(0, 0).setScale(ZOOM).setDepth(0);
+    this.canvas.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
   }
 
   /** Where the armadillo starts: the arrival spot, or outside the door it came out of. */
@@ -374,18 +397,25 @@ export class PlaceScene extends Phaser.Scene {
   // -------------------------------------------------------------------------
   // The camera: follows the armadillo with a small dead zone and stops at the edges.
 
+  /** Draw the place onto its picture (every frame: things move and the draw order changes). */
+  private paint(): void {
+    this.world.sort('depth');
+    this.canvas.clear();
+    this.canvas.draw(this.world, this.origin.x, this.origin.y);
+    this.canvas.render();
+  }
+
   private updateCamera(snap = false): void {
     const cam = this.cameras.main;
-    const scale = this.world.scale;
-    const bw = this.boundsPx.right - this.boundsPx.left;
-    const bh = this.boundsPx.bottom - this.boundsPx.top;
-    const k = scale / ZOOM;
+    const scale = this.canvas.scaleX;
+    const bw = this.canvas.width * scale;
+    const bh = this.canvas.height * scale;
     if (this.overview) {
-      cam.setScroll(Math.round((this.boundsPx.left + bw / 2) * k - VIEW_WIDTH / 2), Math.round((this.boundsPx.top + bh / 2) * k - VIEW_HEIGHT / 2));
+      cam.setScroll(Math.round(bw / 2 - VIEW_WIDTH / 2), Math.round(bh / 2 - VIEW_HEIGHT / 2));
       return;
     }
-    const tx = this.hero.x * scale - VIEW_WIDTH / 2;
-    const ty = this.hero.y * scale - VIEW_HEIGHT / 2 + 10;
+    const tx = (this.hero.x + this.origin.x) * scale - VIEW_WIDTH / 2;
+    const ty = (this.hero.y + this.origin.y) * scale - VIEW_HEIGHT / 2 + 10;
     const dead = 10;
     if (snap) {
       this.camX = tx;
@@ -397,18 +427,17 @@ export class PlaceScene extends Phaser.Scene {
       if (this.camY - ty > dead) this.camY -= (this.camY - ty - dead) * 0.2;
     }
     const clamp = (v: number, lo: number, hi: number) => (hi < lo ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v)));
-    this.camX = clamp(this.camX, this.boundsPx.left, this.boundsPx.right - VIEW_WIDTH);
-    this.camY = clamp(this.camY, this.boundsPx.top - 16, this.boundsPx.bottom - VIEW_HEIGHT + 8);
+    this.camX = clamp(this.camX, 0, bw - VIEW_WIDTH);
+    this.camY = clamp(this.camY, 8 * scale, bh - VIEW_HEIGHT + 8);
     cam.setScroll(Math.round(this.camX), Math.round(this.camY));
   }
 
   private toggleOverview(): void {
     this.overview = !this.overview;
     if (this.overview) {
-      const g = courseBounds(this.place.ground);
-      const fit = Math.min((VIEW_WIDTH - 16) / (g.right - g.left + 48), (VIEW_HEIGHT - 40) / (g.bottom - g.top + 64));
-      this.world.setScale(Math.min(ZOOM, fit));
-    } else this.world.setScale(ZOOM);
+      const fit = Math.min((VIEW_WIDTH - 16) / this.canvas.width, (VIEW_HEIGHT - 30) / this.canvas.height);
+      this.canvas.setScale(Math.min(ZOOM, fit));
+    } else this.canvas.setScale(ZOOM);
     this.say(this.overview ? 'OVERVIEW. O: BACK' : '', UI_DIM);
     this.updateCamera(true);
   }
@@ -439,7 +468,7 @@ export class PlaceScene extends Phaser.Scene {
       }
     } else this.walker.moving = false;
     this.drawHero();
-    this.world.sort('depth');
+    this.paint();
     this.updateCamera();
     this.updateNear();
   }

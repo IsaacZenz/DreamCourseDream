@@ -255,3 +255,5 @@ Built as signed off, with these differences and details:
 - **A lamp post was moved during the build.** It stood in front of the Burrow door and got in the way.
 - **Testing aids.** These are `?place=town`, `?place=cache` and `?place=boss` (the boss is next, so its gate shows), each with `&region=N` to choose the region. The planned `?place=crossroads&paths=3` was not built, because the number of paths comes from the run's map. The "Use the map screen" switch is in the U panel, and M shows the map read-only.
 - **Tests.** Every door, the tee and the exit in each town, and every path end and boss gate in 60 crossroads, are checked to be reachable on foot from the arrival spot.
+- **Owner, 2026-11-21 (after playing): camera zoom 1.5** (was 2; "a hair too zoomed in"). `WALK.cameraZoom` in `src/content/places.ts`. Scaling tiles one by one by 1.5 left thin seams between them, so a place is now drawn at its own size onto one picture each frame and that picture is scaled. **Signposts now show the destination's map icon** (course, hard course, town, cache, boss) bobbing above the board, as section 3.3 planned. It had been left out of the first build.
+
