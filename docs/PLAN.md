@@ -166,14 +166,14 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] **Plan gate:** design sheet for every new ability, enemy, trait, status, boss, linked object, biome, gear item and character in this milestone. (Round 1 sheet `docs/plans/milestone-8.md` signed off 2026-11-19. Owner, 2026-11-21: round 2 split into 2a (terrain, shops, food; sheet `docs/plans/milestone-8-round-2a.md`, signed off 2026-11-21) and 2b (abilities, linked objects, course modifiers, biomes and themes; sheet `docs/plans/milestone-8-round-2b.md`, signed off 2026-11-21); round 3 to come.) Owner signs it off before any of them is built. This milestone is large; it may be planned and built in several rounds, each with its own sheet.
 - [x] Owner, 2026-11-21 (round 2a): a food shop and a gear shop in each town; a 3-slot bag for consumables, any number eaten before a course, none during; food lasts 1 to 3 courses (FEATURES.md section 11); the food shop sells the acorns and the existing boosts and services renamed as food (Apple heals 2, Garlic delays the boss; table in FEATURES.md section 11); the gear shop sells gear only
 - [x] Owner, 2026-11-21 (round 2a): a detail dial per region (terrain features and scenery per 100 tiles, region one unchanged); bridges over water, sand or spikes; dead trees; more spikes in region three
-- [ ] Remaining abilities from DESIGN.md section 9 (round 1 built Frost and Static; Burr, Kite, Gyre and Drift are round 2)
+- [x] Remaining abilities from DESIGN.md section 9 (round 1 built Frost and Static; round 2b built Burr, Kite, Gyre and Drift)
 - [x] Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear and its drop chance (round 1)
 - [x] Remaining statuses: Poisoned, Burning, Chilled (round 1)
 - [x] More enemy types in both families; a second and third boss, one with a gimmick (round 1: five new bugs, Gloamhorn, the Brood Queen)
-- [ ] Linked objects (switches, gates, bridges); optional course modifiers
+- [x] Linked objects (switches, gates, bridges); optional course modifiers (round 2b)
 - [ ] Second gear slot unlocks; extra characters
-- [ ] Three biomes with their own chunk sets
-- [ ] Theme switch after each boss (day, night, jungle, underground, spooky): same objects, different art set through the manifest (owner, 2026-11-14)
+- [x] Three biomes (round 2b: Meadow, Bog, Thornwood; landform preferences and detail weights, as the generator no longer uses chunks)
+- [x] Theme switch after each boss (day, night, jungle, underground, spooky): same objects, different art set through the manifest (owner, 2026-11-14; round 2b: day, bog, thornwood, night, underground, spooky)
 - [ ] More gear and shop variety
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
 - [ ] Resolve the remaining open questions with the owner

@@ -1,6 +1,6 @@
 # Milestone 8 round 2b design sheet: four abilities, switches, course modifiers, biomes and themes
 
-**Status: signed off by the owner, 2026-11-21 ("Defaults all good"). Building.**
+**Status: signed off by the owner, 2026-11-21 ("Defaults all good"). Built 2026-11-21 (section 10, as built). Waiting for the owner to play it.**
 
 How to review: change any number, name or rule you want. Section 8 lists the open questions, each with a default. Saying "defaults are fine" signs those off. Every number is a starting value, kept in `src/content/` so it can be tuned later.
 
@@ -258,3 +258,38 @@ A U-panel switch picks a theme on the current course, for comparing them.
 ## 9. Sign-off
 
 **Signed off by the owner, 2026-11-21: "Defaults all good"** (every question in section 8 takes its default).
+
+---
+
+## 10. As built (2026-11-21)
+
+Everything on the sheet is built, in the four parts of section 0, each checked in a browser. Where the build differs from the sheet's wording, it is listed here.
+
+**Abilities**
+
+- **Burr pressed while rolling** sticks at once: the ground is what it is touching. In the air it holds for 3 s and sticks to the first thing it touches.
+- **Kite** is not used up if pressed on the ground (the key does nothing there), so it can still be used once the ball is in the air.
+- **Gyre** and **Tornado** share the Left/Right keys; **Drift** uses the arrows or W A S D in screen directions. Aiming keys are free during a shot, so nothing clashes.
+
+**Switches**
+
+- A **drawbridge** is never railed (its rails would sit a step below the planks while it is up).
+- A **linked gate** is a row of gate pieces across the middle of a passage (as wide as the passage), with its switch in the area before it, at least 4 tiles from every piece.
+- When a drawbridge comes down, the game swaps in a copy of the course with those tiles changed and the ground is drawn again (the course file always shows the course as it starts).
+- On the **test bench**, a linked gate or drawbridge comes with its switch two tiles before it.
+
+**Course modifiers**
+
+- **Low gravity** acts in the air only: rolling down a slope and coming to rest are as normal. (The sheet said "the ball's gravity"; applying it on slopes too would change where balls can rest.)
+- A course modifier travels with the course's starting kit, so the background course-maker and the bot use exactly the same modifier as the player.
+- The banner when a course opens stays up for 4 seconds (other messages: 1.4).
+
+**Biomes and themes**
+
+- The Bog's and Thornwood's set piece and scenery changes (section 4.1) are made in the region detail table (`src/content/run.ts`); the landform preferences are in `src/content/biomes.ts`.
+- The drawbridge's raised planks are recoloured with the themes too.
+- Every theme's sprites are loaded when the game starts: 396 sprites, 1.7 MB in all. If loading gets slow, themes can be loaded when they are first needed.
+
+**Testing aids:** `?ability=<id>` (test bench), `?mod=wind|lowGravity|darkness` (and `&dir=ne|se|sw|nw`), `?theme=<theme>`, and a theme picker in the U panel.
+
+**Tests:** 33 new in `tests/round2b.test.ts`; three existing tests changed (the test bench now adds a switch to gates and drawbridges; the bot's kit now carries the course modifier).
