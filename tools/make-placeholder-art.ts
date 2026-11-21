@@ -117,6 +117,8 @@ const LOOKS: Record<string, SurfaceLook> = {
   spring: { base: '#8c8c96' },
   spikes: { base: '#6e6670' },
   warp: { base: '#7a3cc8' },
+  // Round 2a: plank bridge. Planks run one way, with dark gaps between them.
+  bridge: { base: '#a87840', pattern: (x, y) => ((x + 2 * y) % 8 === 0 ? -2 : hash(x, y, 7) < 0.1 ? -1 : 0) },
 };
 
 function hex2(h: string): RGBA {
@@ -129,6 +131,7 @@ const FACE_LOOKS: Record<string, string> = {
   'face-ice': '#6aa8c8',
   'face-bumper': '#b02c2c',
   'face-metal': '#5c5f6a',
+  'face-wood': '#6a4420',
 };
 
 // ---------------------------------------------------------------------------
@@ -499,6 +502,60 @@ function drawShotOrb(): Image {
   // A small white arrow mark: "one more shot".
   const w = hex2('#f8f8ff');
   for (const [x, y] of [[4, 2], [3, 3], [4, 3], [5, 3], [4, 4], [4, 5]] as const) img.set(x, y, w);
+  return img;
+}
+
+/** Round 2a: a dead tree: a thin grey trunk, two tiles tall, with bare branches. */
+function drawDeadTree(): Image {
+  const img = new Image(22, 40);
+  const bark = ramp('#7a6a5a');
+  const edge = hex2('#2a2018');
+  for (let y = 10; y < 39; y++) {
+    for (let x = 9; x < 13; x++) img.set(x, y, x === 9 || x === 12 || y === 38 ? edge : bark[x === 10 ? 3 : 2]!);
+  }
+  const branch = (x0: number, y0: number, dx: number, len: number) => {
+    for (let k = 0; k < len; k++) {
+      img.set(x0 + dx * k, y0 - k, edge);
+      img.set(x0 + dx * k, y0 - k + 1, bark[2]!);
+    }
+  };
+  branch(9, 18, -1, 7);
+  branch(12, 14, 1, 7);
+  branch(10, 10, -1, 6);
+  branch(11, 10, 1, 5);
+  branch(5, 13, -1, 3);
+  return img;
+}
+
+/** Round 2a scenery (sheet section 2.6): small props for looks only. */
+function drawScenery(kind: string): Image {
+  const img = new Image(12, 8);
+  const put = (pts: readonly (readonly [number, number])[], c: string) => {
+    for (const [x, y] of pts) img.set(x, y, hex2(c));
+  };
+  if (kind === 'tuft') {
+    put([[3, 7], [3, 6], [3, 5], [5, 7], [5, 6], [5, 5], [5, 4], [7, 7], [7, 6], [8, 5], [4, 6], [6, 5]], '#2f7a35');
+    put([[5, 3], [3, 4], [8, 4]], '#7cd060');
+  } else if (kind === 'flowers') {
+    put([[2, 7], [2, 6], [6, 7], [6, 6], [9, 7], [9, 6]], '#2f7a35');
+    put([[2, 5], [9, 5]], '#f8e040');
+    put([[6, 5], [5, 5], [7, 5], [6, 4]], '#e85890');
+  } else if (kind === 'pebbles') {
+    blob(img, 4, 5.5, 2.5, 1.8, '#9a948a', '#3a3630');
+    blob(img, 8.5, 6.5, 2, 1.4, '#8c8478', '#3a3630');
+  } else if (kind === 'mushrooms') {
+    put([[4, 7], [4, 6], [8, 7]], '#e8e0d0');
+    blob(img, 4, 4.5, 2.6, 1.7, '#c83828', '#3a1810');
+    blob(img, 8, 6, 1.8, 1.2, '#c87838', '#3a1810');
+  } else if (kind === 'leaves') {
+    put([[2, 6], [3, 6], [3, 7]], '#a85a20');
+    put([[6, 5], [7, 5], [7, 6]], '#c88030');
+    put([[9, 7], [10, 7]], '#8a4818');
+  } else if (kind === 'bones') {
+    put([[2, 6], [3, 6], [4, 6], [5, 6], [6, 6], [7, 6], [8, 6]], '#f0ece0');
+    put([[1, 5], [1, 7], [9, 5], [9, 7]], '#f0ece0');
+    put([[3, 7], [4, 7], [5, 7], [6, 7], [7, 7]], '#9a9488');
+  }
   return img;
 }
 
@@ -1022,6 +1079,8 @@ emit('shot-orb', drawShotOrb(), 9, 9, ['idle'], [4, 8]);
 emit('rock', drawRock(), 20, 14, ['idle'], [10, 10]);
 emit('stump', drawStump(), 10, 28, ['idle'], [5, 25]);
 emit('low-wall', drawLowWall(), 32, 20, ['idle'], [16, 12]);
+emit('dead-tree', drawDeadTree(), 22, 40, ['idle'], [11, 37]);
+for (const k of ['tuft', 'flowers', 'pebbles', 'mushrooms', 'leaves', 'bones']) emit(`scenery-${k}`, drawScenery(k), 12, 8, ['idle'], [6, 6]);
 emit('snoozegrub', drawMossback(), 18, 16, ['idle'], [9, 14]);
 // Milestone 4
 emit('mudroller', drawTrundler(), 18, 16, ['idle'], [9, 14]);

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GENERATED_ID, TEST_COURSES } from '../content/courses';
 import { GEN } from '../content/gen';
-import { generateCourse, type GenResult } from '../gen/validate';
+import { generateCourse, type GenOptions, type GenResult } from '../gen/validate';
 import type { BotMove } from '../gen/bot';
 import { Rng } from '../sim/rng';
 import { SeedViewer } from '../ui/seedViewer';
@@ -33,14 +33,15 @@ import {
 import { STATUSES } from '../content/statuses';
 import { RANKS, TRAITS, TRAIT_RULES } from '../content/enemyMods';
 import { ELEMENT_IDS, OBJECTS, RAIL } from '../content/objects';
+import { SCENERY } from '../content/scenery';
 import { RULES } from '../content/rules';
 import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
 import type { TuningPanel } from '../ui/tuningPanel';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
-import { UPGRADE_LIST } from '../content/run';
+import { UPGRADE_LIST, botShotsFor } from '../content/run';
 import { placeGear } from '../gen/placeGear';
-import { upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, rewardFor, bossHealthFor } from '../sim/run';
+import { mixFor, regionDefFor, upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, rewardFor, bossHealthFor } from '../sim/run';
 import { ARENAS, arenaData } from '../content/arenas';
 import { activeRun, newRunSeed, persist, session, startRun, type RunCourse } from './runSession';
 import { ACORNS } from '../content/consumables';
@@ -122,6 +123,19 @@ let benchShown = false;
 /** Generated courses (Milestone 5): the budget in use, and the last course made (kept so R does not regenerate). */
 let genBudget: number | null = null;
 let lastGen: { result: GenResult; ms: number } | null = null;
+
+/**
+ * Testing aid (round 2a): ?region=N makes the generated test course the size,
+ * mix and detail of a late course in region N (after 6 counted nodes), so the
+ * detail dial and scenery can be seen without playing a run there.
+ */
+function testRegionOpts(): GenOptions {
+  const n = Number(new URLSearchParams(window.location.search).get('region'));
+  if (!n) return {};
+  const r = regionDefFor(n);
+  const areas = Math.min(r.areas.max, r.areas.start + Math.floor(6 / r.areas.every));
+  return { size: { areas: [areas, areas], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(areas), mix: mixFor(n), detail: r.detail } };
+}
 let viewer: SeedViewer | null = null;
 /** How fast the bot replays (B key), as a multiple of real time. */
 const WATCH_SPEED = 2;
@@ -377,6 +391,7 @@ export class CourseScene extends Phaser.Scene {
     this.debugDyn = this.add.graphics().setDepth(OVERLAY_DEPTH - 2);
     this.syncObjects();
     this.drawRails(course);
+    this.drawScenery(course);
     this.accumulator = 0;
     this.boostQueued = false;
     this.abilityQueued = false;
@@ -434,6 +449,25 @@ export class CourseScene extends Phaser.Scene {
         }
       });
     }
+  }
+
+  /**
+   * Scenery (round 2a sheet section 2.6): props lying on the ground, under the
+   * ball and everything standing. Looks only. The U panel can hide them all.
+   */
+  private sceneryImgs: Phaser.GameObjects.Image[] = [];
+  private drawScenery(course: Course): void {
+    this.sceneryImgs = course.scenery.map((s) => {
+      const def = SCENERY.get(s.id)!;
+      const z = groundAt(course, s.x, s.y)?.h ?? 0;
+      const p = project(s.x, s.y, z / STEP_HEIGHT);
+      return this.makeSprite(def.sprite).setPosition(Math.round(p.x), Math.round(p.y)).setDepth(tileDepth(Math.floor(s.x), Math.floor(s.y), 'arrow') + 0.5);
+    });
+    this.syncScenery();
+  }
+  private syncScenery(): void {
+    const show = panel?.showScenery ?? true;
+    for (const img of this.sceneryImgs) if (img.visible !== show) img.setVisible(show);
   }
 
   /** The generated course for this seed and budget, if it has been made (kept for restarts). */
@@ -592,11 +626,11 @@ export class CourseScene extends Phaser.Scene {
         worker.terminate();
         done(e.data.result, e.data.ms);
       };
-      worker.postMessage({ seed, budget, tuning });
+      worker.postMessage({ seed, budget, tuning, opts: testRegionOpts() });
     } catch {
       this.time.delayedCall(50, () => {
         const t0 = performance.now();
-        const result = generateCourse(seed, budget, tuning!);
+        const result = generateCourse(seed, budget, tuning!, testRegionOpts());
         done(result, performance.now() - t0);
       });
     }
@@ -673,6 +707,7 @@ export class CourseScene extends Phaser.Scene {
   }
 
   override update(_time: number, deltaMs: number): void {
+    this.syncScenery();
     const k = this.keys;
     const step = (PAN_SPEED * deltaMs) / 1000;
     // Camera pan moved to I/J/K/L: the arrows and WASD aim (owner, 2026-11-14).

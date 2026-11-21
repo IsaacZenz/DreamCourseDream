@@ -441,7 +441,7 @@ export function sizeFor(run: RunState, type: NodeType): JourneySize {
   const plain = Math.min(r.areas.max, r.areas.start + Math.floor(run.counted / r.areas.every));
   // Owner, 2026-11-19 (round 1, option A): a hard course has one area more, but never more than the region's maximum.
   const n = type === 'hard' || type === 'boss' ? Math.min(r.areas.max, plain + 1) : plain;
-  return { areas: [n, n], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(n), mix: mixFor(run.region), hard: type === 'hard' || type === 'boss', oddsColumn: oddsColumn(run, false) };
+  return { areas: [n, n], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(n), mix: mixFor(run.region), hard: type === 'hard' || type === 'boss', oddsColumn: oddsColumn(run, false), detail: r.detail };
 }
 
 /**

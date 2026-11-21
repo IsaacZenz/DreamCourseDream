@@ -85,6 +85,9 @@ export class TuningPanel {
     document.body.appendChild(this.root);
   }
 
+  /** Round 2a: show or hide the scenery on courses (a testing aid; sheet section 2.6). */
+  showScenery = true;
+
   get visible(): boolean {
     return this.root.style.display !== 'none';
   }
@@ -113,7 +116,11 @@ export class TuningPanel {
       clearTuning();
       this.refresh();
     });
-    head.append(copy, reset);
+    const scenery = this.button('Hide scenery', () => {
+      this.showScenery = !this.showScenery;
+      scenery.textContent = this.showScenery ? 'Hide scenery' : 'Show scenery';
+    });
+    head.append(copy, reset, scenery);
     this.root.appendChild(head);
     this.benchBox = document.createElement('div');
     this.benchBox.className = 'bench';

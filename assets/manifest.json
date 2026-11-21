@@ -623,6 +623,42 @@
         16
       ]
     },
+    "tile-bridge": {
+      "file": "sprites/tile-bridge.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
     "tile-warp": {
       "file": "sprites/tile-warp.png",
       "frameWidth": 32,
@@ -834,6 +870,38 @@
         8
       ]
     },
+    "face-wood-left": {
+      "file": "sprites/face-wood-left.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-wood-right": {
+      "file": "sprites/face-wood-right.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
     "arrow": {
       "file": "sprites/arrow.png",
       "frameWidth": 32,
@@ -956,6 +1024,90 @@
       "anchor": [
         16,
         12
+      ]
+    },
+    "dead-tree": {
+      "file": "sprites/dead-tree.png",
+      "frameWidth": 22,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        11,
+        37
+      ]
+    },
+    "scenery-tuft": {
+      "file": "sprites/scenery-tuft.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-flowers": {
+      "file": "sprites/scenery-flowers.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-pebbles": {
+      "file": "sprites/scenery-pebbles.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-mushrooms": {
+      "file": "sprites/scenery-mushrooms.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-leaves": {
+      "file": "sprites/scenery-leaves.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-bones": {
+      "file": "sprites/scenery-bones.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
       ]
     },
     "snoozegrub": {

@@ -14,7 +14,8 @@ import { shapeOf, type Corners } from '../sim/tileShape.ts';
 import { buildTerrain, type Point, type Terrain, type TileSpec, type JourneySize } from './journey.ts';
 import { TRAIT_RULES } from '../content/enemyMods.ts';
 import { dressCost, fitDress, rollDress, rollRank, rollTheme, type Dress, type SquadTheme } from './dress.ts';
-import { enemyHiddenStars, enemyStarValue } from '../sim/course.ts';
+import { enemyHiddenStars, enemyStarValue, railTiles } from '../sim/course.ts';
+import { SCENERY_SURFACES } from '../content/scenery.ts';
 
 /** What the budget was spent on. */
 export interface Spend {
@@ -331,6 +332,28 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
     }
   }
 
+  // ---- Round 2a: the detail dial (sheet sections 1, 2.2 and 2.6) ---------------
+  // Its own random stream, run after everything else, so a region-one course keeps its ground, set pieces
+  // and enemies and only gains a few rocks and stumps.
+  const detail = size?.detail;
+  const detailRng = rng.fork('detail');
+  for (const p of terrain.trees) objects.push({ id: 'dead-tree', at: p });
+  const courseTiles = tiles.filter((t) => t).length;
+  if (detail) {
+    const wantObstacles = Math.round((detail.extraObstacles.per100 * courseTiles) / 100);
+    const blockerWeights = Object.entries(detail.extraObstacles.weights).map(([item, weight]) => ({ item, weight }));
+    for (let n = 0; n < wantObstacles; n++) {
+      const free = allArea.filter((p) => ok(p));
+      if (!free.length) break;
+      const p = detailRng.pick(free);
+      const id = weighted(detailRng, blockerWeights);
+      if (!id) break;
+      objects.push({ id, at: p });
+      used.add(key(p));
+    }
+  }
+  const scenery = detail ? placeScenery(detailRng.fork('scenery'), detail.scenery, tiles, width, height, start, exit, objects, terrain.rails, courseTiles) : [];
+
   // ---- Quota: cracked-tile stars are a bonus ---------------------------------
   // Owner, 2026-11-18: the quota must not get easier when some enemies are worth more. Take 60% of the
   // star sources (each enemy, each star in a crate) and set the quota to what the richest that many give
@@ -347,7 +370,7 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
   if (stars < GEN.minQuota) return { ok: false, reason: 'too few stars' };
   const quota = Math.min(stars, Math.max(GEN.minQuota, quotaFor(sources)));
 
-  const raw = writeCourse(`Generated #${seed} B${budget}`, width, height, tiles, start, exit, quota, objects, terrain.rails);
+  const raw = writeCourse(`Generated #${seed} B${budget}`, width, height, tiles, start, exit, quota, objects, terrain.rails, scenery);
   const parsed = parseCourse(raw);
   if (!parsed.ok) return { ok: false, reason: `bad course: ${parsed.errors[0]}` };
   return { ok: true, raw, course: parsed.course, meta: { seed, budget, attempt, terrain, spend, enemies: enemyCount, stars } };
@@ -376,6 +399,7 @@ export function writeCourse(
   quota: number,
   objects: readonly PlacedObject[],
   rails: readonly (readonly Point[])[] = [],
+  scenery: readonly (readonly [string, number, number])[] = [],
 ): Record<string, unknown> {
   const legend: Record<string, unknown> = {};
   const keys = new Map<string, string>();
@@ -425,5 +449,66 @@ export function writeCourse(
       ...(o.dress?.gear && { gear: o.dress.gear }),
     })),
     ...(rails.length && { rails: rails.map((l) => l.map((p) => [p[0], p[1]])) }),
+    ...(scenery.length && { scenery: scenery.map((s) => [s[0], s[1], s[2]]) }),
   };
+}
+
+/**
+ * Scenery (round 2a sheet section 2.6): props in small clusters on grass,
+ * rough and sand, not on steep ground, the start, the exit, an object's tile,
+ * a lane or a rail. For looks only; nothing else reads it.
+ */
+function placeScenery(
+  rng: Rng,
+  def: NonNullable<JourneySize['detail']>['scenery'],
+  tiles: readonly (TileSpec | null)[],
+  width: number,
+  height: number,
+  start: Point,
+  exit: Point,
+  objects: readonly PlacedObject[],
+  rails: readonly (readonly Point[])[],
+  courseTiles: number,
+): [string, number, number][] {
+  const blocked = new Set<string>([key(start), key(exit)]);
+  for (const o of objects) {
+    blocked.add(key(o.at));
+    for (const q of o.path ?? []) blocked.add(key(q));
+  }
+  for (const k of railTiles(rails.map((l) => l.map((p) => ({ x: p[0], y: p[1] }))))) blocked.add(k);
+  const fits = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= width || y >= height || blocked.has(`${x},${y}`)) return false;
+    const t = tiles[y * width + x];
+    if (!t || !SCENERY_SURFACES.has(t.surface)) return false;
+    const sh = shapeOf(t.corners);
+    return !!sh && !sh.includes('2');
+  };
+  const spots: Point[] = [];
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (fits(x, y)) spots.push([x, y]);
+  const weights = Object.entries(def.weights).map(([item, weight]) => ({ item, weight }));
+  const want = Math.round((def.per100 * courseTiles) / 100);
+  const taken = new Set<string>();
+  const out: [string, number, number][] = [];
+  const put = (p: Point) => {
+    const id = weighted(rng, weights);
+    if (!id) return;
+    taken.add(key(p));
+    const r2 = (v: number) => Math.round(v * 100) / 100;
+    out.push([id, r2(p[0] + rng.float(0.2, 0.8)), r2(p[1] + rng.float(0.2, 0.8))]);
+  };
+  for (let guard = 0; out.length < want && guard < want * 4 && spots.length; guard++) {
+    const anchor = rng.pick(spots);
+    if (taken.has(key(anchor))) continue;
+    put(anchor);
+    // The rest of the cluster on neighbouring tiles.
+    const extra = rng.int(def.cluster[0], def.cluster[1]) - 1;
+    const around = rng.shuffle(
+      [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]].map(([dx, dy]) => [anchor[0] + dx!, anchor[1] + dy!] as Point),
+    );
+    for (const q of around.slice(0, extra)) {
+      if (out.length >= want) break;
+      if (fits(q[0], q[1]) && !taken.has(key(q))) put(q);
+    }
+  }
+  return out;
 }

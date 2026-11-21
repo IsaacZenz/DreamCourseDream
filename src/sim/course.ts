@@ -56,6 +56,7 @@
 import { ENEMY_GEAR, NO_EXTRAS, RANKS, SPOT_IDS, TRAITS, TRAIT_IDS, TRAIT_RULES, rankDef, type EnemyExtras, type SpotId, type TraitId } from '../content/enemyMods.ts';
 import { GEAR } from '../content/gear.ts';
 import { ELEMENT_IDS, OBJECTS, RENAMED_OBJECTS, type Element, type ObjectDef } from '../content/objects.ts';
+import { SCENERY } from '../content/scenery.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { minCorner, shapeOf, type Corners, type ShapeId } from './tileShape.ts';
 
@@ -119,6 +120,18 @@ export interface Course {
   readonly rails: readonly (readonly GridPoint[])[];
   /** Milestone 7: spots where a boss's summons appear (boss arenas). Empty on other courses. */
   readonly spawns: readonly GridPoint[];
+  /**
+   * Round 2a: scenery, for looks only (grass tufts, flowers...). The physics
+   * never reads it. Positions are in grid coordinates (any point inside a tile).
+   */
+  readonly scenery: readonly SceneryItem[];
+}
+
+/** One scenery prop on a course (round 2a sheet section 2.6). */
+export interface SceneryItem {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
 }
 
 export type ParseResult = { ok: true; course: Course } | { ok: false; errors: string[] };
@@ -134,7 +147,7 @@ interface LegendEntry {
   link?: string;
 }
 
-const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects', 'rails', 'spawns'];
+const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects', 'rails', 'spawns', 'scenery'];
 const TILE_TOKEN = /^(.)([0-9a-z]|[0-9a-z]{4})$/u;
 const OLD_TILE_TOKEN = /^(.)(\d|\d{4})$/u;
 
@@ -264,7 +277,7 @@ export function parseCourse(raw: unknown): ParseResult {
     if (n !== 2) errors.push(`Warp link "${link}" is used by ${n} tile(s); it must be used by exactly 2.`);
   }
 
-  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number, objects: [] as CourseObject[], rails: [] as GridPoint[][], spawns: [] as GridPoint[] };
+  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number, objects: [] as CourseObject[], rails: [] as GridPoint[][], spawns: [] as GridPoint[], scenery: [] as SceneryItem[] };
   const checkSpot = (p: GridPoint | null, name: string) => {
     if (!p) return;
     const t = tileAt({ ...course, start: p, exit: p }, p.x, p.y);
@@ -289,6 +302,20 @@ export function parseCourse(raw: unknown): ParseResult {
         if (pt) spawns.push(pt);
       });
   }
+  // Round 2a: optional "scenery", [[id, x, y], ...], each point on a tile.
+  const scenery: SceneryItem[] = [];
+  if (raw.scenery !== undefined) {
+    if (!Array.isArray(raw.scenery)) errors.push('"scenery" must be a list of [id, x, y].');
+    else
+      raw.scenery.forEach((e, i) => {
+        const ok = Array.isArray(e) && e.length === 3 && typeof e[0] === 'string' && typeof e[1] === 'number' && typeof e[2] === 'number';
+        if (!ok) return void errors.push(`scenery[${i}] must be [id, x, y].`);
+        const [id, x, y] = e as [string, number, number];
+        if (!SCENERY.has(id)) errors.push(`scenery[${i}]: unknown scenery "${id}".`);
+        else if (!tileAt({ ...course, start: { x: 0, y: 0 }, exit: { x: 0, y: 0 } }, Math.floor(x), Math.floor(y))) errors.push(`scenery[${i}] (${x}, ${y}) is not on a tile.`);
+        else scenery.push({ id, x, y });
+      });
+  }
   const rails = parseRails(raw.rails, course, errors);
   const objects = parseObjects(raw.objects, course, errors);
   checkRailCrossings(objects, rails, errors);
@@ -303,7 +330,7 @@ export function parseCourse(raw: unknown): ParseResult {
   }
 
   if (errors.length || !start || !exit) return { ok: false, errors };
-  return { ok: true, course: { ...course, start, exit, objects, rails, spawns } };
+  return { ok: true, course: { ...course, start, exit, objects, rails, spawns, scenery } };
 }
 
 /** Yellow stars a course can give: enemy star values, placed yellow stars and stars inside breakables. */

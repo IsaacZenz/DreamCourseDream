@@ -346,6 +346,8 @@ const defs: readonly ObjectDef[] = [
   // Static blockers (section 6). The post was renamed the tree stump (owner, 2026-11-14); same size.
   { kind: 'blocker', id: 'rock', name: 'Rock', sprite: 'rock', shape: { kind: 'round', r: 0.38 }, height: 0.5, bounce: 0.6, cost: 1 },
   { kind: 'blocker', id: 'stump', name: 'Tree stump', sprite: 'stump', shape: { kind: 'round', r: 0.14 }, height: 1.5, bounce: 0.75, cost: 1 },
+  // Round 2a (owner, 2026-11-21): a thin, tall dead tree; regions two and three.
+  { kind: 'blocker', id: 'dead-tree', name: 'Dead tree', sprite: 'dead-tree', shape: { kind: 'round', r: 0.12 }, height: 2, bounce: 0.7, cost: 1 },
   { kind: 'blocker', id: 'low-wall', name: 'Low wall', sprite: 'low-wall', shape: { kind: 'box', hx: 0.5, hy: 0.5 }, height: 0.25, bounce: 0.6, cost: 1 },
 
   // Moving obstacles (section 6).

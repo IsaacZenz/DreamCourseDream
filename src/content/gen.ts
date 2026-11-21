@@ -28,6 +28,34 @@ export interface JourneySize {
   readonly mix?: EnemyMix;
   readonly hard?: boolean;
   readonly oddsColumn?: number;
+  /** Round 2a: the region's detail dial. Left out: no extra set pieces, obstacles or scenery, as before. */
+  readonly detail?: DetailDef;
+}
+
+/**
+ * The detail dial (round 2a sheet section 1; owner, 2026-11-21): how much
+ * terrain, how many extra obstacles and how much scenery a course gets for its
+ * size. Paid for separately from the threat budget.
+ */
+export interface DetailDef {
+  /**
+   * Set pieces per area: one per `tilesPer` tiles of area, rounded up, at most
+   * `max`, picked by `weights` (no kind twice in one area). Null: one per area
+   * from the threat budget, exactly as before (region one).
+   */
+  readonly setPieces: {
+    readonly tilesPer: number;
+    readonly max: number;
+    readonly weights: Readonly<Record<string, number>>;
+    /** Moat filling by weight, the chance of rails on the bridge, and the chance of a 1-wide bridge (no rails). */
+    readonly moatFill: Readonly<Record<'water' | 'sand' | 'spikes', number>>;
+    readonly railChance: number;
+    readonly oneWideChance: number;
+  } | null;
+  /** Extra blockers per 100 tiles of course, picked by weight. Never crates, so stars are unchanged. */
+  readonly extraObstacles: { readonly per100: number; readonly weights: Readonly<Record<string, number>> };
+  /** Scenery (sheet section 2.6): props per 100 tiles, in clusters, picked by weight. */
+  readonly scenery: { readonly per100: number; readonly cluster: readonly [number, number]; readonly weights: Readonly<Record<string, number>> };
 }
 
 export const GEN = {
