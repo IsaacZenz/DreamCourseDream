@@ -349,7 +349,7 @@ Replaces the six-item starter set. **Six rarities in three pairs**: (common, unc
 
 ## 9. Run upgrades (stat boosts)
 
-**Owner, 2026-11-21:** these are now foods sold in the food shop (section 11), eaten from the bag before a course; their effects are unchanged.
+**Owner, 2026-11-21:** these are now foods sold in the food shop (section 11), eaten from the bag before a course, lasting 1 to 3 courses instead of the run; the size of each effect is unchanged.
 
 **Decided:** separate from gear. Plain stat boosts, no slot limit, lost on death.
 
@@ -413,21 +413,7 @@ Build in Milestone 6.
 - One item eaten per course, at most. Eating is optional; unused food stays in the bag for later courses.
 - **Owner, 2026-11-21: the food shop sells the acorns plus the existing shop items, renamed as food.** The gear shop sells gear only. Each shop has its own stock and its own reroll price. Working names (Default, except Apple and Garlic, which the owner chose):
 
-  | Food | Was | Effect when eaten | Lasts |
-  |---|---|---|---|
-  | Apple | Heal service | Heal 2 | at once |
-  | Garlic | Delay the Boss | Boss countdown +1 | at once |
-  | Mushroom Stew | Tough Shell | Max health +1 and heal 1 | rest of the run |
-  | Trail Mix | Deep Breath | Max shots +1 | rest of the run |
-  | Chili Pepper | Strong Swing | Shot power +10% | rest of the run |
-  | Carrot | Long Arms | Star reach +1 | rest of the run |
-  | Clover Honey | Lucky Charm | Drop luck +25% | rest of the run |
-  | Lucky, Golden, Star Acorn | (already food) | +2, +3, +5 wheel slices | one course |
-
-  Default: the stat foods keep lasting the rest of the run (as the boosts did), so prices and balance stay; only the acorns last one course. Effects, prices and the rule that the same item costs more each time it is bought stay as they are; only the names, the icons and where they are bought change. Internal ids stay the same so saved runs still load. Default stock: food shop 5 offers, gear shop 4 gear items (was 2 in the single shop).
-- A consumable found on a course (an acorn from a crate) goes into the bag instead of working at once. If the bag is full, the player chooses: swap it with one in the bag, or leave it.
-- The bag is part of the run: lost on death, kept when the run is saved in a town. The Burrow does not store food.
-- The food shop needs more than three acorns to be worth visiting; new foods (each a one-course modifier, FEATURES.md section 1) are listed in the design sheet for the owner to choose from.
+  **Owner, 2026-11-21 (later the same day): every food except Apple and Garlic lasts 1 to 3 courses**, the longer ones rarer (not as rare as gear), and food is cheaper than the old run-long boosts. No extra art: foods use the existing icons. Code names stay the same. **Food shop 4 offers, gear shop 3**, each with its own reroll for yellow stars. Full table, chances and prices: `docs/plans/milestone-8-round-2a.md` section 4 (waiting for sign-off).
 Planned in Milestone 8 round 2 (rules) and 8b (walking up to each shop).
 
 **Decided (owner, 2026-11-19), for the Milestone 9 skin:** the shop is a **food stand** with a **shopkeeper**, who animates when you buy something (and, Default, when you reroll or cannot afford something). Display only; the shop's rules do not change. The shopkeeper's species is chosen with the theme in Milestone 9 (Default: a friendly animal, not an insect, since the insects are the villains). **Owner, 2026-11-21:** with two shops, the food stand is the food shop; the gear shop gets its own look and shopkeeper (Default: a tinker's workshop), chosen in Milestone 9.
