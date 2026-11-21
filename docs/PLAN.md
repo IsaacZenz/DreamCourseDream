@@ -164,8 +164,8 @@ After playing the first generator, the owner asked for larger, more open, much m
 ## Milestone 8 — Content and balance
 
 - [ ] **Plan gate:** design sheet for every new ability, enemy, trait, status, boss, linked object, biome, gear item and character in this milestone. (Round 1 sheet `docs/plans/milestone-8.md` signed off 2026-11-19. Owner, 2026-11-21: round 2 split into 2a (terrain, shops, food; sheet `docs/plans/milestone-8-round-2a.md`, signed off 2026-11-21) and 2b (abilities, linked objects, biomes); round 3 to come.) Owner signs it off before any of them is built. This milestone is large; it may be planned and built in several rounds, each with its own sheet.
-- [ ] Owner, 2026-11-21 (round 2): a food shop and a gear shop in each town; a 3-slot bag for consumables, one eaten before a course, none during (FEATURES.md section 11); the food shop sells the acorns and the existing boosts and services renamed as food (Apple heals 2, Garlic delays the boss; table in FEATURES.md section 11); the gear shop sells gear only
-- [ ] Owner, 2026-11-21 (round 2): a detail dial per region (terrain features and scenery per 100 tiles, region one unchanged); bridges over water, sand or spikes; dead trees; more spikes in region three
+- [x] Owner, 2026-11-21 (round 2a): a food shop and a gear shop in each town; a 3-slot bag for consumables, any number eaten before a course, none during; food lasts 1 to 3 courses (FEATURES.md section 11); the food shop sells the acorns and the existing boosts and services renamed as food (Apple heals 2, Garlic delays the boss; table in FEATURES.md section 11); the gear shop sells gear only
+- [x] Owner, 2026-11-21 (round 2a): a detail dial per region (terrain features and scenery per 100 tiles, region one unchanged); bridges over water, sand or spikes; dead trees; more spikes in region three
 - [ ] Remaining abilities from DESIGN.md section 9 (round 1 built Frost and Static; Burr, Kite, Gyre and Drift are round 2)
 - [x] Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear and its drop chance (round 1)
 - [x] Remaining statuses: Poisoned, Burning, Chilled (round 1)

@@ -133,7 +133,8 @@ export const DETAIL: readonly DetailDef[] = [
   },
   {
     setPieces: {
-      tilesPer: 55,
+      // Built 2026-11-21: 45, not the sheet's 55, to reach the sheet's target of 14 to 18 special tiles per 100.
+      tilesPer: 45,
       max: 4,
       weights: { pond: 1, 'spike-pit': 3, sand: 1, arrows: 2, moat: 3, grove: 3, rough: 1, 'spike-strip': 3, ice: 2 },
       moatFill: { water: 40, sand: 20, spikes: 40 },

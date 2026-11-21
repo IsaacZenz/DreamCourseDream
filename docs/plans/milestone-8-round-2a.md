@@ -1,6 +1,6 @@
 # Milestone 8 round 2a design sheet: livelier terrain, two shops and the food bag
 
-**Status: signed off by the owner, 2026-11-21 ("Go"). Building.** Owner changes so far (2026-11-21): eat any number of foods before a course; spike moats can appear in region 2, rarely; region 1 gets a very small number of extra obstacles.
+**Status: signed off by the owner, 2026-11-21 ("Go"). Built 2026-11-21 (section 10, as built). Waiting for the owner to play it.** Owner changes so far (2026-11-21): eat any number of foods before a course; spike moats can appear in region 2, rarely; region 1 gets a very small number of extra obstacles.
 
 How to review: change any number, name or rule you want. Section 8 lists the open questions. Each one has a default that I will use if you say "defaults are fine". Every number is a starting value. They all live in `src/content/`, so they can be tuned later without touching the physics or the generator.
 
@@ -331,3 +331,45 @@ The course check's bot is not affected: it plays with the region's par kit, not 
 ## 9. Sign-off
 
 Owner answered all ten questions, 2026-11-21 (section 8). Section 2.6 (scenery) was added from the answer to Q9. **Signed off by the owner, 2026-11-21 ("Go").**
+
+---
+
+## 10. As built (2026-11-21)
+
+Everything on the sheet is built. Where the build differs from the sheet, it is listed here with the reason.
+
+**Changed while building (numbers, to hit the sheet's own targets):**
+
+| What | Sheet | Built | Why |
+|---|---|---|---|
+| Region 2 extra obstacles per 100 tiles | 1.5 | **1.0** | The dead tree groves already add 3 to 5 trees each; with 1.5 the total was 3.1 per 100 tiles against the target of about 2 |
+| Region 3 extra obstacles per 100 tiles | 2.5 | **1.5** | Same reason: the total was 4.1 against about 3 |
+| Region 3 set pieces | 1 per 55 tiles of area | **1 per 45** | With 55, special ground was 11.6 per 100 tiles against the target of 14 to 18 |
+
+**Measured** (6 generated courses each, after 6 counted nodes unless noted; per 100 tiles):
+
+| | Special ground (not grass or rough) | Target | Obstacles | Target | Scenery | Sheet |
+|---|---|---|---|---|---|---|
+| Region 1, first course | 2.0 | 3.4 before (unchanged ground) | 0.8 | about 0.9 | 4.0 | 4 |
+| Region 1, late | 4.1 | unchanged ground | 1.0 | about 0.9 | 4.0 | 4 |
+| Region 2, late | 11.7 | 10 to 14 | 2.4 | about 2 | 6.0 | 6 |
+| Region 3, late | 14.5 | 14 to 18 | 2.7 | about 3 | 8.0 | 8 |
+
+Region one: a test makes 8 courses with and without the detail dial and checks the ground, set pieces, enemies and quota are identical, and the only extra objects are rocks and stumps.
+
+**Built differently from the sheet's wording (same rule):**
+
+- **Where you eat.** The bag opens with **B** on the map and in town, any time between courses. The map screen is the "before the course" moment, so there is no separate panel. Food found on a course with a full bag opens the bag on the map with the swap-or-leave choice.
+- **How durations are kept.** The sheet said a new modifier duration kind, "courses". The run instead keeps a list of foods eaten with the courses left, and each working food adds an ordinary run modifier. The effect is the same; this kept the stat system unchanged.
+- **Moats** keep one row of plain ground beyond both sides, so a bridge never leads straight into a pond or pit (found by a test). All moat fillings, sand included, are one step lower than the bridge, as the sheet says; where the ground under a moat was not perfectly smooth, one corner can be level or two steps down.
+- **Both shops use the shop building** for now (the gear shop's is tinted blue). Their own looks come in Milestone 9.
+- **Garlic's icon** is the boss icon and **Apple's** is the heart, as before (no new art).
+- **The cache** is unchanged: gear, a run upgrade (for the rest of the run) or a heal.
+- **Saves** are version 3. A run saved in a town before this round loads with its pocket acorn in the bag, the gear shop keeps only its gear, and the food shop is opened again from the seed.
+
+**Testing aids:**
+
+- U panel: **Hide scenery / Show scenery**.
+- `?course=generated&region=3` (or 2) makes the generated test course the size, mix and detail of a late course in that region, without playing a run. (The bot there plays without the region's par kit, so it rejects more attempts and takes longer than in a run.)
+
+**Tests:** 28 new in `tests/round2a.test.ts`; four existing tests changed for the new rules (the pocket acorn, an acorn working at once when picked up, a shop upgrade getting dearer, the slopes course gaining a bridge tile).

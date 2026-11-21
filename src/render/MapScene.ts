@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
 import { LAST_REGION, UPGRADE_LIST, UPGRADES, type NodeType } from '../content/run';
 import { BOSSES } from '../content/bosses';
-import { FOOD, FOODS } from '../content/consumables';
+import { FOOD } from '../content/consumables';
 import { BagMenu } from './bagMenu';
 import { BLUE_STARS } from '../content/progress';
 import { generateRunMap } from '../gen/runMap';
@@ -232,8 +232,8 @@ export class MapScene extends Phaser.Scene {
     line(`STARS ${run.wallet}`, STAR);
     line(`BLUE: ${run.blueStars} CARRIED, ${session.profile.stash} SAFE`, 0x80c8ff);
     // Round 2a: the food bag and what is working now.
-    line(`BAG ${run.bag.length}/${FOOD.bagSlots}: ${run.bag.map((b) => FOODS.get(b.id)?.name.toUpperCase()).join(', ') || 'EMPTY'}`, STAR);
-    if (run.fed.length) line(`EATEN: ${run.fed.map((f) => `${FOODS.get(f.id)?.name.toUpperCase()} ${f.left}`).join(', ')}`, GOOD);
+    line(`BAG ${run.bag.length}/${FOOD.bagSlots} (B TO EAT)`, STAR);
+    if (run.fed.length) line(`EATEN, WORKING: ${run.fed.length}`, GOOD);
     line(run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS NEXT!', 0xff8080);
     line(`COURSES DONE ${run.totals.courses}`, UI_DIM);
     y += 3;
