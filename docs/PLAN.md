@@ -186,7 +186,7 @@ After playing the first generator, the owner asked for larger, more open, much m
 
 ## Milestone 8b — Walkable towns and crossroads (owner, 2026-11-21)
 
-- [ ] **Plan gate:** design sheet `docs/plans/milestone-8b.md` (controls, camera zoom, layouts, what you can walk into, the flat Burrow and shop screens, how the crossroads replaces the map screen). Owner signs it off before building.
+- [x] **Plan gate:** design sheet `docs/plans/milestone-8b.md` (controls, camera zoom, layouts, what you can walk into, the flat Burrow and shop screens, how the crossroads replaces the map screen). Owner signs it off before building.
 - [ ] Walk the armadillo around a zoomed-in isometric town and crossroads with W A S D or the arrow keys
 - [ ] The crossroads shows the next 1 to 3 courses as paths to walk into (replaces picking on the map screen; the whole map stays as a testing view)
 - [ ] The Burrow, the food shop and the gear shop open as flat 2D illustrated screens
@@ -299,3 +299,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-21 — Round 2c answers from the owner (Starfall for endless; everything else default). Building round 2c.
 - 2026-11-21 — Round 2c built: a boss arena's exit is now under the boss's starting spot (all six arenas); wind comes in three strengths (light, medium, strong; threat cost 1, 2, 3) shown by a vane and a 1-3 bar gauge under the HUD label; closed gates of both kinds have spiked tops (1 damage when the ball touches one in the air; open gates and rolling never hurt); region 1 courses get about 4-8 extra rocks, stumps and low walls; endless mode (region 4) starts with the new Starfall theme (deep purple sky), then a seeded random theme per region; fireflies (animated scenery) in regions 1-3. Testing aid `?strength=1|2|3`. 476 tests pass. Test build updated.
 - 2026-11-21 — Rounds 2b and 2c merged to `main` (owner approved). Milestone 8b design sheet written: `docs/plans/milestone-8b.md` (walking and controls, zoom 2 camera, three town layouts, crossroads with signposts replacing the map screen, boss gate, cache clearing, practice green, flat Burrow and shop screens). Ten open questions, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-21 — Milestone 8b sheet **signed off by the owner** with every default. Building.

@@ -1,6 +1,6 @@
 # Milestone 8b design sheet: walkable towns and crossroads
 
-**Status: waiting for the owner's sign-off.** Nothing on this sheet is built yet.
+**Status: signed off by the owner, 2026-11-21, with every default.**
 
 ## 0. Where this fits
 
@@ -238,4 +238,4 @@ The Burrow, the food shop and the gear shop each open as a **full-screen flat il
 
 ## 10. Sign-off
 
-- [ ] Owner sign-off, with any changes, recorded here and in FEATURES.md and DESIGN.md.
+- [x] Owner sign-off, 2026-11-21: "Good with all defaults." Every question in section 9 takes its default.
