@@ -27,6 +27,10 @@ export const STAT_IDS = [
   'bossSlices',
   /** Owner, 2026-11-17: yellow stars in the wallet at the start of a run (Head Start). */
   'startingStars',
+  // Round 2b course modifiers (sheet section 3): the ball's gravity (1 = normal) and wind (tiles/s² along x and y, in the air).
+  'gravity',
+  'windX',
+  'windY',
   // Enemies
   'health',
   'moveRange',
@@ -61,6 +65,9 @@ export const STAT_DEFS: Readonly<Record<StatId, StatDef>> = {
   rollSlices: { name: 'Wheel slices', min: 0, max: 20, whole: true },
   bossSlices: { name: 'Boss wheel slices', min: 0, max: 20, whole: true },
   startingStars: { name: 'Starting stars', min: 0, max: 999, whole: true },
+  gravity: { name: 'Gravity', min: 0.1, max: 3, whole: false },
+  windX: { name: 'Wind (x)', min: -10, max: 10, whole: false },
+  windY: { name: 'Wind (y)', min: -10, max: 10, whole: false },
   health: { name: 'Health', min: 1, max: 999, whole: true },
   moveRange: { name: 'Move range', min: 0, max: 20, whole: false },
   attackDamage: { name: 'Attack damage', min: 0, max: 99, whole: true },

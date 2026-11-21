@@ -965,7 +965,8 @@ describe('test bench (owner request, 2026-11-14)', () => {
         expect(r.course.rails.length).toBeGreaterThan(0);
       } else if (r.ok && c.id) {
         const p = createPlay(r.course, T, { seed: 'bench' });
-        expect(p.course.objects).toHaveLength(1);
+        // Round 2b: a linked gate or drawbridge comes with its switch.
+        expect(p.course.objects.filter((o) => c.id === 'switch' || o.id !== 'switch')).toHaveLength(1);
       }
     }
   });

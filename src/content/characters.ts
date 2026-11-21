@@ -34,6 +34,9 @@ export const BALL_BASE_STATS: BaseStats = {
   rollSlices: 0,
   bossSlices: 0,
   startingStars: 0,
+  gravity: 1,
+  windX: 0,
+  windY: 0,
 };
 
 const defs: readonly CharacterDef[] = [

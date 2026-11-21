@@ -29,6 +29,10 @@ import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
 import { buyUpgrade, permanentModifiers, type Profile } from './profile.ts';
 import { Rng } from './rng.ts';
 import { StatSheet, type Modifier } from './stats.ts';
+import { COURSE_MOD_LIST, courseModCost, type CourseMod } from '../content/modifiers.ts';
+import { DIRECTIONS } from '../content/surfaces.ts';
+import { GEN } from '../content/gen.ts';
+import { biomeForRegion } from '../content/biomes.ts';
 import type { Loadout } from './play.ts';
 
 // ---------------------------------------------------------------------------
@@ -75,6 +79,8 @@ export interface CurrentNode {
   readonly gear: string | null;
   /** Milestone 7: a boss fight's boss and arena (src/content/arenas), or null on other nodes. */
   readonly boss: string | null;
+  /** Round 2b: the course's modifier (wind, low gravity, darkness), or null. Left out in older saves. */
+  readonly mod?: CourseMod | null;
   readonly arena: string | null;
 }
 
@@ -285,7 +291,7 @@ function hasRunEffect(run: RunState, kind: string): boolean {
 /** What the ball brings into a course. */
 export function loadoutOf(run: RunState): Loadout {
   const acorns = run.fed.filter((f) => FOODS.get(f.id)?.kind === 'acorn').map((f) => f.id);
-  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run), acorns, bagRoom: FOOD.bagSlots - run.bag.length, rarityWeights: dropWeights(run) };
+  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run), acorns, bagRoom: FOOD.bagSlots - run.bag.length, rarityWeights: dropWeights(run), courseMod: run.current?.mod ?? null };
 }
 
 /** Rarity weights for things dropped on a course (acorns): the run's odds column after drop luck. */
@@ -300,19 +306,40 @@ export function dropWeights(run: RunState): number[] {
  * behind par finds it harder. It also means a course made ahead never has to
  * be made again because the player bought something.
  */
-export function botLoadoutOf(run: RunState): Loadout {
+/**
+ * Round 2b (sheet section 3): the modifier a course node gets, from the run
+ * seed, the region and the node, so the course made ahead in the background
+ * is the one the player gets. Never on boss fights; none in region 1.
+ */
+export function courseModFor(run: RunState, node: MapNode): CourseMod | null {
+  const type = typeOf(run, node);
+  if (type !== 'course' && type !== 'hard') return null;
+  const rng = rngFor(run, `mod:${run.region}:${node.id}`);
+  if (!rng.chance(regionDef(run).courseModChance)) return null;
+  const def = rng.pick(COURSE_MOD_LIST);
+  // Owner, 2026-11-21: wind comes in three strengths.
+  return def.id === 'wind' ? { id: def.id, dir: rng.pick(DIRECTIONS), strength: rng.pick([1, 2, 3] as const) } : { id: def.id };
+}
+
+/** A course's threat budget less its modifier's cost (never below the generator's minimum). */
+function budgetWithMod(run: RunState, type: NodeType, mod: CourseMod | null): number {
+  const cost = mod ? courseModCost(mod) : 0;
+  return Math.max(GEN.minBudget, budgetFor(run, type) - cost);
+}
+
+export function botLoadoutOf(run: RunState, mod: CourseMod | null = run.current?.mod ?? null): Loadout {
   const modifiers: Modifier[] = regionDef(run).par.map((p) => ({ stat: p.stat, op: 'add', amount: p.amount, source: { kind: 'region', id: `par${run.region}` }, duration: { kind: 'run' } }));
   // Owner, 2026-11-19 (round 1, option C): from region three on, the bot also wears the region's best gear.
   const pg = regionDef(run).parGear;
-  return { ability: null, gear: pg ? { ...pg } : { ...NO_GEAR }, modifiers };
+  return { ability: null, gear: pg ? { ...pg } : { ...NO_GEAR }, modifiers, courseMod: mod };
 }
 
 /**
  * Everything the generator needs for the current course besides its seed and
  * budget: the bot's loadout, the region's journey size and enemy toughness.
  */
-export function genOptionsFor(run: RunState, type: NodeType = run.current?.type ?? 'course'): { loadout: Loadout; size: JourneySize; enemyModifiers: Modifier[] } {
-  return { loadout: botLoadoutOf(run), size: sizeFor(run, type), enemyModifiers: enemyModifiersFor(run) };
+export function genOptionsFor(run: RunState, type: NodeType = run.current?.type ?? 'course', mod: CourseMod | null = run.current?.mod ?? null): { loadout: Loadout; size: JourneySize; enemyModifiers: Modifier[] } {
+  return { loadout: botLoadoutOf(run, mod), size: sizeFor(run, type), enemyModifiers: enemyModifiersFor(run) };
 }
 
 /** A node's course seed: the run seed plus the node (and the region from region two on, so regions differ). */
@@ -334,7 +361,8 @@ export interface CourseJob {
 export function courseJobFor(run: RunState, node: MapNode): CourseJob | null {
   const type = typeOf(run, node);
   if (type !== 'course' && type !== 'hard') return null;
-  return { id: node.id, courseSeed: courseSeedOf(run, node), budget: budgetFor(run, type), opts: genOptionsFor(run, type) };
+  const mod = courseModFor(run, node);
+  return { id: node.id, courseSeed: courseSeedOf(run, node), budget: budgetWithMod(run, type, mod), opts: genOptionsFor(run, type, mod) };
 }
 
 /**
@@ -472,7 +500,18 @@ export function sizeFor(run: RunState, type: NodeType): JourneySize {
   const plain = Math.min(r.areas.max, r.areas.start + Math.floor(run.counted / r.areas.every));
   // Owner, 2026-11-19 (round 1, option A): a hard course has one area more, but never more than the region's maximum.
   const n = type === 'hard' || type === 'boss' ? Math.min(r.areas.max, plain + 1) : plain;
-  return { areas: [n, n], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(n), mix: mixFor(run.region), hard: type === 'hard' || type === 'boss', oddsColumn: oddsColumn(run, false), detail: r.detail };
+  const scale = biomeForRegion(run.region).landformScale;
+  return {
+    areas: [n, n],
+    areaSize: r.areaSize,
+    maxEnemies: r.maxEnemies,
+    botShots: botShotsFor(n),
+    mix: mixFor(run.region),
+    hard: type === 'hard' || type === 'boss',
+    oddsColumn: oddsColumn(run, false),
+    detail: r.detail,
+    ...(Object.keys(scale).length && { landformScale: scale }),
+  };
 }
 
 /**
@@ -574,10 +613,11 @@ export function enterNode(run: RunState, id: string): CurrentNode {
     row: node.row,
     type,
     early: type === 'boss' && run.countdown > 0,
-    budget: isCourse ? budgetFor(run, type) : 0,
+    budget: isCourse ? budgetWithMod(run, type, courseModFor(run, node)) : 0,
     courseSeed: courseSeedOf(run, node),
     gear,
     boss: type === 'boss' ? bossOf(run) : null,
+    mod: courseModFor(run, node),
     arena: type === 'boss' ? pickArena(run) : null,
   };
   if (run.current.arena) run.lastArena = run.current.arena;

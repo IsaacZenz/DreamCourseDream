@@ -1038,6 +1038,44 @@
         37
       ]
     },
+    "switch": {
+      "file": "sprites/switch.png",
+      "frameWidth": 32,
+      "frameHeight": 16,
+      "frames": [
+        "off",
+        "on"
+      ],
+      "anchor": [
+        16,
+        8
+      ]
+    },
+    "linked-gate": {
+      "file": "sprites/linked-gate.png",
+      "frameWidth": 32,
+      "frameHeight": 26,
+      "frames": [
+        "open",
+        "closed"
+      ],
+      "anchor": [
+        16,
+        18
+      ]
+    },
+    "drawbridge-up": {
+      "file": "sprites/drawbridge-up.png",
+      "frameWidth": 32,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        22
+      ]
+    },
     "scenery-tuft": {
       "file": "sprites/scenery-tuft.png",
       "frameWidth": 12,
@@ -1108,6 +1146,21 @@
       "anchor": [
         6,
         6
+      ]
+    },
+    "scenery-fireflies": {
+      "file": "sprites/scenery-fireflies.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
       ]
     },
     "snoozegrub": {
@@ -2720,6 +2773,54 @@
         14
       ]
     },
+    "burrgrub": {
+      "file": "sprites/burrgrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "glidegrub": {
+      "file": "sprites/glidegrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "gyregrub": {
+      "file": "sprites/gyregrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
+    "driftgrub": {
+      "file": "sprites/driftgrub.png",
+      "frameWidth": 18,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        9,
+        14
+      ]
+    },
     "sparkgrub": {
       "file": "sprites/sparkgrub.png",
       "frameWidth": 18,
@@ -2801,6 +2902,54 @@
     },
     "icon-chilled": {
       "file": "sprites/icon-chilled.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-burr": {
+      "file": "sprites/icon-burr.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-kite": {
+      "file": "sprites/icon-kite.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-gyre": {
+      "file": "sprites/icon-gyre.png",
+      "frameWidth": 10,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        5
+      ]
+    },
+    "icon-drift": {
+      "file": "sprites/icon-drift.png",
       "frameWidth": 10,
       "frameHeight": 10,
       "frames": [
@@ -2982,11 +3131,6232 @@
         0,
         0
       ]
+    },
+    "tile-grass@bog": {
+      "file": "sprites/tile-grass@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000b",
+        "1100b",
+        "0110b",
+        "0011b",
+        "1001b",
+        "1000b",
+        "0100b",
+        "0010b",
+        "0001b",
+        "0111b",
+        "1011b",
+        "1101b",
+        "1110b",
+        "2200b",
+        "0220b",
+        "0022b",
+        "2002b",
+        "2000b",
+        "0200b",
+        "0020b",
+        "0002b",
+        "0222b",
+        "2022b",
+        "2202b",
+        "2220b"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-rough@bog": {
+      "file": "sprites/tile-rough@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-sand@bog": {
+      "file": "sprites/tile-sand@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-ice@bog": {
+      "file": "sprites/tile-ice@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water@bog": {
+      "file": "sprites/tile-water@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-surface@bog": {
+      "file": "sprites/tile-water-surface@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-deep-surface@bog": {
+      "file": "sprites/tile-water-deep-surface@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "water-shore@bog": {
+      "file": "sprites/water-shore@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "ne",
+        "se",
+        "sw",
+        "nw"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bumper@bog": {
+      "file": "sprites/tile-bumper@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-booster@bog": {
+      "file": "sprites/tile-booster@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-conveyor@bog": {
+      "file": "sprites/tile-conveyor@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spring@bog": {
+      "file": "sprites/tile-spring@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spikes@bog": {
+      "file": "sprites/tile-spikes@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bridge@bog": {
+      "file": "sprites/tile-bridge@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-warp@bog": {
+      "file": "sprites/tile-warp@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "face-earth-left@bog": {
+      "file": "sprites/face-earth-left@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-earth-right@bog": {
+      "file": "sprites/face-earth-right@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-sand-left@bog": {
+      "file": "sprites/face-sand-left@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-sand-right@bog": {
+      "file": "sprites/face-sand-right@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-ice-left@bog": {
+      "file": "sprites/face-ice-left@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-ice-right@bog": {
+      "file": "sprites/face-ice-right@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-bumper-left@bog": {
+      "file": "sprites/face-bumper-left@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-bumper-right@bog": {
+      "file": "sprites/face-bumper-right@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-metal-left@bog": {
+      "file": "sprites/face-metal-left@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-metal-right@bog": {
+      "file": "sprites/face-metal-right@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-wood-left@bog": {
+      "file": "sprites/face-wood-left@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-wood-right@bog": {
+      "file": "sprites/face-wood-right@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "rock@bog": {
+      "file": "sprites/rock@bog.png",
+      "frameWidth": 20,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        10
+      ]
+    },
+    "stump@bog": {
+      "file": "sprites/stump@bog.png",
+      "frameWidth": 10,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        25
+      ]
+    },
+    "low-wall@bog": {
+      "file": "sprites/low-wall@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 20,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        12
+      ]
+    },
+    "dead-tree@bog": {
+      "file": "sprites/dead-tree@bog.png",
+      "frameWidth": 22,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        11,
+        37
+      ]
+    },
+    "drawbridge-up@bog": {
+      "file": "sprites/drawbridge-up@bog.png",
+      "frameWidth": 32,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        22
+      ]
+    },
+    "scenery-tuft@bog": {
+      "file": "sprites/scenery-tuft@bog.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-flowers@bog": {
+      "file": "sprites/scenery-flowers@bog.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-pebbles@bog": {
+      "file": "sprites/scenery-pebbles@bog.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-mushrooms@bog": {
+      "file": "sprites/scenery-mushrooms@bog.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-leaves@bog": {
+      "file": "sprites/scenery-leaves@bog.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-bones@bog": {
+      "file": "sprites/scenery-bones@bog.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-fireflies@bog": {
+      "file": "sprites/scenery-fireflies@bog.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
+    },
+    "tile-grass@thornwood": {
+      "file": "sprites/tile-grass@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000b",
+        "1100b",
+        "0110b",
+        "0011b",
+        "1001b",
+        "1000b",
+        "0100b",
+        "0010b",
+        "0001b",
+        "0111b",
+        "1011b",
+        "1101b",
+        "1110b",
+        "2200b",
+        "0220b",
+        "0022b",
+        "2002b",
+        "2000b",
+        "0200b",
+        "0020b",
+        "0002b",
+        "0222b",
+        "2022b",
+        "2202b",
+        "2220b"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-rough@thornwood": {
+      "file": "sprites/tile-rough@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-sand@thornwood": {
+      "file": "sprites/tile-sand@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-ice@thornwood": {
+      "file": "sprites/tile-ice@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water@thornwood": {
+      "file": "sprites/tile-water@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-surface@thornwood": {
+      "file": "sprites/tile-water-surface@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-deep-surface@thornwood": {
+      "file": "sprites/tile-water-deep-surface@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "water-shore@thornwood": {
+      "file": "sprites/water-shore@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "ne",
+        "se",
+        "sw",
+        "nw"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bumper@thornwood": {
+      "file": "sprites/tile-bumper@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-booster@thornwood": {
+      "file": "sprites/tile-booster@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-conveyor@thornwood": {
+      "file": "sprites/tile-conveyor@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spring@thornwood": {
+      "file": "sprites/tile-spring@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spikes@thornwood": {
+      "file": "sprites/tile-spikes@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bridge@thornwood": {
+      "file": "sprites/tile-bridge@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-warp@thornwood": {
+      "file": "sprites/tile-warp@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "face-earth-left@thornwood": {
+      "file": "sprites/face-earth-left@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-earth-right@thornwood": {
+      "file": "sprites/face-earth-right@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-sand-left@thornwood": {
+      "file": "sprites/face-sand-left@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-sand-right@thornwood": {
+      "file": "sprites/face-sand-right@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-ice-left@thornwood": {
+      "file": "sprites/face-ice-left@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-ice-right@thornwood": {
+      "file": "sprites/face-ice-right@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-bumper-left@thornwood": {
+      "file": "sprites/face-bumper-left@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-bumper-right@thornwood": {
+      "file": "sprites/face-bumper-right@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-metal-left@thornwood": {
+      "file": "sprites/face-metal-left@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-metal-right@thornwood": {
+      "file": "sprites/face-metal-right@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-wood-left@thornwood": {
+      "file": "sprites/face-wood-left@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-wood-right@thornwood": {
+      "file": "sprites/face-wood-right@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "rock@thornwood": {
+      "file": "sprites/rock@thornwood.png",
+      "frameWidth": 20,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        10
+      ]
+    },
+    "stump@thornwood": {
+      "file": "sprites/stump@thornwood.png",
+      "frameWidth": 10,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        25
+      ]
+    },
+    "low-wall@thornwood": {
+      "file": "sprites/low-wall@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 20,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        12
+      ]
+    },
+    "dead-tree@thornwood": {
+      "file": "sprites/dead-tree@thornwood.png",
+      "frameWidth": 22,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        11,
+        37
+      ]
+    },
+    "drawbridge-up@thornwood": {
+      "file": "sprites/drawbridge-up@thornwood.png",
+      "frameWidth": 32,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        22
+      ]
+    },
+    "scenery-tuft@thornwood": {
+      "file": "sprites/scenery-tuft@thornwood.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-flowers@thornwood": {
+      "file": "sprites/scenery-flowers@thornwood.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-pebbles@thornwood": {
+      "file": "sprites/scenery-pebbles@thornwood.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-mushrooms@thornwood": {
+      "file": "sprites/scenery-mushrooms@thornwood.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-leaves@thornwood": {
+      "file": "sprites/scenery-leaves@thornwood.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-bones@thornwood": {
+      "file": "sprites/scenery-bones@thornwood.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-fireflies@thornwood": {
+      "file": "sprites/scenery-fireflies@thornwood.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
+    },
+    "tile-grass@night": {
+      "file": "sprites/tile-grass@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000b",
+        "1100b",
+        "0110b",
+        "0011b",
+        "1001b",
+        "1000b",
+        "0100b",
+        "0010b",
+        "0001b",
+        "0111b",
+        "1011b",
+        "1101b",
+        "1110b",
+        "2200b",
+        "0220b",
+        "0022b",
+        "2002b",
+        "2000b",
+        "0200b",
+        "0020b",
+        "0002b",
+        "0222b",
+        "2022b",
+        "2202b",
+        "2220b"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-rough@night": {
+      "file": "sprites/tile-rough@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-sand@night": {
+      "file": "sprites/tile-sand@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-ice@night": {
+      "file": "sprites/tile-ice@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water@night": {
+      "file": "sprites/tile-water@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-surface@night": {
+      "file": "sprites/tile-water-surface@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-deep-surface@night": {
+      "file": "sprites/tile-water-deep-surface@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "water-shore@night": {
+      "file": "sprites/water-shore@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "ne",
+        "se",
+        "sw",
+        "nw"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bumper@night": {
+      "file": "sprites/tile-bumper@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-booster@night": {
+      "file": "sprites/tile-booster@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-conveyor@night": {
+      "file": "sprites/tile-conveyor@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spring@night": {
+      "file": "sprites/tile-spring@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spikes@night": {
+      "file": "sprites/tile-spikes@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bridge@night": {
+      "file": "sprites/tile-bridge@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-warp@night": {
+      "file": "sprites/tile-warp@night.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "face-earth-left@night": {
+      "file": "sprites/face-earth-left@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-earth-right@night": {
+      "file": "sprites/face-earth-right@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-sand-left@night": {
+      "file": "sprites/face-sand-left@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-sand-right@night": {
+      "file": "sprites/face-sand-right@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-ice-left@night": {
+      "file": "sprites/face-ice-left@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-ice-right@night": {
+      "file": "sprites/face-ice-right@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-bumper-left@night": {
+      "file": "sprites/face-bumper-left@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-bumper-right@night": {
+      "file": "sprites/face-bumper-right@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-metal-left@night": {
+      "file": "sprites/face-metal-left@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-metal-right@night": {
+      "file": "sprites/face-metal-right@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-wood-left@night": {
+      "file": "sprites/face-wood-left@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-wood-right@night": {
+      "file": "sprites/face-wood-right@night.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "rock@night": {
+      "file": "sprites/rock@night.png",
+      "frameWidth": 20,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        10
+      ]
+    },
+    "stump@night": {
+      "file": "sprites/stump@night.png",
+      "frameWidth": 10,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        25
+      ]
+    },
+    "low-wall@night": {
+      "file": "sprites/low-wall@night.png",
+      "frameWidth": 32,
+      "frameHeight": 20,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        12
+      ]
+    },
+    "dead-tree@night": {
+      "file": "sprites/dead-tree@night.png",
+      "frameWidth": 22,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        11,
+        37
+      ]
+    },
+    "drawbridge-up@night": {
+      "file": "sprites/drawbridge-up@night.png",
+      "frameWidth": 32,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        22
+      ]
+    },
+    "scenery-tuft@night": {
+      "file": "sprites/scenery-tuft@night.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-flowers@night": {
+      "file": "sprites/scenery-flowers@night.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-pebbles@night": {
+      "file": "sprites/scenery-pebbles@night.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-mushrooms@night": {
+      "file": "sprites/scenery-mushrooms@night.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-leaves@night": {
+      "file": "sprites/scenery-leaves@night.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-bones@night": {
+      "file": "sprites/scenery-bones@night.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-fireflies@night": {
+      "file": "sprites/scenery-fireflies@night.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
+    },
+    "tile-grass@underground": {
+      "file": "sprites/tile-grass@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000b",
+        "1100b",
+        "0110b",
+        "0011b",
+        "1001b",
+        "1000b",
+        "0100b",
+        "0010b",
+        "0001b",
+        "0111b",
+        "1011b",
+        "1101b",
+        "1110b",
+        "2200b",
+        "0220b",
+        "0022b",
+        "2002b",
+        "2000b",
+        "0200b",
+        "0020b",
+        "0002b",
+        "0222b",
+        "2022b",
+        "2202b",
+        "2220b"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-rough@underground": {
+      "file": "sprites/tile-rough@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-sand@underground": {
+      "file": "sprites/tile-sand@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-ice@underground": {
+      "file": "sprites/tile-ice@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water@underground": {
+      "file": "sprites/tile-water@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-surface@underground": {
+      "file": "sprites/tile-water-surface@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-deep-surface@underground": {
+      "file": "sprites/tile-water-deep-surface@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "water-shore@underground": {
+      "file": "sprites/water-shore@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "ne",
+        "se",
+        "sw",
+        "nw"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bumper@underground": {
+      "file": "sprites/tile-bumper@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-booster@underground": {
+      "file": "sprites/tile-booster@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-conveyor@underground": {
+      "file": "sprites/tile-conveyor@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spring@underground": {
+      "file": "sprites/tile-spring@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spikes@underground": {
+      "file": "sprites/tile-spikes@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bridge@underground": {
+      "file": "sprites/tile-bridge@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-warp@underground": {
+      "file": "sprites/tile-warp@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "face-earth-left@underground": {
+      "file": "sprites/face-earth-left@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-earth-right@underground": {
+      "file": "sprites/face-earth-right@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-sand-left@underground": {
+      "file": "sprites/face-sand-left@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-sand-right@underground": {
+      "file": "sprites/face-sand-right@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-ice-left@underground": {
+      "file": "sprites/face-ice-left@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-ice-right@underground": {
+      "file": "sprites/face-ice-right@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-bumper-left@underground": {
+      "file": "sprites/face-bumper-left@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-bumper-right@underground": {
+      "file": "sprites/face-bumper-right@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-metal-left@underground": {
+      "file": "sprites/face-metal-left@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-metal-right@underground": {
+      "file": "sprites/face-metal-right@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-wood-left@underground": {
+      "file": "sprites/face-wood-left@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-wood-right@underground": {
+      "file": "sprites/face-wood-right@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "rock@underground": {
+      "file": "sprites/rock@underground.png",
+      "frameWidth": 20,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        10
+      ]
+    },
+    "stump@underground": {
+      "file": "sprites/stump@underground.png",
+      "frameWidth": 10,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        25
+      ]
+    },
+    "low-wall@underground": {
+      "file": "sprites/low-wall@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 20,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        12
+      ]
+    },
+    "dead-tree@underground": {
+      "file": "sprites/dead-tree@underground.png",
+      "frameWidth": 22,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        11,
+        37
+      ]
+    },
+    "drawbridge-up@underground": {
+      "file": "sprites/drawbridge-up@underground.png",
+      "frameWidth": 32,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        22
+      ]
+    },
+    "scenery-tuft@underground": {
+      "file": "sprites/scenery-tuft@underground.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-flowers@underground": {
+      "file": "sprites/scenery-flowers@underground.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-pebbles@underground": {
+      "file": "sprites/scenery-pebbles@underground.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-mushrooms@underground": {
+      "file": "sprites/scenery-mushrooms@underground.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-leaves@underground": {
+      "file": "sprites/scenery-leaves@underground.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-bones@underground": {
+      "file": "sprites/scenery-bones@underground.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-fireflies@underground": {
+      "file": "sprites/scenery-fireflies@underground.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
+    },
+    "tile-grass@starfall": {
+      "file": "sprites/tile-grass@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000b",
+        "1100b",
+        "0110b",
+        "0011b",
+        "1001b",
+        "1000b",
+        "0100b",
+        "0010b",
+        "0001b",
+        "0111b",
+        "1011b",
+        "1101b",
+        "1110b",
+        "2200b",
+        "0220b",
+        "0022b",
+        "2002b",
+        "2000b",
+        "0200b",
+        "0020b",
+        "0002b",
+        "0222b",
+        "2022b",
+        "2202b",
+        "2220b"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-rough@starfall": {
+      "file": "sprites/tile-rough@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-sand@starfall": {
+      "file": "sprites/tile-sand@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-ice@starfall": {
+      "file": "sprites/tile-ice@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water@starfall": {
+      "file": "sprites/tile-water@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-surface@starfall": {
+      "file": "sprites/tile-water-surface@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-deep-surface@starfall": {
+      "file": "sprites/tile-water-deep-surface@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "water-shore@starfall": {
+      "file": "sprites/water-shore@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "ne",
+        "se",
+        "sw",
+        "nw"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bumper@starfall": {
+      "file": "sprites/tile-bumper@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-booster@starfall": {
+      "file": "sprites/tile-booster@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-conveyor@starfall": {
+      "file": "sprites/tile-conveyor@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spring@starfall": {
+      "file": "sprites/tile-spring@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spikes@starfall": {
+      "file": "sprites/tile-spikes@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bridge@starfall": {
+      "file": "sprites/tile-bridge@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-warp@starfall": {
+      "file": "sprites/tile-warp@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "face-earth-left@starfall": {
+      "file": "sprites/face-earth-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-earth-right@starfall": {
+      "file": "sprites/face-earth-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-sand-left@starfall": {
+      "file": "sprites/face-sand-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-sand-right@starfall": {
+      "file": "sprites/face-sand-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-ice-left@starfall": {
+      "file": "sprites/face-ice-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-ice-right@starfall": {
+      "file": "sprites/face-ice-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-bumper-left@starfall": {
+      "file": "sprites/face-bumper-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-bumper-right@starfall": {
+      "file": "sprites/face-bumper-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-metal-left@starfall": {
+      "file": "sprites/face-metal-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-metal-right@starfall": {
+      "file": "sprites/face-metal-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-wood-left@starfall": {
+      "file": "sprites/face-wood-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-wood-right@starfall": {
+      "file": "sprites/face-wood-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "rock@starfall": {
+      "file": "sprites/rock@starfall.png",
+      "frameWidth": 20,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        10
+      ]
+    },
+    "stump@starfall": {
+      "file": "sprites/stump@starfall.png",
+      "frameWidth": 10,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        25
+      ]
+    },
+    "low-wall@starfall": {
+      "file": "sprites/low-wall@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 20,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        12
+      ]
+    },
+    "dead-tree@starfall": {
+      "file": "sprites/dead-tree@starfall.png",
+      "frameWidth": 22,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        11,
+        37
+      ]
+    },
+    "drawbridge-up@starfall": {
+      "file": "sprites/drawbridge-up@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        22
+      ]
+    },
+    "scenery-tuft@starfall": {
+      "file": "sprites/scenery-tuft@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-flowers@starfall": {
+      "file": "sprites/scenery-flowers@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-pebbles@starfall": {
+      "file": "sprites/scenery-pebbles@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-mushrooms@starfall": {
+      "file": "sprites/scenery-mushrooms@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-leaves@starfall": {
+      "file": "sprites/scenery-leaves@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-bones@starfall": {
+      "file": "sprites/scenery-bones@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-fireflies@starfall": {
+      "file": "sprites/scenery-fireflies@starfall.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
+    },
+    "tile-grass@spooky": {
+      "file": "sprites/tile-grass@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000b",
+        "1100b",
+        "0110b",
+        "0011b",
+        "1001b",
+        "1000b",
+        "0100b",
+        "0010b",
+        "0001b",
+        "0111b",
+        "1011b",
+        "1101b",
+        "1110b",
+        "2200b",
+        "0220b",
+        "0022b",
+        "2002b",
+        "2000b",
+        "0200b",
+        "0020b",
+        "0002b",
+        "0222b",
+        "2022b",
+        "2202b",
+        "2220b"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-rough@spooky": {
+      "file": "sprites/tile-rough@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-sand@spooky": {
+      "file": "sprites/tile-sand@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-ice@spooky": {
+      "file": "sprites/tile-ice@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water@spooky": {
+      "file": "sprites/tile-water@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-surface@spooky": {
+      "file": "sprites/tile-water-surface@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-deep-surface@spooky": {
+      "file": "sprites/tile-water-deep-surface@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "water-shore@spooky": {
+      "file": "sprites/water-shore@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "ne",
+        "se",
+        "sw",
+        "nw"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bumper@spooky": {
+      "file": "sprites/tile-bumper@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-booster@spooky": {
+      "file": "sprites/tile-booster@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-conveyor@spooky": {
+      "file": "sprites/tile-conveyor@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spring@spooky": {
+      "file": "sprites/tile-spring@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spikes@spooky": {
+      "file": "sprites/tile-spikes@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bridge@spooky": {
+      "file": "sprites/tile-bridge@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-warp@spooky": {
+      "file": "sprites/tile-warp@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "face-earth-left@spooky": {
+      "file": "sprites/face-earth-left@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-earth-right@spooky": {
+      "file": "sprites/face-earth-right@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-sand-left@spooky": {
+      "file": "sprites/face-sand-left@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-sand-right@spooky": {
+      "file": "sprites/face-sand-right@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-ice-left@spooky": {
+      "file": "sprites/face-ice-left@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-ice-right@spooky": {
+      "file": "sprites/face-ice-right@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-bumper-left@spooky": {
+      "file": "sprites/face-bumper-left@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-bumper-right@spooky": {
+      "file": "sprites/face-bumper-right@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-metal-left@spooky": {
+      "file": "sprites/face-metal-left@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-metal-right@spooky": {
+      "file": "sprites/face-metal-right@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-wood-left@spooky": {
+      "file": "sprites/face-wood-left@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-wood-right@spooky": {
+      "file": "sprites/face-wood-right@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "rock@spooky": {
+      "file": "sprites/rock@spooky.png",
+      "frameWidth": 20,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        10
+      ]
+    },
+    "stump@spooky": {
+      "file": "sprites/stump@spooky.png",
+      "frameWidth": 10,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        25
+      ]
+    },
+    "low-wall@spooky": {
+      "file": "sprites/low-wall@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 20,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        12
+      ]
+    },
+    "dead-tree@spooky": {
+      "file": "sprites/dead-tree@spooky.png",
+      "frameWidth": 22,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        11,
+        37
+      ]
+    },
+    "drawbridge-up@spooky": {
+      "file": "sprites/drawbridge-up@spooky.png",
+      "frameWidth": 32,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        22
+      ]
+    },
+    "scenery-tuft@spooky": {
+      "file": "sprites/scenery-tuft@spooky.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-flowers@spooky": {
+      "file": "sprites/scenery-flowers@spooky.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-pebbles@spooky": {
+      "file": "sprites/scenery-pebbles@spooky.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-mushrooms@spooky": {
+      "file": "sprites/scenery-mushrooms@spooky.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-leaves@spooky": {
+      "file": "sprites/scenery-leaves@spooky.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-bones@spooky": {
+      "file": "sprites/scenery-bones@spooky.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-fireflies@spooky": {
+      "file": "sprites/scenery-fireflies@spooky.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
     }
   },
   "tints": {
     "fire": "#ff9060",
     "ice": "#a0d8ff",
     "shock": "#fff070"
+  },
+  "themes": {
+    "day": {
+      "sky": "#1d2b53"
+    },
+    "bog": {
+      "sky": "#2a3a2c"
+    },
+    "thornwood": {
+      "sky": "#3a2c40"
+    },
+    "night": {
+      "sky": "#0a0c22"
+    },
+    "underground": {
+      "sky": "#1c1610"
+    },
+    "starfall": {
+      "sky": "#1c0c30"
+    },
+    "spooky": {
+      "sky": "#2a2a36"
+    }
   }
 }

@@ -79,6 +79,8 @@ export type ShotEvent =
   | { kind: 'warp'; step: number; from: GridTile; to: GridTile }
   | { kind: 'contact'; step: number; obstacle: string; result: ContactResult }
   | { kind: 'anchorStop'; step: number; x: number; y: number }
+  /** Round 2b, Burr: the ball stuck to what it touched and stopped. */
+  | { kind: 'stick'; step: number; x: number; y: number }
   | { kind: 'railBoost'; step: number }
   /** The ball landed in water or skipped off it (for a splash on screen). */
   | { kind: 'splash'; step: number; x: number; y: number; skip: boolean; boosted: boolean }
@@ -143,6 +145,10 @@ export interface ShotScales {
   readonly frozen?: Readonly<Record<string, number>> | null;
   /** Milestone 8: a Chilled ball rolls as if on ice. */
   readonly iceRoll?: boolean;
+  /** Round 2b course modifiers: gravity scale (1 = normal) and wind in the air (tiles/s²). */
+  readonly gravity?: number;
+  readonly windX?: number;
+  readonly windY?: number;
 }
 
 export interface BallState {
@@ -193,8 +199,21 @@ export interface ShotState {
   waterWalls: boolean;
   /** Anchor: on the next landing (or now, if on the ground) stop dead. */
   anchor: boolean;
-  /** Set for one step when an Anchor stop happens. */
+  /** Set for one step when an Anchor stop happens (also used by Burr's stick). */
   anchorStopped: boolean;
+  /** Round 2b, Burr: steps left in which the first thing touched holds the ball. 0 when off. */
+  sticky: number;
+  /** Round 2b, Kite: steps left of gliding (slow fall). 0 when off. */
+  glide: number;
+  /** Kite's numbers while gliding: gravity scale and the fastest fall, in tiles per second. */
+  glideGravity: number;
+  glideMaxFall: number;
+  /** Burr touched a wall or an obstacle this step: stick as soon as the ball is on the ground. */
+  stickNow: boolean;
+  /** Round 2b course modifiers: gravity scale, and the wind's push while in the air (tiles/s²). */
+  gravityScale: number;
+  windX: number;
+  windY: number;
   /** Burner: steps left, and the sideways speed kept up while they last. */
   burnSteps: number;
   burnMin: number;
@@ -313,6 +332,14 @@ export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand, sca
     waterWalls: false,
     anchor: false,
     anchorStopped: false,
+    sticky: 0,
+    glide: 0,
+    glideGravity: 1,
+    glideMaxFall: Infinity,
+    stickNow: false,
+    gravityScale: scales.gravity ?? 1,
+    windX: scales.windX ?? 0,
+    windY: scales.windY ?? 0,
     burnSteps: 0,
     burnMin: 0,
     hover: null,
@@ -426,8 +453,15 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
       }
     }
   }
+  // Burr and Kite count down.
+  if (s.sticky > 0) s.sticky--;
+  if (s.glide > 0) s.glide--;
   if (!b.grounded) {
-    b.vz -= tuning.gravity * DT;
+    b.vz -= tuning.gravity * s.gravityScale * DT * (s.glide > 0 ? s.glideGravity : 1);
+    // Wind pushes only in the air (round 2b sheet section 3).
+    b.vx += s.windX * DT;
+    b.vy += s.windY * DT;
+    if (s.glide > 0 && b.vz < -s.glideMaxFall) b.vz = -s.glideMaxFall;
     b.vx *= drag;
     b.vy *= drag;
     b.vz *= drag;
@@ -452,6 +486,13 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
   moveAxis(course, tuning, s, 'x', b.vx * DT);
   moveAxis(course, tuning, s, 'y', b.vy * DT);
   if (world) collideObstacles(course, tuning, s, world, zBefore);
+  // Burr touched a wall or an obstacle: on the ground it sticks now; in the air it drops and sticks on landing.
+  if (s.stickNow) {
+    b.vx = 0;
+    b.vy = 0;
+    const g0 = groundAt(course, b.x, b.y);
+    if (b.grounded && g0) stick(s, g0);
+  }
 
   const g = groundAt(course, b.x, b.y);
   if (b.grounded) {
@@ -523,6 +564,23 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
 }
 
 /** Anchor: stop dead on the ground. */
+/**
+ * Burr (round 2b sheet section 1.1): stop dead and stay, even on a slope too
+ * steep to rest on. Pads, springs and spikes still act (as for the Anchor).
+ */
+export function stick(s: ShotState, g: Ground): void {
+  const b = s.ball;
+  b.vx = 0;
+  b.vy = 0;
+  b.vz = 0;
+  b.z = g.h;
+  b.grounded = true;
+  s.sticky = 0;
+  s.stickNow = false;
+  s.anchorStopped = true;
+  s.events.push({ kind: 'stick', step: s.step, x: b.x, y: b.y });
+}
+
 function anchorStop(s: ShotState, g: Ground): void {
   const b = s.ball;
   b.vx = 0;
@@ -707,6 +765,8 @@ function collideObstacles(course: Course, tuning: Tuning, s: ShotState, world: S
 
     const result = world.contact ? world.contact(o, s) : 'bounce';
     s.events.push({ kind: 'contact', step: s.step, obstacle: o.id, result });
+    // Burr: whatever it touches holds it (the hit has already counted).
+    if (s.sticky > 0) s.stickNow = true;
     if (result === 'pass' || result === 'passFree' || result === 'passPole') {
       const keep = result === 'pass' ? tuning.defeatSpeedKeep : result === 'passPole' ? tuning.polePassKeep : 1;
       b.vx *= keep;
@@ -826,6 +886,7 @@ function moveAxis(course: Course, tuning: Tuning, s: ShotState, axis: 'x' | 'y',
         b.vx *= Math.min(1, phys.wallBounce + 0.2);
       }
       s.events.push({ kind: 'wall', step: s.step, surface: far.tile.surface });
+      if (s.sticky > 0) s.stickNow = true;
       return;
     }
   }
@@ -835,8 +896,15 @@ function moveAxis(course: Course, tuning: Tuning, s: ShotState, axis: 'x' | 'y',
 
 function land(tuning: Tuning, s: ShotState, g: Ground): void {
   const b = s.ball;
+  s.glide = 0;
   if (s.anchor) {
     anchorStop(s, g);
+    s.hasLanded = true;
+    return;
+  }
+  // Burr: sticks where it lands, on any slope. Water still swallows it.
+  if (s.sticky > 0 && !sinksAt(s, g.tile)) {
+    stick(s, g);
     s.hasLanded = true;
     return;
   }

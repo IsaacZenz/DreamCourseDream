@@ -54,8 +54,12 @@ export function benchCourse(choice: string, extras: { rank?: string; trait?: str
   if (def) {
     const moves = (def.kind === 'enemy' && def.behaviour.kind === 'patrol') || (def.kind === 'mover' && def.motion.kind === 'path') || variant === 'drift';
     // Moving things walk a line across the centre; everything else stands on it.
+    // Round 2b: switches, linked gates and drawbridges take a link; a gate or drawbridge comes with its switch, two tiles before it.
+    const linked = def.kind === 'switch' || def.kind === 'drawbridge' || (def.kind === 'mover' && def.motion.kind === 'linked');
+    if (linked) more.link = 'a';
     if (moves) objects.push({ id, at: [CENTRE - 3, CENTRE], path: [[CENTRE + 3, CENTRE]], ...more });
     else objects.push({ id, at: [CENTRE, CENTRE], ...more });
+    if (linked && def.kind !== 'switch') objects.push({ id: 'switch', at: [CENTRE - 2, CENTRE], link: 'a' });
   }
   // Guard rails (Milestone 5b): a straight run, a corner and a 45-degree piece around the centre.
   const rails = id === 'rail' ? [[[3, 4], [11, 4]], [[4, 10], [4, 7], [7, 7]], [[9, 7], [11, 9]]] : undefined;

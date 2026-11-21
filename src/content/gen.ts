@@ -30,6 +30,8 @@ export interface JourneySize {
   readonly oddsColumn?: number;
   /** Round 2a: the region's detail dial. Left out: no extra set pieces, obstacles or scenery, as before. */
   readonly detail?: DetailDef;
+  /** Round 2b: the biome's landform preferences (weights multiplied by these). Left out: as before. */
+  readonly landformScale?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -51,7 +53,11 @@ export interface DetailDef {
     readonly moatFill: Readonly<Record<'water' | 'sand' | 'spikes', number>>;
     readonly railChance: number;
     readonly oneWideChance: number;
+    /** Round 2b: chance a moat's bridge is a drawbridge (up until its switch is pressed). */
+    readonly drawbridgeChance?: number;
   } | null;
+  /** Round 2b: chance a course gets a linked gate across one passage, with its switch in the area before. */
+  readonly linkedGateChance?: number;
   /** Extra blockers per 100 tiles of course, picked by weight. Never crates, so stars are unchanged. */
   readonly extraObstacles: { readonly per100: number; readonly weights: Readonly<Record<string, number>> };
   /** Scenery (sheet section 2.6): props per 100 tiles, in clusters, picked by weight. */
@@ -120,7 +126,8 @@ export const GEN = {
   enemyWeights: { snoozegrub: 3, mudroller: 2, spittlebug: 2, pouncehopper: 2, 'mole-cricket': 2, 'skitter-ant': 2, bristlecrawler: 2, glowmoth: 1, trapjaw: 2, stinkpuff: 2 } as Record<string, number>,
   /** Ability carriers (sheet section 4.2). */
   carrierChance: 0.6,
-  carriers: ['leadgrub', 'embergrub', 'hopgrub', 'whirlgrub', 'frostgrub', 'sparkgrub'],
+  // Round 2b (owner, 2026-11-21, Q1): all ten grubs, in every region.
+  carriers: ['leadgrub', 'embergrub', 'hopgrub', 'whirlgrub', 'frostgrub', 'sparkgrub', 'burrgrub', 'glidegrub', 'gyregrub', 'driftgrub'],
   /** Obstacles and hazards (sheet section 4.4): pick weights per spot use. */
   obstacleWeights: { blocker: 3, crate: 2, hazard: 3, cloud: 2, slider: 1, gate: 1, crack: 1 } as Record<string, number>,
   blockers: ['rock', 'stump', 'low-wall'],

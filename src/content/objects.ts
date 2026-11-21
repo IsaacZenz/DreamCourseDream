@@ -93,7 +93,9 @@ export type MoverMotion =
   /** Follows the placement's `path` there and back. */
   | { readonly kind: 'path'; readonly speed: number }
   /** A gate: open for `open` seconds, closed for `closed` seconds, repeating. */
-  | { readonly kind: 'gate'; readonly open: number; readonly closed: number };
+  | { readonly kind: 'gate'; readonly open: number; readonly closed: number }
+  /** Round 2b: a linked gate: closed until a switch with its link is pressed, then open for good. */
+  | { readonly kind: 'linked' };
 
 export interface MoverDef {
   readonly kind: 'mover';
@@ -108,6 +110,8 @@ export interface MoverDef {
   /** Extra speed a ball is pushed away with when this runs into it (owner, 2026-11-14: fixed-route things knock the ball). 0 for a plain bounce. */
   readonly knock: number;
   readonly cost: number;
+  /** Owner, 2026-11-21: sharp on top. A ball in the air that touches it while it is closed takes spike damage. */
+  readonly spikedTop?: boolean;
 }
 
 /** Destructibles (FEATURES.md section 6). */
@@ -279,7 +283,37 @@ export interface GearObjectDef {
   readonly item: string;
 }
 
-export type ObjectDef = PickupDef | BlockerDef | MoverDef | BreakableDef | CloudDef | FlagDef | EnemyDef | GearObjectDef;
+/**
+ * Round 2b (sheet section 2): a switch, a flat plate pressed by the ball
+ * rolling or landing on it, that stays on for the course and works every
+ * linked gate and drawbridge with the same `link`.
+ */
+export interface SwitchDef {
+  readonly kind: 'switch';
+  readonly id: string;
+  readonly name: string;
+  readonly sprite: string;
+  /** How close (tiles) the ball's centre must come, on the ground, to press it. */
+  readonly reach: number;
+}
+
+/**
+ * Round 2b (sheet section 2.3): one tile of a drawbridge. The course stores
+ * the tile as it starts (the moat, up); when its switch is pressed the tile
+ * becomes plank bridge one step higher.
+ */
+export interface DrawbridgeDef {
+  readonly kind: 'drawbridge';
+  readonly id: string;
+  readonly name: string;
+  /** Shown standing at the tile while the bridge is up. */
+  readonly sprite: string;
+  /** Steps the tile rises when the bridge comes down, and its surface then. */
+  readonly rise: number;
+  readonly surface: string;
+}
+
+export type ObjectDef = PickupDef | BlockerDef | MoverDef | BreakableDef | CloudDef | FlagDef | EnemyDef | GearObjectDef | SwitchDef | DrawbridgeDef;
 
 /** Template fields that are mostly unused until Milestone 8. */
 const PLAIN = {
@@ -363,6 +397,22 @@ const defs: readonly ObjectDef[] = [
     knock: 5,
     cost: 2,
   },
+  // Round 2b (sheet section 2).
+  {
+    kind: 'mover',
+    id: 'linked-gate',
+    name: 'Linked gate',
+    sprite: 'linked-gate',
+    motion: { kind: 'linked' },
+    shape: { kind: 'box', hx: 0.5, hy: 0.1 },
+    height: 1.0,
+    bounce: 0.6,
+    knock: 0,
+    cost: 0,
+    spikedTop: true,
+  },
+  { kind: 'switch', id: 'switch', name: 'Switch', sprite: 'switch', reach: 0.4 },
+  { kind: 'drawbridge', id: 'drawbridge', name: 'Drawbridge', sprite: 'drawbridge-up', rise: 1, surface: 'bridge' },
   {
     kind: 'mover',
     id: 'gate',
@@ -374,6 +424,7 @@ const defs: readonly ObjectDef[] = [
     bounce: 0.6,
     knock: 0,
     cost: 2,
+    spikedTop: true,
   },
 
   // Destructibles (section 6). Secured crate: owner, 2026-11-14.
@@ -589,6 +640,11 @@ const defs: readonly ObjectDef[] = [
   carrier('whirlgrub', 'Whirlgrub', 'tornado'),
   carrier('frostgrub', 'Frostgrub', 'frost'),
   carrier('sparkgrub', 'Sparkgrub', 'static'),
+  // Round 2b (sheet section 1.5).
+  carrier('burrgrub', 'Burrgrub', 'burr'),
+  carrier('glidegrub', 'Glidegrub', 'kite'),
+  carrier('gyregrub', 'Gyregrub', 'gyre'),
+  carrier('driftgrub', 'Driftgrub', 'drift'),
 
   // Milestone 8 round 1 (sheet section 7): five new bugs.
   {

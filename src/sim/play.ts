@@ -26,6 +26,7 @@ import { ABILITIES, ABILITY_IDS, type AbilityDef } from '../content/abilities.ts
 import { CHARACTERS, DEFAULT_CHARACTER, type CharacterDef } from '../content/characters.ts';
 import { ACORN_LIST, ACORNS, FOOD, FOODS, acornWeights } from '../content/consumables.ts';
 import { UPGRADES } from '../content/run.ts';
+import { COURSE_MODS, windAccel, type CourseMod } from '../content/modifiers.ts';
 import { GEAR, GEAR_CATEGORIES, NO_GEAR, RARITY_ODDS, type GearCategory, type GearEffect, type GearSlots } from '../content/gear.ts';
 import {
   ELEMENT_RULES,
@@ -40,6 +41,8 @@ import {
   type MoverDef,
   type ObjectShape,
   type PickupDef,
+  type SwitchDef,
+  type DrawbridgeDef,
   RAIL,
 } from '../content/objects.ts';
 import { BOSS_TIER, RULES } from '../content/rules.ts';
@@ -51,6 +54,7 @@ import {
   DT,
   ballAtTile,
   endHover,
+  stick,
   endShot,
   groundAt,
   nearestOnShape,
@@ -229,6 +233,28 @@ export interface MoverState {
   /** Gates: open now, and seconds into the current open-then-closed cycle. */
   open: boolean;
   timer: number;
+  /** Round 2b: a linked gate's switch letter. */
+  readonly link: string | null;
+}
+
+/** Round 2b: a switch plate. */
+export interface SwitchState {
+  readonly uid: string;
+  readonly def: SwitchDef;
+  readonly x: number;
+  readonly y: number;
+  readonly link: string;
+  on: boolean;
+}
+
+/** Round 2b: one tile of a drawbridge, up until its switch is pressed. */
+export interface DrawbridgeState {
+  readonly uid: string;
+  readonly def: DrawbridgeDef;
+  readonly tx: number;
+  readonly ty: number;
+  readonly link: string;
+  down: boolean;
 }
 
 export interface BreakableState {
@@ -272,6 +298,12 @@ export interface SeedState {
   readonly uid: string;
   readonly spitter: string;
   readonly shot: ShotState;
+}
+
+/** Round 2b: Gyre (steering) and Drift (floating) while they last, in steps. */
+export interface SteerState {
+  readonly kind: 'gyre' | 'drift';
+  stepsLeft: number;
 }
 
 export interface TornadoState {
@@ -360,6 +392,11 @@ export type PlayEvent =
   | { kind: 'foodEaten'; item: string; auto: boolean }
   /** Food put in the bag for later. */
   | { kind: 'foodStashed'; item: string }
+  /** Round 2b: a switch was pressed; a drawbridge came down. */
+  | { kind: 'switchOn'; link: string; x: number; y: number }
+  | { kind: 'bridgeDown'; link: string }
+  /** Owner, 2026-11-21: the ball touched a closed gate's spiked top in the air. */
+  | { kind: 'gateSpikes' }
   /** A boss marked a ring where its next slam lands (Milestone 7). */
   | { kind: 'slamMark'; enemy: string; x: number; y: number; r: number }
   /** A boss's slam landed; `hit` if the ball was inside the ring on the ground. */
@@ -407,7 +444,8 @@ export type PlayStatus = 'playing' | 'won' | 'lost';
 export type Phase = 'aim' | 'shot' | 'enemy';
 
 export interface PlayState {
-  readonly course: Course;
+  /** The course as it is now. Round 2b: a drawbridge coming down swaps in a copy with those tiles changed. */
+  course: Course;
   readonly tuning: Tuning;
   readonly seed: string;
   readonly character: CharacterDef;
@@ -431,6 +469,11 @@ export interface PlayState {
   readonly pickups: PickupState[];
   readonly blockers: BlockerState[];
   readonly movers: MoverState[];
+  /** Round 2b: switches, and the drawbridge tiles waiting for theirs (sheet section 2). */
+  readonly switches: SwitchState[];
+  readonly drawbridges: DrawbridgeState[];
+  /** Links whose switch has been pressed this course ("a" -> true). */
+  readonly linksOn: Record<string, boolean>;
   readonly breakables: BreakableState[];
   readonly clouds: CloudState[];
   readonly flags: FlagState[];
@@ -459,6 +502,8 @@ export interface PlayState {
   ability: string | null;
   abilityUsed: boolean;
   tornado: TornadoState | null;
+  /** Round 2b: Gyre or Drift while it lasts this shot. */
+  steering: SteerState | null;
   /** Milestone 8: Frost or Static while it lasts this shot (steps left; Static: enemies it already zapped). */
   aura: { kind: 'frost' | 'static'; stepsLeft: number; zapped: string[] } | null;
   /** The ball's turn (shot number) each frozen tile was last frozen in: that turn does not count towards melting. */
@@ -485,6 +530,8 @@ export interface PlayState {
   foodPending: string[];
   foods: { id: string; eaten: boolean }[];
   bagRoom: number;
+  /** Round 2b: this course's modifier, for the display. */
+  readonly courseMod: CourseMod | null;
   /** Fortune's Mail: failed rolls spun again this course. */
   respinsUsed: number;
   /** Hot Streak Charm: successful rolls in shot number `streakShot`. */
@@ -537,6 +584,8 @@ export interface Loadout {
   readonly acorns?: readonly string[];
   /** Round 2a: free slots in the food bag. Left out: a full bag's worth. */
   readonly bagRoom?: number;
+  /** Round 2b: this course's modifier (wind, low gravity, darkness), or none. The bot plays with it too. */
+  readonly courseMod?: CourseMod | null;
   /** Rarity weights (in the order of RARITIES) for things dropped on this course, such as acorns. Region 1's early odds if left out. */
   readonly rarityWeights?: readonly number[];
 }
@@ -547,8 +596,10 @@ export interface TickInput {
   readonly boost?: boolean;
   /** Ability key pressed this step. */
   readonly ability?: boolean;
-  /** Tornado steering: -1 left, 1 right, 0 none. */
+  /** Tornado and Gyre steering: -1 left, 1 right, 0 none. */
   readonly steer?: number;
+  /** Drift: the direction pressed, in screen terms (x right, y down), each -1, 0 or 1. */
+  readonly move?: { readonly x: number; readonly y: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -640,6 +691,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
   const stats = new StatSheet(character.stats);
   const lo = opts.loadout ?? {};
   for (const m of lo.modifiers ?? []) stats.add(m);
+  for (const m of courseModModifiers(lo.courseMod ?? null)) stats.add(m);
   const startGear = lo.gear ?? NO_GEAR;
   for (const c of GEAR_CATEGORIES) {
     const g = startGear[c] ? GEAR.get(startGear[c]!) : undefined;
@@ -664,6 +716,9 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     pickups: [],
     blockers: [],
     movers: [],
+    switches: [],
+    drawbridges: [],
+    linksOn: {},
     breakables: [],
     clouds: [],
     flags: [],
@@ -682,6 +737,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     ability: lo.ability !== undefined ? lo.ability : character.startingAbility,
     abilityUsed: false,
     tornado: null,
+    steering: null,
     aura: null,
     frozenAt: {},
     ballStatuses: [],
@@ -695,6 +751,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     foodPending: [],
     foods: [],
     bagRoom: lo.bagRoom ?? FOOD.bagSlots,
+    courseMod: lo.courseMod ?? null,
     respinsUsed: 0,
     streakShot: -1,
     streak: 0,
@@ -723,11 +780,13 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     if (!def) return;
     if (def.kind === 'enemy') play.enemies.push(newEnemy(play, opts, def, o, uid, cx, cy, z));
     else if (def.kind === 'pickup') play.pickups.push({ uid, def, x: cx, y: cy, z, taken: false });
+    else if (def.kind === 'switch') play.switches.push({ uid, def, x: cx, y: cy, link: o.link ?? 'a', on: false });
+    else if (def.kind === 'drawbridge') play.drawbridges.push({ uid, def, tx: o.x, ty: o.y, link: o.link ?? 'a', down: false });
     else if (def.kind === 'blocker') play.blockers.push({ uid, def, x: cx, y: cy, z });
     else if (def.kind === 'mover') {
       const shape: ObjectShape = def.shape.kind === 'box' && o.orient === 'y' ? { kind: 'box', hx: def.shape.hy, hy: def.shape.hx } : def.shape;
       const path = def.motion.kind === 'path' ? makePath(o.path) : null;
-      const m: MoverState = { uid, def, x: cx, y: cy, z, vx: 0, vy: 0, shape, path, pathDist: path ? o.phase * path.total * 2 : 0, open: false, timer: 0 };
+      const m: MoverState = { uid, def, x: cx, y: cy, z, vx: 0, vy: 0, shape, path, pathDist: path ? o.phase * path.total * 2 : 0, open: false, timer: 0, link: o.link };
       if (def.motion.kind === 'gate') {
         const cycle = def.motion.open + def.motion.closed;
         m.timer = o.phase * cycle;
@@ -1022,7 +1081,7 @@ function staticObstacles(play: PlayState): Obstacle[] {
 function obstaclesOf(play: PlayState): Obstacle[] {
   const out: Obstacle[] = staticObstacles(play).slice();
   for (const m of play.movers) {
-    if (m.def.motion.kind === 'gate' && m.open) continue;
+    if ((m.def.motion.kind === 'gate' || m.def.motion.kind === 'linked') && m.open) continue;
     out.push({ id: m.uid, x: m.x, y: m.y, base: m.z, height: m.def.height, shape: m.shape, bounce: m.def.bounce, vx: m.vx, vy: m.vy, knock: m.def.knock });
   }
   for (const b of play.breakables) {
@@ -1062,7 +1121,30 @@ export function canShoot(play: PlayState): boolean {
 
 /** Shot power and bounce boost from the stat sheet. */
 function scales(play: PlayState) {
-  return { power: play.stats.get('shotPower') * (inWater(play) ? play.tuning.waterShotPower : 1), boost: play.stats.get('bounceBoost'), frozen: play.frozen, iceRoll: ballIceRoll(play) };
+  return {
+    power: play.stats.get('shotPower') * (inWater(play) ? play.tuning.waterShotPower : 1),
+    boost: play.stats.get('bounceBoost'),
+    frozen: play.frozen,
+    iceRoll: ballIceRoll(play),
+    gravity: play.stats.get('gravity'),
+    windX: play.stats.get('windX'),
+    windY: play.stats.get('windY'),
+  };
+}
+
+/** A course modifier as stat modifiers on the ball (round 2b sheet section 3). Wind blows along its direction. */
+export function courseModModifiers(mod: CourseMod | null): Modifier[] {
+  const def = mod ? COURSE_MODS.get(mod.id) : undefined;
+  if (!def) return [];
+  const source = { kind: 'course' as const, id: def.id };
+  const out: Modifier[] = def.stats.map((m) => ({ ...m, source, duration: { kind: 'course' } }));
+  const accel = windAccel(mod!);
+  if (accel && mod!.dir) {
+    const [dx, dy] = DIRECTION_VECTORS[mod!.dir];
+    if (dx) out.push({ stat: 'windX', op: 'add', amount: dx * accel, source, duration: { kind: 'course' } });
+    if (dy) out.push({ stat: 'windY', op: 'add', amount: dy * accel, source, duration: { kind: 'course' } });
+  }
+  return out;
 }
 
 /** The resting ball is in water: its next shot is weaker (owner, 2026-11-15). */
@@ -1117,6 +1199,7 @@ export function tick(play: PlayState, input: TickInput = {}): void {
   knockRestingBall(play);
   if (play.shot) stepBall(play, input);
   if (play.status !== 'playing') return;
+  pressSwitches(play);
   stepBodies(play);
   meetBodies(play);
   zapClouds(play);
@@ -1201,6 +1284,9 @@ function moveThings(play: PlayState): void {
       m.z = heightAt(play.course, p.x, p.y);
       m.vx = (m.x - px) / DT;
       m.vy = (m.y - py) / DT;
+    } else if (m.def.motion.kind === 'linked') {
+      // Round 2b: closed until its switch is pressed, then open for good.
+      m.open = !!(m.link && play.linksOn[m.link]);
     } else if (m.def.motion.kind === 'gate') {
       const { open, closed } = m.def.motion;
       m.timer += DT;
@@ -1268,6 +1354,7 @@ function stepBall(play: PlayState, input: TickInput): void {
     }
     setHeading(s, tor.heading, tor.speed);
   }
+  steerBall(play, s, input);
   const before = s.events.length;
   stepShot(play.course, play.tuning, s, input.boost ? { boost: true } : {}, play.world);
   for (const e of s.events.slice(before)) {
@@ -1285,7 +1372,85 @@ function stepBall(play: PlayState, input: TickInput): void {
       play.tornado = null;
     }
   }
+  endSteering(play, s);
   checkExit(play, s);
+}
+
+/**
+ * Gyre turns the ball's heading with Left/Right; Drift moves the floating ball
+ * in screen directions (round 2b sheet sections 1.3 and 1.4).
+ */
+function steerBall(play: PlayState, s: ShotState, input: TickInput): void {
+  const st = play.steering;
+  if (!st) return;
+  const b = s.ball;
+  const fx = ABILITIES.get(st.kind)!.effect;
+  if (fx.kind === 'gyre') {
+    const turn = ((input.steer ?? 0) * fx.turnRate * Math.PI * DT) / 180;
+    if (turn) {
+      const c = Math.cos(turn);
+      const sn = Math.sin(turn);
+      const vx = b.vx * c - b.vy * sn;
+      b.vy = b.vx * sn + b.vy * c;
+      b.vx = vx;
+    }
+  } else if (fx.kind === 'drift' && s.hover) {
+    // Screen right is grid (+1, -1); screen down is grid (+1, +1) (iso.ts).
+    const mx = input.move?.x ?? 0;
+    const my = input.move?.y ?? 0;
+    let gx = mx + my;
+    let gy = -mx + my;
+    const len = Math.hypot(gx, gy);
+    if (len > 0) {
+      gx /= len;
+      gy /= len;
+    }
+    b.vx = gx * fx.speed;
+    b.vy = gy * fx.speed;
+  }
+}
+
+/**
+ * Round 2b (sheet section 2): a ball on the ground over a switch presses it.
+ * It stays on: linked gates open (moveThings) and drawbridges come down.
+ */
+function pressSwitches(play: PlayState): void {
+  if (!play.switches.length) return;
+  const b = ballNow(play);
+  const g = groundAt(play.course, b.x, b.y);
+  if (!g || b.z > g.h + 0.05) return;
+  for (const sw of play.switches) {
+    if (sw.on || Math.hypot(b.x - sw.x, b.y - sw.y) > sw.def.reach) continue;
+    sw.on = true;
+    play.linksOn[sw.link] = true;
+    play.log.push({ kind: 'switchOn', link: sw.link, x: sw.x, y: sw.y });
+    lowerDrawbridges(play, sw.link);
+  }
+}
+
+/** The drawbridge tiles with this link come down: each becomes plank bridge, raised to the bridge's height. */
+function lowerDrawbridges(play: PlayState, link: string): void {
+  const down = play.drawbridges.filter((d) => d.link === link && !d.down);
+  if (!down.length) return;
+  const tiles = play.course.tiles.slice();
+  for (const d of down) {
+    d.down = true;
+    const k = d.ty * play.course.width + d.tx;
+    const t = tiles[k];
+    if (!t) continue;
+    const corners = t.corners.map((h) => h + d.def.rise) as unknown as typeof t.corners;
+    tiles[k] = { ...t, surface: d.def.surface, corners, base: t.base + d.def.rise };
+  }
+  play.course = { ...play.course, tiles };
+  play.log.push({ kind: 'bridgeDown', link });
+}
+
+/** Gyre and Drift count down; Drift then drops straight down with no speed. */
+function endSteering(play: PlayState, s: ShotState): void {
+  const st = play.steering;
+  if (!st || --st.stepsLeft > 0) return;
+  if (st.kind === 'drift' && s.hover) endHover(play.course, s, 0);
+  play.steering = null;
 }
 
 /** The ball's motion ended: rest, sink, fall out, or drop into the exit. */
@@ -1294,6 +1459,7 @@ function finishBallMotion(play: PlayState): void {
   const outcome = s.outcome;
   play.shot = null;
   play.tornado = null;
+  play.steering = null;
   play.aura = null;
   if (outcome === 'exit') {
     play.ball = { ...s.ball, vx: 0, vy: 0, vz: 0, grounded: true };
@@ -1431,6 +1597,12 @@ function onBallContact(play: PlayState, o: Obstacle, s: ShotState): ContactResul
   if (e) return hitEnemy(play, e, s);
   const b = play.breakables.find((x) => x.uid === o.id);
   if (b) return hitBreakable(play, b, s);
+  // Owner, 2026-11-21: a closed gate is sharp on top. Clearing it is the risk: touch it in the air and it hurts.
+  const m = play.movers.find((x) => x.uid === o.id);
+  if (m?.def.spikedTop && !m.open && !s.ball.grounded) {
+    play.log.push({ kind: 'gateSpikes' });
+    damageBall(play, RULES.spikeDamage, 'spikes');
+  }
   return (o.knock ?? 0) > 0 ? 'knock' : 'bounce';
 }
 
@@ -1772,7 +1944,7 @@ function split(play: PlayState, e: EnemyState): void {
       cx = e.x + side * 0.35;
       cy = e.y;
     }
-    const o: CourseObject = { id: def.id, x: Math.floor(cx), y: Math.floor(cy), path: [], facing: e.place.facing, phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS };
+    const o: CourseObject = { id: def.id, x: Math.floor(cx), y: Math.floor(cy), path: [], facing: e.place.facing, phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS, link: null };
     const uid = `split:${e.uid}:${k}`;
     play.enemies.push(newEnemy(play, { seed: play.seed, enemyModifiers: play.enemyModifiers }, def, o, uid, cx, cy, heightAt(play.course, cx, cy)));
     play.log.push({ kind: 'split', enemy: e.uid, into: uid });
@@ -2089,7 +2261,7 @@ function summon(play: PlayState, boss: EnemyState, def: BossDef, phase: BossPhas
   const id = phase.pool[play.rng.weighted(phase.pool.map((p) => p.weight))]!.id;
   const edef = OBJECTS.get(id);
   if (edef?.kind !== 'enemy') return;
-  const o: CourseObject = { id, x: spot.x, y: spot.y, path: [], facing: 'se', phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS };
+  const o: CourseObject = { id, x: spot.x, y: spot.y, path: [], facing: 'se', phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS, link: null };
   const cx = spot.x + 0.5;
   const cy = spot.y + 0.5;
   const uid = `summon:${id}#${play.summoned++}`;
@@ -2594,7 +2766,10 @@ function giveAbility(play: PlayState, id: string, wild: boolean): void {
 
 /** Can the held ability be used right now? Once per shot, while the ball moves. */
 export function canUseAbility(play: PlayState): boolean {
-  return !!play.ability && !play.abilityUsed && !!play.shot && !play.shot.outcome && play.status === 'playing';
+  if (!play.ability || play.abilityUsed || !play.shot || play.shot.outcome || play.status !== 'playing') return false;
+  // Kite only works in the air (round 2b sheet 1.2); on the ground it is not used up.
+  if (play.ability === 'kite' && play.shot.ball.grounded && !play.shot.hover) return false;
+  return true;
 }
 
 export function useAbility(play: PlayState): boolean {
@@ -2628,6 +2803,29 @@ export function useAbility(play: PlayState): boolean {
     s.restSteps = 0;
   } else if (fx.kind === 'frost' || fx.kind === 'static') {
     play.aura = { kind: fx.kind, stepsLeft: steps(fx.time), zapped: [] };
+  } else if (fx.kind === 'burr') {
+    // Rolling: the ground is what it touches, so it sticks at once. In the air: the first thing it touches.
+    if (s.hover) {
+      endHover(play.course, s, 0);
+      play.tornado = null;
+    }
+    const g = groundAt(play.course, b.x, b.y);
+    if (b.grounded && g) stick(s, g);
+    else s.sticky = steps(fx.time);
+  } else if (fx.kind === 'kite') {
+    s.glide = steps(fx.time);
+    s.glideGravity = fx.gravityScale;
+    s.glideMaxFall = fx.maxFall;
+  } else if (fx.kind === 'gyre') {
+    play.steering = { kind: 'gyre', stepsLeft: steps(fx.time) };
+  } else if (fx.kind === 'drift') {
+    const g = groundAt(play.course, b.x, b.y);
+    b.vx = 0;
+    b.vy = 0;
+    b.vz = 0;
+    s.hover = { floor: (g ? Math.max(b.z, g.h) : b.z) + (b.grounded ? fx.lift : 0) };
+    b.grounded = false;
+    play.steering = { kind: 'drift', stepsLeft: steps(fx.time) };
   } else if (fx.kind === 'tornado') {
     const sp = Math.hypot(b.vx, b.vy);
     const heading = sp > 1e-6 ? Math.atan2(b.vy, b.vx) : Math.atan2(s.dirY, s.dirX);

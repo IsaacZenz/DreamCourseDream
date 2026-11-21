@@ -527,6 +527,23 @@ function drawDeadTree(): Image {
   return img;
 }
 
+/** Owner, 2026-11-21: fireflies, a small cluster of light pixels that flicker (4 frames). */
+function drawFireflies(frame: number): Image {
+  const img = new Image(14, 12);
+  const spots: P[] = [[2, 3], [6, 1], [10, 4], [4, 8], [9, 9], [12, 7]];
+  spots.forEach(([x, y], k) => {
+    // Each fly is lit in some frames and dark in others, at its own rhythm.
+    const lit = (k * 3 + frame * (k % 2 ? 1 : 3)) % 4 < 2;
+    if (!lit) return;
+    img.set(x, y, hex2('#f8f8a0'));
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const [r, g, b] = hex2('#c8f040');
+      if (x + dx >= 0 && x + dx < 14 && y + dy >= 0 && y + dy < 12) img.set(x + dx, y + dy, [r, g, b, 110]);
+    }
+  });
+  return img;
+}
+
 /** Round 2a scenery (sheet section 2.6): small props for looks only. */
 function drawScenery(kind: string): Image {
   const img = new Image(12, 8);
@@ -764,6 +781,18 @@ function drawGate(open: boolean): Image {
   // Rail along the bottom.
   for (let x = 2; x < 30; x++) img.set(x, Math.round(18 + (x - 2) * 0.5) - (open ? 0 : 0), edge);
   if (!open) for (let x = 2; x < 30; x++) img.set(x, Math.round(5 + (x - 2) * 0.5), bar[3]!);
+  // Owner, 2026-11-21: spikes on top of a closed gate (it hurts to touch in the air).
+  if (!open) {
+    const tip = hex2('#e8e8f0');
+    for (let i = 0; i < 5; i++) {
+      const bx = 5 + i * 6;
+      const by = 6 + i * 3;
+      img.set(bx, by - 3, tip);
+      img.set(bx, by - 2, tip);
+      img.set(bx - 1, by - 1, tip);
+      img.set(bx + 1, by - 1, tip);
+    }
+  }
   return img;
 }
 
@@ -781,6 +810,40 @@ function drawCrate(secured: boolean, cracked: boolean): Image {
     const crack = hex2('#1a1008');
     for (const [x, y] of [[9, 8], [10, 9], [10, 10], [11, 11], [12, 12], [16, 10], [17, 11], [17, 12], [18, 13]] as const) img.set(x, y, crack);
   }
+  return img;
+}
+
+/** Round 2b: a switch plate on the tile, red when off and green when on. */
+function drawSwitch(on: boolean): Image {
+  const img = new Image(32, 16);
+  blob(img, 16, 8, 8, 4, '#8c8c96', '#202028');
+  blob(img, 16, 7.5, 5, 2.5, on ? '#40c040' : '#d03030', '#202028');
+  return img;
+}
+
+/** Round 2b: a linked gate: the gate with a lamp on top (lit when open). */
+function drawLinkedGate(open: boolean): Image {
+  const img = drawGate(open);
+  blob(img, 4, 4, 3, 3, open ? '#60f060' : '#f04040', '#202020');
+  return img;
+}
+
+/** Round 2b: a drawbridge's planks standing up at the moat edge while it is up. */
+function drawDrawbridgeUp(): Image {
+  const img = new Image(32, 28);
+  const wood = ramp('#a87840');
+  const edge = hex2('#3a2410');
+  for (let i = 0; i < 4; i++) {
+    const x0 = 8 + i * 4;
+    const y0 = 4 + i * 2;
+    for (let y = y0; y < y0 + 18; y++) {
+      img.set(x0, y, edge);
+      img.set(x0 + 1, y, wood[3]!);
+      img.set(x0 + 2, y, wood[2]!);
+      img.set(x0 + 3, y, edge);
+    }
+  }
+  for (let x = 6; x < 26; x++) img.set(x, Math.round(10 + (x - 6) * 0.5), edge);
   return img;
 }
 
@@ -938,7 +1001,7 @@ function drawStump(): Image {
 
 function drawIcon(kind: string): Image {
   const img = new Image(10, 10);
-  blob(img, 5, 5, 5, 5, { anchor: '#4060a0', burner: '#c04020', hop: '#40a040', tornado: '#7a7ab0', stunned: '#a09030', wild: '#b040c0', frost: '#78b8e8', static: '#d8b020', poisoned: '#70a030', chilled: '#a8d8f8' }[kind] ?? '#808080', '#101018');
+  blob(img, 5, 5, 5, 5, { anchor: '#4060a0', burner: '#c04020', hop: '#40a040', tornado: '#7a7ab0', stunned: '#a09030', wild: '#b040c0', frost: '#78b8e8', static: '#d8b020', poisoned: '#70a030', chilled: '#a8d8f8', burr: '#8a6a30', kite: '#e07890', gyre: '#30a0a0', drift: '#a0a0e0' }[kind] ?? '#808080', '#101018');
   const w = hex2('#f8f8f8');
   const marks: Record<string, P[]> = {
     anchor: [[5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [4, 3], [6, 3], [3, 6], [7, 6], [4, 7], [6, 7]],
@@ -952,6 +1015,11 @@ function drawIcon(kind: string): Image {
     static: [[6, 1], [5, 2], [4, 3], [5, 4], [6, 4], [5, 5], [4, 6], [5, 7], [4, 8]],
     poisoned: [[5, 2], [4, 3], [6, 3], [3, 4], [7, 4], [3, 5], [7, 5], [4, 6], [5, 6], [6, 6], [4, 8], [6, 8]],
     chilled: [[5, 2], [4, 3], [6, 3], [3, 4], [5, 4], [7, 4], [4, 5], [6, 5], [5, 6], [5, 7]],
+    // Round 2b: a burr (spiky dot), a kite (diamond), a spiral arrow, a feather-ish float.
+    burr: [[5, 2], [5, 8], [2, 5], [8, 5], [3, 3], [7, 3], [3, 7], [7, 7], [4, 4], [5, 4], [6, 4], [4, 5], [5, 5], [6, 5], [4, 6], [5, 6], [6, 6]],
+    kite: [[5, 1], [4, 2], [6, 2], [3, 3], [7, 3], [4, 4], [6, 4], [5, 5], [5, 6], [6, 7], [5, 8]],
+    gyre: [[3, 3], [4, 2], [5, 2], [6, 2], [7, 3], [7, 4], [7, 5], [6, 6], [5, 6], [4, 5], [5, 4], [2, 3], [3, 4]],
+    drift: [[2, 4], [3, 3], [4, 3], [5, 4], [6, 4], [7, 3], [8, 3], [2, 7], [3, 6], [4, 6], [5, 7], [6, 7], [7, 6], [8, 6]],
   };
   for (const [x, y] of marks[kind] ?? []) img.set(x, y, w);
   return img;
@@ -1021,12 +1089,64 @@ function sheet(frames: Image[]): Image {
 }
 
 const sprites: Record<string, SpriteEntry> = {};
+/** Every sprite's image, kept for the theme sets made at the end (round 2b). */
+const images = new Map<string, { img: Image; frameWidth: number; frameHeight: number; frames: string[]; anchor: P }>();
 
 function emit(id: string, img: Image, frameWidth: number, frameHeight: number, frames: string[], anchor: P): void {
   const file = `sprites/${id}.png`;
   mkdirSync(join(OUT, 'sprites'), { recursive: true });
   writeFileSync(join(OUT, file), encodePng(img));
   sprites[id] = { file, frameWidth, frameHeight, frames, anchor };
+  images.set(id, { img, frameWidth, frameHeight, frames, anchor });
+}
+
+// ---------------------------------------------------------------------------
+// Themes (round 2b sheet section 4.2; owner, 2026-11-14 and 2026-11-21): after
+// each boss the look changes; only the art changes. Each theme recolours the
+// ground (tiles, faces, water, shores), scenery and blockers; enemies, the ball,
+// pickups and the HUD stay the same. A themed sprite is "<id>@<theme>"; the
+// game picks it when that theme is on and falls back to "<id>".
+
+type Recolour = (r: number, g: number, b: number) => RGB;
+const lum = (r: number, g: number, b: number) => 0.3 * r + 0.59 * g + 0.11 * b;
+const THEMES: Record<string, { sky: string; recolour: Recolour }> = {
+  // Murky greens and browns, darker water.
+  bog: { sky: '#2a3a2c', recolour: (r, g, b) => [r * 0.7 + g * 0.15 + 12, g * 0.72 + r * 0.1 + 6, b * 0.5 + 8] },
+  // Grey-purple grass, bare brown earth.
+  thornwood: { sky: '#3a2c40', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.8 + r * 0.25, l * 0.62 + g * 0.18, l * 0.78 + b * 0.25]; } },
+  // Deep blue shading everywhere.
+  night: { sky: '#0a0c22', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.3 + r * 0.15, l * 0.38 + g * 0.15, l * 0.55 + b * 0.25 + 28]; } },
+  // Brown and grey stone.
+  underground: { sky: '#1c1610', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.82 + r * 0.12, l * 0.7 + g * 0.08, l * 0.58 + b * 0.08]; } },
+  // Owner, 2026-11-21: Starfall, endless mode's own theme: deep purples and indigo under a starry purple sky.
+  starfall: { sky: '#1c0c30', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.55 + r * 0.2 + 18, l * 0.32 + g * 0.12 + 6, l * 0.7 + b * 0.25 + 30]; } },
+  // Pale greens and purples, fog grey.
+  spooky: { sky: '#2a2a36', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.72 + b * 0.2 + 10, l * 0.88 + 8, l * 0.7 + r * 0.25 + 14]; } },
+};
+
+/** Which sprites a theme recolours. */
+const themed = (id: string) => /^(tile-|face-|scenery-)/.test(id) || ['water-shore', 'rock', 'stump', 'dead-tree', 'low-wall', 'drawbridge-up'].includes(id);
+
+function recolourImage(src: Image, f: Recolour): Image {
+  const out = new Image(src.width, src.height);
+  for (let y = 0; y < src.height; y++) {
+    for (let x = 0; x < src.width; x++) {
+      const [r, g, b, a] = src.get(x, y);
+      if (a === 0) continue;
+      out.set(x, y, c15(f(r, g, b), a));
+    }
+  }
+  return out;
+}
+
+function emitThemes(): Record<string, { sky: string }> {
+  for (const [theme, t] of Object.entries(THEMES)) {
+    for (const [id, e] of [...images]) {
+      if (!themed(id) || id.includes('@')) continue;
+      emit(`${id}@${theme}`, recolourImage(e.img, t.recolour), e.frameWidth, e.frameHeight, e.frames, e.anchor);
+    }
+  }
+  return Object.fromEntries([['day', { sky: '#1d2b53' }], ...Object.entries(THEMES).map(([k, t]) => [k, { sky: t.sky }])]);
 }
 
 const faceIds = new Set<string>();
@@ -1080,7 +1200,11 @@ emit('rock', drawRock(), 20, 14, ['idle'], [10, 10]);
 emit('stump', drawStump(), 10, 28, ['idle'], [5, 25]);
 emit('low-wall', drawLowWall(), 32, 20, ['idle'], [16, 12]);
 emit('dead-tree', drawDeadTree(), 22, 40, ['idle'], [11, 37]);
+emit('switch', sheet([drawSwitch(false), drawSwitch(true)]), 32, 16, ['off', 'on'], [16, 8]);
+emit('linked-gate', sheet([drawLinkedGate(true), drawLinkedGate(false)]), 32, 26, ['open', 'closed'], [16, 18]);
+emit('drawbridge-up', drawDrawbridgeUp(), 32, 28, ['idle'], [16, 22]);
 for (const k of ['tuft', 'flowers', 'pebbles', 'mushrooms', 'leaves', 'bones']) emit(`scenery-${k}`, drawScenery(k), 12, 8, ['idle'], [6, 6]);
+emit('scenery-fireflies', sheet([0, 1, 2, 3].map(drawFireflies)), 14, 12, ['0', '1', '2', '3'], [7, 18]);
 emit('snoozegrub', drawMossback(), 18, 16, ['idle'], [9, 14]);
 // Milestone 4
 emit('mudroller', drawTrundler(), 18, 16, ['idle'], [9, 14]);
@@ -1520,6 +1644,11 @@ emit('trapjaw', drawTrapjaw(), 20, 16, ['idle'], [10, 14]);
 emit('stinkpuff', drawStinkpuff(), 18, 15, ['idle'], [9, 13]);
 emit('grublet', drawGrublet(), 10, 8, ['idle'], [5, 7]);
 emit('frostgrub', drawCarrier('#90c8f0', mark('#f8f8f8', [[11, 4], [11, 5], [11, 6], [11, 7], [11, 8], [9, 6], [10, 6], [12, 6], [13, 6], [10, 5], [12, 7]])), 18, 16, ['idle'], [9, 14]);
+// Round 2b carriers: the grub with its ability's colour and mark.
+emit('burrgrub', drawCarrier('#8a6a30', mark('#f8f8f8', [[11, 4], [11, 8], [9, 6], [13, 6], [10, 5], [11, 5], [12, 5], [10, 6], [11, 6], [12, 6], [10, 7], [11, 7], [12, 7]])), 18, 16, ['idle'], [9, 14]);
+emit('glidegrub', drawCarrier('#e07890', mark('#f8f8f8', [[11, 3], [10, 4], [12, 4], [9, 5], [13, 5], [10, 6], [12, 6], [11, 7], [11, 8]])), 18, 16, ['idle'], [9, 14]);
+emit('gyregrub', drawCarrier('#30a0a0', mark('#f8f8f8', [[10, 4], [11, 4], [12, 4], [13, 5], [13, 6], [12, 7], [11, 7], [10, 6], [11, 5]])), 18, 16, ['idle'], [9, 14]);
+emit('driftgrub', drawCarrier('#a0a0e0', mark('#f8f8f8', [[9, 5], [10, 4], [11, 5], [12, 4], [13, 5], [9, 8], [10, 7], [11, 8], [12, 7], [13, 8]])), 18, 16, ['idle'], [9, 14]);
 emit('sparkgrub', drawCarrier('#e8c830', mark('#302000', [[12, 4], [11, 5], [10, 6], [11, 6], [12, 6], [11, 7], [10, 8]])), 18, 16, ['idle'], [9, 14]);
 emit(
   'gloamhorn',
@@ -1530,7 +1659,7 @@ emit(
   [20, 33],
 );
 emit('brood-queen', sheet([0, 1, 2].map(drawBroodQueen)), 48, 42, ['phase1', 'phase2', 'phase3'], [24, 36]);
-for (const k of ['frost', 'static', 'poisoned', 'chilled']) emit(`icon-${k}`, drawIcon(k), 10, 10, ['idle'], [5, 5]);
+for (const k of ['frost', 'static', 'poisoned', 'chilled', 'burr', 'kite', 'gyre', 'drift']) emit(`icon-${k}`, drawIcon(k), 10, 10, ['idle'], [5, 5]);
 for (const t of ['shielded', 'armoured', 'swift', 'explosive', 'regenerating', 'splitting']) emit(`trait-${t}`, drawBadge(t), 7, 7, ['idle'], [3, 6]);
 emit('rank-veteran', drawRank(false), 9, 5, ['idle'], [4, 4]);
 emit('rank-elite', drawRank(true), 9, 5, ['idle'], [4, 4]);
@@ -1541,6 +1670,7 @@ emit('font', font.img, 4, 6, font.frames, [0, 0]);
 
 // Milestone 8 (sheet section 3): the tint of an enemy with an element, set here so the final art can change it.
 const tints = { fire: '#ff9060', ice: '#a0d8ff', shock: '#fff070' };
-const manifest: Manifest = { version: 1, sprites, tints };
+const themes = emitThemes();
+const manifest: Manifest = { version: 1, sprites, tints, themes };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 console.log(`Wrote ${Object.keys(sprites).length} sprites to assets/sprites and assets/manifest.json`);

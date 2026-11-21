@@ -55,7 +55,7 @@ function lateSize(n: number): JourneySize {
 // The detail dial and new terrain
 
 describe('the detail dial (sheet section 1)', () => {
-  it('region one keeps its ground, set pieces and enemies; it only gains a few rocks and stumps', () => {
+  it('region one keeps its ground, set pieces and enemies; it only gains a few rocks, stumps and low walls', () => {
     for (let i = 0; i < 8; i++) {
       const run = createRun(`R${i}`, generateRunMap(`R${i}`));
       run.counted = i % 7;
@@ -72,8 +72,9 @@ describe('the detail dial (sheet section 1)', () => {
       expect(ra.quota).toBe(rb.quota);
       expect(ra.objects.slice(0, rb.objects.length)).toEqual(rb.objects);
       const extra = ra.objects.slice(rb.objects.length);
-      for (const o of extra) expect(['rock', 'stump']).toContain(o.id);
-      expect(extra.length).toBeLessThanOrEqual(4);
+      // Owner, 2026-11-21 (round 2c): a few more low-risk obstacles: rocks, stumps and low walls, about 4 to 8.
+      for (const o of extra) expect(['rock', 'stump', 'low-wall']).toContain(o.id);
+      expect(extra.length).toBeLessThanOrEqual(10);
     }
   });
 

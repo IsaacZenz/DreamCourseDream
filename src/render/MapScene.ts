@@ -4,10 +4,11 @@ import { LAST_REGION, UPGRADE_LIST, UPGRADES, type NodeType } from '../content/r
 import { BOSSES } from '../content/bosses';
 import { FOOD } from '../content/consumables';
 import { BagMenu } from './bagMenu';
+import { courseModLabel } from './courseModView';
 import { BLUE_STARS } from '../content/progress';
 import { generateRunMap } from '../gen/runMap';
 import { prefetch } from './genQueue';
-import { courseJobFor, type CourseJob, LAST_TOWN, addUpgrade, bossBlueStars, bossOf, bossHealthFor, keepGoing, sizeFor, startRegion, takeBossReward, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
+import { courseModFor, courseJobFor, type CourseJob, LAST_TOWN, addUpgrade, bossBlueStars, bossOf, bossHealthFor, keepGoing, sizeFor, startRegion, takeBossReward, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
 import { BOSS_FIGHTS, debugBossFight, newRunSeed, persist, session, startRun } from './runSession';
@@ -262,6 +263,9 @@ export class MapScene extends Phaser.Scene {
       const type = typeOf(run, n);
       line(n.id === LAST_TOWN ? 'NEXT: LAST TOWN' : `NEXT: ${NODE_NAME[type]}`, GOOD);
       for (const l of n.id === LAST_TOWN ? ['OPTIONAL: SHOP AND BURROW', 'BEFORE THE BOSS'] : nodeInfo(run, type)) line(l, UI_DIM);
+      // Round 2b: a course modifier on this node.
+      const mod = courseModFor(run, n);
+      if (mod) line(courseModLabel(mod), 0xf8a040);
     }
     const help = run.status === 'map' ? ['ARROWS: CHOOSE  ENTER: GO', 'B: BAG (EAT FOOD)  UP/DOWN: LOOK', 'U: TEST PANEL  1-6: TEST COURSES'] : ['N: NEW RUN  S: SAME SEED'];
     help.forEach((h, i) => c.add(pixelText(this, m, 4, VIEW_HEIGHT - 7 * (help.length - i) - 2, h, { color: UI_DIM })));

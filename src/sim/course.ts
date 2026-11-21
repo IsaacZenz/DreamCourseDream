@@ -104,6 +104,8 @@ export interface CourseObject {
   readonly drops: readonly string[] | null;
   /** Milestone 8: an enemy's rank, traits, element, weak spot or guarded side, and carried gear. NO_EXTRAS for everything else. */
   readonly extras: EnemyExtras;
+  /** Round 2b: which switch a switch, linked gate or drawbridge belongs to (a letter), or null. */
+  readonly link: string | null;
 }
 
 export interface Course {
@@ -321,7 +323,10 @@ export function parseCourse(raw: unknown): ParseResult {
   checkRailCrossings(objects, rails, errors);
   for (const o of objects) {
     if (start && o.x === start.x && o.y === start.y) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the start tile.`);
-    if (exit && o.x === exit.x && o.y === exit.y) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the exit tile.`);
+    // Owner, 2026-11-21: a boss arena's exit sits under the boss's starting spot (it opens when the boss is beaten).
+    const def = OBJECTS.get(o.id);
+    const isBoss = def?.kind === 'enemy' && def.behaviour.kind === 'boss';
+    if (exit && o.x === exit.x && o.y === exit.y && !isBoss) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the exit tile.`);
   }
   const quota = course.quota;
   if (Number.isInteger(quota)) {
@@ -345,7 +350,7 @@ export function starsOnOffer(objects: readonly CourseObject[]): number {
   return n;
 }
 
-const OBJECT_KEYS = ['id', 'at', 'path', 'facing', 'phase', 'orient', 'drops', 'rank', 'traits', 'element', 'spot', 'gear'];
+const OBJECT_KEYS = ['id', 'at', 'path', 'facing', 'phase', 'orient', 'drops', 'rank', 'traits', 'element', 'spot', 'gear', 'link'];
 
 /**
  * Yellow stars one placed enemy is worth when defeated (Milestone 8): its
@@ -524,7 +529,7 @@ function parseObjects(raw: unknown, course: Omit<Course, 'start' | 'exit'>, erro
     // Orient
     let orient: 'x' | 'y' = 'x';
     if (entry.orient !== undefined) {
-      if (!(def.kind === 'mover' && def.motion.kind === 'gate')) errors.push(`${where}: only gates take "orient".`);
+      if (!(def.kind === 'mover' && (def.motion.kind === 'gate' || def.motion.kind === 'linked'))) errors.push(`${where}: only gates take "orient".`);
       else if (entry.orient !== 'x' && entry.orient !== 'y') errors.push(`${where}.orient: must be "x" or "y".`);
       else orient = entry.orient;
     }
@@ -540,8 +545,17 @@ function parseObjects(raw: unknown, course: Omit<Course, 'start' | 'exit'>, erro
       }
     }
 
+    // Link (round 2b): switches, linked gates and drawbridges need one; nothing else takes one.
+    let link: string | null = null;
+    const linked = def.kind === 'switch' || def.kind === 'drawbridge' || (def.kind === 'mover' && def.motion.kind === 'linked');
+    if (entry.link !== undefined) {
+      if (!linked) errors.push(`${where}: only switches, linked gates and drawbridges take "link".`);
+      else if (typeof entry.link !== 'string' || !/^[a-z]$/.test(entry.link)) errors.push(`${where}.link: must be one letter, a to z.`);
+      else link = entry.link;
+    } else if (linked) errors.push(`${where}: "${entry.id}" needs a "link" (a letter shared with its switch).`);
+
     const extras = parseExtras(entry, def, where, errors);
-    out.push({ id: entry.id, x: p.x, y: p.y, path, facing, phase, orient, drops, extras });
+    out.push({ id: entry.id, x: p.x, y: p.y, path, facing, phase, orient, drops, extras, link });
   });
   return out;
 }

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GENERATED_ID, TEST_COURSES } from '../content/courses';
 import { GEN } from '../content/gen';
 import { generateCourse, type GenOptions, type GenResult } from '../gen/validate';
-import type { BotMove } from '../gen/bot';
+import { botBrain, watchBotConfig, type BotMove } from '../gen/bot';
 import { Rng } from '../sim/rng';
 import { SeedViewer } from '../ui/seedViewer';
 import { BENCH_ID, benchChoices, benchCourse } from '../content/courses/testBench';
@@ -36,6 +36,9 @@ import { STATUSES } from '../content/statuses';
 import { RANKS, TRAITS, TRAIT_RULES } from '../content/enemyMods';
 import { ELEMENT_IDS, OBJECTS, RAIL } from '../content/objects';
 import { SCENERY } from '../content/scenery';
+import { COURSE_MODS, type CourseMod } from '../content/modifiers';
+import type { Direction } from '../content/surfaces';
+import { courseModBanner, courseModShort } from './courseModView';
 import { RULES } from '../content/rules';
 import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
@@ -54,7 +57,8 @@ import { BLUE_STARS } from '../content/progress';
 import { LAST_REGION } from '../content/run';
 import { getPanel, getTuning, preloadAssets, shared } from './shared';
 import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
-import { frameIndex, type Manifest } from './manifest';
+import { frameIndex, themedSprite, type Manifest } from './manifest';
+import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
 import { pixelText } from './pixelText';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 
@@ -132,12 +136,28 @@ let lastGen: { result: GenResult; ms: number } | null = null;
  * mix and detail of a late course in region N (after 6 counted nodes), so the
  * detail dial and scenery can be seen without playing a run there.
  */
+/** Testing aid (round 2b): ?mod=wind|lowGravity|darkness (and &dir=ne|se|sw|nw for wind) gives a test course that modifier. */
+function testCourseMod(): CourseMod | null {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('mod');
+  if (!id || !COURSE_MODS.has(id)) return null;
+  const dir = params.get('dir') as Direction | null;
+  const st = Number(params.get('strength'));
+  const strength = st === 1 || st === 2 || st === 3 ? st : 2;
+  return id === 'wind' ? { id: 'wind', dir: dir && ['ne', 'se', 'sw', 'nw'].includes(dir) ? dir : 'ne', strength } : { id: id as CourseMod['id'] };
+}
+
 function testRegionOpts(): GenOptions {
   const n = Number(new URLSearchParams(window.location.search).get('region'));
-  if (!n) return {};
+  const mod = testCourseMod();
+  if (!n) return mod ? { loadout: { courseMod: mod } } : {};
   const r = regionDefFor(n);
   const areas = Math.min(r.areas.max, r.areas.start + Math.floor(6 / r.areas.every));
-  return { size: { areas: [areas, areas], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(areas), mix: mixFor(n), detail: r.detail } };
+  const lfScale = biomeForRegion(n).landformScale;
+  return {
+    size: { areas: [areas, areas], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(areas), mix: mixFor(n), detail: r.detail, ...(Object.keys(lfScale).length && { landformScale: lfScale }) },
+    ...(mod && { loadout: { courseMod: mod } }),
+  };
 }
 let viewer: SeedViewer | null = null;
 /** How fast the bot replays (B key), as a multiple of real time. */
@@ -227,7 +247,7 @@ export class CourseScene extends Phaser.Scene {
   private message: Phaser.GameObjects.Container | null = null;
   private messageUntil = 0;
   /** Messages wait their turn so several things in one shot can all be read. */
-  private messageQueue: { text: string; color: number }[] = [];
+  private messageQueue: { text: string; color: number; ms?: number }[] = [];
 
   // Display
   private ballImg!: Phaser.GameObjects.Image;
@@ -277,6 +297,8 @@ export class CourseScene extends Phaser.Scene {
     this.thumb = params.get('thumb') === '1';
     // ?bench=<object id> opens the test bench with that thing at its centre (for example ?course=test-bench&bench=rail).
     if (!benchShown && params.get('bench') !== null) bench.object = params.get('bench')!;
+    // ?ability=<id> starts the test bench holding that ability (round 2b testing aid).
+    if (!benchShown && params.get('ability')) bench.ability = params.get('ability')!;
     // Milestone 8: &rank=1|2, &trait=<id>, &element=fire|ice|shock for the enemy on the bench.
     if (!benchShown) for (const k of ['rank', 'trait', 'element'] as const) if (params.get(k) !== null) bench[k] = params.get(k)!;
     const urlDebug = params.get('debug');
@@ -346,12 +368,22 @@ export class CourseScene extends Phaser.Scene {
     this.animPhase = -1;
     this.overview = false;
     this.hiddenHud = [];
+    this.tileImgs = [];
+    // Round 2b: the region's theme (or the U panel's pick, or ?theme= / ?region= on a test course).
+    this.theme = this.pickTheme();
+    this.cameras.main.setBackgroundColor(manifest.themes?.[this.theme]?.sky ?? '#1d2b53');
     for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
 
     panel = getPanel();
+    // Round 2b: picking a theme in the U panel shows this course again in it.
+    panel.onTheme = () => (this.runMode ? this.scene.restart({ run: true }) : this.restartCourse());
 
     const run = this.runMode ? session.run : null;
-    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) }) });
+    const urlMod = testCourseMod();
+    this.play = createPlay(course, tuning, {
+      seed: this.runMode ? run!.current!.courseSeed : this.seed,
+      ...(run ? { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) } : urlMod ? { loadout: { courseMod: urlMod } } : {}),
+    });
     this.runReported = false;
     this.setRunPanel();
     // Owner, 2026-11-19: a boss fight opens with the boss's introduction card.
@@ -383,6 +415,8 @@ export class CourseScene extends Phaser.Scene {
     settings.top = 0;
     settings.side = 0;
     this.messageQueue = [];
+    // Round 2b: a course modifier is announced as the course opens.
+    if (this.play.courseMod) this.queueMessage(courseModBanner(this.play.courseMod), 0xf8a040, 4000);
     this.message = null;
     this.endScreen = null;
     this.statusKey = '';
@@ -459,18 +493,129 @@ export class CourseScene extends Phaser.Scene {
    * ball and everything standing. Looks only. The U panel can hide them all.
    */
   private sceneryImgs: Phaser.GameObjects.Image[] = [];
+  /** Animated scenery (fireflies): the image, its sprite and how fast it flickers; each starts at its own point. */
+  private sceneryAnims: { img: Phaser.GameObjects.Image; sprite: string; frameMs: number; offset: number }[] = [];
   private drawScenery(course: Course): void {
-    this.sceneryImgs = course.scenery.map((s) => {
+    this.sceneryAnims = [];
+    this.sceneryImgs = course.scenery.map((s, k) => {
       const def = SCENERY.get(s.id)!;
       const z = groundAt(course, s.x, s.y)?.h ?? 0;
       const p = project(s.x, s.y, z / STEP_HEIGHT);
-      return this.makeSprite(def.sprite).setPosition(Math.round(p.x), Math.round(p.y)).setDepth(tileDepth(Math.floor(s.x), Math.floor(s.y), 'arrow') + 0.5);
+      const frame = manifest.sprites[this.sprite(def.sprite)]?.frames[0] ?? 'idle';
+      // Lying on the ground, under everything standing; fireflies float above what stands on their tile.
+      const depth = def.floats ? this.standingDepth(s.x, s.y) + 0.2 : tileDepth(Math.floor(s.x), Math.floor(s.y), 'arrow') + 0.5;
+      const img = this.makeSprite(def.sprite, frame).setPosition(Math.round(p.x), Math.round(p.y)).setDepth(depth);
+      if (def.frameMs) this.sceneryAnims.push({ img, sprite: this.sprite(def.sprite), frameMs: def.frameMs, offset: k * 97 });
+      return img;
     });
     this.syncScenery();
   }
   private syncScenery(): void {
     const show = panel?.showScenery ?? true;
     for (const img of this.sceneryImgs) if (img.visible !== show) img.setVisible(show);
+    for (const a of this.sceneryAnims) {
+      const entry = manifest.sprites[a.sprite];
+      if (!entry) continue;
+      const f = entry.frames[Math.floor((this.time.now + a.offset) / a.frameMs) % entry.frames.length]!;
+      a.img.setFrame(frameIndex(entry, f));
+    }
+  }
+
+  /**
+   * Darkness (round 2b sheet section 3): the screen darkens away from the ball.
+   * Looks only; the rule part is the shorter aim guide (a stat).
+   */
+  private darkness: Phaser.GameObjects.Image | null = null;
+  private drawDarkness(): void {
+    if (this.play?.courseMod?.id !== 'darkness') {
+      this.darkness?.setVisible(false);
+      return;
+    }
+    if (!this.darkness || !this.darkness.active) {
+      // A smooth fade from clear round the ball to dark, made once (a display effect, not game art).
+      const key = 'darkness-vignette';
+      if (!this.textures.exists(key)) {
+        const size = 1024;
+        const tex = this.textures.createCanvas(key, size, size)!;
+        const ctx = tex.getContext();
+        const grad = ctx.createRadialGradient(size / 2, size / 2, 30, size / 2, size / 2, 130);
+        grad.addColorStop(0, 'rgba(5,5,16,0)');
+        grad.addColorStop(1, 'rgba(5,5,16,0.85)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+        tex.refresh();
+      }
+      this.darkness = this.add.image(0, 0, key).setDepth(OVERLAY_DEPTH - 40);
+    }
+    const b = ballNow(this.play);
+    const p = project(b.x, b.y, b.z / STEP_HEIGHT);
+    this.darkness.setVisible(true).setPosition(Math.round(p.x), Math.round(p.y));
+  }
+
+  /**
+   * The bot plays (owner, 2026-11-21): while it is on (Y, or the U panel), the
+   * course check's bot takes every shot of the real game from where it is,
+   * so you can watch it. It thinks for a moment first (the game pauses while
+   * it tries shots in its head), and answers the food card by stashing.
+   */
+  private brain: ReturnType<typeof botBrain> | null = null;
+  private botThinkAt = 0;
+  private botTurn(): void {
+    const on = !!panel?.botPlays;
+    if (!on || !this.play || this.watching || this.play.status !== 'playing') {
+      this.brain = null;
+      this.botThinkAt = 0;
+      return;
+    }
+    if (!canShoot(this.play) || this.phase === 'flight' || this.foodCard) return;
+    if (!this.brain) this.brain = botBrain(this.course!, getTuning(), watchBotConfig());
+    // Show "thinking" for a moment (and let that frame draw) before the pause while it tries shots.
+    if (!this.botThinkAt) {
+      this.botThinkAt = this.time.now + 600;
+      this.showMessage('BOT THINKING...', 0x80c8ff);
+      return;
+    }
+    if (this.time.now < this.botThinkAt) return;
+    this.botThinkAt = 0;
+    const pick = this.brain.choose(this.play);
+    if (!pick.chosen) {
+      panel?.setBotPlays(false);
+      this.showMessage(`BOT STOPPED: ${pick.reason.toUpperCase()}`, BAD);
+      return;
+    }
+    this.fire(pick.chosen.cmd);
+  }
+
+  /**
+   * The wind vane (owner, 2026-11-21): an arrow pointing the way the wind
+   * blows on screen, and a gauge of 1 to 3 bars for its strength.
+   */
+  private windVane(dir: Direction, strength: number, x: number, y: number): Phaser.GameObjects.Container {
+    const c = this.add.container(x, y);
+    const g = this.add.graphics();
+    c.add(g);
+    g.fillStyle(UI_BG, 0.85).fillRect(0, 0, 34, 16);
+    g.lineStyle(1, 0x5a6080, 1).strokeRect(0.5, 0.5, 33, 15);
+    // Grid directions on screen: x runs down-right, y down-left (iso.ts).
+    const [gx, gy] = { ne: [0, -1], se: [1, 0], sw: [0, 1], nw: [-1, 0] }[dir] as [number, number];
+    const sx = gx - gy;
+    const sy = (gx + gy) / 2;
+    const len = Math.hypot(sx, sy);
+    const ux = sx / len;
+    const uy = sy / len;
+    const cx = 9;
+    const cy = 8;
+    g.lineStyle(1, 0xf8a040, 1).lineBetween(cx - ux * 6, cy - uy * 6, cx + ux * 6, cy + uy * 6);
+    // Arrow head.
+    const hx = cx + ux * 6;
+    const hy = cy + uy * 6;
+    g.fillStyle(0xf8a040, 1).fillTriangle(hx, hy, hx - ux * 4 - uy * 3, hy - uy * 4 + ux * 3, hx - ux * 4 + uy * 3, hy - uy * 4 - ux * 3);
+    // Strength gauge: 1 to 3 bars, rising.
+    for (let k = 0; k < 3; k++) {
+      const on = k < strength;
+      g.fillStyle(on ? 0xf8a040 : 0x303448, 1).fillRect(20 + k * 4, 12 - (k + 1) * 3, 3, (k + 1) * 3);
+    }
+    return c;
   }
 
   /** The generated course for this seed and budget, if it has been made (kept for restarts). */
@@ -712,6 +857,8 @@ export class CourseScene extends Phaser.Scene {
 
   override update(_time: number, deltaMs: number): void {
     this.syncScenery();
+    this.botTurn();
+    this.drawDarkness();
     const k = this.keys;
     const step = (PAN_SPEED * deltaMs) / 1000;
     // Camera pan moved to I/J/K/L: the arrows and WASD aim (owner, 2026-11-14).
@@ -732,19 +879,51 @@ export class CourseScene extends Phaser.Scene {
     }
     if (!this.message && this.messageQueue.length) {
       const m = this.messageQueue.shift()!;
-      this.showMessage(m.text, m.color);
+      this.showMessage(m.text, m.color, m.ms);
     }
   }
 
   // -------------------------------------------------------------------------
 
+  /** The ground's images, so the ground can be drawn again when it changes (a drawbridge coming down). */
+  private tileImgs: Phaser.GameObjects.Image[] = [];
+
+  /** Round 2b: draw the ground again from the course as it is now. */
+  private redrawGround(): void {
+    this.course = this.play.course;
+    for (const img of this.tileImgs) img.destroy();
+    this.tileImgs = [];
+    this.animated = [];
+    for (const p of buildDrawList(this.play.course)) if (p.kind !== 'exit') this.place(p);
+  }
+
+  /** Round 2b: the visual theme on this course ("day" is the plain sprites). */
+  private theme = 'day';
+  private pickTheme(): string {
+    const chosen = getPanel().theme;
+    if (chosen) return chosen;
+    if (this.runMode && session.run) return themeForRegion(session.run.region, session.run.seed);
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get('theme');
+    if (t && (THEMES as readonly string[]).includes(t)) return t;
+    const n = Number(params.get('region'));
+    return n ? themeForRegion(n) : 'day';
+  }
+
+  /** The sprite to draw for an id in this course's theme. */
+  private sprite(id: string): string {
+    return themedSprite(manifest, id, this.theme === 'day' ? null : this.theme);
+  }
+
   private place(p: Placement): void {
-    const entry = manifest.sprites[p.sprite];
-    if (!entry) throw new Error(`Sprite "${p.sprite}" is not in the asset manifest.`);
+    const id = this.sprite(p.sprite);
+    const entry = manifest.sprites[id];
+    if (!entry) throw new Error(`Sprite "${id}" is not in the asset manifest.`);
     const img = this.add
-      .image(p.x, p.y, p.sprite, frameIndex(entry, p.frame))
+      .image(p.x, p.y, id, frameIndex(entry, p.frame))
       .setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight)
       .setDepth(p.depth);
+    this.tileImgs.push(img);
     // Animated overlays (water shimmer, Milestone 5b) have frames "<shape>~1", "<shape>~2", ...
     if (entry.frames.includes(`${p.frame}~1`)) this.animated.push({ img, frame: p.frame, entry });
   }
@@ -809,6 +988,12 @@ export class CourseScene extends Phaser.Scene {
     });
     kb.on('keydown-B', () => this.isGenerated && this.loadGenerated(this.seed, genBudget!, !this.watching));
     kb.on('keydown-N', () => this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length));
+    // Owner, 2026-11-21: Y lets the bot play this game (and the next ones) until Y again.
+    kb.on('keydown-Y', () => {
+      const p = getPanel();
+      p.setBotPlays(!p.botPlays);
+      this.showMessage(p.botPlays ? 'THE BOT PLAYS. Y: TAKE OVER' : 'YOU PLAY AGAIN', 0x80c8ff);
+    });
     kb.on('keydown-SEVEN', () => this.openRun());
 
     // Drag with the right or middle mouse button to pan. The left button is for shots.
@@ -879,7 +1064,8 @@ export class CourseScene extends Phaser.Scene {
   // -------------------------------------------------------------------------
   // The shot
 
-  private makeSprite(id: string, frame = 'idle'): Phaser.GameObjects.Image {
+  private makeSprite(spriteId: string, frame = 'idle'): Phaser.GameObjects.Image {
+    const id = this.sprite(spriteId);
     const entry = manifest.sprites[id];
     if (!entry) throw new Error(`Sprite "${id}" is not in the asset manifest.`);
     return this.add
@@ -911,8 +1097,9 @@ export class CourseScene extends Phaser.Scene {
         img = this.makeSprite(sprite, opts.frame ?? manifest.sprites[sprite]?.frames[0] ?? 'idle');
         this.objectImgs.set(uid, img);
       }
-      const entry = manifest.sprites[sprite]!;
-      if (img.texture.key !== sprite || opts.frame) img.setTexture(sprite, frameIndex(entry, opts.frame ?? entry.frames[0]!));
+      const themedId = this.sprite(sprite);
+      const entry = manifest.sprites[themedId]!;
+      if (img.texture.key !== themedId || opts.frame) img.setTexture(themedId, frameIndex(entry, opts.frame ?? entry.frames[0]!));
       const p = project(x, y, z / STEP_HEIGHT);
       img
         .setVisible(true)
@@ -926,7 +1113,15 @@ export class CourseScene extends Phaser.Scene {
     const moving = !!play.shot;
 
     for (const b of play.blockers) show(b.uid, b.def.sprite, b.x, b.y, b.z);
-    for (const m of play.movers) show(m.uid, m.def.sprite, m.x, m.y, m.z, m.def.motion.kind === 'gate' ? { frame: m.open ? 'open' : 'closed' } : {});
+    for (const m of play.movers) {
+      const gate = m.def.motion.kind === 'gate' || m.def.motion.kind === 'linked';
+      show(m.uid, m.def.sprite, m.x, m.y, m.z, gate ? { frame: m.open ? 'open' : 'closed' } : {});
+      // A gate across y is the same picture mirrored.
+      if (gate) this.objectImgs.get(m.uid)?.setFlipX(m.shape.kind === 'box' && m.shape.hy > m.shape.hx);
+    }
+    // Round 2b: switches lie flat on their tile; a drawbridge's planks stand up at each tile until it comes down.
+    for (const w of play.switches) show(w.uid, w.def.sprite, w.x, w.y, groundAt(play.course, w.x, w.y)?.h ?? 0, { frame: w.on ? 'on' : 'off', depth: tileDepth(Math.floor(w.x), Math.floor(w.y), 'arrow') });
+    for (const d of play.drawbridges) if (!d.down) show(d.uid, d.def.sprite, d.tx + 0.5, d.ty + 0.5, groundAt(play.course, d.tx + 0.5, d.ty + 0.5)?.h ?? 0);
     for (const b of play.breakables) {
       if (b.broken) continue;
       if (!b.def.shape) show(b.uid, b.def.sprite, b.x, b.y, b.z, { depth: tileDepth(b.tx, b.ty, 'arrow') });
@@ -1256,8 +1451,12 @@ export class CourseScene extends Phaser.Scene {
       }
       if (!stepped) this.prevBall = { ...ballNow(this.play) };
       stepped = true;
-      const steer = this.play.tornado ? (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0) : 0;
-      const input = { ...(this.boostQueued && { boost: true }), ...(this.abilityQueued && { ability: true }), ...(steer && { steer }) };
+      // Tornado and Gyre steer with Left/Right; Drift moves in screen directions with the arrows or W A S D (round 2b).
+      const lr = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
+      const ud = (k.down.isDown || k.s.isDown ? 1 : 0) - (k.up.isDown || k.w.isDown ? 1 : 0);
+      const steer = this.play.tornado || this.play.steering?.kind === 'gyre' ? lr : 0;
+      const drift = this.play.steering?.kind === 'drift' && (lr || ud) ? { x: lr, y: ud } : undefined;
+      const input = { ...(this.boostQueued && { boost: true }), ...(this.abilityQueued && { ability: true }), ...(steer && { steer }), ...(drift && { move: drift }) };
       this.boostQueued = false;
       this.abilityQueued = false;
       const shot = this.play.shot;
@@ -1492,6 +1691,16 @@ export class CourseScene extends Phaser.Scene {
             0xf8d030,
           );
           break;
+        case 'gateSpikes':
+          this.queueMessage('OUCH! THE GATE IS SPIKED ON TOP', BAD);
+          break;
+        case 'switchOn':
+          this.queueMessage('SWITCH ON!', GOOD);
+          break;
+        case 'bridgeDown':
+          this.redrawGround();
+          this.queueMessage('THE BRIDGE COMES DOWN', GOOD);
+          break;
         case 'foodStashed':
           this.queueMessage(`${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()} STASHED IN YOUR BAG`, 0xf8d030);
           break;
@@ -1645,6 +1854,12 @@ export class CourseScene extends Phaser.Scene {
   private foodCard: Phaser.GameObjects.Container | null = null;
   private showFoodPrompt(): void {
     if (this.foodCard) return;
+    // While the bot plays, it stashes what it finds (or eats it when the bag is full).
+    if (panel?.botPlays) {
+      decideFood(this.play, false);
+      this.showEvents(drainLog(this.play));
+      return;
+    }
     const id = this.play.foodPending[0];
     const f = id ? FOODS.get(id) : undefined;
     if (!id || !f) return;
@@ -1783,9 +1998,9 @@ export class CourseScene extends Phaser.Scene {
     }
   }
 
-  private queueMessage(text: string, color: number): void {
+  private queueMessage(text: string, color: number, ms?: number): void {
     if (this.messageQueue.some((m) => m.text === text)) return;
-    this.messageQueue.push({ text, color });
+    this.messageQueue.push({ text, color, ...(ms !== undefined && { ms }) });
   }
 
   /**
@@ -1937,7 +2152,7 @@ export class CourseScene extends Phaser.Scene {
     const wild = this.time.now < this.wildUntil ? Math.floor(this.time.now / 90) % ABILITY_IDS.length : -1;
     const usedUp = p.abilityUsed && !!p.shot;
     const shields = shieldsLeft(p);
-    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, shields, p.blueStars, p.acornSlices].join(',');
+    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, shields, p.blueStars, p.acornSlices, p.courseMod?.id ?? ''].join(',');
     if (key === this.statusKey) return;
     this.statusKey = key;
     this.statusHud?.destroy();
@@ -1980,6 +2195,8 @@ export class CourseScene extends Phaser.Scene {
       c.add(pixelText(this, manifest, starX + 34, barY, `${session.run.blueStars + p.blueStars}`, { color: 0x80c8ff }));
     }
     if (p.acornSlices > 0) c.add(pixelText(this, manifest, 270, 20, `ACORN +${p.acornSlices} SLICES`, { color: STAR_FILL, background: UI_BG }));
+    if (p.courseMod) c.add(pixelText(this, manifest, 270, 28, courseModShort(p.courseMod), { color: 0xf8a040, background: UI_BG }));
+    if (p.courseMod?.id === 'wind' && p.courseMod.dir) c.add(this.windVane(p.courseMod.dir, p.courseMod.strength ?? 2, 270, 36));
     // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
     const slotX = bgW + 4;
     c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -2068,11 +2285,11 @@ export class CourseScene extends Phaser.Scene {
     return { plan: '1 PULL OR AIM KEYS', pull: '1 PULL TO PLAN', set: '2 HOLD TO CHARGE', charge: '2 RELEASE!', flight: '-' }[this.phase];
   }
 
-  private showMessage(text: string, color: number): void {
+  private showMessage(text: string, color: number, ms = 1400): void {
     this.message?.destroy();
     this.message = pixelText(this, manifest, 0, 46, text, { color, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
     this.message.x = Math.round((VIEW_WIDTH - this.message.width) / 2);
-    this.messageUntil = this.time.now + 1400;
+    this.messageUntil = this.time.now + ms;
   }
 
   // -------------------------------------------------------------------------
@@ -2095,8 +2312,8 @@ export class CourseScene extends Phaser.Scene {
       'MOUSE: PULL BACK TO PLAN, HOLD TO CHARGE  KEYS: ARROWS/WASD AIM+POWER, HOLD SPACE TO CHARGE',
       'T: GROUND/LOFT  Z/X: SPIN  Q/E: CURVE  SPACE IN FLIGHT: BOOST  F: ABILITY  ESC: RE-PLAN',
       this.runMode
-        ? 'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  O: OVERVIEW  G: DEBUG  U: TUNING AND TEST PANEL  H: HELP'
-        : 'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  O: OVERVIEW  1-6/N: COURSE  7: RUN  R: RESTART  G: DEBUG  U: TUNING  H: HELP',
+        ? 'IJKL: PAN  C: CENTRE  O: OVERVIEW  G: DEBUG  U: TEST PANEL  Y: BOT PLAYS  H: HELP'
+        : 'IJKL: PAN  C: CENTRE  O: OVERVIEW  N: COURSE  7: RUN  R: RESTART  G: DEBUG  U: PANEL  Y: BOT',
       ...(!this.runMode && TEST_COURSES[this.courseIndex]?.id === GENERATED_ID ? ['GENERATED: BRACKET KEYS: BUDGET -/+2  V: SEED VIEWER  B: WATCH THE BOT  ENTER AFTER A WIN: NEXT'] : []),
     ];
     this.helpHud = lines.map((l, i) =>

@@ -23,6 +23,18 @@ export interface Manifest {
   readonly sprites: Readonly<Record<string, SpriteEntry>>;
   /** Milestone 8: colour tints by name (an enemy's element: fire, ice, shock), as "#rrggbb". */
   readonly tints?: Readonly<Record<string, string>>;
+  /**
+   * Round 2b: visual themes. A sprite "<id>@<theme>" is that sprite in the
+   * theme; without one, "<id>" is used. Each theme also has a background colour.
+   */
+  readonly themes?: Readonly<Record<string, { readonly sky: string }>>;
+}
+
+/** The sprite id to draw for `id` in `theme`: its themed version if the manifest has one. */
+export function themedSprite(manifest: Manifest, id: string, theme: string | null): string {
+  if (!theme) return id;
+  const t = `${id}@${theme}`;
+  return manifest.sprites[t] ? t : id;
 }
 
 export function frameIndex(entry: SpriteEntry, frame: string): number {

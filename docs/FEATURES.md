@@ -230,7 +230,7 @@ id, name, sprite id, size in tiles, whether it blocks the ball, contact effect, 
 | Moving obstacles (not enemies; cannot be defeated) | Sliding block on a path, gate that opens and closes on a timer | 4 |
 | Destructibles | Crate that drops a pickup; secured crate that takes 2 hits (owner, 2026-11-14); cracked tile that breaks under the Anchor ability | 4 |
 | Guard rails (owner, 2026-11-15) | A thin, low, mostly see-through rail through the middle of a tile (straight, corner and 45° pieces) | 5b |
-| Linked objects | Switch that lowers a gate or raises a bridge | 8 |
+| Linked objects | Switch that lowers a gate or raises a bridge. **Built in round 2b:** a switch (pressed by rolling or landing on it; stays on), a linked gate across a passage, and a drawbridge on a moat; regions 2 and 3 only | 8 |
 
 Moving obstacles run in real time like patrollers, including while the player aims.
 
@@ -304,7 +304,7 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 
 **Owner, 2026-11-14:** abilities normally come **only** from defeating their carrier enemy. The one exception is the Wild pickup (section 13), a small chance from secured crates. The Tornado can be nudged left and right.
 
-**Starter set, Milestone 4:** Anchor, Burner, Hop, and Tornado (added by the owner, 2026-11-14).
+**Starter set, Milestone 4:** Anchor, Burner, Hop, and Tornado (added by the owner, 2026-11-14). **Milestone 8:** Frost and Static (round 1); **Burr, Kite, Gyre and Drift (round 2b, owner 2026-11-21: defaults)**: Burr sticks to the first thing it touches for 3 s; Kite glides (fall at most 1.5 tiles/s, 3 s, air only); Gyre steers ±150°/s for 3 s; Drift floats 1.5 s, moved in screen directions at 4 tiles/s. Their carriers: Burrgrub, Glidegrub, Gyregrub, Driftgrub. All ten grubs can appear in every region. Numbers in `docs/plans/milestone-8-round-2b.md` section 1.
 
 **Owner, 2026-11-14:** Hop lifts the ball 1.1 tiles. **Tornado:** the ball becomes a small whirlwind for a brief time: fast and chaotic, hard to control. While it is active the ball cannot fall off an edge but can go out over one; if it runs out over a drop, the ball falls. Spiralling into an enemy deals 1 damage. Numbers in `docs/plans/milestone-4.md` section 4.
 
@@ -487,7 +487,8 @@ Build in Milestone 3.
 **Default.**
 
 - **Regions:** three, each with its own biome, enemy pool, hazard mix and boss. ~~The run ends after the third boss. Reaching the end unlocks an endless mode.~~ **Decided (owner, 2026-11-18): after the third boss the run goes on into endless mode.** Each new region scales the same way as the first three (size, threat and toughness as separate dials) and its boss is a seeded pick from the boss randomizer (all bosses, never the same as the last region). **Owner, 2026-11-18: course size caps at region 3's size; threat, toughness, boss health and everything else keep growing each region.** Built in Milestone 8 round 1; numbers in `docs/plans/milestone-8.md` section 10a.
-- **Course modifiers** (Milestone 8, optional): a course may roll one rule change, such as wind, low gravity, or darkness that shortens the guide. Each is a set of modifiers and has a budget cost.
+- **Course modifiers** (Milestone 8, optional): a course may roll one rule change, such as wind, low gravity, or darkness that shortens the guide. Each is a set of modifiers and has a budget cost. **Built in round 2b (owner, 2026-11-21):** wind (cost 2), low gravity (60%, in the air; cost 1), darkness (half guide; cost 2); 0% of courses in region 1, 20% in region 2, 30% in region 3 and endless; never on boss fights.
+- **Biomes (round 2b):** Meadow (region 1, unchanged), Bog (region 2), Thornwood (region 3); endless regions take them in turn.
 - **Unlocks:** new content enters the pool through blue star unlocks (section 10) and by beating each boss for the first time.
 
 ---
