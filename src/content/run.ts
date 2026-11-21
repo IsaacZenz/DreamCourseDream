@@ -105,8 +105,9 @@ export interface RegionDef {
 
 export const REGIONS: readonly RegionDef[] = [
   { areas: { start: 2, every: 2, max: 5 }, areaSize: [8, 14], threat: { start: 8, perNode: 2, cap: 30 }, maxEnemies: 10, toughness: [], bosses: ['stagwarden'], oddsColumn: 0, par: [] },
-  // Owner, 2026-11-18 (option A): 3 to 6 areas and threat capped at 36 (was 4 to 7 and 45), so courses can be made in time.
-  { areas: { start: 3, every: 2, max: 6 }, areaSize: [9, 15], threat: { start: 18, perNode: 3, cap: 36 }, maxEnemies: 14, toughness: [{ stat: 'health', amount: 1 }], bosses: ['gloamhorn'], oddsColumn: 2,
+  // Owner, 2026-11-18 (option A): threat capped at 36 (was 45), so courses can be made in time.
+  // Owner, 2026-11-21: smaller steps up from region one: 3 to 5 areas, +1 every 3 nodes, areas 8 to 15 tiles (was 3 to 6, every 2, 9 to 15).
+  { areas: { start: 3, every: 3, max: 5 }, areaSize: [8, 15], threat: { start: 18, perNode: 3, cap: 36 }, maxEnemies: 14, toughness: [{ stat: 'health', amount: 1 }], bosses: ['gloamhorn'], oddsColumn: 2,
     par: [
       { stat: 'maxShots', amount: 1 },
       { stat: 'hitDamage', amount: 1 },
@@ -114,9 +115,10 @@ export const REGIONS: readonly RegionDef[] = [
     ],
   },
   {
-    // Owner, 2026-11-19 (round 1, option A): 4 to 7 areas (was 5 to 8), so late courses can be made in time.
-    areas: { start: 4, every: 2, max: 7 },
-    areaSize: [10, 16],
+    // Owner, 2026-11-21: smaller steps up from region one: 4 to 6 areas, +1 every 3 nodes, areas 9 to 15 tiles
+    // (was 4 to 7, every 2, 10 to 16; before 2026-11-19, 5 to 8). Endless regions keep this size.
+    areas: { start: 4, every: 3, max: 6 },
+    areaSize: [9, 15],
     threat: { start: 28, perNode: 3, cap: 60 },
     maxEnemies: 18,
     toughness: [

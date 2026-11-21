@@ -199,14 +199,17 @@ describe('a safety limit on speed (found while building Milestone 8)', () => {
 });
 
 describe('region three course check (owner, 2026-11-19: options A and C)', () => {
-  it('region three has 4 to 7 areas, and a hard course never goes past the maximum', async () => {
+  it('region three has 4 to 6 areas (owner, 2026-11-21), and a hard course never goes past the maximum', async () => {
     const { sizeFor } = await import('../src/sim/run');
     const run = createRun('A', generateRunMap('A'));
     run.region = 3;
     expect(sizeFor(run, 'course').areas).toEqual([4, 4]);
+    run.counted = 3;
+    expect(sizeFor(run, 'course').areas).toEqual([5, 5]);
     run.counted = 8;
-    expect(sizeFor(run, 'course').areas).toEqual([7, 7]);
-    expect(sizeFor(run, 'hard').areas).toEqual([7, 7]);
+    expect(sizeFor(run, 'course').areas).toEqual([6, 6]);
+    expect(sizeFor(run, 'hard').areas).toEqual([6, 6]);
+    expect(sizeFor(run, 'course').areaSize).toEqual([9, 15]);
   });
   it("the bot plays region three with the best gear and the extra shot and health boosts", async () => {
     const { botLoadoutOf } = await import('../src/sim/run');

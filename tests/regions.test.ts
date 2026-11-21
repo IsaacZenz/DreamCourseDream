@@ -69,8 +69,10 @@ describe('regions', () => {
     expect(budgetFor(run, 'course')).toBe(18);
     run.counted = 2;
     expect(budgetFor(run, 'course')).toBe(24);
+    expect(sizeFor(run, 'course').areas).toEqual([3, 3]);
+    run.counted = 3;
     expect(sizeFor(run, 'course').areas).toEqual([4, 4]);
-    expect(sizeFor(run, 'course').areaSize).toEqual([9, 15]);
+    expect(sizeFor(run, 'course').areaSize).toEqual([8, 15]);
     expect(enemyModifiersFor(run)).toEqual([{ stat: 'health', op: 'add', amount: 1, source: { kind: 'region', id: 'region2' }, duration: { kind: 'forever' } }]);
     beatBoss(run);
     // Milestone 8: region two's boss no longer ends the run; region three follows.
@@ -137,12 +139,13 @@ describe('courses made ahead (owner, 2026-11-18, option B)', () => {
     expect(upcomingJobs(run)[0]!.courseSeed).toBe(`${one}-2`);
   });
 
-  it('owner option A: region two is 3 to 6 areas, threat capped at 36', () => {
+  it('region two is 3 to 5 areas (owner, 2026-11-21), threat capped at 36', () => {
     const run = createRun('R6', generateRunMap('R6'));
     run.region = 2;
     expect(sizeFor(run, 'course').areas).toEqual([3, 3]);
     run.counted = 20;
-    expect(sizeFor(run, 'course').areas).toEqual([6, 6]);
+    expect(sizeFor(run, 'course').areas).toEqual([5, 5]);
+    expect(sizeFor(run, 'hard').areas).toEqual([5, 5]);
     expect(budgetFor(run, 'course')).toBe(36);
   });
 });
