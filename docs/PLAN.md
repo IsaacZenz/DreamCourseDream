@@ -181,6 +181,15 @@ After playing the first generator, the owner asked for larger, more open, much m
 
 **Done when:** three regions and a final boss are playable and the owner judges the difficulty curve fair.
 
+## Milestone 8b — Walkable towns and crossroads (owner, 2026-11-21)
+
+- [ ] **Plan gate:** design sheet `docs/plans/milestone-8b.md` (controls, camera zoom, layouts, what you can walk into, the flat Burrow and shop screens, how the crossroads replaces the map screen). Owner signs it off before building.
+- [ ] Walk the armadillo around a zoomed-in isometric town and crossroads with W A S D or the arrow keys
+- [ ] The crossroads shows the next 1 to 3 courses as paths to walk into (replaces picking on the map screen; the whole map stays as a testing view)
+- [ ] The Burrow and the shop open as flat 2D illustrated screens
+
+**Done when:** the owner can play a run moving between courses only by walking.
+
 ## Milestone 9 — Skin, sound and sharing
 
 - [ ] Theme, character and title chosen with the owner
