@@ -164,6 +164,8 @@ After playing the first generator, the owner asked for larger, more open, much m
 ## Milestone 8 — Content and balance
 
 - [ ] **Plan gate:** design sheet for every new ability, enemy, trait, status, boss, linked object, biome, gear item and character in this milestone. (Round 1 sheet `docs/plans/milestone-8.md` signed off 2026-11-19; rounds 2 and 3 to come.) Owner signs it off before any of them is built. This milestone is large; it may be planned and built in several rounds, each with its own sheet.
+- [ ] Owner, 2026-11-21 (round 2): a food shop and a gear shop in each town; a 3-slot bag for consumables, one eaten before a course, none during (FEATURES.md section 11); more foods to choose from in the sheet
+- [ ] Owner, 2026-11-21 (round 2): a detail dial per region (terrain features and scenery per 100 tiles, region one unchanged); bridges over water, sand or spikes; dead trees; more spikes in region three
 - [ ] Remaining abilities from DESIGN.md section 9 (round 1 built Frost and Static; Burr, Kite, Gyre and Drift are round 2)
 - [x] Enemy tiers 3 and 4, traits, elements, weak spots, squad themes, enemy gear and its drop chance (round 1)
 - [x] Remaining statuses: Poisoned, Burning, Chilled (round 1)
@@ -186,7 +188,9 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [ ] **Plan gate:** design sheet `docs/plans/milestone-8b.md` (controls, camera zoom, layouts, what you can walk into, the flat Burrow and shop screens, how the crossroads replaces the map screen). Owner signs it off before building.
 - [ ] Walk the armadillo around a zoomed-in isometric town and crossroads with W A S D or the arrow keys
 - [ ] The crossroads shows the next 1 to 3 courses as paths to walk into (replaces picking on the map screen; the whole map stays as a testing view)
-- [ ] The Burrow and the shop open as flat 2D illustrated screens
+- [ ] The Burrow, the food shop and the gear shop open as flat 2D illustrated screens
+- [ ] Owner, 2026-11-21: first version also has the boss gate (walk up to it; the introduction card plays) and a practice green in town. Later: the walkable hub between runs, a rare hidden path, townsfolk with tips
+- [ ] Order (owner, 2026-11-21): after Milestone 8 round 2, so the towns can use round 2's props and scenery
 
 **Done when:** the owner can play a run moving between courses only by walking.
 

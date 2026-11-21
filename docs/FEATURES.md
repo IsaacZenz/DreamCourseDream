@@ -407,7 +407,15 @@ Cost rises with each level. **Owner, 2026-11-17:** Vitality and Stamina 5, 8, 12
 
 Build in Milestone 6.
 
-**Decided (owner, 2026-11-19), for the Milestone 9 skin:** the shop is a **food stand** with a **shopkeeper**, who animates when you buy something (and, Default, when you reroll or cannot afford something). Display only; the shop's rules do not change. The shopkeeper's species is chosen with the theme in Milestone 9 (Default: a friendly animal, not an insect, since the insects are the villains).
+**Decided (owner, 2026-11-21): two shops and the bag.** Each town has a **food shop** (consumables: food that lasts one course) and a **gear shop** (gear). The player carries a **bag with 3 slots** for consumables. Before a course starts the player may **eat one** from the bag; **nothing can be eaten during a course**. This replaces the single pocket acorn that was used automatically. Defaults until the design sheet says otherwise:
+- One item eaten per course, at most. Eating is optional; unused food stays in the bag for later courses.
+- The food shop also sells the Heal service (it is food); the gear shop sells gear, stat boosts and Delay the Boss. Each shop has its own stock and its own reroll price.
+- A consumable found on a course (an acorn from a crate) goes into the bag instead of working at once. If the bag is full, the player chooses: swap it with one in the bag, or leave it.
+- The bag is part of the run: lost on death, kept when the run is saved in a town. The Burrow does not store food.
+- The food shop needs more than three acorns to be worth visiting; new foods (each a one-course modifier, FEATURES.md section 1) are listed in the design sheet for the owner to choose from.
+Planned in Milestone 8 round 2 (rules) and 8b (walking up to each shop).
+
+**Decided (owner, 2026-11-19), for the Milestone 9 skin:** the shop is a **food stand** with a **shopkeeper**, who animates when you buy something (and, Default, when you reroll or cannot afford something). Display only; the shop's rules do not change. The shopkeeper's species is chosen with the theme in Milestone 9 (Default: a friendly animal, not an insect, since the insects are the villains). **Owner, 2026-11-21:** with two shops, the food stand is the food shop; the gear shop gets its own look and shopkeeper (Default: a tinker's workshop), chosen in Milestone 9.
 
 ---
 
@@ -447,7 +455,7 @@ For the ball, one turn is one shot. Build the system and Stunned in Milestone 4;
 | Heart | +1 health | Crates, rare enemy drop |
 | Shot orb | +1 shot, up to the maximum | Crates, placed on courses |
 | Wild | A random ability (not the one held), replacing the current one | Small chance from secured crates, 10% times drop luck (owner, 2026-11-14) |
-| Acorn (consumable; owner, 2026-11-17) | Extra filled slices on success wheels for one course: Lucky +2, Golden +3, Star +5 | Crates and secured crates (rarer acorns rarer), and shops |
+| Acorn (consumable; owner, 2026-11-17) | Extra filled slices on success wheels for one course: Lucky +2, Golden +3, Star +5. **Owner, 2026-11-21:** goes into the bag and is eaten before a course (section 11) | Crates and secured crates (rarer acorns rarer), and the food shop |
 
 Build in Milestone 3.
 
