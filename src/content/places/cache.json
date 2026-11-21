@@ -1,0 +1,132 @@
+{
+ "kind": "cache",
+ "name": "Cache clearing",
+ "ground": {
+  "format": 3,
+  "name": "cache",
+  "legend": {
+   "g": "grass",
+   "p": "path",
+   "r": "rough",
+   "w": "water",
+   "s": "sand",
+   "b": "bridge",
+   "x": "spikes"
+  },
+  "tiles": [
+   "g2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "g2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "g2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "p2 p2 p2 p2 p2 g2 g2 g2 g2",
+   "p2 p2 p2 p2 p2 p2 g2 g2 g2",
+   "g2 g2 g2 g2 g2 p2 p2 g2 g2",
+   "g2 g2 g2 g2 g2 g2 p2 p2 g2",
+   "g2 g2 g2 g2 g2 g2 g2 p2 p2",
+   "g2 g2 g2 g2 g2 g2 g2 g2 p2"
+  ],
+  "start": [
+   7,
+   7
+  ],
+  "exit": [
+   0,
+   8
+  ],
+  "quota": 0,
+  "objects": [
+   {
+    "id": "rock",
+    "at": [
+     1,
+     0
+    ]
+   },
+   {
+    "id": "stump",
+    "at": [
+     7,
+     1
+    ]
+   },
+   {
+    "id": "rock",
+    "at": [
+     1,
+     7
+    ]
+   },
+   {
+    "id": "stump",
+    "at": [
+     8,
+     4
+    ]
+   }
+  ],
+  "rails": [],
+  "scenery": [
+   [
+    "flowers",
+    2.5,
+    1.5
+   ],
+   [
+    "tuft",
+    6.5,
+    2.5
+   ],
+   [
+    "flowers",
+    2.4,
+    6.5
+   ],
+   [
+    "tuft",
+    5.5,
+    7.6
+   ],
+   [
+    "fireflies",
+    3.5,
+    1.5
+   ]
+  ]
+ },
+ "props": [
+  {
+   "id": "chest",
+   "at": [
+    4.5,
+    4.5
+   ]
+  }
+ ],
+ "triggers": [
+  {
+   "kind": "chest",
+   "at": [
+    3,
+    3
+   ],
+   "size": [
+    3,
+    3
+   ],
+   "back": [
+    6.3,
+    6.3
+   ]
+  },
+  {
+   "kind": "back",
+   "at": [
+    0,
+    3
+   ],
+   "size": [
+    1,
+    2
+   ]
+  }
+ ]
+}

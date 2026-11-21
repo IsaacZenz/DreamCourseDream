@@ -87,6 +87,8 @@ const defs: readonly SurfaceDef[] = [
   { id: 'spikes', name: 'Spikes', tileSprite: 'tile-spikes', faceSprite: 'face-metal', canHoldBall: false, effect: 'damage', cost: 2 },
   // Round 2a (owner, 2026-11-21): plank bridges across moats. Rolls like grass.
   { id: 'bridge', name: 'Bridge', tileSprite: 'tile-bridge', faceSprite: 'face-wood', canHoldBall: true },
+  // Milestone 8b (owner, 2026-11-21): dirt paths in towns and at crossroads. Rolls like grass; courses do not use it.
+  { id: 'path', name: 'Dirt path', tileSprite: 'tile-path', faceSprite: 'face-earth', canHoldBall: true },
   { id: 'warp', name: 'Warp', tileSprite: 'tile-warp', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsLink: true, effect: 'warp' },
 ];
 

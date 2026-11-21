@@ -1,0 +1,313 @@
+{
+ "kind": "town",
+ "name": "Bog town",
+ "ground": {
+  "format": 3,
+  "name": "bog town",
+  "legend": {
+   "g": "grass",
+   "p": "path",
+   "r": "rough",
+   "w": "water",
+   "s": "sand",
+   "b": "bridge",
+   "x": "spikes"
+  },
+  "tiles": [
+   "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 w2 w2 w2 w2",
+   "g2 r2 r2 g2 g2 g2 g2 g2 r2 g2 g2 g2 g2 w2 w2 w2",
+   "g2 r2 g2 g2 g2 p2 g2 g2 r2 g2 g2 g2 g2 g2 w2 w2",
+   "g2 g2 g2 g2 g2 p2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "g2 g2 g2 g2 g2 g2 g2 g2 g2 p2 p2 g2 g2 g2 g2 g2",
+   "p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 g2 g2",
+   "p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 p2 g2 g2",
+   "g2 g2 g2 g2 g2 p2 p2 p2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "g2 r2 r2 g2 g2 p2 p2 p2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "g2 r2 g2 g2 g2 g2 p2 p2 g2 g2 g2 g2 g2 g2 g2 r2",
+   "g2 g2 g2 g2 g2 g2 p2 p2 g2 g2 g2 g2 g2 g2 g2 r2",
+   "g2 g2 g2 r2 r2 g2 p2 p2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "w2 g2 g2 g2 g2 g2 p2 p2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "w2 w2 w2 g2 g2 g2 p2 p2 g2 g2 g2 g2 g2 g2 g2 g2"
+  ],
+  "start": [
+   7,
+   12
+  ],
+  "exit": [
+   1,
+   6
+  ],
+  "quota": 0,
+  "objects": [
+   {
+    "id": "dead-tree",
+    "at": [
+     1,
+     3
+    ]
+   },
+   {
+    "id": "stump",
+    "at": [
+     8,
+     0
+    ]
+   },
+   {
+    "id": "dead-tree",
+    "at": [
+     12,
+     3
+    ]
+   },
+   {
+    "id": "stump",
+    "at": [
+     2,
+     11
+    ]
+   },
+   {
+    "id": "rock",
+    "at": [
+     15,
+     7
+    ]
+   }
+  ],
+  "rails": [
+   [
+    [
+     9,
+     9
+    ],
+    [
+     9,
+     8
+    ],
+    [
+     14,
+     8
+    ],
+    [
+     14,
+     13
+    ],
+    [
+     9,
+     13
+    ],
+    [
+     9,
+     11
+    ]
+   ]
+  ],
+  "scenery": [
+   [
+    "mushrooms",
+    1.5,
+    1.6
+   ],
+   [
+    "leaves",
+    7.6,
+    2.4
+   ],
+   [
+    "mushrooms",
+    2.3,
+    8.5
+   ],
+   [
+    "tuft",
+    0.6,
+    10.4
+   ],
+   [
+    "mushrooms",
+    4.3,
+    11.5
+   ],
+   [
+    "fireflies",
+    11.5,
+    2.5
+   ],
+   [
+    "fireflies",
+    2.5,
+    12
+   ],
+   [
+    "leaves",
+    15.4,
+    11.5
+   ],
+   [
+    "tuft",
+    13.4,
+    4.4
+   ]
+  ]
+ },
+ "props": [
+  {
+   "id": "food-hut",
+   "at": [
+    4,
+    3
+   ]
+  },
+  {
+   "id": "gear-shop",
+   "at": [
+    4,
+    8
+   ]
+  },
+  {
+   "id": "burrow",
+   "at": [
+    10,
+    3
+   ]
+  },
+  {
+   "id": "signpost",
+   "at": [
+    8.4,
+    12.4
+   ]
+  },
+  {
+   "id": "signpost",
+   "at": [
+    0.6,
+    4.3
+   ]
+  },
+  {
+   "id": "lamp",
+   "at": [
+    5.6,
+    4.6
+   ]
+  },
+  {
+   "id": "lamp",
+   "at": [
+    8.4,
+    4.6
+   ]
+  },
+  {
+   "id": "lamp",
+   "at": [
+    8.4,
+    7.4
+   ]
+  },
+  {
+   "id": "barrel",
+   "at": [
+    2.4,
+    4.4
+   ]
+  },
+  {
+   "id": "barrel",
+   "at": [
+    2.5,
+    9.6
+   ]
+  },
+  {
+   "id": "tee-mat",
+   "at": [
+    11.5,
+    10.5
+   ]
+  },
+  {
+   "id": "practice-flag",
+   "at": [
+    13.3,
+    9.6
+   ]
+  }
+ ],
+ "triggers": [
+  {
+   "kind": "food",
+   "at": [
+    5,
+    2
+   ],
+   "size": [
+    1,
+    2
+   ],
+   "back": [
+    6.4,
+    3
+   ]
+  },
+  {
+   "kind": "gear",
+   "at": [
+    5,
+    7
+   ],
+   "size": [
+    1,
+    2
+   ],
+   "back": [
+    6.4,
+    8
+   ]
+  },
+  {
+   "kind": "burrow",
+   "at": [
+    9,
+    4
+   ],
+   "size": [
+    2,
+    1
+   ],
+   "back": [
+    10,
+    5.7
+   ]
+  },
+  {
+   "kind": "tee",
+   "at": [
+    11,
+    10
+   ],
+   "back": [
+    8.4,
+    10.5
+   ]
+  },
+  {
+   "kind": "exit",
+   "at": [
+    0,
+    5
+   ],
+   "size": [
+    1,
+    2
+   ],
+   "back": [
+    1.8,
+    6
+   ]
+  }
+ ]
+}

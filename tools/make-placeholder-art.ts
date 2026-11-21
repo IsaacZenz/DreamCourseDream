@@ -118,6 +118,8 @@ const LOOKS: Record<string, SurfaceLook> = {
   spikes: { base: '#6e6670' },
   warp: { base: '#7a3cc8' },
   // Round 2a: plank bridge. Planks run one way, with dark gaps between them.
+  // Milestone 8b: a trodden dirt path with small stones.
+  path: { base: '#b08a58', pattern: (x, y) => (hash(x, y, 9) < 0.07 ? -1 : hash(x, y, 10) < 0.04 ? 1 : 0) },
   bridge: { base: '#a87840', pattern: (x, y) => ((x + 2 * y) % 8 === 0 ? -2 : hash(x, y, 7) < 0.1 ? -1 : 0) },
 };
 

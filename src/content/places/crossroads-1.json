@@ -1,0 +1,155 @@
+{
+ "kind": "crossroads",
+ "name": "Crossroads (1 path)",
+ "ground": {
+  "format": 3,
+  "name": "crossroads",
+  "legend": {
+   "g": "grass",
+   "p": "path",
+   "r": "rough",
+   "w": "water",
+   "s": "sand",
+   "b": "bridge",
+   "x": "spikes"
+  },
+  "tiles": [
+   "p2 p2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "p2 p2 p2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "g2 p2 p2 p2 g2 g2 g2 g2 g2 g2 g2 g2",
+   "g2 g2 p2 p2 p2 g2 g2 g2 g2 g2 g2 g2",
+   "g2 g2 g2 p2 p2 p2 p2 g2 g2 g2 g2 g2",
+   "g2 g2 g2 g2 p2 p2 p2 p2 g2 g2 g2 g2",
+   "g2 g2 g2 g2 p2 p2 p2 p2 g2 g2 g2 g2",
+   "g2 g2 g2 g2 g2 p2 p2 p2 p2 g2 g2 g2",
+   "g2 g2 g2 g2 g2 g2 g2 p2 p2 p2 g2 g2",
+   "g2 g2 g2 g2 g2 g2 g2 g2 p2 p2 p2 g2",
+   "g2 g2 g2 g2 g2 g2 g2 g2 g2 p2 p2 p2",
+   "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 p2 p2"
+  ],
+  "start": [
+   9,
+   9
+  ],
+  "exit": [
+   11,
+   0
+  ],
+  "quota": 0,
+  "objects": [],
+  "rails": [],
+  "scenery": []
+ },
+ "props": [],
+ "triggers": [],
+ "slots": [
+  {
+   "end": {
+    "kind": "path",
+    "at": [
+     0,
+     5
+    ],
+    "size": [
+     1,
+     2
+    ]
+   },
+   "gate": {
+    "kind": "gate",
+    "at": [
+     2,
+     5
+    ],
+    "size": [
+     1,
+     2
+    ],
+    "back": [
+     4.2,
+     6
+    ]
+   },
+   "gateAt": [
+    1,
+    6
+   ],
+   "sign": [
+    3.5,
+    7.5
+   ]
+  },
+  {
+   "end": {
+    "kind": "path",
+    "at": [
+     0,
+     0
+    ],
+    "size": [
+     2,
+     2
+    ]
+   },
+   "gate": {
+    "kind": "gate",
+    "at": [
+     1,
+     1
+    ],
+    "size": [
+     2,
+     2
+    ],
+    "back": [
+     4,
+     4
+    ]
+   },
+   "gateAt": [
+    1,
+    1
+   ],
+   "sign": [
+    4.6,
+    2.6
+   ]
+  },
+  {
+   "end": {
+    "kind": "path",
+    "at": [
+     5,
+     0
+    ],
+    "size": [
+     2,
+     1
+    ]
+   },
+   "gate": {
+    "kind": "gate",
+    "at": [
+     5,
+     2
+    ],
+    "size": [
+     2,
+     1
+    ],
+    "back": [
+     6,
+     4.2
+    ]
+   },
+   "gateAt": [
+    6,
+    1
+   ],
+   "sign": [
+    7.5,
+    3.5
+   ]
+  }
+ ]
+}
