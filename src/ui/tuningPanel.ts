@@ -91,6 +91,13 @@ export class TuningPanel {
   /** Round 2b: a theme to show every course in ('' = the region's own), and what to do when it changes. */
   theme = '';
   onTheme: (() => void) | null = null;
+  /** Owner, 2026-11-21: the course check's bot plays the real game while this is on (Y on a course), so you can watch it. */
+  botPlays = false;
+  private botButton: HTMLButtonElement | null = null;
+  setBotPlays(on: boolean): void {
+    this.botPlays = on;
+    if (this.botButton) this.botButton.textContent = on ? 'Bot plays: ON (Y)' : 'Bot plays: off (Y)';
+  }
 
   get visible(): boolean {
     return this.root.style.display !== 'none';
@@ -136,7 +143,9 @@ export class TuningPanel {
       theme.blur();
       this.onTheme?.();
     });
-    head.append(copy, reset, scenery, theme);
+    const bot = this.button('Bot plays: off (Y)', () => this.setBotPlays(!this.botPlays));
+    this.botButton = bot;
+    head.append(copy, reset, scenery, theme, bot);
     this.root.appendChild(head);
     this.benchBox = document.createElement('div');
     this.benchBox.className = 'bench';

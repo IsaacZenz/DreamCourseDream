@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GENERATED_ID, TEST_COURSES } from '../content/courses';
 import { GEN } from '../content/gen';
 import { generateCourse, type GenOptions, type GenResult } from '../gen/validate';
-import type { BotMove } from '../gen/bot';
+import { botBrain, watchBotConfig, type BotMove } from '../gen/bot';
 import { Rng } from '../sim/rng';
 import { SeedViewer } from '../ui/seedViewer';
 import { BENCH_ID, benchChoices, benchCourse } from '../content/courses/testBench';
@@ -536,6 +536,40 @@ export class CourseScene extends Phaser.Scene {
     this.darkness.setVisible(true).setPosition(Math.round(p.x), Math.round(p.y));
   }
 
+  /**
+   * The bot plays (owner, 2026-11-21): while it is on (Y, or the U panel), the
+   * course check's bot takes every shot of the real game from where it is,
+   * so you can watch it. It thinks for a moment first (the game pauses while
+   * it tries shots in its head), and answers the food card by stashing.
+   */
+  private brain: ReturnType<typeof botBrain> | null = null;
+  private botThinkAt = 0;
+  private botTurn(): void {
+    const on = !!panel?.botPlays;
+    if (!on || !this.play || this.watching || this.play.status !== 'playing') {
+      this.brain = null;
+      this.botThinkAt = 0;
+      return;
+    }
+    if (!canShoot(this.play) || this.phase === 'flight' || this.foodCard) return;
+    if (!this.brain) this.brain = botBrain(this.course!, getTuning(), watchBotConfig());
+    // Show "thinking" for a moment (and let that frame draw) before the pause while it tries shots.
+    if (!this.botThinkAt) {
+      this.botThinkAt = this.time.now + 600;
+      this.showMessage('BOT THINKING...', 0x80c8ff);
+      return;
+    }
+    if (this.time.now < this.botThinkAt) return;
+    this.botThinkAt = 0;
+    const pick = this.brain.choose(this.play);
+    if (!pick.chosen) {
+      panel?.setBotPlays(false);
+      this.showMessage(`BOT STOPPED: ${pick.reason.toUpperCase()}`, BAD);
+      return;
+    }
+    this.fire(pick.chosen.cmd);
+  }
+
   /** The generated course for this seed and budget, if it has been made (kept for restarts). */
   private cachedGen(): { result: GenResult; ms: number } | null {
     return lastGen && lastGen.result.seed === this.seed && lastGen.result.budget === genBudget ? lastGen : null;
@@ -775,6 +809,7 @@ export class CourseScene extends Phaser.Scene {
 
   override update(_time: number, deltaMs: number): void {
     this.syncScenery();
+    this.botTurn();
     this.drawDarkness();
     const k = this.keys;
     const step = (PAN_SPEED * deltaMs) / 1000;
@@ -905,6 +940,12 @@ export class CourseScene extends Phaser.Scene {
     });
     kb.on('keydown-B', () => this.isGenerated && this.loadGenerated(this.seed, genBudget!, !this.watching));
     kb.on('keydown-N', () => this.switchCourse((this.courseIndex + 1) % TEST_COURSES.length));
+    // Owner, 2026-11-21: Y lets the bot play this game (and the next ones) until Y again.
+    kb.on('keydown-Y', () => {
+      const p = getPanel();
+      p.setBotPlays(!p.botPlays);
+      this.showMessage(p.botPlays ? 'THE BOT PLAYS. Y: TAKE OVER' : 'YOU PLAY AGAIN', 0x80c8ff);
+    });
     kb.on('keydown-SEVEN', () => this.openRun());
 
     // Drag with the right or middle mouse button to pan. The left button is for shots.
@@ -1762,6 +1803,12 @@ export class CourseScene extends Phaser.Scene {
   private foodCard: Phaser.GameObjects.Container | null = null;
   private showFoodPrompt(): void {
     if (this.foodCard) return;
+    // While the bot plays, it stashes what it finds (or eats it when the bag is full).
+    if (panel?.botPlays) {
+      decideFood(this.play, false);
+      this.showEvents(drainLog(this.play));
+      return;
+    }
     const id = this.play.foodPending[0];
     const f = id ? FOODS.get(id) : undefined;
     if (!id || !f) return;
@@ -2213,8 +2260,8 @@ export class CourseScene extends Phaser.Scene {
       'MOUSE: PULL BACK TO PLAN, HOLD TO CHARGE  KEYS: ARROWS/WASD AIM+POWER, HOLD SPACE TO CHARGE',
       'T: GROUND/LOFT  Z/X: SPIN  Q/E: CURVE  SPACE IN FLIGHT: BOOST  F: ABILITY  ESC: RE-PLAN',
       this.runMode
-        ? 'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  O: OVERVIEW  G: DEBUG  U: TUNING AND TEST PANEL  H: HELP'
-        : 'IJKL OR RIGHT-DRAG: PAN  C: CENTRE  O: OVERVIEW  1-6/N: COURSE  7: RUN  R: RESTART  G: DEBUG  U: TUNING  H: HELP',
+        ? 'IJKL: PAN  C: CENTRE  O: OVERVIEW  G: DEBUG  U: TEST PANEL  Y: BOT PLAYS  H: HELP'
+        : 'IJKL: PAN  C: CENTRE  O: OVERVIEW  N: COURSE  7: RUN  R: RESTART  G: DEBUG  U: PANEL  Y: BOT',
       ...(!this.runMode && TEST_COURSES[this.courseIndex]?.id === GENERATED_ID ? ['GENERATED: BRACKET KEYS: BUDGET -/+2  V: SEED VIEWER  B: WATCH THE BOT  ENTER AFTER A WIN: NEXT'] : []),
     ];
     this.helpHud = lines.map((l, i) =>
