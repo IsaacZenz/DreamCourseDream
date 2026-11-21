@@ -1,6 +1,6 @@
 # Milestone 8 round 2a design sheet: livelier terrain, two shops and the food bag
 
-**Status: waiting for the owner to review. Nothing on this sheet is built yet.**
+**Status: waiting for the owner to review. Nothing on this sheet is built yet.** Owner changes so far (2026-11-21): eat any number of foods before a course; spike moats can appear in region 2, rarely; region 1 gets a very small number of extra obstacles.
 
 How to review: change any number, name or rule you want. Section 8 lists the open questions. Each one has a default that I will use if you say "defaults are fine". Every number is a starting value. They all live in `src/content/`, so they can be tuned later without touching the physics or the generator.
 
@@ -16,7 +16,7 @@ Round 2 of Milestone 8 (see `docs/plans/milestone-8.md` section 0) is split in t
 | 2b | The other four abilities (Burr, Kite, Gyre, Drift), linked objects (switches and gates that raise bridges), optional course modifiers, three biomes and the theme switch | later |
 | 8b | Walkable towns and crossroads (`docs/PLAN.md`, Milestone 8b) | later, after round 2b |
 
-**What you can play at the end of 2a:** in regions two and three, areas have more going on: two or three features per area, bridges across moats, groves of dead trees and spike strips. Region one plays exactly as it does now. Every town has a food shop and a gear shop. Food goes in a 3-slot bag, and you eat one before a course.
+**What you can play at the end of 2a:** in regions two and three, areas have more going on: two or three features per area, bridges across moats, groves of dead trees and spike strips. Region one keeps its size and its one set piece per area, with only a very few extra obstacles. Every town has a food shop and a gear shop. Food goes in a 3-slot bag, and you eat whatever you like from it before a course.
 
 ---
 
@@ -32,19 +32,20 @@ Round 2 of Milestone 8 (see `docs/plans/milestone-8.md` section 0) is split in t
 | | Region 1 | Region 2 | Region 3 and endless |
 |---|---|---|---|
 | Set pieces per area | **1 (unchanged)** | 1 per 70 tiles of area, rounded up, at most 3 | 1 per 55 tiles, rounded up, at most 4 |
-| Extra obstacles per 100 tiles (blockers and dead trees only; never crates, so stars and the wallet are unchanged) | **0 (unchanged)** | 1.5 | 2.5 |
-| Paid from | the threat budget, as now | the detail dial, free of the threat budget | the detail dial |
+| Extra obstacles per 100 tiles (blockers and dead trees only; never crates, so stars and the wallet are unchanged) | **0.5, rocks and stumps only (owner, 2026-11-21: very limited)** | 1.5 | 2.5 |
+| Paid from | set pieces: the threat budget, as now; extra obstacles: the detail dial | the detail dial, free of the threat budget | the detail dial |
 | New set pieces available | none | moat with bridge, dead tree grove, rough patch | all of region two's, plus spike strip and ice patch |
 
 So a 12 × 12 area (144 tiles) gets 1 set piece in region one, 3 in region two and 3 in region three. A 15 × 15 area (225 tiles) gets 1, 3 and 4.
 
-**Promise for region one:** the same seed makes exactly the same region-one course before and after this round. A test checks this.
+**Promise for region one:** the same seed makes the same region-one ground, set pieces and enemies before and after this round; the only difference is the few extra rocks and stumps (about 1 to 3 per course). A test checks this.
 
 **Targets** (measured with the same tool as the 2026-11-21 numbers, per 100 tiles):
 
 | | Special ground (not grass) | Obstacles |
 |---|---|---|
-| Region 1 now (unchanged) | 3.4 | 0.4 |
+| Region 1 now | 3.4 | 0.4 |
+| **Region 1, target** | **3.4 (unchanged)** | **about 0.9** |
 | Region 2 late, now | 5.6 | 0.7 |
 | **Region 2 late, target** | **10 to 14** | **about 2** |
 | Region 3 late, now | 5.5 | 0.6 |
@@ -65,7 +66,7 @@ A strip of water, sand or spikes 2 to 3 tiles wide runs across the area from sid
 | Field | Value |
 |---|---|
 | Moat width | 2 to 3 tiles, across the whole area, from edge to edge |
-| Moat filling | Region 2: water 60%, sand 40%. Region 3: water 40%, spikes 40%, sand 20% |
+| Moat filling | Region 2: water 55%, sand 35%, spikes 10% (owner, 2026-11-21: spikes can show up in region 2, much less often). Region 3: water 40%, spikes 40%, sand 20% |
 | Bridge | 2 tiles wide (1 tile wide 30% of the time in region 3), at the moat's height plus 1 step, so it is a small raised walkway |
 | Bridge surface | new surface **`bridge`**: rolls like grass (same friction and bounce), plank sprite |
 | Rails | guard rails along both sides of the bridge 50% of the time (the existing rail object), otherwise open |
@@ -158,7 +159,7 @@ The bonus-shop (cache) node keeps working as it does now.
 | Rule | Value |
 |---|---|
 | Bag slots | 3 |
-| Eating | before a course starts (and before a boss fight), at most **one** per course; you may skip |
+| Eating | before a course starts (and before a boss fight), **any number of foods from the bag** (owner, 2026-11-21); you may skip |
 | During a course | nothing can be eaten |
 | Food found on a course (an acorn from a crate) | goes into the bag. If the bag is full, choose: swap with one in the bag, or leave it |
 | Buying with a full bag | not allowed ("BAG IS FULL") |
@@ -181,7 +182,7 @@ Each food in a shop or a crate comes with a duration of **1, 2 or 3 courses**. L
 - The course you eat it before counts as the first.
 - A boss fight counts as a course. A town or a cache does not.
 - When it runs out, its effect goes. If max health drops, health is trimmed to the new maximum.
-- The same food eaten again on a later course stacks (two Chili Peppers at once give +20%), each with its own count.
+- Foods stack, whether eaten together or on different courses (two Chili Peppers give +20%), each with its own count.
 - Apple and Garlic act at once when eaten and have no duration.
 
 ### 4.3 The foods
@@ -257,12 +258,12 @@ The course check's bot is not affected: it plays with the region's par kit, not 
 
 ## 6. Done when
 
-- Region one: the same seed makes the same course as before (test).
+- Region one: the same seed makes the same ground, set pieces and enemies as before; only the few extra rocks and stumps differ (test).
 - Regions two and three: special ground and obstacles per 100 tiles are inside the targets in section 1 (measured with a tool and logged in the progress log).
 - Late region-three courses average 10 s or less to make, with no more fallbacks than now.
 - Every new set piece appears in a generated course, and every generated course still passes the course check.
 - Ball on a bridge, off a bridge into water, spikes and sand; rolling enemy at a bridge edge (tests).
-- Food: a 3-slot bag; one food per course; none during a course; found food goes into the bag; swap or leave when full; durations count down by courses and effects go when they run out; max health trimmed; stacking; Apple and Garlic at once (tests).
+- Food: a 3-slot bag; any number eaten before a course; none during a course; found food goes into the bag; swap or leave when full; durations count down by courses and effects go when they run out; max health trimmed; stacking; Apple and Garlic at once (tests).
 - Two shops with 4 and 3 offers and separate rerolls (tests).
 - A saved run with an old pocket acorn loads, with the acorn in the bag (test).
 - Checked in a browser with screenshots: a region-three course with a bridge, a grove and a spike strip; the town with two shops; the eat panel.
@@ -275,7 +276,7 @@ The course check's bot is not affected: it plays with the region's par kit, not 
 2. Try rolling across a bridge, then deliberately off the side into water and into spikes.
 3. Weave a rolling shot through a dead tree grove.
 4. Buy food in a shop, fill the bag and pick up an acorn from a crate. Does the swap-or-leave choice make sense?
-5. Eat a 3-course food and check that its effect lasts exactly three courses.
+5. Eat a 3-course food and check that its effect lasts exactly three courses. Eat two foods at once and check both work.
 6. Watch your wallet over a run. Is food cheap enough that you actually buy it?
 
 ---
@@ -285,14 +286,15 @@ The course check's bot is not affected: it plays with the region's par kit, not 
 | # | Question | Default |
 |---|---|---|
 | Q1 | Duration chances 60% / 30% / 10% for 1 / 2 / 3 courses? | Yes |
-| Q2 | Same food eaten on later courses stacks? | Yes |
+| Q2 | Foods stack (the same food twice gives double)? | Yes |
 | Q3 | Prices in section 4.5? | Yes |
 | Q4 | Detail targets: region 2 about 3 times today's obstacles, region 3 about 5 times? | Yes |
 | Q5 | Rails on bridges half the time, open the other half? | Yes |
-| Q6 | Spikes as a moat filling in region 3 (40% of moats)? | Yes |
+| Q6 | Spikes as a moat filling: region 2 10% of moats, region 3 40%? | Yes |
 | Q7 | Food found in a crate also rolls 1 to 3 courses with the same chances? | Yes |
 | Q8 | Garlic: still at most once per shop and 3 times per region? | Yes |
 | Q9 | Scenery that does not block the ball (grass tufts, flowers, bones) waits for Milestone 9 art? | Yes, it is art only |
+| Q10 | Region 1's extra obstacles: 0.5 per 100 tiles (about 1 to 3 rocks or stumps per course), no dead trees? | Yes |
 
 ---
 
