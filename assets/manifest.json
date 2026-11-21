@@ -1038,6 +1038,44 @@
         37
       ]
     },
+    "switch": {
+      "file": "sprites/switch.png",
+      "frameWidth": 32,
+      "frameHeight": 16,
+      "frames": [
+        "off",
+        "on"
+      ],
+      "anchor": [
+        16,
+        8
+      ]
+    },
+    "linked-gate": {
+      "file": "sprites/linked-gate.png",
+      "frameWidth": 32,
+      "frameHeight": 26,
+      "frames": [
+        "open",
+        "closed"
+      ],
+      "anchor": [
+        16,
+        18
+      ]
+    },
+    "drawbridge-up": {
+      "file": "sprites/drawbridge-up.png",
+      "frameWidth": 32,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        22
+      ]
+    },
     "scenery-tuft": {
       "file": "sprites/scenery-tuft.png",
       "frameWidth": 12,

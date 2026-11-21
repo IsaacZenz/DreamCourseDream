@@ -40,6 +40,8 @@ import {
   type MoverDef,
   type ObjectShape,
   type PickupDef,
+  type SwitchDef,
+  type DrawbridgeDef,
   RAIL,
 } from '../content/objects.ts';
 import { BOSS_TIER, RULES } from '../content/rules.ts';
@@ -230,6 +232,28 @@ export interface MoverState {
   /** Gates: open now, and seconds into the current open-then-closed cycle. */
   open: boolean;
   timer: number;
+  /** Round 2b: a linked gate's switch letter. */
+  readonly link: string | null;
+}
+
+/** Round 2b: a switch plate. */
+export interface SwitchState {
+  readonly uid: string;
+  readonly def: SwitchDef;
+  readonly x: number;
+  readonly y: number;
+  readonly link: string;
+  on: boolean;
+}
+
+/** Round 2b: one tile of a drawbridge, up until its switch is pressed. */
+export interface DrawbridgeState {
+  readonly uid: string;
+  readonly def: DrawbridgeDef;
+  readonly tx: number;
+  readonly ty: number;
+  readonly link: string;
+  down: boolean;
 }
 
 export interface BreakableState {
@@ -367,6 +391,9 @@ export type PlayEvent =
   | { kind: 'foodEaten'; item: string; auto: boolean }
   /** Food put in the bag for later. */
   | { kind: 'foodStashed'; item: string }
+  /** Round 2b: a switch was pressed; a drawbridge came down. */
+  | { kind: 'switchOn'; link: string; x: number; y: number }
+  | { kind: 'bridgeDown'; link: string }
   /** A boss marked a ring where its next slam lands (Milestone 7). */
   | { kind: 'slamMark'; enemy: string; x: number; y: number; r: number }
   /** A boss's slam landed; `hit` if the ball was inside the ring on the ground. */
@@ -414,7 +441,8 @@ export type PlayStatus = 'playing' | 'won' | 'lost';
 export type Phase = 'aim' | 'shot' | 'enemy';
 
 export interface PlayState {
-  readonly course: Course;
+  /** The course as it is now. Round 2b: a drawbridge coming down swaps in a copy with those tiles changed. */
+  course: Course;
   readonly tuning: Tuning;
   readonly seed: string;
   readonly character: CharacterDef;
@@ -438,6 +466,11 @@ export interface PlayState {
   readonly pickups: PickupState[];
   readonly blockers: BlockerState[];
   readonly movers: MoverState[];
+  /** Round 2b: switches, and the drawbridge tiles waiting for theirs (sheet section 2). */
+  readonly switches: SwitchState[];
+  readonly drawbridges: DrawbridgeState[];
+  /** Links whose switch has been pressed this course ("a" -> true). */
+  readonly linksOn: Record<string, boolean>;
   readonly breakables: BreakableState[];
   readonly clouds: CloudState[];
   readonly flags: FlagState[];
@@ -675,6 +708,9 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     pickups: [],
     blockers: [],
     movers: [],
+    switches: [],
+    drawbridges: [],
+    linksOn: {},
     breakables: [],
     clouds: [],
     flags: [],
@@ -735,11 +771,13 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     if (!def) return;
     if (def.kind === 'enemy') play.enemies.push(newEnemy(play, opts, def, o, uid, cx, cy, z));
     else if (def.kind === 'pickup') play.pickups.push({ uid, def, x: cx, y: cy, z, taken: false });
+    else if (def.kind === 'switch') play.switches.push({ uid, def, x: cx, y: cy, link: o.link ?? 'a', on: false });
+    else if (def.kind === 'drawbridge') play.drawbridges.push({ uid, def, tx: o.x, ty: o.y, link: o.link ?? 'a', down: false });
     else if (def.kind === 'blocker') play.blockers.push({ uid, def, x: cx, y: cy, z });
     else if (def.kind === 'mover') {
       const shape: ObjectShape = def.shape.kind === 'box' && o.orient === 'y' ? { kind: 'box', hx: def.shape.hy, hy: def.shape.hx } : def.shape;
       const path = def.motion.kind === 'path' ? makePath(o.path) : null;
-      const m: MoverState = { uid, def, x: cx, y: cy, z, vx: 0, vy: 0, shape, path, pathDist: path ? o.phase * path.total * 2 : 0, open: false, timer: 0 };
+      const m: MoverState = { uid, def, x: cx, y: cy, z, vx: 0, vy: 0, shape, path, pathDist: path ? o.phase * path.total * 2 : 0, open: false, timer: 0, link: o.link };
       if (def.motion.kind === 'gate') {
         const cycle = def.motion.open + def.motion.closed;
         m.timer = o.phase * cycle;
@@ -1034,7 +1072,7 @@ function staticObstacles(play: PlayState): Obstacle[] {
 function obstaclesOf(play: PlayState): Obstacle[] {
   const out: Obstacle[] = staticObstacles(play).slice();
   for (const m of play.movers) {
-    if (m.def.motion.kind === 'gate' && m.open) continue;
+    if ((m.def.motion.kind === 'gate' || m.def.motion.kind === 'linked') && m.open) continue;
     out.push({ id: m.uid, x: m.x, y: m.y, base: m.z, height: m.def.height, shape: m.shape, bounce: m.def.bounce, vx: m.vx, vy: m.vy, knock: m.def.knock });
   }
   for (const b of play.breakables) {
@@ -1129,6 +1167,7 @@ export function tick(play: PlayState, input: TickInput = {}): void {
   knockRestingBall(play);
   if (play.shot) stepBall(play, input);
   if (play.status !== 'playing') return;
+  pressSwitches(play);
   stepBodies(play);
   meetBodies(play);
   zapClouds(play);
@@ -1213,6 +1252,9 @@ function moveThings(play: PlayState): void {
       m.z = heightAt(play.course, p.x, p.y);
       m.vx = (m.x - px) / DT;
       m.vy = (m.y - py) / DT;
+    } else if (m.def.motion.kind === 'linked') {
+      // Round 2b: closed until its switch is pressed, then open for good.
+      m.open = !!(m.link && play.linksOn[m.link]);
     } else if (m.def.motion.kind === 'gate') {
       const { open, closed } = m.def.motion;
       m.timer += DT;
@@ -1334,6 +1376,41 @@ function steerBall(play: PlayState, s: ShotState, input: TickInput): void {
     b.vx = gx * fx.speed;
     b.vy = gy * fx.speed;
   }
+}
+
+/**
+ * Round 2b (sheet section 2): a ball on the ground over a switch presses it.
+ * It stays on: linked gates open (moveThings) and drawbridges come down.
+ */
+function pressSwitches(play: PlayState): void {
+  if (!play.switches.length) return;
+  const b = ballNow(play);
+  const g = groundAt(play.course, b.x, b.y);
+  if (!g || b.z > g.h + 0.05) return;
+  for (const sw of play.switches) {
+    if (sw.on || Math.hypot(b.x - sw.x, b.y - sw.y) > sw.def.reach) continue;
+    sw.on = true;
+    play.linksOn[sw.link] = true;
+    play.log.push({ kind: 'switchOn', link: sw.link, x: sw.x, y: sw.y });
+    lowerDrawbridges(play, sw.link);
+  }
+}
+
+/** The drawbridge tiles with this link come down: each becomes plank bridge, raised to the bridge's height. */
+function lowerDrawbridges(play: PlayState, link: string): void {
+  const down = play.drawbridges.filter((d) => d.link === link && !d.down);
+  if (!down.length) return;
+  const tiles = play.course.tiles.slice();
+  for (const d of down) {
+    d.down = true;
+    const k = d.ty * play.course.width + d.tx;
+    const t = tiles[k];
+    if (!t) continue;
+    const corners = t.corners.map((h) => h + d.def.rise) as unknown as typeof t.corners;
+    tiles[k] = { ...t, surface: d.def.surface, corners, base: t.base + d.def.rise };
+  }
+  play.course = { ...play.course, tiles };
+  play.log.push({ kind: 'bridgeDown', link });
 }
 
 /** Gyre and Drift count down; Drift then drops straight down with no speed. */
@@ -1829,7 +1906,7 @@ function split(play: PlayState, e: EnemyState): void {
       cx = e.x + side * 0.35;
       cy = e.y;
     }
-    const o: CourseObject = { id: def.id, x: Math.floor(cx), y: Math.floor(cy), path: [], facing: e.place.facing, phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS };
+    const o: CourseObject = { id: def.id, x: Math.floor(cx), y: Math.floor(cy), path: [], facing: e.place.facing, phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS, link: null };
     const uid = `split:${e.uid}:${k}`;
     play.enemies.push(newEnemy(play, { seed: play.seed, enemyModifiers: play.enemyModifiers }, def, o, uid, cx, cy, heightAt(play.course, cx, cy)));
     play.log.push({ kind: 'split', enemy: e.uid, into: uid });
@@ -2146,7 +2223,7 @@ function summon(play: PlayState, boss: EnemyState, def: BossDef, phase: BossPhas
   const id = phase.pool[play.rng.weighted(phase.pool.map((p) => p.weight))]!.id;
   const edef = OBJECTS.get(id);
   if (edef?.kind !== 'enemy') return;
-  const o: CourseObject = { id, x: spot.x, y: spot.y, path: [], facing: 'se', phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS };
+  const o: CourseObject = { id, x: spot.x, y: spot.y, path: [], facing: 'se', phase: 0, orient: 'x', drops: null, extras: NO_EXTRAS, link: null };
   const cx = spot.x + 0.5;
   const cy = spot.y + 0.5;
   const uid = `summon:${id}#${play.summoned++}`;

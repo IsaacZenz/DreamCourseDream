@@ -53,8 +53,10 @@ interface Target {
 /** Things worth going for now, nearest first. */
 function targets(play: PlayState): Target[] {
   const b = ballNow(play);
-  if (play.exitOpen) return [{ x: play.course.exit.x + 0.5, y: play.course.exit.y + 0.5, threat: false, through: false, exit: true }];
-  const out: Target[] = [];
+  // Round 2b: an unpressed switch is worth going for (its gate or drawbridge may be in the way), before the exit too.
+  const switches: Target[] = play.switches.filter((w) => !w.on).map((w) => ({ x: w.x, y: w.y, threat: false, through: true, exit: false }));
+  if (play.exitOpen) return [...switches, { x: play.course.exit.x + 0.5, y: play.course.exit.y + 0.5, threat: false, through: false, exit: true }];
+  const out: Target[] = [...switches];
   for (const e of play.enemies) if (!e.defeated && !e.body) out.push({ x: e.x, y: e.y, threat: e.activated, through: true, exit: false });
   for (const c of play.breakables) if (!c.broken && c.def.breakBy === 'hit' && c.drops.includes('yellow-star')) out.push({ x: c.x, y: c.y, threat: false, through: true, exit: false });
   for (const p of play.pickups) if (!p.taken && p.def.effect === 'yellowStar') out.push({ x: p.x, y: p.y, threat: false, through: false, exit: false });

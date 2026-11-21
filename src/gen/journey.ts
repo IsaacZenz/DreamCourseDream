@@ -43,6 +43,8 @@ export interface Region {
   /** Position along the trail (0 = the first area); passages and pockets take their area's number. */
   readonly order: number;
   readonly steep: boolean;
+  /** Round 2b: a passage's direction along the trail. */
+  readonly dir?: Direction;
 }
 
 export interface Terrain {
@@ -66,6 +68,8 @@ export interface Terrain {
   readonly setPieces: string[];
   /** Round 2a: dead trees of the groves, to be placed as blockers. */
   readonly trees: Point[];
+  /** Round 2b: drawbridges: the bridge tiles (stamped as moat, up) and where their switch goes. */
+  readonly drawbridges: { readonly tiles: Point[]; readonly switchAt: Point }[];
 }
 
 export type TerrainResult = { ok: true; terrain: Terrain } | { ok: false; reason: string };
@@ -340,6 +344,7 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
   const areaDir = new Map<number, Direction>();
   const trees: Point[] = [];
   const bridgeRails: Point[][] = [];
+  const drawbridges: { tiles: Point[]; switchAt: Point }[] = [];
 
   let dir: Direction = rng.pick(DIRECTIONS);
   let rect: Rect = { x: 0, y: 0, w: rng.int(size.areaSize[0], size.areaSize[1]), h: rng.int(size.areaSize[0], size.areaSize[1]) };
@@ -406,7 +411,7 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
     const [vx, vy] = DIRECTION_VECTORS[nextDir];
     if (len > 0) {
       const pIndex = board.regions.length;
-      board.regions.push({ kind: 'passage', rect: { ...prect }, name: pass.id, order: i, steep: steepRamp });
+      board.regions.push({ kind: 'passage', rect: { ...prect }, name: pass.id, order: i, steep: steepRamp, dir: nextDir });
       rects.push(prect);
       if (pass.id !== 'gap') {
         for (let a = 0; a < len; a++) {
@@ -487,7 +492,7 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
         tried.add(sp.id);
         const ok = SET_PIECES.some((p) => p.id === sp.id)
           ? stampSetPiece(board, rng, r, sp.id, reserved, islands, [start, exitTileFinal], areaDir.get(ri) ?? dir)
-          : stampDetailPiece(board, rng, r, sp.id, reserved, [start, exitTileFinal], areaDir.get(ri) ?? dir, detail, trees, bridgeRails);
+          : stampDetailPiece(board, rng, r, sp.id, reserved, [start, exitTileFinal], areaDir.get(ri) ?? dir, detail, trees, bridgeRails, drawbridges);
         if (ok) {
           placed++;
           setPieces.push(sp.id);
@@ -637,6 +642,7 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
       bareCost,
       setPieces,
       trees: trees.map(shift),
+      drawbridges: drawbridges.map((d) => ({ tiles: d.tiles.map(shift), switchAt: shift(d.switchAt) })),
     },
   };
 }
@@ -805,6 +811,7 @@ function stampDetailPiece(
   detail: NonNullable<NonNullable<JourneySize['detail']>['setPieces']>,
   trees: Point[],
   bridgeRails: Point[][],
+  drawbridges: { tiles: Point[]; switchAt: Point }[],
 ): boolean {
   const along = DIRECTION_VECTORS[dir][0] !== 0; // the trail runs along x
   const fill = (spot: Rect, surface: string) => {
@@ -856,7 +863,7 @@ function stampDetailPiece(
     }
     return true;
   }
-  if (id === 'moat') return stampMoat(board, rng, area, reserved, avoid, along, detail, bridgeRails);
+  if (id === 'moat') return stampMoat(board, rng, area, reserved, avoid, along, detail, bridgeRails, drawbridges, dir);
   return false;
 }
 
@@ -876,6 +883,8 @@ function stampMoat(
   along: boolean,
   detail: NonNullable<NonNullable<JourneySize['detail']>['setPieces']>,
   bridgeRails: Point[][],
+  drawbridges: { tiles: Point[]; switchAt: Point }[],
+  dir: Direction,
 ): boolean {
   const r = area.rect;
   const mw = rng.int(DETAIL_PIECES.moat.width[0], DETAIL_PIECES.moat.width[1]);
@@ -886,7 +895,9 @@ function stampMoat(
   const depthTo = (along ? r.x + r.w : r.y + r.h) - 2 - mw;
   if (spanTo - spanFrom + 1 < DETAIL_PIECES.moat.minSpan || depthTo < depthFrom) return false;
   const at = (span: number, depth: number): Point => (along ? [depth, span] : [span, depth]);
-  const railed = rng.chance(detail.railChance);
+  // Round 2b: a drawbridge is never railed (its rails would sit below the planks while it is up).
+  const draw = rng.chance(detail.drawbridgeChance ?? 0);
+  const railed = !draw && rng.chance(detail.railChance);
   const bw = railed ? 3 : rng.chance(detail.oneWideChance) ? 1 : 2;
   const fillKind = (weighted(rng, Object.entries(detail.moatFill).map(([id, weight]) => ({ id, weight }))) ?? { id: 'water' }).id;
   for (let tries = 0; tries < 12; tries++) {
@@ -911,11 +922,27 @@ function stampMoat(
     }
     if (!ok) continue;
     const b0 = rng.int(spanFrom + 1, Math.max(spanFrom + 1, spanTo - bw));
+    // A drawbridge's switch: on the near side (where the trail comes from), 3 to 5 tiles before the moat, in line with the bridge.
+    let switchAt: Point | null = null;
+    if (draw) {
+      const toward = DIRECTION_VECTORS[dir][along ? 0 : 1];
+      for (const gap of [3, 4, 5]) {
+        const p = at(b0 + Math.floor(bw / 2), toward >= 0 ? d0 - gap : d0 + mw - 1 + gap);
+        const t = board.tiles.get(key(p[0], p[1]));
+        if (t && t.surface === 'grass' && !reserved.has(key(p[0], p[1])) && board.region.get(key(p[0], p[1])) === board.regions.indexOf(area)) {
+          switchAt = p;
+          break;
+        }
+      }
+    }
+    const bridgeTiles: Point[] = [];
     for (let s = spanFrom; s <= spanTo; s++) {
       for (let d = d0; d < d0 + mw; d++) {
         const p = at(s, d);
         const t = board.tiles.get(key(p[0], p[1]))!;
-        if (s >= b0 && s < b0 + bw) t.surface = 'bridge';
+        // A drawbridge starts up: its tiles are moat like the rest until the switch is pressed.
+        if (s >= b0 && s < b0 + bw && switchAt) bridgeTiles.push(p);
+        if (s >= b0 && s < b0 + bw && !switchAt) t.surface = 'bridge';
         else {
           t.surface = fillKind;
           t.corners = t.corners.map((h) => h - 1) as unknown as Corners;
@@ -924,6 +951,10 @@ function stampMoat(
       }
     }
     if (railed) for (const s of [b0, b0 + bw - 1]) bridgeRails.push([at(s, d0), at(s, d0 + mw - 1)]);
+    if (switchAt) {
+      reserved.add(key(switchAt[0], switchAt[1]));
+      drawbridges.push({ tiles: bridgeTiles, switchAt });
+    }
     return true;
   }
   return false;

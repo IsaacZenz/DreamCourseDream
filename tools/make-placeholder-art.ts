@@ -784,6 +784,40 @@ function drawCrate(secured: boolean, cracked: boolean): Image {
   return img;
 }
 
+/** Round 2b: a switch plate on the tile, red when off and green when on. */
+function drawSwitch(on: boolean): Image {
+  const img = new Image(32, 16);
+  blob(img, 16, 8, 8, 4, '#8c8c96', '#202028');
+  blob(img, 16, 7.5, 5, 2.5, on ? '#40c040' : '#d03030', '#202028');
+  return img;
+}
+
+/** Round 2b: a linked gate: the gate with a lamp on top (lit when open). */
+function drawLinkedGate(open: boolean): Image {
+  const img = drawGate(open);
+  blob(img, 4, 4, 3, 3, open ? '#60f060' : '#f04040', '#202020');
+  return img;
+}
+
+/** Round 2b: a drawbridge's planks standing up at the moat edge while it is up. */
+function drawDrawbridgeUp(): Image {
+  const img = new Image(32, 28);
+  const wood = ramp('#a87840');
+  const edge = hex2('#3a2410');
+  for (let i = 0; i < 4; i++) {
+    const x0 = 8 + i * 4;
+    const y0 = 4 + i * 2;
+    for (let y = y0; y < y0 + 18; y++) {
+      img.set(x0, y, edge);
+      img.set(x0 + 1, y, wood[3]!);
+      img.set(x0 + 2, y, wood[2]!);
+      img.set(x0 + 3, y, edge);
+    }
+  }
+  for (let x = 6; x < 26; x++) img.set(x, Math.round(10 + (x - 6) * 0.5), edge);
+  return img;
+}
+
 function drawCrackedTile(): Image {
   // Cracks drawn on top of the tile it sits on (32x16 diamond).
   const img = new Image(32, 16);
@@ -1085,6 +1119,9 @@ emit('rock', drawRock(), 20, 14, ['idle'], [10, 10]);
 emit('stump', drawStump(), 10, 28, ['idle'], [5, 25]);
 emit('low-wall', drawLowWall(), 32, 20, ['idle'], [16, 12]);
 emit('dead-tree', drawDeadTree(), 22, 40, ['idle'], [11, 37]);
+emit('switch', sheet([drawSwitch(false), drawSwitch(true)]), 32, 16, ['off', 'on'], [16, 8]);
+emit('linked-gate', sheet([drawLinkedGate(true), drawLinkedGate(false)]), 32, 26, ['open', 'closed'], [16, 18]);
+emit('drawbridge-up', drawDrawbridgeUp(), 32, 28, ['idle'], [16, 22]);
 for (const k of ['tuft', 'flowers', 'pebbles', 'mushrooms', 'leaves', 'bones']) emit(`scenery-${k}`, drawScenery(k), 12, 8, ['idle'], [6, 6]);
 emit('snoozegrub', drawMossback(), 18, 16, ['idle'], [9, 14]);
 // Milestone 4

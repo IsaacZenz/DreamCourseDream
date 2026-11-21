@@ -9,6 +9,18 @@ import { GEN } from '../src/content/gen';
 import { parseCourse, type Course } from '../src/sim/course';
 import { canUseAbility, createPlay, drainLog, takeShot, tick, type PlayEvent, type PlayState, type TickInput } from '../src/sim/play';
 import { groundAt, startBody, stepShot, type ShotCommand } from '../src/sim/ball';
+import { generateAttempt } from '../src/gen/generate';
+import { generateCourse } from '../src/gen/validate';
+import { botShotsFor } from '../src/content/run';
+import { mixFor, regionDefFor } from '../src/sim/run';
+import type { JourneySize } from '../src/content/gen';
+
+/** A late course's size in region n (after 6 counted nodes), with its detail dial. */
+function lateSize(n: number): JourneySize {
+  const r = regionDefFor(n);
+  const areas = Math.min(r.areas.max, r.areas.start + Math.floor(6 / r.areas.every));
+  return { areas: [areas, areas], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(areas), mix: mixFor(n), detail: r.detail };
+}
 
 const T = DEFAULT_TUNING;
 
@@ -198,4 +210,121 @@ describe('the four carriers (sheet section 1.5)', () => {
     }
     expect(GEN.carriers).toHaveLength(10);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Switches, linked gates, drawbridges (sheet section 2)
+
+describe('switches and linked gates (sheet sections 2.1 and 2.2)', () => {
+  /** A flat field with a switch, and a linked gate across the whole width at x = 7. */
+  function gated(switchAt: [number, number]): Course {
+    const rows: string[] = [];
+    for (let y = 0; y < 5; y++) rows.push(Array.from({ length: 14 }, (_, x) => (x === 0 || y === 0 || x === 13 || y === 4 ? 'gg' : 'g8')).join(' '));
+    const objects = [{ id: 'switch', at: switchAt, link: 'a' }, ...[1, 2, 3].map((y) => ({ id: 'linked-gate', at: [7, y], link: 'a', orient: 'y' }))];
+    const r = parseCourse({ format: 3, name: 'gate', legend: { g: 'grass' }, tiles: rows, start: [1, 2], exit: [12, 1], quota: 0, objects });
+    if (!r.ok) throw new Error(r.errors.join('\n'));
+    return r.course;
+  }
+  const roll = (c: Course, cmd = shot({ power: 0.7 })) => {
+    const p = createPlay(c, T, { seed: 's' });
+    takeShot(p, cmd);
+    const log: PlayEvent[] = [];
+    for (let i = 0; i < 6000 && p.shot; i++) {
+      tick(p);
+      log.push(...drainLog(p));
+    }
+    return { p, log };
+  };
+
+  it('rolling over the switch opens its gate for good', () => {
+    const { p, log } = roll(gated([3, 2]));
+    expect(log).toContainEqual({ kind: 'switchOn', link: 'a', x: 3.5, y: 2.5 });
+    expect(p.movers.every((m) => m.open)).toBe(true);
+    expect(p.ball.x).toBeGreaterThan(7);
+  });
+
+  it('a closed gate stops the ball', () => {
+    const { p } = roll(gated([3, 1]));
+    expect(p.switches[0]!.on).toBe(false);
+    expect(p.ball.x).toBeLessThan(7);
+  });
+
+  it('a ball flying over the switch does not press it', () => {
+    const { p } = roll(gated([2, 2]), shot({ type: 'lofted', power: 0.7 }));
+    expect(p.switches[0]!.on).toBe(false);
+  });
+
+  it('a switch, linked gate or drawbridge must have a link letter', () => {
+    const r = parseCourse({ format: 3, name: 'x', legend: { g: 'grass' }, tiles: ['g0 g0 g0', 'g0 g0 g0'], start: [0, 0], exit: [2, 1], quota: 0, objects: [{ id: 'switch', at: [1, 0] }] });
+    expect(r.ok).toBe(false);
+  });
+});
+
+describe('drawbridges (sheet section 2.3)', () => {
+  /** A moat at x = 5..6, one step lower; the tiles at y = 2 are a drawbridge. */
+  function moat(switchAt: [number, number]): Course {
+    const rows: string[] = [];
+    for (let y = 0; y < 5; y++) rows.push(Array.from({ length: 14 }, (_, x) => (x === 0 || y === 0 || x === 13 || y === 4 ? 'gg' : x === 5 || x === 6 ? 'w7' : 'g8')).join(' '));
+    const objects = [{ id: 'switch', at: switchAt, link: 'b' }, { id: 'drawbridge', at: [5, 2], link: 'b' }, { id: 'drawbridge', at: [6, 2], link: 'b' }];
+    const r = parseCourse({ format: 3, name: 'draw', legend: { g: 'grass', w: 'water' }, tiles: rows, start: [1, 2], exit: [12, 1], quota: 0, objects });
+    if (!r.ok) throw new Error(r.errors.join('\n'));
+    return r.course;
+  }
+  const roll = (c: Course) => {
+    const p = createPlay(c, T, { seed: 'd' });
+    takeShot(p, shot({ power: 0.7 }));
+    const log: PlayEvent[] = [];
+    for (let i = 0; i < 6000 && p.shot; i++) {
+      tick(p);
+      log.push(...drainLog(p));
+    }
+    return { p, log };
+  };
+
+  it('up, its tiles are the moat: the ball goes in the water', () => {
+    const { log } = roll(moat([3, 1]));
+    expect(log.some((e) => e.kind === 'damage' && e.cause === 'sunk')).toBe(true);
+  });
+
+  it('its switch brings it down: plank bridge one step higher, and the ball rolls across', () => {
+    const { p, log } = roll(moat([3, 2]));
+    expect(log).toContainEqual({ kind: 'bridgeDown', link: 'b' });
+    const t = p.course.tiles[2 * p.course.width + 5]!;
+    expect(t.surface).toBe('bridge');
+    expect(t.corners).toEqual([8, 8, 8, 8]);
+    expect(log.some((e) => e.kind === 'damage')).toBe(false);
+    expect(p.ball.x).toBeGreaterThan(7);
+  });
+});
+
+describe('generated switches (sheet sections 2.2 to 2.4)', () => {
+  it('region 3 courses get drawbridges and linked gates, each with a switch of the same link', () => {
+    let draw = 0;
+    let gates = 0;
+    for (let i = 0; i < 30; i++) {
+      const r = generateAttempt(`LINK${i}`, 24, 0, lateSize(3));
+      if (!r.ok) continue;
+      const objs = r.course.objects;
+      for (const o of objs.filter((x) => x.id === 'drawbridge' || x.id === 'linked-gate')) {
+        expect(objs.some((s) => s.id === 'switch' && s.link === o.link)).toBe(true);
+        if (o.id === 'drawbridge') draw++;
+        else gates++;
+      }
+    }
+    expect(draw).toBeGreaterThan(0);
+    expect(gates).toBeGreaterThan(0);
+  });
+
+  it('region 1 never has them', () => {
+    for (let i = 0; i < 10; i++) {
+      const r = generateAttempt(`R1LINK${i}`, 16, 0, lateSize(1));
+      if (r.ok) expect(r.course.objects.some((o) => ['switch', 'linked-gate', 'drawbridge'].includes(o.id))).toBe(false);
+    }
+  });
+
+  it('a generated course with a switch passes the course check (the bot presses it)', () => {
+    const res = generateCourse('CHK1', 20, T, { size: lateSize(2), extraCheck: (c) => (c.objects.some((o) => o.id === 'switch') ? null : 'no switch') });
+    expect(res.fallback).toBe(false);
+    expect(res.course.objects.some((o) => o.id === 'switch')).toBe(true);
+  }, 120_000);
 });

@@ -51,7 +51,11 @@ export interface DetailDef {
     readonly moatFill: Readonly<Record<'water' | 'sand' | 'spikes', number>>;
     readonly railChance: number;
     readonly oneWideChance: number;
+    /** Round 2b: chance a moat's bridge is a drawbridge (up until its switch is pressed). */
+    readonly drawbridgeChance?: number;
   } | null;
+  /** Round 2b: chance a course gets a linked gate across one passage, with its switch in the area before. */
+  readonly linkedGateChance?: number;
   /** Extra blockers per 100 tiles of course, picked by weight. Never crates, so stars are unchanged. */
   readonly extraObstacles: { readonly per100: number; readonly weights: Readonly<Record<string, number>> };
   /** Scenery (sheet section 2.6): props per 100 tiles, in clusters, picked by weight. */

@@ -126,7 +126,10 @@ export const DETAIL: readonly DetailDef[] = [
       moatFill: { water: 55, sand: 35, spikes: 10 },
       railChance: 0.5,
       oneWideChance: 0,
+      // Round 2b (sheet sections 2.2 and 2.3).
+      drawbridgeChance: 0.3,
     },
+    linkedGateChance: 0.25,
     // Built 2026-11-21: 1.0, not the sheet's 1.5, because the groves' trees already add obstacles (target about 2 per 100 tiles).
     extraObstacles: { per100: 1.0, weights: { rock: 2, stump: 2, 'low-wall': 1, 'dead-tree': 3 } },
     scenery: { per100: 6, cluster: [1, 4], weights: { tuft: 3, flowers: 2, pebbles: 2, mushrooms: 2, leaves: 2 } },
@@ -140,7 +143,9 @@ export const DETAIL: readonly DetailDef[] = [
       moatFill: { water: 40, sand: 20, spikes: 40 },
       railChance: 0.5,
       oneWideChance: 0.3,
+      drawbridgeChance: 0.5,
     },
+    linkedGateChance: 0.4,
     // Built 2026-11-21: 1.5, not the sheet's 2.5, because the groves' trees already add obstacles (target about 3 per 100 tiles).
     extraObstacles: { per100: 1.5, weights: { rock: 2, stump: 2, 'low-wall': 1, 'dead-tree': 3 } },
     scenery: { per100: 8, cluster: [1, 4], weights: { tuft: 2, pebbles: 2, mushrooms: 2, leaves: 2, bones: 2 } },

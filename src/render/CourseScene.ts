@@ -348,6 +348,7 @@ export class CourseScene extends Phaser.Scene {
     this.animPhase = -1;
     this.overview = false;
     this.hiddenHud = [];
+    this.tileImgs = [];
     for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
 
     panel = getPanel();
@@ -740,6 +741,18 @@ export class CourseScene extends Phaser.Scene {
 
   // -------------------------------------------------------------------------
 
+  /** The ground's images, so the ground can be drawn again when it changes (a drawbridge coming down). */
+  private tileImgs: Phaser.GameObjects.Image[] = [];
+
+  /** Round 2b: draw the ground again from the course as it is now. */
+  private redrawGround(): void {
+    this.course = this.play.course;
+    for (const img of this.tileImgs) img.destroy();
+    this.tileImgs = [];
+    this.animated = [];
+    for (const p of buildDrawList(this.play.course)) if (p.kind !== 'exit') this.place(p);
+  }
+
   private place(p: Placement): void {
     const entry = manifest.sprites[p.sprite];
     if (!entry) throw new Error(`Sprite "${p.sprite}" is not in the asset manifest.`);
@@ -747,6 +760,7 @@ export class CourseScene extends Phaser.Scene {
       .image(p.x, p.y, p.sprite, frameIndex(entry, p.frame))
       .setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight)
       .setDepth(p.depth);
+    this.tileImgs.push(img);
     // Animated overlays (water shimmer, Milestone 5b) have frames "<shape>~1", "<shape>~2", ...
     if (entry.frames.includes(`${p.frame}~1`)) this.animated.push({ img, frame: p.frame, entry });
   }
@@ -928,7 +942,15 @@ export class CourseScene extends Phaser.Scene {
     const moving = !!play.shot;
 
     for (const b of play.blockers) show(b.uid, b.def.sprite, b.x, b.y, b.z);
-    for (const m of play.movers) show(m.uid, m.def.sprite, m.x, m.y, m.z, m.def.motion.kind === 'gate' ? { frame: m.open ? 'open' : 'closed' } : {});
+    for (const m of play.movers) {
+      const gate = m.def.motion.kind === 'gate' || m.def.motion.kind === 'linked';
+      show(m.uid, m.def.sprite, m.x, m.y, m.z, gate ? { frame: m.open ? 'open' : 'closed' } : {});
+      // A gate across y is the same picture mirrored.
+      if (gate) this.objectImgs.get(m.uid)?.setFlipX(m.shape.kind === 'box' && m.shape.hy > m.shape.hx);
+    }
+    // Round 2b: switches lie flat on their tile; a drawbridge's planks stand up at each tile until it comes down.
+    for (const w of play.switches) show(w.uid, w.def.sprite, w.x, w.y, groundAt(play.course, w.x, w.y)?.h ?? 0, { frame: w.on ? 'on' : 'off', depth: tileDepth(Math.floor(w.x), Math.floor(w.y), 'arrow') });
+    for (const d of play.drawbridges) if (!d.down) show(d.uid, d.def.sprite, d.tx + 0.5, d.ty + 0.5, groundAt(play.course, d.tx + 0.5, d.ty + 0.5)?.h ?? 0);
     for (const b of play.breakables) {
       if (b.broken) continue;
       if (!b.def.shape) show(b.uid, b.def.sprite, b.x, b.y, b.z, { depth: tileDepth(b.tx, b.ty, 'arrow') });
@@ -1497,6 +1519,13 @@ export class CourseScene extends Phaser.Scene {
             e.auto ? `BAG FULL: ATE THE ${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()} NOW` : `ATE THE ${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()}`,
             0xf8d030,
           );
+          break;
+        case 'switchOn':
+          this.queueMessage('SWITCH ON!', GOOD);
+          break;
+        case 'bridgeDown':
+          this.redrawGround();
+          this.queueMessage('THE BRIDGE COMES DOWN', GOOD);
           break;
         case 'foodStashed':
           this.queueMessage(`${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()} STASHED IN YOUR BAG`, 0xf8d030);

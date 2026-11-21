@@ -47,6 +47,8 @@ interface PlacedObject {
   phase?: number;
   /** Milestone 8: a dressed enemy's rank, traits, element, spot and gear. */
   dress?: Dress;
+  /** Round 2b: a switch, linked gate or drawbridge tile's link letter. */
+  link?: string;
 }
 
 const dist = (a: Point, b: Point) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -352,6 +354,41 @@ export function generateAttempt(seed: string, budget: number, attempt: number, s
       used.add(key(p));
     }
   }
+  // Round 2b (sheet section 2): drawbridges and their switches, then maybe a linked gate across a passage.
+  const links = 'abcdefghijklmnopqrstuvwxyz';
+  let nextLink = 0;
+  for (const d of terrain.drawbridges) {
+    const link = links[nextLink++ % links.length]!;
+    objects.push({ id: 'switch', at: d.switchAt, link });
+    used.add(key(d.switchAt));
+    for (const t of d.tiles) objects.push({ id: 'drawbridge', at: t, link });
+  }
+  if (detail?.linkedGateChance && detailRng.chance(detail.linkedGateChance)) {
+    const passages = terrain.regions
+      .map((r, i) => ({ r, i }))
+      .filter(({ r }) => r.kind === 'passage' && r.name !== 'gap' && r.dir && r.rect.w > 0 && r.rect.h > 0);
+    for (const { r } of detailRng.shuffle(passages)) {
+      const acrossX = r.dir === 'ne' || r.dir === 'sw';
+      const mid = acrossX ? r.rect.y + Math.floor(r.rect.h / 2) : r.rect.x + Math.floor(r.rect.w / 2);
+      const gates: Point[] = [];
+      const n = acrossX ? r.rect.w : r.rect.h;
+      for (let k = 0; k < n; k++) {
+        const p: Point = acrossX ? [r.rect.x + k, mid] : [mid, r.rect.y + k];
+        if (tileAt(p) && !objects.some((o) => o.at[0] === p[0] && o.at[1] === p[1])) gates.push(p);
+      }
+      // Its switch in the area before the passage, at least 4 tiles from every part of the gate.
+      const before = areaIdx.find((ai) => terrain.regions[ai]!.order === r.order);
+      if (!gates.length || before === undefined) continue;
+      const spots = tilesOf(before).filter((p) => ok(p) && gates.every((g) => dist(p, g) >= 4));
+      if (!spots.length) continue;
+      const link = links[nextLink % links.length]!;
+      const sw = detailRng.pick(spots);
+      objects.push({ id: 'switch', at: sw, link });
+      used.add(key(sw));
+      for (const g of gates) objects.push({ id: 'linked-gate', at: g, link, orient: acrossX ? 'x' : 'y' });
+      break;
+    }
+  }
   const scenery = detail ? placeScenery(detailRng.fork('scenery'), detail.scenery, tiles, width, height, start, exit, objects, terrain.rails, courseTiles) : [];
 
   // ---- Quota: cracked-tile stars are a bonus ---------------------------------
@@ -447,6 +484,7 @@ export function writeCourse(
       ...(o.dress?.element && { element: o.dress.element }),
       ...(o.dress?.spot && { spot: o.dress.spot }),
       ...(o.dress?.gear && { gear: o.dress.gear }),
+      ...(o.link && { link: o.link }),
     })),
     ...(rails.length && { rails: rails.map((l) => l.map((p) => [p[0], p[1]])) }),
     ...(scenery.length && { scenery: scenery.map((s) => [s[0], s[1], s[2]]) }),
