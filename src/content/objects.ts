@@ -110,6 +110,8 @@ export interface MoverDef {
   /** Extra speed a ball is pushed away with when this runs into it (owner, 2026-11-14: fixed-route things knock the ball). 0 for a plain bounce. */
   readonly knock: number;
   readonly cost: number;
+  /** Owner, 2026-11-21: sharp on top. A ball in the air that touches it while it is closed takes spike damage. */
+  readonly spikedTop?: boolean;
 }
 
 /** Destructibles (FEATURES.md section 6). */
@@ -407,6 +409,7 @@ const defs: readonly ObjectDef[] = [
     bounce: 0.6,
     knock: 0,
     cost: 0,
+    spikedTop: true,
   },
   { kind: 'switch', id: 'switch', name: 'Switch', sprite: 'switch', reach: 0.4 },
   { kind: 'drawbridge', id: 'drawbridge', name: 'Drawbridge', sprite: 'drawbridge-up', rise: 1, surface: 'bridge' },
@@ -421,6 +424,7 @@ const defs: readonly ObjectDef[] = [
     bounce: 0.6,
     knock: 0,
     cost: 2,
+    spikedTop: true,
   },
 
   // Destructibles (section 6). Secured crate: owner, 2026-11-14.

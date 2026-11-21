@@ -29,7 +29,7 @@ import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
 import { buyUpgrade, permanentModifiers, type Profile } from './profile.ts';
 import { Rng } from './rng.ts';
 import { StatSheet, type Modifier } from './stats.ts';
-import { COURSE_MOD_LIST, COURSE_MODS, type CourseMod } from '../content/modifiers.ts';
+import { COURSE_MOD_LIST, courseModCost, type CourseMod } from '../content/modifiers.ts';
 import { DIRECTIONS } from '../content/surfaces.ts';
 import { GEN } from '../content/gen.ts';
 import { biomeForRegion } from '../content/biomes.ts';
@@ -317,12 +317,13 @@ export function courseModFor(run: RunState, node: MapNode): CourseMod | null {
   const rng = rngFor(run, `mod:${run.region}:${node.id}`);
   if (!rng.chance(regionDef(run).courseModChance)) return null;
   const def = rng.pick(COURSE_MOD_LIST);
-  return def.id === 'wind' ? { id: def.id, dir: rng.pick(DIRECTIONS) } : { id: def.id };
+  // Owner, 2026-11-21: wind comes in three strengths.
+  return def.id === 'wind' ? { id: def.id, dir: rng.pick(DIRECTIONS), strength: rng.pick([1, 2, 3] as const) } : { id: def.id };
 }
 
 /** A course's threat budget less its modifier's cost (never below the generator's minimum). */
 function budgetWithMod(run: RunState, type: NodeType, mod: CourseMod | null): number {
-  const cost = mod ? (COURSE_MODS.get(mod.id)?.cost ?? 0) : 0;
+  const cost = mod ? courseModCost(mod) : 0;
   return Math.max(GEN.minBudget, budgetFor(run, type) - cost);
 }
 

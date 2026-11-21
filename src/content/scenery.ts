@@ -8,6 +8,10 @@ export interface SceneryDef {
   readonly id: string;
   readonly name: string;
   readonly sprite: string;
+  /** Owner, 2026-11-21: animated props (fireflies) cycle through their frames, one every this many milliseconds. */
+  readonly frameMs?: number;
+  /** Floats in the air (fireflies): drawn above everything standing on its tile. */
+  readonly floats?: boolean;
 }
 
 export const SCENERY_LIST: readonly SceneryDef[] = [
@@ -17,6 +21,8 @@ export const SCENERY_LIST: readonly SceneryDef[] = [
   { id: 'mushrooms', name: 'Mushrooms', sprite: 'scenery-mushrooms' },
   { id: 'leaves', name: 'Fallen leaves', sprite: 'scenery-leaves' },
   { id: 'bones', name: 'Bones', sprite: 'scenery-bones' },
+  // Owner, 2026-11-21: a small cluster of flickering lights. Looks only.
+  { id: 'fireflies', name: 'Fireflies', sprite: 'scenery-fireflies', frameMs: 180, floats: true },
 ];
 
 export const SCENERY: ReadonlyMap<string, SceneryDef> = new Map(SCENERY_LIST.map((s) => [s.id, s]));

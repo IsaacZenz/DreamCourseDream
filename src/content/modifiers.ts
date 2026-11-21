@@ -14,6 +14,26 @@ export type CourseModId = 'wind' | 'lowGravity' | 'darkness';
 export interface CourseMod {
   readonly id: CourseModId;
   readonly dir?: Direction;
+  /** Wind only (owner, 2026-11-21): 1 light, 2 medium, 3 strong. Left out: medium. */
+  readonly strength?: 1 | 2 | 3;
+}
+
+/** Wind strengths (owner, 2026-11-21): the push in the air (tiles/s²) and the cost against the threat budget. */
+export const WIND_STRENGTHS: Readonly<Record<1 | 2 | 3, { readonly name: string; readonly accel: number; readonly cost: number }>> = {
+  1: { name: 'Light', accel: 1.0, cost: 1 },
+  2: { name: 'Medium', accel: 1.5, cost: 2 },
+  3: { name: 'Strong', accel: 2.2, cost: 3 },
+};
+
+/** What a course modifier costs against the threat budget (wind: by its strength). */
+export function courseModCost(mod: CourseMod): number {
+  if (mod.id === 'wind') return WIND_STRENGTHS[mod.strength ?? 2].cost;
+  return COURSE_MODS.get(mod.id)?.cost ?? 0;
+}
+
+/** Wind's push in the air for this modifier (0 for the others). */
+export function windAccel(mod: CourseMod): number {
+  return mod.id === 'wind' ? WIND_STRENGTHS[mod.strength ?? 2].accel : 0;
 }
 
 export interface CourseModDef {

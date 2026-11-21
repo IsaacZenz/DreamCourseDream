@@ -1148,6 +1148,21 @@
         6
       ]
     },
+    "scenery-fireflies": {
+      "file": "sprites/scenery-fireflies.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
+    },
     "snoozegrub": {
       "file": "sprites/snoozegrub.png",
       "frameWidth": 18,
@@ -4135,6 +4150,21 @@
         6
       ]
     },
+    "scenery-fireflies@bog": {
+      "file": "sprites/scenery-fireflies@bog.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
+    },
     "tile-grass@thornwood": {
       "file": "sprites/tile-grass@thornwood.png",
       "frameWidth": 32,
@@ -5151,6 +5181,21 @@
       "anchor": [
         6,
         6
+      ]
+    },
+    "scenery-fireflies@thornwood": {
+      "file": "sprites/scenery-fireflies@thornwood.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
       ]
     },
     "tile-grass@night": {
@@ -6171,6 +6216,21 @@
         6
       ]
     },
+    "scenery-fireflies@night": {
+      "file": "sprites/scenery-fireflies@night.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
+    },
     "tile-grass@underground": {
       "file": "sprites/tile-grass@underground.png",
       "frameWidth": 32,
@@ -7187,6 +7247,1054 @@
       "anchor": [
         6,
         6
+      ]
+    },
+    "scenery-fireflies@underground": {
+      "file": "sprites/scenery-fireflies@underground.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
+    },
+    "tile-grass@starfall": {
+      "file": "sprites/tile-grass@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000b",
+        "1100b",
+        "0110b",
+        "0011b",
+        "1001b",
+        "1000b",
+        "0100b",
+        "0010b",
+        "0001b",
+        "0111b",
+        "1011b",
+        "1101b",
+        "1110b",
+        "2200b",
+        "0220b",
+        "0022b",
+        "2002b",
+        "2000b",
+        "0200b",
+        "0020b",
+        "0002b",
+        "0222b",
+        "2022b",
+        "2202b",
+        "2220b"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-rough@starfall": {
+      "file": "sprites/tile-rough@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-sand@starfall": {
+      "file": "sprites/tile-sand@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-ice@starfall": {
+      "file": "sprites/tile-ice@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water@starfall": {
+      "file": "sprites/tile-water@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-surface@starfall": {
+      "file": "sprites/tile-water-surface@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-water-deep-surface@starfall": {
+      "file": "sprites/tile-water-deep-surface@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220",
+        "0000~1",
+        "1100~1",
+        "0110~1",
+        "0011~1",
+        "1001~1",
+        "1000~1",
+        "0100~1",
+        "0010~1",
+        "0001~1",
+        "0111~1",
+        "1011~1",
+        "1101~1",
+        "1110~1",
+        "2200~1",
+        "0220~1",
+        "0022~1",
+        "2002~1",
+        "2000~1",
+        "0200~1",
+        "0020~1",
+        "0002~1",
+        "0222~1",
+        "2022~1",
+        "2202~1",
+        "2220~1",
+        "0000~2",
+        "1100~2",
+        "0110~2",
+        "0011~2",
+        "1001~2",
+        "1000~2",
+        "0100~2",
+        "0010~2",
+        "0001~2",
+        "0111~2",
+        "1011~2",
+        "1101~2",
+        "1110~2",
+        "2200~2",
+        "0220~2",
+        "0022~2",
+        "2002~2",
+        "2000~2",
+        "0200~2",
+        "0020~2",
+        "0002~2",
+        "0222~2",
+        "2022~2",
+        "2202~2",
+        "2220~2",
+        "0000~3",
+        "1100~3",
+        "0110~3",
+        "0011~3",
+        "1001~3",
+        "1000~3",
+        "0100~3",
+        "0010~3",
+        "0001~3",
+        "0111~3",
+        "1011~3",
+        "1101~3",
+        "1110~3",
+        "2200~3",
+        "0220~3",
+        "0022~3",
+        "2002~3",
+        "2000~3",
+        "0200~3",
+        "0020~3",
+        "0002~3",
+        "0222~3",
+        "2022~3",
+        "2202~3",
+        "2220~3"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "water-shore@starfall": {
+      "file": "sprites/water-shore@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "ne",
+        "se",
+        "sw",
+        "nw"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bumper@starfall": {
+      "file": "sprites/tile-bumper@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-booster@starfall": {
+      "file": "sprites/tile-booster@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-conveyor@starfall": {
+      "file": "sprites/tile-conveyor@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spring@starfall": {
+      "file": "sprites/tile-spring@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-spikes@starfall": {
+      "file": "sprites/tile-spikes@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-bridge@starfall": {
+      "file": "sprites/tile-bridge@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "tile-warp@starfall": {
+      "file": "sprites/tile-warp@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 24,
+      "frames": [
+        "0000",
+        "1100",
+        "0110",
+        "0011",
+        "1001",
+        "1000",
+        "0100",
+        "0010",
+        "0001",
+        "0111",
+        "1011",
+        "1101",
+        "1110",
+        "2200",
+        "0220",
+        "0022",
+        "2002",
+        "2000",
+        "0200",
+        "0020",
+        "0002",
+        "0222",
+        "2022",
+        "2202",
+        "2220"
+      ],
+      "anchor": [
+        16,
+        16
+      ]
+    },
+    "face-earth-left@starfall": {
+      "file": "sprites/face-earth-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-earth-right@starfall": {
+      "file": "sprites/face-earth-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-sand-left@starfall": {
+      "file": "sprites/face-sand-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-sand-right@starfall": {
+      "file": "sprites/face-sand-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-ice-left@starfall": {
+      "file": "sprites/face-ice-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-ice-right@starfall": {
+      "file": "sprites/face-ice-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-bumper-left@starfall": {
+      "file": "sprites/face-bumper-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-bumper-right@starfall": {
+      "file": "sprites/face-bumper-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-metal-left@starfall": {
+      "file": "sprites/face-metal-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-metal-right@starfall": {
+      "file": "sprites/face-metal-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "face-wood-left@starfall": {
+      "file": "sprites/face-wood-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    },
+    "face-wood-right@starfall": {
+      "file": "sprites/face-wood-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": [
+        "full",
+        "capA",
+        "capB",
+        "capA2",
+        "capB2"
+      ],
+      "anchor": [
+        0,
+        8
+      ]
+    },
+    "rock@starfall": {
+      "file": "sprites/rock@starfall.png",
+      "frameWidth": 20,
+      "frameHeight": 14,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        10,
+        10
+      ]
+    },
+    "stump@starfall": {
+      "file": "sprites/stump@starfall.png",
+      "frameWidth": 10,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        25
+      ]
+    },
+    "low-wall@starfall": {
+      "file": "sprites/low-wall@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 20,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        12
+      ]
+    },
+    "dead-tree@starfall": {
+      "file": "sprites/dead-tree@starfall.png",
+      "frameWidth": 22,
+      "frameHeight": 40,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        11,
+        37
+      ]
+    },
+    "drawbridge-up@starfall": {
+      "file": "sprites/drawbridge-up@starfall.png",
+      "frameWidth": 32,
+      "frameHeight": 28,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        22
+      ]
+    },
+    "scenery-tuft@starfall": {
+      "file": "sprites/scenery-tuft@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-flowers@starfall": {
+      "file": "sprites/scenery-flowers@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-pebbles@starfall": {
+      "file": "sprites/scenery-pebbles@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-mushrooms@starfall": {
+      "file": "sprites/scenery-mushrooms@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-leaves@starfall": {
+      "file": "sprites/scenery-leaves@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-bones@starfall": {
+      "file": "sprites/scenery-bones@starfall.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        6
+      ]
+    },
+    "scenery-fireflies@starfall": {
+      "file": "sprites/scenery-fireflies@starfall.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
       ]
     },
     "tile-grass@spooky": {
@@ -8206,6 +9314,21 @@
         6,
         6
       ]
+    },
+    "scenery-fireflies@spooky": {
+      "file": "sprites/scenery-fireflies@spooky.png",
+      "frameWidth": 14,
+      "frameHeight": 12,
+      "frames": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "anchor": [
+        7,
+        18
+      ]
     }
   },
   "tints": {
@@ -8228,6 +9351,9 @@
     },
     "underground": {
       "sky": "#1c1610"
+    },
+    "starfall": {
+      "sky": "#1c0c30"
     },
     "spooky": {
       "sky": "#2a2a36"

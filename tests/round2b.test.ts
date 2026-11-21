@@ -20,7 +20,7 @@ import { buildTerrain } from '../src/gen/journey';
 import { Rng } from '../src/sim/rng';
 import { themedSprite, type Manifest } from '../src/render/manifest';
 import { generateRunMap } from '../src/gen/runMap';
-import { COURSE_MODS, type CourseMod } from '../src/content/modifiers';
+import { courseModCost, type CourseMod } from '../src/content/modifiers';
 import type { JourneySize } from '../src/content/gen';
 
 /** A late course's size in region n (after 6 counted nodes), with its detail dial. */
@@ -393,7 +393,7 @@ describe('course modifiers (sheet section 3)', () => {
           if (mod) {
             with_++;
             const job = courseJobFor(run, node)!;
-            expect(job.budget).toBe(Math.max(GEN.minBudget, budgetFor(run, 'course') - COURSE_MODS.get(mod.id)!.cost));
+            expect(job.budget).toBe(Math.max(GEN.minBudget, budgetFor(run, 'course') - courseModCost(mod)));
             expect(job.opts.loadout.courseMod).toEqual(mod);
           }
         }
@@ -410,8 +410,13 @@ describe('course modifiers (sheet section 3)', () => {
 // Biomes and themes (sheet section 4)
 
 describe('biomes and themes (sheet section 4)', () => {
-  it('themes go day, bog, thornwood, night, underground, spooky, then again from bog', () => {
-    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 12].map(themeForRegion)).toEqual(['day', 'bog', 'thornwood', 'night', 'underground', 'spooky', 'bog', 'thornwood', 'night', 'bog']);
+  it('themes (owner, round 2c): day, bog, thornwood; endless starts with Starfall, then a random theme each region from the seed', () => {
+    expect([1, 2, 3, 4].map((r) => themeForRegion(r, 'X'))).toEqual(['day', 'bog', 'thornwood', 'starfall']);
+    const later = (seed: string) => [5, 6, 7, 8, 9, 10, 11, 12].map((r) => themeForRegion(r, seed));
+    expect(later('A')).toEqual(later('A'));
+    for (const t of later('A')) expect(THEMES).toContain(t);
+    // Different runs get different orders.
+    expect(new Set(['A', 'B', 'C', 'D'].map((s) => later(s).join(','))).size).toBeGreaterThan(1);
   });
 
   it('biomes: meadow, bog, thornwood, then in turn; region 1 keeps its landforms', () => {
@@ -457,5 +462,58 @@ describe('biomes and themes (sheet section 4)', () => {
     expect(themed).not.toContain('snoozegrub');
     expect(themedSprite(manifest, 'tile-grass', 'night')).toBe('tile-grass@night');
     expect(themedSprite(manifest, 'ball', 'night')).toBe('ball');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Round 2c (owner feedback, 2026-11-21)
+
+describe('round 2c', () => {
+  it('a boss arena exit is under the boss', async () => {
+    const { ARENAS } = await import('../src/content/arenas');
+    for (const a of ARENAS.values()) {
+      const d = a.data as { exit: [number, number]; objects: { id: string; at: [number, number] }[] };
+      const boss = d.objects.find((o) => ['stagwarden', 'gloamhorn', 'brood-queen'].includes(o.id))!;
+      expect(d.exit).toEqual(boss.at);
+      expect(parseCourse(a.data).ok).toBe(true);
+    }
+  });
+
+  it('wind comes in three strengths, each with its push and cost', () => {
+    const accel = (strength: 1 | 2 | 3) => createPlay(field(14, 5), T, { seed: 'w', loadout: { courseMod: { id: 'wind', dir: 'se', strength } } }).stats.get('windX');
+    expect([accel(1), accel(2), accel(3)]).toEqual([1.0, 1.5, 2.2]);
+    expect([1, 2, 3].map((s) => courseModCost({ id: 'wind', dir: 'se', strength: s as 1 | 2 | 3 }))).toEqual([1, 2, 3]);
+  });
+
+  /** A flat field with a closed linked gate across x = 7 (its switch out of the way). */
+  const gated = () => {
+    const rows: string[] = [];
+    for (let y = 0; y < 5; y++) rows.push(Array.from({ length: 14 }, (_, x) => (x === 0 || y === 0 || x === 13 || y === 4 ? 'gg' : 'g8')).join(' '));
+    const objects = [{ id: 'switch', at: [2, 1], link: 'a' }, ...[1, 2, 3].map((y) => ({ id: 'linked-gate', at: [7, y], link: 'a', orient: 'y' }))];
+    const r = parseCourse({ format: 3, name: 'g', legend: { g: 'grass' }, tiles: rows, start: [1, 2], exit: [12, 1], quota: 0, objects });
+    if (!r.ok) throw new Error(r.errors.join('\n'));
+    return r.course;
+  };
+  const run = (cmd: ShotCommand, open = false) => {
+    const p = createPlay(gated(), T, { seed: 'g' });
+    if (open) p.linksOn.a = true;
+    takeShot(p, cmd);
+    const log: PlayEvent[] = [];
+    for (let i = 0; i < 6000 && p.shot; i++) {
+      tick(p);
+      log.push(...drainLog(p));
+    }
+    return log;
+  };
+
+  it('a closed gate hurts a ball that touches it in the air', () => {
+    const log = run(shot({ type: 'lofted', power: 0.9 }));
+    expect(log.some((e) => e.kind === 'gateSpikes')).toBe(true);
+    expect(log.some((e) => e.kind === 'damage' && e.cause === 'spikes')).toBe(true);
+  });
+
+  it('rolling into a closed gate does not hurt; an open gate never does', () => {
+    expect(run(shot({ power: 0.7 })).some((e) => e.kind === 'damage')).toBe(false);
+    expect(run(shot({ type: 'lofted', power: 0.9 }), true).some((e) => e.kind === 'damage')).toBe(false);
   });
 });

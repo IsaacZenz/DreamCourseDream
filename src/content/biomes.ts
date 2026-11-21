@@ -24,12 +24,25 @@ export function biomeForRegion(region: number): BiomeDef {
   return BIOMES[(Math.max(1, region) - 1) % BIOMES.length]!;
 }
 
-/** Owner, 2026-11-21 (Q8): day, bog, thornwood, then night, underground, spooky; then again from bog. */
-export const THEMES = ['day', 'bog', 'thornwood', 'night', 'underground', 'spooky'] as const;
+/**
+ * Themes. Owner, 2026-11-21 (round 2c): regions 1 to 3 are day, bog and
+ * thornwood; endless mode always starts (region 4) with its own theme,
+ * Starfall; after that each region picks one at random from the run seed
+ * (repeats are fine).
+ */
+export const THEMES = ['day', 'bog', 'thornwood', 'starfall', 'night', 'underground', 'spooky'] as const;
 export type ThemeId = (typeof THEMES)[number];
 
-export function themeForRegion(region: number): ThemeId {
+/** A small stable hash of text, for picking a theme from the run seed without the game's random streams. */
+function hashOf(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+export function themeForRegion(region: number, seed = ''): ThemeId {
   const r = Math.max(1, region);
-  if (r <= THEMES.length) return THEMES[r - 1]!;
-  return THEMES[1 + ((r - THEMES.length - 1) % (THEMES.length - 1))]!;
+  if (r <= 3) return THEMES[r - 1]!;
+  if (r === 4) return 'starfall';
+  return THEMES[hashOf(`${seed}/theme/${r}`) % THEMES.length]!;
 }

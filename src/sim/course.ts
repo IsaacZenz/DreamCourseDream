@@ -323,7 +323,10 @@ export function parseCourse(raw: unknown): ParseResult {
   checkRailCrossings(objects, rails, errors);
   for (const o of objects) {
     if (start && o.x === start.x && o.y === start.y) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the start tile.`);
-    if (exit && o.x === exit.x && o.y === exit.y) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the exit tile.`);
+    // Owner, 2026-11-21: a boss arena's exit sits under the boss's starting spot (it opens when the boss is beaten).
+    const def = OBJECTS.get(o.id);
+    const isBoss = def?.kind === 'enemy' && def.behaviour.kind === 'boss';
+    if (exit && o.x === exit.x && o.y === exit.y && !isBoss) errors.push(`object "${o.id}" at (${o.x}, ${o.y}) is on the exit tile.`);
   }
   const quota = course.quota;
   if (Number.isInteger(quota)) {

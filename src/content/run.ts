@@ -116,8 +116,9 @@ export interface RegionDef {
 export const DETAIL: readonly DetailDef[] = [
   {
     setPieces: null,
-    extraObstacles: { per100: 0.5, weights: { rock: 1, stump: 1 } },
-    scenery: { per100: 4, cluster: [1, 3], weights: { tuft: 4, flowers: 3, pebbles: 2 } },
+    // Owner, 2026-11-21 (round 2c): a few more low-risk obstacles in region 1 (about 4 to 8 a course; was 0.5 per 100).
+    extraObstacles: { per100: 1.3, weights: { rock: 2, stump: 2, 'low-wall': 1 } },
+    scenery: { per100: 4, cluster: [1, 3], weights: { tuft: 4, flowers: 3, pebbles: 2, fireflies: 1 } },
   },
   {
     setPieces: {
@@ -135,7 +136,7 @@ export const DETAIL: readonly DetailDef[] = [
     linkedGateChance: 0.25,
     // Built 2026-11-21: 1.0, not the sheet's 1.5, because the groves' trees already add obstacles (target about 2 per 100 tiles).
     extraObstacles: { per100: 1.0, weights: { rock: 2, stump: 2, 'low-wall': 1, 'dead-tree': 3 } },
-    scenery: { per100: 6, cluster: [1, 4], weights: { tuft: 3, flowers: 2, pebbles: 2, mushrooms: 4, leaves: 2 } },
+    scenery: { per100: 6, cluster: [1, 4], weights: { tuft: 3, flowers: 2, pebbles: 2, mushrooms: 4, leaves: 2, fireflies: 2 } },
   },
   {
     setPieces: {
@@ -152,7 +153,7 @@ export const DETAIL: readonly DetailDef[] = [
     // Built 2026-11-21: 1.5, not the sheet's 2.5, because the groves' trees already add obstacles (target about 3 per 100 tiles).
     extraObstacles: { per100: 1.5, weights: { rock: 2, stump: 2, 'low-wall': 1, 'dead-tree': 3 } },
     // Round 2b, Thornwood: more bones (3, was 2).
-    scenery: { per100: 8, cluster: [1, 4], weights: { tuft: 2, pebbles: 2, mushrooms: 2, leaves: 2, bones: 3 } },
+    scenery: { per100: 8, cluster: [1, 4], weights: { tuft: 2, pebbles: 2, mushrooms: 2, leaves: 2, bones: 3, fireflies: 2 } },
   },
 ];
 

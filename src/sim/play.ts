@@ -26,7 +26,7 @@ import { ABILITIES, ABILITY_IDS, type AbilityDef } from '../content/abilities.ts
 import { CHARACTERS, DEFAULT_CHARACTER, type CharacterDef } from '../content/characters.ts';
 import { ACORN_LIST, ACORNS, FOOD, FOODS, acornWeights } from '../content/consumables.ts';
 import { UPGRADES } from '../content/run.ts';
-import { COURSE_MODS, type CourseMod } from '../content/modifiers.ts';
+import { COURSE_MODS, windAccel, type CourseMod } from '../content/modifiers.ts';
 import { GEAR, GEAR_CATEGORIES, NO_GEAR, RARITY_ODDS, type GearCategory, type GearEffect, type GearSlots } from '../content/gear.ts';
 import {
   ELEMENT_RULES,
@@ -395,6 +395,8 @@ export type PlayEvent =
   /** Round 2b: a switch was pressed; a drawbridge came down. */
   | { kind: 'switchOn'; link: string; x: number; y: number }
   | { kind: 'bridgeDown'; link: string }
+  /** Owner, 2026-11-21: the ball touched a closed gate's spiked top in the air. */
+  | { kind: 'gateSpikes' }
   /** A boss marked a ring where its next slam lands (Milestone 7). */
   | { kind: 'slamMark'; enemy: string; x: number; y: number; r: number }
   /** A boss's slam landed; `hit` if the ball was inside the ring on the ground. */
@@ -1136,10 +1138,11 @@ export function courseModModifiers(mod: CourseMod | null): Modifier[] {
   if (!def) return [];
   const source = { kind: 'course' as const, id: def.id };
   const out: Modifier[] = def.stats.map((m) => ({ ...m, source, duration: { kind: 'course' } }));
-  if (def.windAccel && mod!.dir) {
+  const accel = windAccel(mod!);
+  if (accel && mod!.dir) {
     const [dx, dy] = DIRECTION_VECTORS[mod!.dir];
-    if (dx) out.push({ stat: 'windX', op: 'add', amount: dx * def.windAccel, source, duration: { kind: 'course' } });
-    if (dy) out.push({ stat: 'windY', op: 'add', amount: dy * def.windAccel, source, duration: { kind: 'course' } });
+    if (dx) out.push({ stat: 'windX', op: 'add', amount: dx * accel, source, duration: { kind: 'course' } });
+    if (dy) out.push({ stat: 'windY', op: 'add', amount: dy * accel, source, duration: { kind: 'course' } });
   }
   return out;
 }
@@ -1594,6 +1597,12 @@ function onBallContact(play: PlayState, o: Obstacle, s: ShotState): ContactResul
   if (e) return hitEnemy(play, e, s);
   const b = play.breakables.find((x) => x.uid === o.id);
   if (b) return hitBreakable(play, b, s);
+  // Owner, 2026-11-21: a closed gate is sharp on top. Clearing it is the risk: touch it in the air and it hurts.
+  const m = play.movers.find((x) => x.uid === o.id);
+  if (m?.def.spikedTop && !m.open && !s.ball.grounded) {
+    play.log.push({ kind: 'gateSpikes' });
+    damageBall(play, RULES.spikeDamage, 'spikes');
+  }
   return (o.knock ?? 0) > 0 ? 'knock' : 'bounce';
 }
 

@@ -38,7 +38,7 @@ import { ELEMENT_IDS, OBJECTS, RAIL } from '../content/objects';
 import { SCENERY } from '../content/scenery';
 import { COURSE_MODS, type CourseMod } from '../content/modifiers';
 import type { Direction } from '../content/surfaces';
-import { courseModBanner, courseModLabel } from './courseModView';
+import { courseModBanner, courseModShort } from './courseModView';
 import { RULES } from '../content/rules';
 import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
@@ -142,7 +142,9 @@ function testCourseMod(): CourseMod | null {
   const id = params.get('mod');
   if (!id || !COURSE_MODS.has(id)) return null;
   const dir = params.get('dir') as Direction | null;
-  return id === 'wind' ? { id: 'wind', dir: dir && ['ne', 'se', 'sw', 'nw'].includes(dir) ? dir : 'ne' } : { id: id as CourseMod['id'] };
+  const st = Number(params.get('strength'));
+  const strength = st === 1 || st === 2 || st === 3 ? st : 2;
+  return id === 'wind' ? { id: 'wind', dir: dir && ['ne', 'se', 'sw', 'nw'].includes(dir) ? dir : 'ne', strength } : { id: id as CourseMod['id'] };
 }
 
 function testRegionOpts(): GenOptions {
@@ -491,18 +493,32 @@ export class CourseScene extends Phaser.Scene {
    * ball and everything standing. Looks only. The U panel can hide them all.
    */
   private sceneryImgs: Phaser.GameObjects.Image[] = [];
+  /** Animated scenery (fireflies): the image, its sprite and how fast it flickers; each starts at its own point. */
+  private sceneryAnims: { img: Phaser.GameObjects.Image; sprite: string; frameMs: number; offset: number }[] = [];
   private drawScenery(course: Course): void {
-    this.sceneryImgs = course.scenery.map((s) => {
+    this.sceneryAnims = [];
+    this.sceneryImgs = course.scenery.map((s, k) => {
       const def = SCENERY.get(s.id)!;
       const z = groundAt(course, s.x, s.y)?.h ?? 0;
       const p = project(s.x, s.y, z / STEP_HEIGHT);
-      return this.makeSprite(def.sprite).setPosition(Math.round(p.x), Math.round(p.y)).setDepth(tileDepth(Math.floor(s.x), Math.floor(s.y), 'arrow') + 0.5);
+      const frame = manifest.sprites[this.sprite(def.sprite)]?.frames[0] ?? 'idle';
+      // Lying on the ground, under everything standing; fireflies float above what stands on their tile.
+      const depth = def.floats ? this.standingDepth(s.x, s.y) + 0.2 : tileDepth(Math.floor(s.x), Math.floor(s.y), 'arrow') + 0.5;
+      const img = this.makeSprite(def.sprite, frame).setPosition(Math.round(p.x), Math.round(p.y)).setDepth(depth);
+      if (def.frameMs) this.sceneryAnims.push({ img, sprite: this.sprite(def.sprite), frameMs: def.frameMs, offset: k * 97 });
+      return img;
     });
     this.syncScenery();
   }
   private syncScenery(): void {
     const show = panel?.showScenery ?? true;
     for (const img of this.sceneryImgs) if (img.visible !== show) img.setVisible(show);
+    for (const a of this.sceneryAnims) {
+      const entry = manifest.sprites[a.sprite];
+      if (!entry) continue;
+      const f = entry.frames[Math.floor((this.time.now + a.offset) / a.frameMs) % entry.frames.length]!;
+      a.img.setFrame(frameIndex(entry, f));
+    }
   }
 
   /**
@@ -568,6 +584,38 @@ export class CourseScene extends Phaser.Scene {
       return;
     }
     this.fire(pick.chosen.cmd);
+  }
+
+  /**
+   * The wind vane (owner, 2026-11-21): an arrow pointing the way the wind
+   * blows on screen, and a gauge of 1 to 3 bars for its strength.
+   */
+  private windVane(dir: Direction, strength: number, x: number, y: number): Phaser.GameObjects.Container {
+    const c = this.add.container(x, y);
+    const g = this.add.graphics();
+    c.add(g);
+    g.fillStyle(UI_BG, 0.85).fillRect(0, 0, 34, 16);
+    g.lineStyle(1, 0x5a6080, 1).strokeRect(0.5, 0.5, 33, 15);
+    // Grid directions on screen: x runs down-right, y down-left (iso.ts).
+    const [gx, gy] = { ne: [0, -1], se: [1, 0], sw: [0, 1], nw: [-1, 0] }[dir] as [number, number];
+    const sx = gx - gy;
+    const sy = (gx + gy) / 2;
+    const len = Math.hypot(sx, sy);
+    const ux = sx / len;
+    const uy = sy / len;
+    const cx = 9;
+    const cy = 8;
+    g.lineStyle(1, 0xf8a040, 1).lineBetween(cx - ux * 6, cy - uy * 6, cx + ux * 6, cy + uy * 6);
+    // Arrow head.
+    const hx = cx + ux * 6;
+    const hy = cy + uy * 6;
+    g.fillStyle(0xf8a040, 1).fillTriangle(hx, hy, hx - ux * 4 - uy * 3, hy - uy * 4 + ux * 3, hx - ux * 4 + uy * 3, hy - uy * 4 - ux * 3);
+    // Strength gauge: 1 to 3 bars, rising.
+    for (let k = 0; k < 3; k++) {
+      const on = k < strength;
+      g.fillStyle(on ? 0xf8a040 : 0x303448, 1).fillRect(20 + k * 4, 12 - (k + 1) * 3, 3, (k + 1) * 3);
+    }
+    return c;
   }
 
   /** The generated course for this seed and budget, if it has been made (kept for restarts). */
@@ -854,7 +902,7 @@ export class CourseScene extends Phaser.Scene {
   private pickTheme(): string {
     const chosen = getPanel().theme;
     if (chosen) return chosen;
-    if (this.runMode && session.run) return themeForRegion(session.run.region);
+    if (this.runMode && session.run) return themeForRegion(session.run.region, session.run.seed);
     const params = new URLSearchParams(window.location.search);
     const t = params.get('theme');
     if (t && (THEMES as readonly string[]).includes(t)) return t;
@@ -1643,6 +1691,9 @@ export class CourseScene extends Phaser.Scene {
             0xf8d030,
           );
           break;
+        case 'gateSpikes':
+          this.queueMessage('OUCH! THE GATE IS SPIKED ON TOP', BAD);
+          break;
         case 'switchOn':
           this.queueMessage('SWITCH ON!', GOOD);
           break;
@@ -2144,7 +2195,8 @@ export class CourseScene extends Phaser.Scene {
       c.add(pixelText(this, manifest, starX + 34, barY, `${session.run.blueStars + p.blueStars}`, { color: 0x80c8ff }));
     }
     if (p.acornSlices > 0) c.add(pixelText(this, manifest, 270, 20, `ACORN +${p.acornSlices} SLICES`, { color: STAR_FILL, background: UI_BG }));
-    if (p.courseMod) c.add(pixelText(this, manifest, 270, 28, courseModLabel(p.courseMod), { color: 0xf8a040, background: UI_BG }));
+    if (p.courseMod) c.add(pixelText(this, manifest, 270, 28, courseModShort(p.courseMod), { color: 0xf8a040, background: UI_BG }));
+    if (p.courseMod?.id === 'wind' && p.courseMod.dir) c.add(this.windVane(p.courseMod.dir, p.courseMod.strength ?? 2, 270, 36));
     // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
     const slotX = bgW + 4;
     c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));

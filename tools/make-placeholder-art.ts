@@ -527,6 +527,23 @@ function drawDeadTree(): Image {
   return img;
 }
 
+/** Owner, 2026-11-21: fireflies, a small cluster of light pixels that flicker (4 frames). */
+function drawFireflies(frame: number): Image {
+  const img = new Image(14, 12);
+  const spots: P[] = [[2, 3], [6, 1], [10, 4], [4, 8], [9, 9], [12, 7]];
+  spots.forEach(([x, y], k) => {
+    // Each fly is lit in some frames and dark in others, at its own rhythm.
+    const lit = (k * 3 + frame * (k % 2 ? 1 : 3)) % 4 < 2;
+    if (!lit) return;
+    img.set(x, y, hex2('#f8f8a0'));
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const [r, g, b] = hex2('#c8f040');
+      if (x + dx >= 0 && x + dx < 14 && y + dy >= 0 && y + dy < 12) img.set(x + dx, y + dy, [r, g, b, 110]);
+    }
+  });
+  return img;
+}
+
 /** Round 2a scenery (sheet section 2.6): small props for looks only. */
 function drawScenery(kind: string): Image {
   const img = new Image(12, 8);
@@ -764,6 +781,18 @@ function drawGate(open: boolean): Image {
   // Rail along the bottom.
   for (let x = 2; x < 30; x++) img.set(x, Math.round(18 + (x - 2) * 0.5) - (open ? 0 : 0), edge);
   if (!open) for (let x = 2; x < 30; x++) img.set(x, Math.round(5 + (x - 2) * 0.5), bar[3]!);
+  // Owner, 2026-11-21: spikes on top of a closed gate (it hurts to touch in the air).
+  if (!open) {
+    const tip = hex2('#e8e8f0');
+    for (let i = 0; i < 5; i++) {
+      const bx = 5 + i * 6;
+      const by = 6 + i * 3;
+      img.set(bx, by - 3, tip);
+      img.set(bx, by - 2, tip);
+      img.set(bx - 1, by - 1, tip);
+      img.set(bx + 1, by - 1, tip);
+    }
+  }
   return img;
 }
 
@@ -1089,6 +1118,8 @@ const THEMES: Record<string, { sky: string; recolour: Recolour }> = {
   night: { sky: '#0a0c22', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.3 + r * 0.15, l * 0.38 + g * 0.15, l * 0.55 + b * 0.25 + 28]; } },
   // Brown and grey stone.
   underground: { sky: '#1c1610', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.82 + r * 0.12, l * 0.7 + g * 0.08, l * 0.58 + b * 0.08]; } },
+  // Owner, 2026-11-21: Starfall, endless mode's own theme: deep purples and indigo under a starry purple sky.
+  starfall: { sky: '#1c0c30', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.55 + r * 0.2 + 18, l * 0.32 + g * 0.12 + 6, l * 0.7 + b * 0.25 + 30]; } },
   // Pale greens and purples, fog grey.
   spooky: { sky: '#2a2a36', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.72 + b * 0.2 + 10, l * 0.88 + 8, l * 0.7 + r * 0.25 + 14]; } },
 };
@@ -1173,6 +1204,7 @@ emit('switch', sheet([drawSwitch(false), drawSwitch(true)]), 32, 16, ['off', 'on
 emit('linked-gate', sheet([drawLinkedGate(true), drawLinkedGate(false)]), 32, 26, ['open', 'closed'], [16, 18]);
 emit('drawbridge-up', drawDrawbridgeUp(), 32, 28, ['idle'], [16, 22]);
 for (const k of ['tuft', 'flowers', 'pebbles', 'mushrooms', 'leaves', 'bones']) emit(`scenery-${k}`, drawScenery(k), 12, 8, ['idle'], [6, 6]);
+emit('scenery-fireflies', sheet([0, 1, 2, 3].map(drawFireflies)), 14, 12, ['0', '1', '2', '3'], [7, 18]);
 emit('snoozegrub', drawMossback(), 18, 16, ['idle'], [9, 14]);
 // Milestone 4
 emit('mudroller', drawTrundler(), 18, 16, ['idle'], [9, 14]);
