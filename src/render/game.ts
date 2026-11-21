@@ -3,6 +3,7 @@ import { CourseScene } from './CourseScene';
 import { MapScene } from './MapScene';
 import { TownScene } from './TownScene';
 import { BurrowScene } from './BurrowScene';
+import { PlaceScene } from './PlaceScene';
 import { VIEW_HEIGHT, VIEW_WIDTH, integerScale } from './config';
 
 export function startGame(parent: HTMLElement): Phaser.Game {
@@ -19,7 +20,7 @@ export function startGame(parent: HTMLElement): Phaser.Game {
       zoom: integerScale(window.innerWidth, window.innerHeight),
     },
     // Milestone 7: the game opens on the Burrow (owner, 2026-11-17, question 9).
-    scene: [BurrowScene, CourseScene, MapScene, TownScene],
+    scene: [BurrowScene, CourseScene, MapScene, TownScene, PlaceScene],
   });
 
   window.addEventListener('resize', () => {

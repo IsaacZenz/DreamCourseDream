@@ -13,6 +13,7 @@ import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
 import { BOSS_FIGHTS, debugBossFight, newRunSeed, persist, session, startRun } from './runSession';
 import { getPanel, preloadAssets, shared } from './shared';
+import { goRun, walking } from './nav';
 
 const ROW_H = 26;
 const LANE_W = 48;
@@ -28,10 +29,10 @@ const LINE_DIM = 0x485070;
 const LINE_PATH = 0xf8d030;
 const LINE_NEXT = 0xf0f0f0;
 
-const NODE_NAME: Record<NodeType, string> = { course: 'COURSE', hard: 'HARD COURSE', shop: 'TOWN', cache: 'CACHE', boss: 'BOSS' };
+export const NODE_NAME: Record<NodeType, string> = { course: 'COURSE', hard: 'HARD COURSE', shop: 'TOWN', cache: 'CACHE', boss: 'BOSS' };
 
 /** What a node offers, in a line or two for the side panel. */
-function nodeInfo(run: RunState, type: NodeType): string[] {
+export function nodeInfo(run: RunState, type: NodeType): string[] {
   switch (type) {
     case 'course':
       return [`BUDGET ${budgetFor(run, 'course')}, ${sizeFor(run, 'course').areas[0]} AREAS`, `FINISH: +${rewardFor('course')} STARS +${BLUE_STARS.course} BLUE`];
@@ -65,8 +66,15 @@ export class MapScene extends Phaser.Scene {
   private panelBox: Phaser.GameObjects.Container | null = null;
   private scrollY = 0;
 
+  /** Milestone 8b: opened from a walking place with M, to look only. */
+  private view = false;
+
   constructor() {
     super('map');
+  }
+
+  init(data: { view?: boolean } = {}): void {
+    this.view = data.view === true;
   }
 
   preload(): void {
@@ -80,6 +88,11 @@ export class MapScene extends Phaser.Scene {
     if (!run) {
       startRun(newRunSeed());
       this.scene.restart();
+      return;
+    }
+    // Milestone 8b: the run is played by walking; the map screen is a testing view (M, or the U panel switch).
+    if (!this.view && walking() && run.status === 'map') {
+      goRun(this);
       return;
     }
     // Milestone 7: keep the save up to date (leaving a town removes the run save).
@@ -267,7 +280,7 @@ export class MapScene extends Phaser.Scene {
       const mod = courseModFor(run, n);
       if (mod) line(courseModLabel(mod), 0xf8a040);
     }
-    const help = run.status === 'map' ? ['ARROWS: CHOOSE  ENTER: GO', 'B: BAG (EAT FOOD)  UP/DOWN: LOOK', 'U: TEST PANEL  1-6: TEST COURSES'] : ['N: NEW RUN  S: SAME SEED'];
+    const help = this.view ? ['LOOKING ONLY: WALK TO A PATH TO CHOOSE', 'UP/DOWN: LOOK', 'M OR ESC: BACK TO THE CROSSROADS'] : run.status === 'map' ? ['ARROWS: CHOOSE  ENTER: GO', 'B: BAG (EAT FOOD)  UP/DOWN: LOOK', 'U: TEST PANEL  1-6: TEST COURSES'] : ['N: NEW RUN  S: SAME SEED'];
     help.forEach((h, i) => c.add(pixelText(this, m, 4, VIEW_HEIGHT - 7 * (help.length - i) - 2, h, { color: UI_DIM })));
     this.panelBox = c;
   }
@@ -275,9 +288,9 @@ export class MapScene extends Phaser.Scene {
   private go(run: RunState): void {
     const n = this.options[this.sel];
     if (!n || run.status !== 'map') return;
-    const cur = enterNode(run, n.id);
-    if (cur.type === 'shop' || cur.type === 'cache') this.scene.start('town');
-    else this.scene.start('course', { run: true });
+    if (this.view) return;
+    enterNode(run, n.id);
+    goRun(this);
   }
 
   private setupKeys(run: RunState): void {
@@ -326,8 +339,10 @@ export class MapScene extends Phaser.Scene {
     });
     kb.on('keydown-ENTER', ok);
     kb.on('keydown-SPACE', ok);
+    kb.on('keydown-M', () => this.view && goRun(this));
     kb.on('keydown-ESC', () => {
       if (this.bag.key(run, 'back')) return;
+      if (this.view) return goRun(this);
       if (run.status === 'reward') this.takeReward(run, null);
     });
     kb.on('keydown-U', () => getPanel().toggle());

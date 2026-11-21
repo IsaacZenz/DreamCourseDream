@@ -639,7 +639,7 @@ export function enterNode(run: RunState, id: string): CurrentNode {
 function arrive(run: RunState, counts: boolean): void {
   const cur = run.current!;
   if (cur.id === LAST_TOWN) run.lastTownVisited = true;
-  else if (cur.id !== 'boss') {
+  else if (cur.id !== 'boss' && !cur.id.startsWith('debug-')) {
     run.at = cur.id;
     run.path.push(cur.id);
   }
@@ -1116,6 +1116,26 @@ export function buyPermanentInTown(run: RunState, profile: Profile, id: string):
 
 // ---------------------------------------------------------------------------
 // Testing aids (the U panel)
+
+/**
+ * Testing aid (Milestone 8b): visit a town or a cache from the map without a
+ * map node (?place=town, ?place=cache). Leaving it does not move the player on the map.
+ */
+export function debugVisit(run: RunState, type: 'shop' | 'cache'): void {
+  if (run.status !== 'map') return;
+  const id = `debug-${type}-${run.counted}`;
+  run.current = { id, row: rowOf(run), type, early: false, budget: 0, courseSeed: `${run.seed}-${id}`, gear: null, boss: null, mod: null, arena: null };
+  if (type === 'shop') {
+    deposit(run);
+    run.status = 'shop';
+    run.shop = { node: id, offers: [], rerolls: 0, freeRerolls: 0, raised: false };
+    run.shop.offers = shopStock(run, run.shop, []);
+    openFoodShop(run);
+  } else {
+    run.status = 'cache';
+    run.cache = { node: id, offers: cacheStock(run, id) };
+  }
+}
 
 export function debugAddStars(run: RunState, n: number): void {
   run.wallet += n;

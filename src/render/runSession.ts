@@ -40,7 +40,9 @@ export const session: {
   saved: RunSnapshot | null;
   /** Parts of the save that could not be read this time (shown once in the Burrow). */
   broken: readonly string[];
-} = { run: null, course: null, pending: null, profile: loaded.data.profile, burrow: loaded.data.burrow, saved: loaded.data.run, broken: loaded.broken };
+  /** Milestone 8b: the boss's introduction card was shown at the boss gate, so the fight does not show it again. */
+  skipBossIntro: boolean;
+} = { run: null, course: null, pending: null, profile: loaded.data.profile, burrow: loaded.data.burrow, saved: loaded.data.run, broken: loaded.broken, skipBossIntro: false };
 
 /** A short random seed. The display may use Math.random; the simulation never does. */
 export function newRunSeed(): string {

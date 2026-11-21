@@ -19,6 +19,7 @@
     "^": "spring",
     "x": "spikes",
     "k": "bridge",
+    "p": "path",
     "w": {
       "surface": "warp",
       "link": "a"
@@ -34,7 +35,7 @@
   ],
   "quota": 0,
   "tiles": [
-    "g6 g6 g6 g6 g6 g6 g2 g2 i2 i2 i2 i2 i2 i2 i2 i2",
+    "p6 g6 g6 g6 g6 g6 g2 g2 i2 i2 i2 i2 i2 i2 i2 i2",
     "g6 g6 g6 g6 g6 g6 g6446 g4224 g2 g2 g2242 g2244 g2224 g2 g2 g2",
     "g6 g6 g6 g6 g6 g6 g6446 g4224 g2 g2 g2442 g4 g4224 g2 g2 g2",
     "g6 g6 g6 g6 g6 g6 g6446 g4224 g2 >2 g2422 g4422 g4222 g2 g2 g2",

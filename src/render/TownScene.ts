@@ -30,6 +30,7 @@ import { drawRows, progressRows } from './progressMenu';
 import { ACORNS, FOOD, FOODS } from '../content/consumables';
 import { BagMenu, foodDesc, lastsText } from './bagMenu';
 import { getPanel, preloadAssets, shared } from './shared';
+import { goRun, walking } from './nav';
 
 const UI_TEXT = 0xf0f0f0;
 const UI_DIM = 0xa0a8c0;
@@ -87,9 +88,15 @@ export class TownScene extends Phaser.Scene {
   /** Which shop is open in 'shop' mode. */
   private which: ShopKind = 'gear';
   private bag!: BagMenu;
+  /** Milestone 8b: the door walked into (a flat screen over a room picture); null for the old town street. */
+  private entry: 'food' | 'gear' | 'burrow' | 'cache' | null = null;
 
   constructor() {
     super('town');
+  }
+
+  init(data: { mode?: 'food' | 'gear' | 'burrow' | 'cache' } = {}): void {
+    this.entry = data.mode ?? null;
   }
 
   preload(): void {
@@ -103,7 +110,16 @@ export class TownScene extends Phaser.Scene {
       this.scene.start('map');
       return;
     }
+    // Milestone 8b: walking is the default; the old street is only for the U panel's map-screen switch.
+    if (!this.entry && walking()) {
+      goRun(this);
+      return;
+    }
     this.mode = run.status === 'cache' ? 'cache' : 'town';
+    if (this.entry === 'food' || this.entry === 'gear') {
+      this.mode = 'shop';
+      this.which = this.entry;
+    } else if (this.entry === 'burrow') this.mode = 'burrow';
     this.sel = 0;
     this.confirm = null;
     this.message = '';
@@ -213,7 +229,7 @@ export class TownScene extends Phaser.Scene {
     this.message = '';
     if (s.id === 'continue') {
       leaveShop(run);
-      this.scene.start('map');
+      goRun(this);
       return;
     }
     if (s.id === 'food' || s.id === 'gear') {
@@ -222,6 +238,12 @@ export class TownScene extends Phaser.Scene {
     } else this.mode = s.id;
     this.sel = 0;
     this.redraw(run);
+  }
+
+  /** After the cache's pick: back to the clearing (walking), or the map. */
+  private leaveCacheScreen(): void {
+    if (this.entry === 'cache') this.scene.start('place', { kind: 'cache', back: 'chest' });
+    else goRun(this);
   }
 
   private shopNow(run: RunState) {
@@ -288,17 +310,19 @@ export class TownScene extends Phaser.Scene {
 
   private drawShop(run: RunState): void {
     const shop = this.shopNow(run);
-    this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, this.which === 'food' ? 0x2a2a1c : 0x2a2238, 1).setOrigin(0, 0);
+    // Milestone 8b: a flat room picture, with the cards in front of its lower part.
+    this.add.image(0, 0, this.which === 'food' ? 'room-food' : 'room-gear', 0).setOrigin(0, 0);
+    this.add.rectangle(0, 46, VIEW_WIDTH, VIEW_HEIGHT - 46, UI_BG, 0.55).setOrigin(0, 0);
     const w = this.which === 'food' ? 86 : 100;
     const gap = 6;
     const x0 = Math.round((VIEW_WIDTH - (shop.offers.length * (w + gap) - gap)) / 2);
     shop.offers.forEach((o, i) =>
-      this.drawCard(run, o, x0 + i * (w + gap), 22, w, 140, i === this.sel, false, () => {
+      this.drawCard(run, o, x0 + i * (w + gap), 50, w, 128, i === this.sel, false, () => {
         this.sel = i;
         this.buySelected(run);
       }),
     );
-    if (this.which === 'food') this.text(6, 166, `BAG ${run.bag.length}/${FOOD.bagSlots}. FOOD GOES IN YOUR BAG. EAT IT BEFORE A COURSE (B).`, UI_DIM);
+    if (this.which === 'food') this.text(6, 181, `BAG ${run.bag.length}/${FOOD.bagSlots}. FOOD GOES IN YOUR BAG. EAT IT BEFORE A COURSE (B).`, UI_DIM);
     const rp = rerollPrice(run, this.which);
     this.help([`LEFT/RIGHT: CHOOSE   ENTER: BUY   R: REROLL (${rp === 0 ? 'FREE' : `${rp} STARS`})   ESC: BACK TO TOWN`]);
   }
@@ -369,7 +393,7 @@ export class TownScene extends Phaser.Scene {
     }
     this.withGearCheck(run, o, () => {
       takeFromCache(run, this.sel);
-      this.scene.start('map');
+      this.leaveCacheScreen();
     });
   }
 
@@ -377,17 +401,16 @@ export class TownScene extends Phaser.Scene {
   // The Burrow (owner, 2026-11-15): one stored item per category, safe from death.
 
   private drawBurrow(run: RunState): void {
-    this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, 0x2a1c10, 1).setOrigin(0, 0);
-    // Earthy walls with a few stones, in the pixel style.
-    const g = this.add.graphics();
-    for (let y = 16; y < VIEW_HEIGHT; y += 6) for (let x = (y / 6) % 2 ? 0 : 6; x < VIEW_WIDTH; x += 23) g.fillStyle(0x3a2814, 1).fillRect(x, y, 5, 3);
+    // Milestone 8b: the Burrow's room picture.
+    this.add.image(0, 0, 'room-burrow', 0).setOrigin(0, 0);
+    this.add.rectangle(0, 16, VIEW_WIDTH, 18, UI_BG, 0.7).setOrigin(0, 0);
     this.text(6, 19, 'YOUR BURROW. GEAR STORED HERE IS SAFE IF YOU DIE,', GOOD);
     this.text(6, 26, 'AND WAITS HERE FOR YOUR NEXT RUN. ONE PER KIND.', GOOD);
     this.text(66, 38, 'WEARING', UI_DIM);
     this.text(248, 38, 'STORED', UI_DIM);
     GEAR_CATEGORIES.forEach((c, i) => this.drawBurrowRow(run, c, 46 + i * 44, i === this.sel));
     this.text(6, 180, `BLUE STAR STASH: ${session.profile.stash} (YOUR BLUE STARS WERE DEPOSITED WHEN YOU ARRIVED)`, 0x80c8ff);
-    this.help(['UP/DOWN: CHOOSE   ENTER: SWAP (STORE, TAKE OUT, OR BOTH)   P: SPEND BLUE STARS   ESC: BACK TO TOWN']);
+    this.help(['UP/DOWN: CHOOSE  ENTER: SWAP (STORE, TAKE OUT OR BOTH)  P: SPEND BLUE STARS  ESC: BACK']);
   }
 
   // Owner, 2026-11-17 (question I): permanent upgrades can be bought in a town's Burrow too, and work at once.
@@ -420,7 +443,7 @@ export class TownScene extends Phaser.Scene {
   }
 
   private drawBurrowRow(run: RunState, c: GearCategory, y: number, selected: boolean): void {
-    this.add.rectangle(4, y, VIEW_WIDTH - 8, 40, CARD_BG, 0.95).setOrigin(0, 0).setStrokeStyle(selected ? 2 : 1, selected ? SELECT : 0x5a4030);
+    this.add.rectangle(4, y, VIEW_WIDTH - 8, 40, CARD_BG, 0.85).setOrigin(0, 0).setStrokeStyle(selected ? 2 : 1, selected ? SELECT : 0x5a4030);
     const hit = this.add.rectangle(4, y, VIEW_WIDTH - 8, 40, 0, 0).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     hit.on('pointerdown', () => {
       this.sel = GEAR_CATEGORIES.indexOf(c);
@@ -519,6 +542,9 @@ export class TownScene extends Phaser.Scene {
         this.mode = 'burrow';
         this.sel = 0;
         this.redraw(run);
+      } else if ((this.mode === 'shop' || this.mode === 'burrow') && this.entry) {
+        // Milestone 8b: back outside the door.
+        this.scene.start('place', { kind: 'town', back: this.entry });
       } else if (this.mode === 'shop' || this.mode === 'burrow') {
         this.sel = this.mode === 'shop' ? (this.which === 'food' ? 0 : 1) : 2;
         this.mode = 'town';
@@ -528,7 +554,7 @@ export class TownScene extends Phaser.Scene {
           lines: ['LEAVE WITHOUT TAKING ANYTHING?', '', 'ENTER: LEAVE   ESC: STAY'],
           yes: () => {
             leaveCache(run);
-            this.scene.start('map');
+            this.leaveCacheScreen();
           },
         };
         this.redraw(run);

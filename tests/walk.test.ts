@@ -10,6 +10,8 @@ import { canStand, createWalker, groundDirection, stepWalker, walkHeight, type W
 import { buildCrossroads, loadPlace, slotsFor } from '../src/gen/crossroads';
 import { parseCourse } from '../src/sim/course';
 import practice from '../src/content/courses/practice-green.json';
+import { choices, createRun, debugVisit, leaveCache, leaveShop } from '../src/sim/run';
+import { generateRunMap } from '../src/gen/runMap';
 
 const DT = 1 / 60;
 const run = (place: Place, w: ReturnType<typeof createWalker>, input: WalkInput, seconds: number, triggers: readonly Trigger[] = place.triggers) => {
@@ -202,5 +204,23 @@ describe('Milestone 8b: the crossroads', () => {
         for (const t of x.place.triggers) expect(pts.some((p) => inTrigger(t, p.x, p.y)), `seed ${i}, ${count} paths, ${t.kind} ${t.slot}`).toBe(true);
       }
     }
+  });
+});
+
+describe('Milestone 8b: testing aids', () => {
+  it('?place=town and ?place=cache open a town or cache without moving the player on the map', () => {
+    const run = createRun('VISIT', generateRunMap('VISIT'));
+    const before = choices(run).map((n) => n.id);
+    debugVisit(run, 'shop');
+    expect(run.status).toBe('shop');
+    expect(run.shop?.offers.length).toBeGreaterThan(0);
+    leaveShop(run);
+    expect(run.status).toBe('map');
+    expect(run.path).toEqual([]);
+    expect(choices(run).map((n) => n.id)).toEqual(before);
+    debugVisit(run, 'cache');
+    expect(run.status).toBe('cache');
+    leaveCache(run);
+    expect(choices(run).map((n) => n.id)).toEqual(before);
   });
 });

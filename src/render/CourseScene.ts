@@ -61,6 +61,17 @@ import { frameIndex, themedSprite, type Manifest } from './manifest';
 import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
 import { pixelText } from './pixelText';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
+import { goRun, walking } from './nav';
+import practiceGreen from '../content/courses/practice-green.json';
+import type { Loadout } from '../sim/play';
+
+/** The practice green's loadout: the run's gear, ability and upgrades, full health, no course modifier. */
+function practiceLoadout(): Loadout {
+  const run = session.run!;
+  const out: Loadout & { health?: number } = { ...loadoutOf(run), courseMod: null };
+  delete out.health;
+  return out;
+}
 
 /** Loaded from assets/manifest.json on first boot. */
 let manifest: Manifest = { version: 1, sprites: {} };
@@ -190,6 +201,8 @@ export interface CourseSceneData {
   watch?: boolean;
   /** Milestone 6: play the run's current course node. */
   run?: boolean;
+  /** Milestone 8b: the town's practice green (nothing counts). */
+  practice?: boolean;
 }
 
 /** Six letters and digits from a random stream, for the next generated course's seed. */
@@ -277,6 +290,8 @@ export class CourseScene extends Phaser.Scene {
   private runMode = false;
   /** The course result has been given to the run (only once). */
   private runReported = false;
+  /** Milestone 8b (sheet section 2.3): the practice green. Nothing counts; Esc or sinking the ball goes back to town. */
+  private practiceMode = false;
 
   constructor() {
     super('course');
@@ -294,6 +309,8 @@ export class CourseScene extends Phaser.Scene {
     genBudget = Phaser.Math.Clamp(Math.round(genBudget), GEN.minBudget, GEN.maxBudget);
     this.watching = data.watch === true;
     this.runMode = data.run === true && !!session.run?.current;
+    this.practiceMode = data.practice === true && !!session.run;
+    if (this.practiceMode) this.courseIndex = 0;
     this.thumb = params.get('thumb') === '1';
     // ?bench=<object id> opens the test bench with that thing at its centre (for example ?course=test-bench&bench=rail).
     if (!benchShown && params.get('bench') !== null) bench.object = params.get('bench')!;
@@ -341,7 +358,8 @@ export class CourseScene extends Phaser.Scene {
         return;
       }
       data = ready.raw;
-    } else if (file.id === BENCH_ID) data = benchCourse(bench.object, bench);
+    } else if (this.practiceMode) data = practiceGreen;
+    else if (file.id === BENCH_ID) data = benchCourse(bench.object, bench);
     else if (file.id === GENERATED_ID) {
       const ready = this.cachedGen();
       if (!ready) {
@@ -376,18 +394,20 @@ export class CourseScene extends Phaser.Scene {
 
     panel = getPanel();
     // Round 2b: picking a theme in the U panel shows this course again in it.
-    panel.onTheme = () => (this.runMode ? this.scene.restart({ run: true }) : this.restartCourse());
+    panel.onTheme = () => (this.runMode ? this.scene.restart({ run: true }) : this.practiceMode ? this.scene.restart({ practice: true }) : this.restartCourse());
 
     const run = this.runMode ? session.run : null;
     const urlMod = testCourseMod();
     this.play = createPlay(course, tuning, {
       seed: this.runMode ? run!.current!.courseSeed : this.seed,
-      ...(run ? { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) } : urlMod ? { loadout: { courseMod: urlMod } } : {}),
+      ...(run ? { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) } : this.practiceMode ? { loadout: practiceLoadout() } : urlMod ? { loadout: { courseMod: urlMod } } : {}),
     });
     this.runReported = false;
     this.setRunPanel();
     // Owner, 2026-11-19: a boss fight opens with the boss's introduction card.
-    if (run && arena && run.current?.boss) this.showBossIntro(run.current.boss, run.region);
+    // Milestone 8b: unless it was just shown at the boss gate.
+    if (run && arena && run.current?.boss && !session.skipBossIntro) this.showBossIntro(run.current.boss, run.region);
+    session.skipBossIntro = false;
     // Owner, 2026-11-18: while this course is played, make the next ones in the background.
     if (run && run.status === 'course') prefetch(upcomingJobs(run));
     if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
@@ -690,6 +710,11 @@ export class CourseScene extends Phaser.Scene {
     this.time.delayedCall(400, () => img.destroy());
   }
 
+  /** Milestone 8b: leave the practice green, standing next to it. */
+  private backToTown(): void {
+    this.scene.start('place', { kind: 'town', back: 'tee' });
+  }
+
   /** Key 7: start a run, or go back to the one in progress. */
   private openRun(): void {
     const run = activeRun();
@@ -698,8 +723,7 @@ export class CourseScene extends Phaser.Scene {
       this.scene.start('burrow');
     } else if (run.status === 'course') {
       if (!this.runMode) this.scene.restart({ run: true, debug: this.debugMode });
-    } else if (run.status === 'shop' || run.status === 'cache') this.scene.start('town');
-    else this.scene.start('map');
+    } else goRun(this);
   }
 
   /** The run section of the U panel (testing aids). */
@@ -902,7 +926,7 @@ export class CourseScene extends Phaser.Scene {
   private pickTheme(): string {
     const chosen = getPanel().theme;
     if (chosen) return chosen;
-    if (this.runMode && session.run) return themeForRegion(session.run.region, session.run.seed);
+    if ((this.runMode || this.practiceMode) && session.run) return themeForRegion(session.run.region, session.run.seed);
     const params = new URLSearchParams(window.location.search);
     const t = params.get('theme');
     if (t && (THEMES as readonly string[]).includes(t)) return t;
@@ -1264,7 +1288,8 @@ export class CourseScene extends Phaser.Scene {
       this.drawShotHud();
     });
     onKey('R', () => {
-      if (this.runMode) this.showMessage('NO RESTARTS IN A RUN', BAD);
+      if (this.practiceMode) this.scene.restart({ practice: true });
+      else if (this.runMode) this.showMessage('NO RESTARTS IN A RUN', BAD);
       else this.restartCourse();
     });
     onKey('ENTER', () => {
@@ -1272,6 +1297,10 @@ export class CourseScene extends Phaser.Scene {
         if (this.play.status === 'playing') return;
         this.reportRun();
         this.scene.start('map');
+        return;
+      }
+      if (this.practiceMode) {
+        if (this.play.status !== 'playing') this.backToTown();
         return;
       }
       if (this.play.status === 'won' && this.isGenerated) {
@@ -1306,7 +1335,11 @@ export class CourseScene extends Phaser.Scene {
     onKey('F', () => {
       if (canUseAbility(this.play)) this.abilityQueued = true;
     });
-    onKey('ESC', () => this.cancelCharge());
+    onKey('ESC', () => {
+      // On the practice green, Esc while planning goes back to town (sheet section 2.3).
+      if (this.practiceMode && (this.phase === 'plan' || this.play.status !== 'playing')) this.backToTown();
+      else this.cancelCharge();
+    });
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (!this.course || !canShoot(this.play)) return;
@@ -2259,12 +2292,13 @@ export class CourseScene extends Phaser.Scene {
               `FINISH REWARD: +${rewardFor(cur.type)} STARS, +${cur.type === 'hard' ? BLUE_STARS.hard : BLUE_STARS.course} BLUE (CARRIED)`,
               `HEALTH LEFT: ${p.health}`,
               '',
-              'ENTER: BACK TO THE MAP',
+              walking() ? 'ENTER: ON TO THE CROSSROADS' : 'ENTER: BACK TO THE MAP',
             ]
         : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', 'CARRIED BLUE STARS ARE LOST.', 'GEAR IN YOUR BURROW IS SAFE.', '', 'ENTER: RUN SUMMARY']
       : won
       ? ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: NEXT COURSE   R: PLAY AGAIN']
       : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
+    if (this.practiceMode) lines.splice(0, lines.length, ...(won ? ['IN THE HOLE! NICE PRACTICE.', '', 'NOTHING COUNTS HERE: NO STARS, NO DAMAGE KEPT.', '', 'ENTER OR ESC: BACK TO TOWN   R: PLAY AGAIN'] : ['OUT OF SHOTS. IN PRACTICE THAT IS FINE.', '', 'ENTER OR ESC: BACK TO TOWN   R: PLAY AGAIN']));
     const text = pixelText(this, manifest, 0, 0, lines.join('\n'), { color: won ? GOOD : BAD });
     const w = text.width + 16;
     const h = text.height + 14;
@@ -2303,7 +2337,9 @@ export class CourseScene extends Phaser.Scene {
       ? cur.arena
         ? `RUN #${session.run!.seed}  REGION ${session.run!.region}  ${BOSSES.get(cur.boss ?? '')?.name.toUpperCase() ?? 'BOSS'}  ARENA: ${ARENAS.get(cur.arena)!.name.toUpperCase()} (${ARENAS.get(cur.arena)!.gimmick.toUpperCase()})`
         : `RUN #${session.run!.seed}  REGION ${session.run!.region}  ${cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  ROW ${cur.row}  BUDGET ${cur.budget}`
-      : `${n} ${course.name}`;
+      : this.practiceMode
+        ? 'PRACTICE GREEN: NOTHING COUNTS. YOUR GEAR WORKS. ESC: BACK TO TOWN'
+        : `${n} ${course.name}`;
     pixelText(this, manifest, 2, 2, label, { color: UI_TEXT, background: UI_BG })
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH)

@@ -93,6 +93,8 @@ export class TuningPanel {
   onTheme: (() => void) | null = null;
   /** Owner, 2026-11-21: the course check's bot plays the real game while this is on (Y on a course), so you can watch it. */
   botPlays = false;
+  /** Milestone 8b: pick courses on the old map screen and use the old town street instead of walking (a testing view). */
+  useMapScreen = false;
   private botButton: HTMLButtonElement | null = null;
   setBotPlays(on: boolean): void {
     this.botPlays = on;
@@ -145,7 +147,11 @@ export class TuningPanel {
     });
     const bot = this.button('Bot plays: off (Y)', () => this.setBotPlays(!this.botPlays));
     this.botButton = bot;
-    head.append(copy, reset, scenery, theme, bot);
+    const mapScreen = this.button('Use the map screen: off', () => {
+      this.useMapScreen = !this.useMapScreen;
+      mapScreen.textContent = `Use the map screen: ${this.useMapScreen ? 'ON' : 'off'}`;
+    });
+    head.append(copy, reset, scenery, theme, bot, mapScreen);
     this.root.appendChild(head);
     this.benchBox = document.createElement('div');
     this.benchBox.className = 'bench';
