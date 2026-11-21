@@ -1,6 +1,6 @@
 # Milestone 8 round 2b design sheet: four abilities, switches, course modifiers, biomes and themes
 
-**Status: waiting for the owner to review. Nothing on this sheet is built yet.**
+**Status: signed off by the owner, 2026-11-21 ("Defaults all good"). Building.**
 
 How to review: change any number, name or rule you want. Section 8 lists the open questions, each with a default. Saying "defaults are fine" signs those off. Every number is a starting value, kept in `src/content/` so it can be tuned later.
 
@@ -257,4 +257,4 @@ A U-panel switch picks a theme on the current course, for comparing them.
 
 ## 9. Sign-off
 
-_(to be filled in when the owner signs off)_
+**Signed off by the owner, 2026-11-21: "Defaults all good"** (every question in section 8 takes its default).
