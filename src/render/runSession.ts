@@ -8,6 +8,9 @@
  * loses the run and its carried blue stars.
  */
 import { generateRunMap } from '../gen/runMap';
+import { ARENAS } from '../content/arenas';
+import { BOSSES, BOSS_IDS } from '../content/bosses';
+import { REGIONS } from '../content/run';
 import type { GenResult } from '../gen/validate';
 import type { Course } from '../sim/course';
 import type { GearSlots } from '../content/gear';
@@ -54,6 +57,7 @@ export function startRun(seed: string): RunState {
   session.pending = null;
   session.saved = null;
   bossesRecorded = 0;
+  winRecorded = false;
   p.totals.runs++;
   persist();
   return session.run;
@@ -65,6 +69,7 @@ export function continueRun(): RunState | null {
   if (!snap) return null;
   session.run = restoreRun(snap, generateRunMap(snap.seed, snap.region));
   bossesRecorded = session.run.bossesBeaten.length;
+  winRecorded = session.run.beatFinal;
   session.course = null;
   session.pending = null;
   return session.run;
@@ -83,6 +88,8 @@ export function activeRun(): RunState | null {
  */
 /** Bosses of the current run already added to the profile's total. */
 let bossesRecorded = 0;
+/** The current run's win is already in the profile. */
+let winRecorded = false;
 
 export function persist(): void {
   const p = session.profile;
@@ -94,6 +101,11 @@ export function persist(): void {
     p.lastArena = run.lastArena;
     p.totals.bossWins += run.bossesBeaten.length - bossesRecorded;
     bossesRecorded = run.bossesBeaten.length;
+    // Milestone 8: a run won by beating the final boss, counted once.
+    if (run.beatFinal && !winRecorded) {
+      p.totals.wins++;
+      winRecorded = true;
+    }
     session.burrow = { ...run.burrow };
     session.saved = run.status === 'shop' ? snapshotRun(run) : null;
   }
@@ -112,21 +124,37 @@ export function resetProgress(): void {
   persist();
 }
 
-/** A new run that goes straight into the boss fight, in this arena (any region the run is in). */
-export function debugBossFight(arena: string, run: RunState = startRun(newRunSeed())): void {
+/** Every boss in each of its arenas, for the testing panel: id "boss@arena". */
+export const BOSS_FIGHTS: readonly { id: string; label: string }[] = BOSS_IDS.flatMap((b) =>
+  (BOSSES.get(b)?.arenas ?? []).map((a) => ({ id: `${b}@${a}`, label: `${BOSSES.get(b)!.name}: ${ARENAS.get(a)?.name ?? a}` })),
+);
+
+/**
+ * A new run (or this one) that goes straight into a boss fight, in this arena.
+ * `fight` is "boss@arena" (or just an arena, for the region's own boss). The
+ * run moves to the region whose pool holds the boss, so its health is right.
+ */
+export function debugBossFight(fight: string, run: RunState = startRun(newRunSeed())): void {
+  const [bossOrArena, maybeArena] = fight.split('@');
+  const boss = maybeArena ? bossOrArena! : null;
+  const arena = maybeArena ?? bossOrArena!;
+  if (boss) {
+    const region = REGIONS.findIndex((r) => r.bosses.includes(boss)) + 1;
+    if (region > 0 && region !== run.region) startRegion(run, region, generateRunMap(run.seed, region));
+  }
   run.countdown = 0;
   run.lastTownVisited = true;
   run.status = 'map';
   run.current = null;
   const cur = enterNode(run, 'boss');
-  run.current = { ...cur, arena };
+  run.current = { ...cur, arena, boss: boss ?? cur.boss };
   run.lastArena = arena;
 }
 
-/** A new run that starts in region two. */
-export function debugRegionTwo(): RunState {
+/** A new run that starts in region two (or another region: Milestone 8 adds three and four, the first endless region). */
+export function debugRegionTwo(region = 2): RunState {
   const run = startRun(newRunSeed());
-  startRegion(run, 2, generateRunMap(run.seed, 2));
+  startRegion(run, region, generateRunMap(run.seed, region));
   return run;
 }
 

@@ -16,7 +16,7 @@
  *     "start": [1, 1],
  *     "exit": [2, 1],
  *     "quota": 0,
- *     "objects": [ { "id": "mossback", "at": [1, 0] }, { "id": "rock", "at": [0, 1] } ]
+ *     "objects": [ { "id": "snoozegrub", "at": [1, 0] }, { "id": "rock", "at": [0, 1] } ]
  *   }
  *
  * Each string in "tiles" is one grid row (grid y), with tiles separated by
@@ -53,7 +53,10 @@
  * `parseCourse` checks everything and returns a list of readable errors
  * instead of a course if anything is wrong.
  */
-import { OBJECTS, RENAMED_OBJECTS } from '../content/objects.ts';
+import { ENEMY_GEAR, NO_EXTRAS, RANKS, SPOT_IDS, TRAITS, TRAIT_IDS, TRAIT_RULES, rankDef, type EnemyExtras, type SpotId, type TraitId } from '../content/enemyMods.ts';
+import { GEAR } from '../content/gear.ts';
+import { ELEMENT_IDS, OBJECTS, RENAMED_OBJECTS, type Element, type ObjectDef } from '../content/objects.ts';
+import { SCENERY } from '../content/scenery.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { minCorner, shapeOf, type Corners, type ShapeId } from './tileShape.ts';
 
@@ -99,6 +102,8 @@ export interface CourseObject {
   readonly orient: 'x' | 'y';
   /** Pickup ids, or null for the definition's default. */
   readonly drops: readonly string[] | null;
+  /** Milestone 8: an enemy's rank, traits, element, weak spot or guarded side, and carried gear. NO_EXTRAS for everything else. */
+  readonly extras: EnemyExtras;
 }
 
 export interface Course {
@@ -115,6 +120,18 @@ export interface Course {
   readonly rails: readonly (readonly GridPoint[])[];
   /** Milestone 7: spots where a boss's summons appear (boss arenas). Empty on other courses. */
   readonly spawns: readonly GridPoint[];
+  /**
+   * Round 2a: scenery, for looks only (grass tufts, flowers...). The physics
+   * never reads it. Positions are in grid coordinates (any point inside a tile).
+   */
+  readonly scenery: readonly SceneryItem[];
+}
+
+/** One scenery prop on a course (round 2a sheet section 2.6). */
+export interface SceneryItem {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
 }
 
 export type ParseResult = { ok: true; course: Course } | { ok: false; errors: string[] };
@@ -130,7 +147,7 @@ interface LegendEntry {
   link?: string;
 }
 
-const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects', 'rails', 'spawns'];
+const TOP_LEVEL_KEYS = ['format', 'name', 'legend', 'tiles', 'start', 'exit', 'quota', 'objects', 'rails', 'spawns', 'scenery'];
 const TILE_TOKEN = /^(.)([0-9a-z]|[0-9a-z]{4})$/u;
 const OLD_TILE_TOKEN = /^(.)(\d|\d{4})$/u;
 
@@ -260,7 +277,7 @@ export function parseCourse(raw: unknown): ParseResult {
     if (n !== 2) errors.push(`Warp link "${link}" is used by ${n} tile(s); it must be used by exactly 2.`);
   }
 
-  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number, objects: [] as CourseObject[], rails: [] as GridPoint[][], spawns: [] as GridPoint[] };
+  const course = { name: raw.name as string, width, height, tiles, quota: raw.quota as number, objects: [] as CourseObject[], rails: [] as GridPoint[][], spawns: [] as GridPoint[], scenery: [] as SceneryItem[] };
   const checkSpot = (p: GridPoint | null, name: string) => {
     if (!p) return;
     const t = tileAt({ ...course, start: p, exit: p }, p.x, p.y);
@@ -285,6 +302,20 @@ export function parseCourse(raw: unknown): ParseResult {
         if (pt) spawns.push(pt);
       });
   }
+  // Round 2a: optional "scenery", [[id, x, y], ...], each point on a tile.
+  const scenery: SceneryItem[] = [];
+  if (raw.scenery !== undefined) {
+    if (!Array.isArray(raw.scenery)) errors.push('"scenery" must be a list of [id, x, y].');
+    else
+      raw.scenery.forEach((e, i) => {
+        const ok = Array.isArray(e) && e.length === 3 && typeof e[0] === 'string' && typeof e[1] === 'number' && typeof e[2] === 'number';
+        if (!ok) return void errors.push(`scenery[${i}] must be [id, x, y].`);
+        const [id, x, y] = e as [string, number, number];
+        if (!SCENERY.has(id)) errors.push(`scenery[${i}]: unknown scenery "${id}".`);
+        else if (!tileAt({ ...course, start: { x: 0, y: 0 }, exit: { x: 0, y: 0 } }, Math.floor(x), Math.floor(y))) errors.push(`scenery[${i}] (${x}, ${y}) is not on a tile.`);
+        else scenery.push({ id, x, y });
+      });
+  }
   const rails = parseRails(raw.rails, course, errors);
   const objects = parseObjects(raw.objects, course, errors);
   checkRailCrossings(objects, rails, errors);
@@ -299,7 +330,7 @@ export function parseCourse(raw: unknown): ParseResult {
   }
 
   if (errors.length || !start || !exit) return { ok: false, errors };
-  return { ok: true, course: { ...course, start, exit, objects, rails, spawns } };
+  return { ok: true, course: { ...course, start, exit, objects, rails, spawns, scenery } };
 }
 
 /** Yellow stars a course can give: enemy star values, placed yellow stars and stars inside breakables. */
@@ -307,14 +338,34 @@ export function starsOnOffer(objects: readonly CourseObject[]): number {
   let n = 0;
   for (const o of objects) {
     const def = OBJECTS.get(o.id);
-    if (def?.kind === 'enemy') n += def.starValue;
+    if (def?.kind === 'enemy') n += enemyStarValue(o) + enemyHiddenStars(o);
     else if (def?.kind === 'pickup' && def.effect === 'yellowStar') n += 1;
     else if (def?.kind === 'breakable') n += (o.drops ?? def.drops).filter((d) => d === 'yellow-star').length;
   }
   return n;
 }
 
-const OBJECT_KEYS = ['id', 'at', 'path', 'facing', 'phase', 'orient', 'drops'];
+const OBJECT_KEYS = ['id', 'at', 'path', 'facing', 'phase', 'orient', 'drops', 'rank', 'traits', 'element', 'spot', 'gear'];
+
+/**
+ * Yellow stars one placed enemy is worth when defeated (Milestone 8): its
+ * entry's value, or its rank's (owner, 2026-11-18: Veterans and Elites 2),
+ * plus 1 for a carried bauble.
+ */
+export function enemyStarValue(o: Pick<CourseObject, 'id' | 'extras'>): number {
+  const def = OBJECTS.get(o.id);
+  if (def?.kind !== 'enemy') return 0;
+  const rank = rankDef(o.extras.rank);
+  const gear = o.extras.gear ? GEAR.get(o.extras.gear) : undefined;
+  return (rank ? rank.stars : def.starValue) + (gear ? ENEMY_GEAR.bonus[gear.category].stars : 0);
+}
+
+/** Stars still inside a placed enemy after its own: a Splitting enemy's offspring. */
+export function enemyHiddenStars(o: Pick<CourseObject, 'id' | 'extras'>): number {
+  if (!o.extras.traits.includes('splitting')) return 0;
+  const child = OBJECTS.get(TRAIT_RULES.splitInto);
+  return TRAIT_RULES.splitCount * (child?.kind === 'enemy' ? child.starValue : 0);
+}
 
 /** Does this kind of object follow a path? */
 function takesPath(id: string): boolean {
@@ -351,6 +402,51 @@ function checkPath(course: Omit<Course, 'start' | 'exit'>, pts: readonly GridPoi
       prev = t;
     }
   }
+}
+
+/** Milestone 8: an enemy's rank, traits, element, spot and gear (all optional). */
+function parseExtras(entry: Record<string, unknown>, def: ObjectDef, where: string, errors: string[]): EnemyExtras {
+  const keys = ['rank', 'traits', 'element', 'spot', 'gear'].filter((k) => entry[k] !== undefined);
+  if (!keys.length) return NO_EXTRAS;
+  if (def.kind !== 'enemy') {
+    errors.push(`${where}: only enemies take ${keys.map((k) => `"${k}"`).join(', ')}.`);
+    return NO_EXTRAS;
+  }
+  const boss = def.behaviour.kind === 'boss';
+  let rank = 0;
+  if (entry.rank !== undefined) {
+    if (boss) errors.push(`${where}: a boss has no rank.`);
+    else if (!rankDef(entry.rank as number)) errors.push(`${where}.rank: must be ${RANKS.map((r) => `${r.rank} (${r.name})`).join(' or ')}.`);
+    else rank = entry.rank as number;
+  }
+  const traits: TraitId[] = [];
+  if (entry.traits !== undefined) {
+    if (!Array.isArray(entry.traits)) errors.push(`${where}.traits: must be a list of trait ids.`);
+    else
+      for (const t of entry.traits) {
+        if (!TRAITS.has(t as TraitId)) errors.push(`${where}.traits: "${String(t)}" is not a trait (${TRAIT_IDS.join(', ')}).`);
+        else if (!def.allowedTraits.includes(t as string)) errors.push(`${where}.traits: a ${def.name} cannot be ${String(t)}.`);
+        else if (!traits.includes(t as TraitId)) traits.push(t as TraitId);
+      }
+  }
+  let element: Element | null = null;
+  if (entry.element !== undefined) {
+    if (!ELEMENT_IDS.includes(entry.element as Element)) errors.push(`${where}.element: must be one of ${ELEMENT_IDS.join(', ')}.`);
+    else element = entry.element as Element;
+  }
+  let spot: SpotId | null = null;
+  if (entry.spot !== undefined) {
+    if (!SPOT_IDS.includes(entry.spot as SpotId)) errors.push(`${where}.spot: must be one of ${SPOT_IDS.join(', ')}.`);
+    else spot = entry.spot as SpotId;
+  }
+  let gear: string | null = null;
+  if (entry.gear !== undefined) {
+    const g = typeof entry.gear === 'string' ? GEAR.get(entry.gear) : undefined;
+    if (!g) errors.push(`${where}.gear: "${String(entry.gear)}" is not a gear item.`);
+    else if (!def.allowedGear.includes(g.category)) errors.push(`${where}.gear: a ${def.name} cannot carry a ${g.category}.`);
+    else gear = g.id;
+  }
+  return { rank, traits, element, spot, gear };
 }
 
 function parseObjects(raw: unknown, course: Omit<Course, 'start' | 'exit'>, errors: string[]): CourseObject[] {
@@ -444,7 +540,8 @@ function parseObjects(raw: unknown, course: Omit<Course, 'start' | 'exit'>, erro
       }
     }
 
-    out.push({ id: entry.id, x: p.x, y: p.y, path, facing, phase, orient, drops });
+    const extras = parseExtras(entry, def, where, errors);
+    out.push({ id: entry.id, x: p.x, y: p.y, path, facing, phase, orient, drops, extras });
   });
   return out;
 }

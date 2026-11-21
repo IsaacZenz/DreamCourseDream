@@ -243,7 +243,7 @@ describe('run rules', () => {
     run.countdown = 3;
     expect(typeOf(run, node)).toBe('boss');
     run.status = 'course';
-    run.current = { id: 'r9l1', row: 9, type: 'boss', early: true, budget: 20, courseSeed: 'X', gear: null, acorn: null, boss: null, arena: null };
+    run.current = { id: 'r9l1', row: 9, type: 'boss', early: true, budget: 20, courseSeed: 'X', gear: null, boss: null, arena: null };
     winCourse(run);
     // Owner, 2026-11-17: the boss's 5, plus 1 per countdown step left, deposited at once.
     expect(run.blueStars).toBe(0);
@@ -279,7 +279,8 @@ describe('gear rarity', () => {
     expect(GEAR_LIST.length).toBe(66);
     for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === 'weapon' && g.rarity === r).length).toBe(3);
     for (const c of ['armour', 'bauble']) for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === c && g.rarity === r).length).toBe(4);
-    expect(RARITIES.map((r) => RARITY_INFO[r].price)).toEqual([10, 15, 25, 35, 50, 70]);
+    // Owner, 2026-11-19 (Milestone 8): dearer high-rarity gear.
+    expect(RARITIES.map((r) => RARITY_INFO[r].price)).toEqual([10, 15, 30, 45, 70, 100]);
     expect(new Set(GEAR_LIST.map((g) => g.id)).size).toBe(66);
   });
 
@@ -321,7 +322,7 @@ describe('shop and cache', () => {
   function shopRun(): RunState {
     const run = newRun('SHOP');
     run.status = 'shop';
-    run.current = { id: 'r3l0', row: 3, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, acorn: null, boss: null, arena: null };
+    run.current = { id: 'r3l0', row: 3, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, boss: null, arena: null };
     run.shop = { node: 'r3l0', offers: [], rerolls: 0, freeRerolls: 0, raised: false };
     run.shop.offers = [
       { kind: 'gear', id: 'studded-shell', sold: false },
@@ -333,7 +334,7 @@ describe('shop and cache', () => {
     return run;
   }
 
-  it('buying takes stars; an upgrade gets 6 dearer each time in a run', () => {
+  it('buying takes stars; round 2a: food does not get dearer when bought again', () => {
     const run = shopRun();
     run.wallet = 100;
     const up = run.shop!.offers[2]!;
@@ -341,8 +342,12 @@ describe('shop and cache', () => {
     expect(buy(run, 2)).toBeNull();
     expect(run.wallet).toBe(100 - 12);
     expect(runStats(run).get('maxShots')).toBe(5);
-    expect(priceOf(run, { kind: 'upgrade', id: 'deep-breath', sold: false })).toBe(18);
     expect(buy(run, 2)).toBe('SOLD');
+    const trail = { kind: 'food' as const, id: 'deep-breath', sold: false, courses: 1 };
+    expect(priceOf(run, trail)).toBe(4);
+    run.foodShop = { node: 'r3l0', offers: [trail, { ...trail }], rerolls: 0, freeRerolls: 0, raised: false };
+    expect(buy(run, 0, 'food')).toBeNull();
+    expect(priceOf(run, run.foodShop.offers[1]!)).toBe(4);
   });
 
   it('cannot buy without enough stars', () => {
@@ -383,13 +388,13 @@ describe('shop and cache', () => {
     const run = shopRun();
     setGear(run, 'four-leaf-clover');
     expect(rerollPrice(run)).toBe(0);
-    expect(priceOf(run, { kind: 'gear', id: 'iron-shell', sold: false })).toBe(19);
+    expect(priceOf(run, { kind: 'gear', id: 'iron-shell', sold: false })).toBe(23);
   });
 
   it('cache: take one for free, which finishes the node and counts', () => {
     const run = newRun();
     run.status = 'cache';
-    run.current = { id: 'r2l1', row: 2, type: 'cache', early: false, budget: 0, courseSeed: '', gear: null, acorn: null, boss: null, arena: null };
+    run.current = { id: 'r2l1', row: 2, type: 'cache', early: false, budget: 0, courseSeed: '', gear: null, boss: null, arena: null };
     run.cache = { node: 'r2l1', offers: [{ kind: 'upgrade', id: 'long-arms', sold: false }] };
     expect(takeFromCache(run, 0)).toBeNull();
     expect(run.wallet).toBe(0);
@@ -472,7 +477,7 @@ describe('gear on a course', () => {
   });
 
   it('Padded Lining ignores the first damage each course', () => {
-    const c = field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+    const c = field(10, 3, { objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
     const p = createPlay(c, T, { seed: 'l', loadout: { gear: { weapon: null, armour: 'padded-lining', bauble: null } } });
     expect(shieldsLeft(p)).toBe(1);
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
@@ -483,7 +488,7 @@ describe('gear on a course', () => {
   });
 
   it('Thorn Guard hurts back an enemy that hurts the ball', () => {
-    const c = field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+    const c = field(10, 3, { objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
     const p = createPlay(c, T, { seed: 't', loadout: { gear: { weapon: null, armour: 'thorn-guard', bauble: null } } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.6 }));
@@ -493,19 +498,19 @@ describe('gear on a course', () => {
   });
 
   it('Ember Coat sets the enemy burning; Burning does 1 damage at the start of the enemy turn', () => {
-    const c = field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+    const c = field(10, 3, { objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
     // A full wheel (owner, 2026-11-17: success rolls) so the burn always takes.
     const full = [{ stat: 'rollSlices' as const, op: 'add' as const, amount: 10, source: { kind: 'run' as const, id: 'test' }, duration: { kind: 'run' as const } }];
     const p = createPlay(c, T, { seed: 'e', loadout: { gear: { weapon: 'ember-coat', armour: null, bauble: null }, modifiers: full } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.6 }));
-    expect(log).toContainEqual({ kind: 'status', target: 'trundler#0', status: 'burning' });
-    expect(log).toContainEqual({ kind: 'statusDamage', enemy: 'trundler#0', status: 'burning', damage: 1 });
+    expect(log).toContainEqual({ kind: 'status', target: 'mudroller#0', status: 'burning' });
+    expect(log).toContainEqual({ kind: 'statusDamage', enemy: 'mudroller#0', status: 'burning', damage: 1 });
     expect(p.enemies[0]!.defeated).toBe(true);
   });
 
   it('Phoenix Plate saves the ball once and crumbles', () => {
-    const c = field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+    const c = field(10, 3, { objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
     const p = createPlay(c, T, { seed: 'p', loadout: { health: 1, gear: { weapon: null, armour: 'phoenix-plate', bauble: null } } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.6 }));

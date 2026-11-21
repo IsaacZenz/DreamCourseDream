@@ -26,9 +26,13 @@ const CSS = `
 export interface BenchOptions {
   readonly choices: readonly { id: string; label: string }[];
   readonly abilities: readonly { id: string; label: string }[];
-  readonly current: { object: string; ability: string };
+  readonly current: { object: string; ability: string; rank: string; trait: string; element: string };
+  /** Milestone 8: a rank, a trait and an element for the enemy at the centre. */
+  readonly ranks: readonly { id: string; label: string }[];
+  readonly traits: readonly { id: string; label: string }[];
+  readonly elements: readonly { id: string; label: string }[];
   /** Load the bench with this choice. */
-  readonly onLoad: (object: string, ability: string) => void;
+  readonly onLoad: (object: string, ability: string, extras: { rank: string; trait: string; element: string }) => void;
 }
 
 /** Testing aids for a run (Milestone 6 design sheet, section 9.4). */
@@ -81,6 +85,9 @@ export class TuningPanel {
     document.body.appendChild(this.root);
   }
 
+  /** Round 2a: show or hide the scenery on courses (a testing aid; sheet section 2.6). */
+  showScenery = true;
+
   get visible(): boolean {
     return this.root.style.display !== 'none';
   }
@@ -109,7 +116,11 @@ export class TuningPanel {
       clearTuning();
       this.refresh();
     });
-    head.append(copy, reset);
+    const scenery = this.button('Hide scenery', () => {
+      this.showScenery = !this.showScenery;
+      scenery.textContent = this.showScenery ? 'Hide scenery' : 'Show scenery';
+    });
+    head.append(copy, reset, scenery);
     this.root.appendChild(head);
     this.benchBox = document.createElement('div');
     this.benchBox.className = 'bench';
@@ -182,13 +193,17 @@ export class TuningPanel {
     const abLabel = document.createElement('p');
     abLabel.textContent = 'Start with ability:';
     const ab = select('bench-ability', opts.abilities, opts.current.ability);
+    const exLabel = document.createElement('p');
+    exLabel.textContent = 'Enemy rank, trait and element (Milestone 8):';
+    const rank = select('bench-rank', opts.ranks, opts.current.rank);
+    const trait = select('bench-trait', opts.traits, opts.current.trait);
+    const element = select('bench-element', opts.elements, opts.current.element);
     const load = this.button('Load test bench', () => {
       // Give the keys back to the game.
-      obj.blur();
-      ab.blur();
-      opts.onLoad(obj.value, ab.value);
+      for (const el of [obj, ab, rank, trait, element]) el.blur();
+      opts.onLoad(obj.value, ab.value, { rank: rank.value, trait: trait.value, element: element.value });
     });
-    box.append(h, hint, objLabel, obj, abLabel, ab, load);
+    box.append(h, hint, objLabel, obj, abLabel, ab, exLabel, rank, trait, element, load);
   }
 
   /** Show the run's testing aids, or hide them (null) when no run is going. */

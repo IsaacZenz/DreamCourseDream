@@ -73,6 +73,12 @@ export interface Tuning {
   /** A ball on the ground that stays within this many tiles of one spot for `trapTime` seconds rests too (a pit or narrow valley). */
   trapRadius: number;
   trapTime: number;
+  /**
+   * Milestone 8, a safety limit: nothing moves faster than this, in tiles per
+   * second. Far above any shot; it stops a big boss wedged between bumpers
+   * from gaining speed on every bounce until the physics hangs.
+   */
+  maxSpeed: number;
 
   // Bounce boost
   /** How long before landing a boost press still counts, in seconds. */
@@ -172,6 +178,7 @@ export const DEFAULT_TUNING: Tuning = {
   restTime: 0.15,
   trapRadius: 0.05,
   trapTime: 0.5,
+  maxSpeed: 40,
 
   boostWindow: 0.15,
   boostMultiplier: 1.6,
@@ -211,6 +218,8 @@ export const DEFAULT_TUNING: Tuning = {
     rough: { friction: 0.45, bounce: 0.33, landingGrip: 0.35, wallBounce: 0.6, drag: 0 },
     sand: { friction: 1.0, bounce: 0.055, landingGrip: 0.7, wallBounce: 0.4, drag: 0 },
     ice: { friction: 0.03, bounce: 0.55, landingGrip: 0.03, wallBounce: 0.8, drag: 0 },
+    // Round 2a: a plank bridge rolls like grass.
+    bridge: { friction: 0.15, bounce: 0.495, landingGrip: 0.15, wallBounce: 0.7, drag: 0 },
     bumper: { friction: 0.15, bounce: 1, landingGrip: 0.1, wallBounce: 1.25, drag: 0 },
     // Owner, 2026-11-14: water slows the ball but only resets it if it stops there.
     water: { friction: 0.4, bounce: 0.2, landingGrip: 0.5, wallBounce: 0.3, drag: 2.5 },

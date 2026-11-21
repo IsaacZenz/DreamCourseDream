@@ -44,9 +44,22 @@ export const RAIL = {
 
 /** Elements (FEATURES.md section 2, open question F5 default). */
 export type Element = 'fire' | 'ice' | 'shock';
+export const ELEMENT_IDS: readonly Element[] = ['fire', 'ice', 'shock'];
+
+/**
+ * What having an element means for an enemy (Milestone 8 sheet section 3).
+ * Owner, 2026-11-19: the elements form a circle: fire is weak to ice, ice is
+ * weak to shock, shock is weak to fire; each resists its own. When an enemy
+ * with an element hurts the ball, the ball also gets that element's status.
+ */
+export const ELEMENT_RULES: Readonly<Record<Element, { readonly weakTo: Element; readonly resists: Element; readonly contactStatus: string }>> = {
+  fire: { weakTo: 'ice', resists: 'fire', contactStatus: 'burning' },
+  ice: { weakTo: 'shock', resists: 'ice', contactStatus: 'chilled' },
+  shock: { weakTo: 'fire', resists: 'shock', contactStatus: 'stunned' },
+};
 
 /** Where a hit lands, for weak spots and guarded sides (FEATURES.md section 2). */
-export type Side = 'above' | 'behind' | 'front';
+export type Side = 'above' | 'behind' | 'front' | 'side';
 
 export interface PickupDef {
   readonly kind: 'pickup';
@@ -165,9 +178,19 @@ export type Behaviour =
   /**
    * Patroller: follows its `path` there and back at `speed`, all the time. It keeps
    * to its path when it meets the ball and knocks the ball away with `knock` extra
-   * speed (owner, 2026-11-14).
+   * speed (owner, 2026-11-14). Milestone 8: `float` tiles above the ground (the
+   * Glowmoth): a rolling ball goes under it, and it lowers no flags.
    */
-  | { readonly kind: 'patrol'; readonly speed: number; readonly knock: number }
+  | { readonly kind: 'patrol'; readonly speed: number; readonly knock: number; readonly float?: number }
+  /** Milestone 8 (Trapjaw): once active, turns to face the ball on each enemy turn. Never leaves its tile. */
+  | { readonly kind: 'face' }
+  /**
+   * Milestone 8 (Stinkpuff): once active, marks a ring of `radius` round itself
+   * each enemy turn and puffs it on the next; a ball resting on the ground in it
+   * gets `status`. Hit by the ball, it puffs at once within `hitRadius`, unless
+   * the hit came from above.
+   */
+  | { readonly kind: 'pulse'; readonly radius: number; readonly hitRadius: number; readonly status: string }
   /**
    * Marks the ball's spot with a ring; next enemy turn lobs a seed at it. The seed
    * has ball physics (owner, 2026-11-14). `range`: it waits if the ball is further.
@@ -203,7 +226,7 @@ export type Behaviour =
  * - survives: the ball hit it and it survived, or it ran into the ball (Trundler).
  * - moving: only while it is rolling (Lunger, Mole).
  */
-export type ContactWhen = 'never' | 'survives' | 'moving';
+export type ContactWhen = 'never' | 'survives' | 'moving' | 'front';
 
 export interface EnemyDef {
   readonly kind: 'enemy';
@@ -232,6 +255,8 @@ export interface EnemyDef {
   readonly passByGroundOnly: boolean;
   readonly behaviour: Behaviour;
   readonly contact: ContactWhen;
+  /** Milestone 8: a status the ball also gets when this enemy hurts it (Bristlecrawler: poisoned), or null. */
+  readonly contactStatus: string | null;
   /** Ability id given on defeat, or null. */
   readonly grantsAbility: string | null;
   readonly allowedTraits: readonly string[];
@@ -265,15 +290,27 @@ const PLAIN = {
   guardedSides: [],
   shield: false,
   passByGroundOnly: false,
+  contactStatus: null,
   allowedTraits: [],
   allowedGear: [],
   squadThemes: [],
 } as const;
 
+/**
+ * Traits and gear each enemy may roll (Milestone 8 sheet section 5.1). Grubs
+ * (Snoozegrub and the ability grubs) take only the four simple traits; a bug
+ * that never attacks carries only armour or a bauble.
+ */
+const GRUB_TRAITS = ['shielded', 'armoured', 'explosive', 'splitting'] as const;
+const ALL_TRAITS = ['shielded', 'armoured', 'swift', 'explosive', 'regenerating', 'splitting'] as const;
+const traitsWithout = (...no: string[]) => ALL_TRAITS.filter((t) => !no.includes(t));
+const PASSIVE_GEAR = ['armour', 'bauble'] as const;
+const ALL_GEAR = ['weapon', 'armour', 'bauble'] as const;
+
 const ROUND_ENEMY = { shape: { kind: 'round', r: 0.3 }, height: 0.6, bounce: 0.6 } as const;
 const NO_TRIGGERS = { hit: 'none', rest: 'none', passBy: 'none' } as const;
 
-/** One Mossback copy per starter ability; grants it on defeat (FEATURES.md section 4). */
+/** One grub (a Snoozegrub copy) per starter ability; grants it on defeat (FEATURES.md section 4). */
 function carrier(id: string, name: string, ability: string): EnemyDef {
   return {
     kind: 'enemy',
@@ -286,6 +323,8 @@ function carrier(id: string, name: string, ability: string): EnemyDef {
     starValue: 1,
     ...PLAIN,
     ...ROUND_ENEMY,
+    allowedTraits: GRUB_TRAITS,
+    allowedGear: PASSIVE_GEAR,
     triggers: NO_TRIGGERS,
     behaviour: { kind: 'none' },
     contact: 'never',
@@ -307,6 +346,8 @@ const defs: readonly ObjectDef[] = [
   // Static blockers (section 6). The post was renamed the tree stump (owner, 2026-11-14); same size.
   { kind: 'blocker', id: 'rock', name: 'Rock', sprite: 'rock', shape: { kind: 'round', r: 0.38 }, height: 0.5, bounce: 0.6, cost: 1 },
   { kind: 'blocker', id: 'stump', name: 'Tree stump', sprite: 'stump', shape: { kind: 'round', r: 0.14 }, height: 1.5, bounce: 0.75, cost: 1 },
+  // Round 2a (owner, 2026-11-21): a thin, tall dead tree; regions two and three.
+  { kind: 'blocker', id: 'dead-tree', name: 'Dead tree', sprite: 'dead-tree', shape: { kind: 'round', r: 0.12 }, height: 2, bounce: 0.7, cost: 1 },
   { kind: 'blocker', id: 'low-wall', name: 'Low wall', sprite: 'low-wall', shape: { kind: 'box', hx: 0.5, hy: 0.5 }, height: 0.25, bounce: 0.6, cost: 1 },
 
   // Moving obstacles (section 6).
@@ -364,9 +405,9 @@ const defs: readonly ObjectDef[] = [
   // Enemies (section 4). Owner, 2026-11-14: every enemy is worth 1 star for now.
   {
     kind: 'enemy',
-    id: 'mossback',
-    name: 'Mossback',
-    sprite: 'mossback',
+    id: 'snoozegrub',
+    name: 'Snoozegrub',
+    sprite: 'snoozegrub',
     family: 'sentinel',
     tier: 1,
     stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
@@ -374,16 +415,38 @@ const defs: readonly ObjectDef[] = [
     ...PLAIN,
     ...ROUND_ENEMY,
     triggers: NO_TRIGGERS,
+    allowedTraits: GRUB_TRAITS,
+    allowedGear: PASSIVE_GEAR,
     behaviour: { kind: 'none' },
     contact: 'never',
     grantsAbility: null,
     cost: 1,
   },
+  // Milestone 8: the Grublet, a tiny larva let out by a Splitting bug (sheet section 7.3). Not placed by the generator.
   {
     kind: 'enemy',
-    id: 'trundler',
-    name: 'Trundler',
-    sprite: 'trundler',
+    id: 'grublet',
+    name: 'Grublet',
+    sprite: 'grublet',
+    family: 'sentinel',
+    tier: 1,
+    stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    shape: { kind: 'round', r: 0.2 },
+    height: 0.4,
+    bounce: 0.6,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'none' },
+    contact: 'never',
+    grantsAbility: null,
+    cost: 0,
+  },
+  {
+    kind: 'enemy',
+    id: 'mudroller',
+    name: 'Mudroller',
+    sprite: 'mudroller',
     family: 'patroller',
     tier: 2,
     stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
@@ -391,6 +454,8 @@ const defs: readonly ObjectDef[] = [
     ...PLAIN,
     ...ROUND_ENEMY,
     triggers: NO_TRIGGERS,
+    allowedTraits: ALL_TRAITS,
+    allowedGear: ALL_GEAR,
     behaviour: { kind: 'patrol', speed: 1.5, knock: 5 },
     contact: 'survives',
     grantsAbility: null,
@@ -398,9 +463,9 @@ const defs: readonly ObjectDef[] = [
   },
   {
     kind: 'enemy',
-    id: 'spitter',
-    name: 'Spitter',
-    sprite: 'spitter',
+    id: 'spittlebug',
+    name: 'Spittlebug',
+    sprite: 'spittlebug',
     family: 'sentinel',
     tier: 2,
     stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 8, outerRadius: 3.5, innerRadius: 1.5 },
@@ -408,6 +473,8 @@ const defs: readonly ObjectDef[] = [
     ...PLAIN,
     ...ROUND_ENEMY,
     triggers: { hit: 'activated', rest: 'activated', passBy: 'activated' },
+    allowedTraits: traitsWithout('swift'),
+    allowedGear: ALL_GEAR,
     behaviour: { kind: 'lob', range: 8, loftAngle: 50, seedRadius: 0.12 },
     contact: 'never',
     grantsAbility: null,
@@ -415,9 +482,9 @@ const defs: readonly ObjectDef[] = [
   },
   {
     kind: 'enemy',
-    id: 'lunger',
-    name: 'Lunger',
-    sprite: 'lunger',
+    id: 'pouncehopper',
+    name: 'Pouncehopper',
+    sprite: 'pouncehopper',
     family: 'sentinel',
     tier: 2,
     stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 3, innerRadius: 1.25 },
@@ -425,6 +492,8 @@ const defs: readonly ObjectDef[] = [
     ...PLAIN,
     ...ROUND_ENEMY,
     triggers: { hit: 'activated', rest: 'activated', passBy: 'immediate' },
+    allowedTraits: ALL_TRAITS,
+    allowedGear: ALL_GEAR,
     behaviour: { kind: 'launch', maxSpeed: 10, hitWhileMoving: true },
     contact: 'moving',
     grantsAbility: null,
@@ -432,15 +501,18 @@ const defs: readonly ObjectDef[] = [
   },
   {
     kind: 'enemy',
-    id: 'mole',
-    name: 'Mole',
-    sprite: 'mole',
+    id: 'mole-cricket',
+    name: 'Mole Cricket',
+    sprite: 'mole-cricket',
     family: 'sentinel',
     tier: 2,
     stats: { health: 1, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0.35 },
     starValue: 1,
     ...PLAIN,
     passByGroundOnly: true,
+    // 1 health, so no Regenerating; it pops out of the ground, so no Explosive or Splitting.
+    allowedTraits: ['shielded', 'armoured', 'swift'],
+    allowedGear: ALL_GEAR,
     ...ROUND_ENEMY,
     triggers: { hit: 'none', rest: 'none', passBy: 'immediate' },
     behaviour: { kind: 'burrow', launchSpeed: 6, launchUp: 10, delay: 0.3, grace: 0.15, upShots: 1, hitWhileMoving: false },
@@ -451,9 +523,9 @@ const defs: readonly ObjectDef[] = [
   // The Warden (Milestone 7 sheet section 2). Health is set per region (run.ts REGIONS bossHealth).
   {
     kind: 'enemy',
-    id: 'warden',
-    name: 'The Warden',
-    sprite: 'warden',
+    id: 'stagwarden',
+    name: 'The Stagwarden',
+    sprite: 'stagwarden',
     family: 'sentinel',
     tier: 5,
     stats: { health: 12, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
@@ -463,15 +535,170 @@ const defs: readonly ObjectDef[] = [
     height: 1.6,
     bounce: 0.6,
     triggers: NO_TRIGGERS,
-    behaviour: { kind: 'boss', boss: 'warden' },
+    behaviour: { kind: 'boss', boss: 'stagwarden' },
     contact: 'never',
     grantsAbility: null,
     cost: 0,
   },
-  carrier('anchorback', 'Anchorback', 'anchor'),
-  carrier('emberback', 'Emberback', 'burner'),
-  carrier('hopback', 'Hopback', 'hop'),
-  carrier('whirlback', 'Whirlback', 'tornado'),
+  // Gloamhorn (Milestone 8 sheet section 8). Health is set per region (bosses.ts). It hurts only while charging.
+  {
+    kind: 'enemy',
+    id: 'gloamhorn',
+    name: 'Gloamhorn',
+    sprite: 'gloamhorn',
+    family: 'sentinel',
+    tier: 5,
+    stats: { health: 8, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 0,
+    ...PLAIN,
+    // Open, its soft back takes double.
+    weakSpots: ['behind'],
+    shape: { kind: 'round', r: 0.8 },
+    height: 1.3,
+    bounce: 0.6,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'boss', boss: 'gloamhorn' },
+    contact: 'moving',
+    grantsAbility: null,
+    cost: 0,
+  },
+  // The Brood Queen (sheet section 9). Guarded all round; a hit from above gets past (damage.ts), so only her back can be hurt.
+  {
+    kind: 'enemy',
+    id: 'brood-queen',
+    name: 'The Brood Queen',
+    sprite: 'brood-queen',
+    family: 'sentinel',
+    tier: 5,
+    stats: { health: 20, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 0,
+    ...PLAIN,
+    guardedSides: ['front', 'behind', 'side'],
+    shape: { kind: 'round', r: 1.1 },
+    height: 1.1,
+    bounce: 0.6,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'boss', boss: 'brood-queen' },
+    contact: 'never',
+    grantsAbility: null,
+    cost: 0,
+  },
+  carrier('leadgrub', 'Leadgrub', 'anchor'),
+  carrier('embergrub', 'Embergrub', 'burner'),
+  carrier('hopgrub', 'Hopgrub', 'hop'),
+  carrier('whirlgrub', 'Whirlgrub', 'tornado'),
+  carrier('frostgrub', 'Frostgrub', 'frost'),
+  carrier('sparkgrub', 'Sparkgrub', 'static'),
+
+  // Milestone 8 round 1 (sheet section 7): five new bugs.
+  {
+    kind: 'enemy',
+    id: 'skitter-ant',
+    name: 'Skitter Ant',
+    sprite: 'skitter-ant',
+    family: 'patroller',
+    tier: 1,
+    stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    shape: { kind: 'round', r: 0.22 },
+    height: 0.4,
+    bounce: 0.6,
+    allowedTraits: traitsWithout('splitting', 'regenerating'),
+    allowedGear: PASSIVE_GEAR,
+    triggers: NO_TRIGGERS,
+    // A timing target: fast, knocks the ball about, never hurts it.
+    behaviour: { kind: 'patrol', speed: 2.8, knock: 3 },
+    contact: 'survives',
+    grantsAbility: null,
+    cost: 2,
+  },
+  {
+    kind: 'enemy',
+    id: 'bristlecrawler',
+    name: 'Bristlecrawler',
+    sprite: 'bristlecrawler',
+    family: 'patroller',
+    tier: 2,
+    stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    // Stinging bristles at its head; a soft rear.
+    guardedSides: ['front'],
+    weakSpots: ['behind'],
+    contactStatus: 'poisoned',
+    ...ROUND_ENEMY,
+    allowedTraits: ALL_TRAITS,
+    allowedGear: ALL_GEAR,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'patrol', speed: 1.2, knock: 5 },
+    contact: 'survives',
+    grantsAbility: null,
+    cost: 4,
+  },
+  {
+    kind: 'enemy',
+    id: 'glowmoth',
+    name: 'Glowmoth',
+    sprite: 'glowmoth',
+    family: 'patroller',
+    tier: 2,
+    stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 0, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    shape: { kind: 'round', r: 0.3 },
+    height: 0.4,
+    bounce: 0.5,
+    // 1 health: no Regenerating. It floats: no Splitting (the Grublets would hang in the air).
+    allowedTraits: ['shielded', 'armoured', 'swift', 'explosive'],
+    allowedGear: PASSIVE_GEAR,
+    triggers: NO_TRIGGERS,
+    behaviour: { kind: 'patrol', speed: 1, knock: 0, float: 0.9 },
+    contact: 'never',
+    grantsAbility: null,
+    cost: 3,
+  },
+  {
+    kind: 'enemy',
+    id: 'trapjaw',
+    name: 'Trapjaw',
+    sprite: 'trapjaw',
+    family: 'sentinel',
+    tier: 2,
+    stats: { health: 2, attackDamage: 1, moveRange: 0, attackRange: 0, outerRadius: 3, innerRadius: 0 },
+    starValue: 1,
+    ...PLAIN,
+    guardedSides: ['front'],
+    weakSpots: ['behind'],
+    ...ROUND_ENEMY,
+    allowedTraits: traitsWithout('swift'),
+    allowedGear: ALL_GEAR,
+    triggers: { hit: 'activated', rest: 'activated', passBy: 'none' },
+    behaviour: { kind: 'face' },
+    contact: 'front',
+    grantsAbility: null,
+    cost: 3,
+  },
+  {
+    kind: 'enemy',
+    id: 'stinkpuff',
+    name: 'Stinkpuff',
+    sprite: 'stinkpuff',
+    family: 'sentinel',
+    tier: 2,
+    stats: { health: 1, attackDamage: 0, moveRange: 0, attackRange: 0, outerRadius: 2.5, innerRadius: 1.2 },
+    starValue: 1,
+    ...PLAIN,
+    weakSpots: ['above'],
+    ...ROUND_ENEMY,
+    allowedTraits: ['shielded', 'armoured', 'explosive', 'splitting'],
+    allowedGear: PASSIVE_GEAR,
+    triggers: { hit: 'activated', rest: 'activated', passBy: 'activated' },
+    behaviour: { kind: 'pulse', radius: 1.5, hitRadius: 1.2, status: 'poisoned' },
+    contact: 'never',
+    grantsAbility: null,
+    cost: 3,
+  },
 ];
 
 // Gear lying on a course (Milestone 6): one object per gear item, by the same id.
@@ -492,4 +719,17 @@ export function registerObjects(more: readonly ObjectDef[]): void {
 }
 
 /** Ids that course files may no longer use, with the reason. */
-export const RENAMED_OBJECTS: ReadonlyMap<string, string> = new Map([['post', 'stump']]);
+export const RENAMED_OBJECTS: ReadonlyMap<string, string> = new Map([
+  ['post', 'stump'],
+  // Owner, 2026-11-18: every enemy is an insect (Milestone 8 sheet section 7.0).
+  ['mossback', 'snoozegrub'],
+  ['anchorback', 'leadgrub'],
+  ['emberback', 'embergrub'],
+  ['hopback', 'hopgrub'],
+  ['whirlback', 'whirlgrub'],
+  ['trundler', 'mudroller'],
+  ['spitter', 'spittlebug'],
+  ['lunger', 'pouncehopper'],
+  ['mole', 'mole-cricket'],
+  ['warden', 'stagwarden'],
+]);

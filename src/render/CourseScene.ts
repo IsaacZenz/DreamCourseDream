@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GENERATED_ID, TEST_COURSES } from '../content/courses';
 import { GEN } from '../content/gen';
-import { generateCourse, type GenResult } from '../gen/validate';
+import { generateCourse, type GenOptions, type GenResult } from '../gen/validate';
 import type { BotMove } from '../gen/bot';
 import { Rng } from '../sim/rng';
 import { SeedViewer } from '../ui/seedViewer';
@@ -16,6 +16,8 @@ import {
   canUseAbility,
   createPlay,
   debugWin,
+  decideFood,
+  settleFood,
   drainLog,
   equipGear,
   isBoss,
@@ -27,19 +29,25 @@ import {
   type PlayEvent,
   type PlayState,
   type Preview,
+  floatOf,
+  shellIsOpen,
 } from '../sim/play';
-import { OBJECTS, RAIL } from '../content/objects';
+import { STATUSES } from '../content/statuses';
+import { RANKS, TRAITS, TRAIT_RULES } from '../content/enemyMods';
+import { ELEMENT_IDS, OBJECTS, RAIL } from '../content/objects';
+import { SCENERY } from '../content/scenery';
 import { RULES } from '../content/rules';
 import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
 import type { TuningPanel } from '../ui/tuningPanel';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
-import { UPGRADE_LIST } from '../content/run';
+import { UPGRADE_LIST, botShotsFor } from '../content/run';
 import { placeGear } from '../gen/placeGear';
-import { upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, regionDef, rewardFor } from '../sim/run';
-import { ARENAS } from '../content/arenas';
+import { mixFor, regionDefFor, upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, rewardFor, bossHealthFor } from '../sim/run';
+import { ARENAS, arenaData } from '../content/arenas';
 import { activeRun, newRunSeed, persist, session, startRun, type RunCourse } from './runSession';
-import { ACORNS } from '../content/consumables';
+import { ACORNS, FOOD, FOODS } from '../content/consumables';
+import { foodDesc } from './bagMenu';
 import { jobKey, madeCourse, prefetch, want, type Made } from './genQueue';
 import { BOSSES } from '../content/bosses';
 import { BLUE_STARS } from '../content/progress';
@@ -82,6 +90,18 @@ const WHEEL_FILLED = 0x40c060;
 const WHEEL_EMPTY = 0x404058;
 const BOSS_BAR = 0xe04040;
 const SLAM_RING = 0xff4030;
+// Milestone 8 marks on the ground.
+const PUFF_RING = 0x90d040;
+const SOLDIER_RING = 0xc060f0;
+const FUSE_RING = 0xff9020;
+const FROZEN = 0xd8f0ff;
+const STATIC_FIELD = 0xfff060;
+
+/** An element's tint from the asset manifest (Milestone 8 sheet section 3: colours live with the art). */
+function elementTint(el: string): number | undefined {
+  const hex = manifest.tints?.[el];
+  return hex ? parseInt(hex.slice(1), 16) : undefined;
+}
 const BAD = 0xff8080;
 const GUIDE_WARN = 0xf89038;
 const DEBUG_OUTER = 0xf8e048;
@@ -100,12 +120,25 @@ let tuning: Tuning | null = null;
 let panel: TuningPanel | null = null;
 
 /** The test bench: what stands at the centre, and the ability to start with. Kept across restarts. */
-const bench = { object: 'mossback', ability: '' };
+const bench = { object: 'snoozegrub', ability: '', rank: '', trait: '', element: '' };
 let benchShown = false;
 
 /** Generated courses (Milestone 5): the budget in use, and the last course made (kept so R does not regenerate). */
 let genBudget: number | null = null;
 let lastGen: { result: GenResult; ms: number } | null = null;
+
+/**
+ * Testing aid (round 2a): ?region=N makes the generated test course the size,
+ * mix and detail of a late course in region N (after 6 counted nodes), so the
+ * detail dial and scenery can be seen without playing a run there.
+ */
+function testRegionOpts(): GenOptions {
+  const n = Number(new URLSearchParams(window.location.search).get('region'));
+  if (!n) return {};
+  const r = regionDefFor(n);
+  const areas = Math.min(r.areas.max, r.areas.start + Math.floor(6 / r.areas.every));
+  return { size: { areas: [areas, areas], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(areas), mix: mixFor(n), detail: r.detail } };
+}
 let viewer: SeedViewer | null = null;
 /** How fast the bot replays (B key), as a multiple of real time. */
 const WATCH_SPEED = 2;
@@ -244,6 +277,8 @@ export class CourseScene extends Phaser.Scene {
     this.thumb = params.get('thumb') === '1';
     // ?bench=<object id> opens the test bench with that thing at its centre (for example ?course=test-bench&bench=rail).
     if (!benchShown && params.get('bench') !== null) bench.object = params.get('bench')!;
+    // Milestone 8: &rank=1|2, &trait=<id>, &element=fire|ice|shock for the enemy on the bench.
+    if (!benchShown) for (const k of ['rank', 'trait', 'element'] as const) if (params.get(k) !== null) bench[k] = params.get(k)!;
     const urlDebug = params.get('debug');
     this.debugMode = data.debug ?? (DEBUG_MODES.includes(urlDebug as DebugMode) ? (urlDebug as DebugMode) : urlDebug === '1' ? 'coords' : 'off');
   }
@@ -270,7 +305,7 @@ export class CourseScene extends Phaser.Scene {
     const arena = this.runMode ? session.run!.current!.arena : null;
     if (arena) {
       // Milestone 7: a boss fight is in a hand-built arena, not generated.
-      data = ARENAS.get(arena)!.data;
+      data = arenaData(arena, session.run!.current!.boss ?? 'stagwarden');
     } else if (this.runMode) {
       // Made in the background already? Then no loading screen at all.
       const ahead = this.runCourse() ? null : madeCourse(this.runKey());
@@ -284,7 +319,7 @@ export class CourseScene extends Phaser.Scene {
         return;
       }
       data = ready.raw;
-    } else if (file.id === BENCH_ID) data = benchCourse(bench.object);
+    } else if (file.id === BENCH_ID) data = benchCourse(bench.object, bench);
     else if (file.id === GENERATED_ID) {
       const ready = this.cachedGen();
       if (!ready) {
@@ -316,9 +351,11 @@ export class CourseScene extends Phaser.Scene {
     panel = getPanel();
 
     const run = this.runMode ? session.run : null;
-    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: regionDef(run).bossHealth }) });
+    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) }) });
     this.runReported = false;
     this.setRunPanel();
+    // Owner, 2026-11-19: a boss fight opens with the boss's introduction card.
+    if (run && arena && run.current?.boss) this.showBossIntro(run.current.boss, run.region);
     // Owner, 2026-11-18: while this course is played, make the next ones in the background.
     if (run && run.status === 'course') prefetch(upcomingJobs(run));
     if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
@@ -331,9 +368,13 @@ export class CourseScene extends Phaser.Scene {
       choices: benchChoices(),
       abilities: [{ id: '', label: '(none)' }, ...ABILITY_IDS.map((id) => ({ id, label: ABILITIES.get(id)!.name }))],
       current: bench,
-      onLoad: (object, ability) => {
+      ranks: [{ id: '', label: 'Standard' }, ...RANKS.map((r) => ({ id: String(r.rank), label: r.name }))],
+      traits: [{ id: '', label: '(no trait)' }, ...[...TRAITS.values()].map((t) => ({ id: t.id, label: t.name }))],
+      elements: [{ id: '', label: '(no element)' }, ...ELEMENT_IDS.map((el) => ({ id: el, label: el }))],
+      onLoad: (object, ability, extras) => {
         bench.object = object;
         bench.ability = ability;
+        Object.assign(bench, extras);
         this.switchCourse(TEST_COURSES.findIndex((c) => c.id === BENCH_ID));
       },
     });
@@ -353,6 +394,7 @@ export class CourseScene extends Phaser.Scene {
     this.debugDyn = this.add.graphics().setDepth(OVERLAY_DEPTH - 2);
     this.syncObjects();
     this.drawRails(course);
+    this.drawScenery(course);
     this.accumulator = 0;
     this.boostQueued = false;
     this.abilityQueued = false;
@@ -412,6 +454,25 @@ export class CourseScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Scenery (round 2a sheet section 2.6): props lying on the ground, under the
+   * ball and everything standing. Looks only. The U panel can hide them all.
+   */
+  private sceneryImgs: Phaser.GameObjects.Image[] = [];
+  private drawScenery(course: Course): void {
+    this.sceneryImgs = course.scenery.map((s) => {
+      const def = SCENERY.get(s.id)!;
+      const z = groundAt(course, s.x, s.y)?.h ?? 0;
+      const p = project(s.x, s.y, z / STEP_HEIGHT);
+      return this.makeSprite(def.sprite).setPosition(Math.round(p.x), Math.round(p.y)).setDepth(tileDepth(Math.floor(s.x), Math.floor(s.y), 'arrow') + 0.5);
+    });
+    this.syncScenery();
+  }
+  private syncScenery(): void {
+    const show = panel?.showScenery ?? true;
+    for (const img of this.sceneryImgs) if (img.visible !== show) img.setVisible(show);
+  }
+
   /** The generated course for this seed and budget, if it has been made (kept for restarts). */
   private cachedGen(): { result: GenResult; ms: number } | null {
     return lastGen && lastGen.result.seed === this.seed && lastGen.result.budget === genBudget ? lastGen : null;
@@ -465,7 +526,8 @@ export class CourseScene extends Phaser.Scene {
     if (!this.runMode || this.runReported || !run || run.status !== 'course') return;
     this.runReported = true;
     const p = this.play;
-    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, blueStars: p.blueStars });
+    settleFood(p);
+    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, blueStars: p.blueStars, foods: p.foods });
     session.course = null;
     // A boss win deposits its blue stars at once (owner, 2026-11-17): save them now.
     persist();
@@ -568,11 +630,11 @@ export class CourseScene extends Phaser.Scene {
         worker.terminate();
         done(e.data.result, e.data.ms);
       };
-      worker.postMessage({ seed, budget, tuning });
+      worker.postMessage({ seed, budget, tuning, opts: testRegionOpts() });
     } catch {
       this.time.delayedCall(50, () => {
         const t0 = performance.now();
-        const result = generateCourse(seed, budget, tuning!);
+        const result = generateCourse(seed, budget, tuning!, testRegionOpts());
         done(result, performance.now() - t0);
       });
     }
@@ -649,6 +711,7 @@ export class CourseScene extends Phaser.Scene {
   }
 
   override update(_time: number, deltaMs: number): void {
+    this.syncScenery();
     const k = this.keys;
     const step = (PAN_SPEED * deltaMs) / 1000;
     // Camera pan moved to I/J/K/L: the arrows and WASD aim (owner, 2026-11-14).
@@ -841,7 +904,7 @@ export class CourseScene extends Phaser.Scene {
     const now = this.time.now;
     const bob = Math.round(Math.sin(now / 250) * 1);
     const seen = new Set<string>();
-    const show = (uid: string, sprite: string, x: number, y: number, z: number, opts: { frame?: string; lift?: number; depth?: number; alpha?: number } = {}) => {
+    const show = (uid: string, sprite: string, x: number, y: number, z: number, opts: { frame?: string; lift?: number; depth?: number; alpha?: number; tint?: number; dx?: number } = {}) => {
       seen.add(uid);
       let img = this.objectImgs.get(uid);
       if (!img) {
@@ -854,8 +917,10 @@ export class CourseScene extends Phaser.Scene {
       img
         .setVisible(true)
         .setAlpha(opts.alpha ?? 1)
-        .setPosition(Math.round(p.x), Math.round(p.y) - (opts.lift ?? 0))
+        .setPosition(Math.round(p.x) + (opts.dx ?? 0), Math.round(p.y) - (opts.lift ?? 0))
         .setDepth(opts.depth ?? this.standingDepth(x, y));
+      if (opts.tint !== undefined) img.setTint(opts.tint);
+      else img.clearTint();
     };
     const ball = ballNow(play);
     const moving = !!play.shot;
@@ -879,10 +944,36 @@ export class CourseScene extends Phaser.Scene {
       // In-game cue: a sentinel's eyes flash (it blinks) when the ball comes near its inner radius.
       const inner = e.stats.get('innerRadius');
       const near = moving && inner > 0 && e.def.triggers.passBy !== 'none' && Math.hypot(ball.x - e.x, ball.y - e.y) < inner + 0.5;
-      show(e.uid, e.def.sprite, e.x, e.y, e.z, { alpha: near && Math.floor(now / 80) % 2 ? 0.45 : 1, ...(isBoss(e) && { frame: `phase${e.phase + 1}` }) });
+      // Milestone 8: Gloamhorn shows its open shell; an enemy with an element is tinted (the colour is in the manifest).
+      const open = isBoss(e) && shellIsOpen(this.play, e) && manifest.sprites[e.def.sprite]?.frames.includes(`open${e.phase + 1}`);
+      const tint = e.element ? elementTint(e.element) : undefined;
+      show(e.uid, e.def.sprite, e.x, e.y, e.z, { alpha: near && Math.floor(now / 80) % 2 ? 0.45 : 1, ...(isBoss(e) && { frame: `${open ? 'open' : 'phase'}${e.phase + 1}` }), ...(tint !== undefined && { tint }) });
       if (e.activated) show(`${e.uid}:alert`, 'alert', e.x, e.y, e.z, { lift: 18 + bob, depth: HUD_DEPTH - 10 });
-      if (e.statuses.some((st) => st.id === 'stunned')) show(`${e.uid}:stun`, 'icon-stunned', e.x, e.y, e.z, { lift: 20, depth: HUD_DEPTH - 10 });
-      if (e.statuses.some((st) => st.id === 'burning')) show(`${e.uid}:burn`, 'icon-burning', e.x, e.y, e.z, { lift: 31, depth: HUD_DEPTH - 10 });
+      // A floating Glowmoth casts a shadow on the ground, so its height is easy to read.
+      if (floatOf(e) > 0) {
+        const gz = groundAt(play.course, e.x, e.y)?.h ?? 0;
+        show(`${e.uid}:shadow`, 'ball-shadow', e.x, e.y, gz, { depth: tileDepth(Math.floor(e.x), Math.floor(e.y), 'shadow'), alpha: 0.7 });
+        this.objectImgs.get(`${e.uid}:shadow`)?.setScale(2.2, 2);
+      }
+      // Statuses: one icon each, side by side above it.
+      const sts = e.statuses.map((st) => STATUSES.get(st.id)?.icon).filter((i): i is string => !!i && !!manifest.sprites[i]);
+      sts.forEach((icon, k) => show(`${e.uid}:st:${icon}`, icon, e.x, e.y, e.z, { lift: 22, dx: (k - (sts.length - 1) / 2) * 11, depth: HUD_DEPTH - 10 }));
+      // Rank, traits and carried gear (sheet section 7.0a): a row of small badges above it.
+      const badges: string[] = [];
+      if (e.rank === 1) badges.push('rank-veteran');
+      if (e.rank === 2) badges.push('rank-elite');
+      for (const t of e.traits) badges.push(`trait-${t}`);
+      if (e.gear) badges.push(GEAR.get(e.gear)!.icon);
+      const lift = isBoss(e) ? 44 : 14 + (manifest.sprites[e.def.sprite]?.frameHeight ?? 16) - 8;
+      badges.forEach((b, k) => show(`${e.uid}:b:${b}`, b, e.x, e.y, e.z, { lift: lift + (e.gear && k === badges.length - 1 ? 3 : 0), dx: (k - (badges.length - 1) / 2) * 9, depth: HUD_DEPTH - 11 }));
+      // A bug whose front or back matters shows which way it faces.
+      if (!isBoss(e) && [...e.guardedSides, ...e.weakSpots].some((sd) => sd === 'front' || sd === 'behind')) {
+        show(`${e.uid}:face`, 'facing-mark', e.x + e.fx * 0.45, e.y + e.fy * 0.45, e.z - floatOf(e), { depth: tileDepth(Math.floor(e.x), Math.floor(e.y), 'shadow') + 0.5, alpha: 0.85 });
+      }
+      for (const m of e.globMarks) {
+        const z = groundAt(play.course, m.x, m.y)?.h ?? 0;
+        show(`${e.uid}:glob:${m.x.toFixed(2)}`, 'target-ring', m.x, m.y, z, { depth: tileDepth(Math.floor(m.x), Math.floor(m.y), 'shadow'), alpha: 0.6 + 0.4 * Math.abs(Math.sin(now / 200)), tint: 0xa0ff60 });
+      }
       if (e.lobTarget) {
         const z = groundAt(play.course, e.lobTarget.x, e.lobTarget.y)?.h ?? 0;
         show(`${e.uid}:ring`, 'target-ring', e.lobTarget.x, e.lobTarget.y, z, {
@@ -892,6 +983,7 @@ export class CourseScene extends Phaser.Scene {
       }
     }
     for (const sd of play.seeds) show(sd.uid, 'seed', sd.shot.ball.x, sd.shot.ball.y, sd.shot.ball.z);
+    this.drawMarks();
     for (const f of play.flags) {
       show(f.uid, 'flag-pole', f.x, f.y, f.z, { frame: f.raised ? 'raised' : 'lowered' });
       // Owner, 2026-11-14: a star hovers above a raised flag: the star secured by that defeat.
@@ -1138,6 +1230,12 @@ export class CourseScene extends Phaser.Scene {
     this.accumulator = Math.min(this.accumulator + dt * speed, 0.25 * speed);
     let stepped = false;
     while (this.accumulator >= DT && this.play.status === 'playing') {
+      // Round 2a (owner, 2026-11-21): picked-up food asks "eat now or stash it?" and the world waits.
+      if (this.play.foodPending.length) {
+        this.accumulator = 0;
+        this.showFoodPrompt();
+        break;
+      }
       // Bot replay (B key): take its next shot on exactly the clock step it took it.
       const move = this.watching && canShoot(this.play) ? this.botMoves[this.botNext] : undefined;
       if (move) {
@@ -1251,7 +1349,7 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage('+1 SHOT', GOOD);
           break;
         case 'damage': {
-          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED' }[e.cause];
+          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED', burn: 'BURNING', blast: 'BLAST', charge: 'CHARGED', bite: 'BITTEN', ring: 'SOLDIER ANTS' }[e.cause];
           this.queueMessage(`${what}! -${e.amount} HEALTH`, BAD);
           break;
         }
@@ -1315,8 +1413,50 @@ export class CourseScene extends Phaser.Scene {
         case 'phoenix':
           this.queueMessage(`PHOENIX PLATE! BACK TO ${e.health} HEALTH. IT CRUMBLES`, 0xf8a020);
           break;
-        case 'status':
-          if (e.status === 'burning') this.queueMessage(`${this.nameOf(e.target)} IS BURNING`, 0xf8a020);
+        case 'status': {
+          // Milestone 8: statuses on the ball, and the new ones on enemies.
+          const word = { burning: 'BURNING', poisoned: 'POISONED', chilled: 'CHILLED' }[e.status] ?? e.status.toUpperCase();
+          const what = e.target === 'ball' ? `YOU ARE ${word}` : `${this.nameOf(e.target)} IS ${word}`;
+          const hint = e.target === 'ball' ? { burning: ': -1 HEALTH EACH SHOT. WATER PUTS IT OUT', poisoned: ': HIT DAMAGE -1', chilled: ': YOU SLIDE AS IF ON ICE' }[e.status] ?? '' : '';
+          this.queueMessage(`${what}${hint}`, e.target === 'ball' ? BAD : 0xf8a020);
+          break;
+        }
+        case 'statusEnd':
+          if (e.target === 'ball' && e.status === 'burning' && this.play.ballStatuses.length === 0) this.queueMessage('THE BURN IS OUT', GOOD);
+          break;
+        case 'fuse':
+          this.showMessage('IT IS GOING TO BLOW!', FUSE_RING);
+          break;
+        case 'blast':
+          this.showMessage('BOOM!', FUSE_RING);
+          break;
+        case 'split':
+          this.queueMessage('IT SPLIT IN TWO!', GUIDE_WARN);
+          break;
+        case 'regen':
+          this.queueMessage(`${this.nameOf(e.enemy)} HEALS 1`, GUIDE_WARN);
+          break;
+        case 'gearDrop':
+          this.queueMessage(`IT DROPPED ${GEAR.get(e.item)?.name.toUpperCase() ?? 'GEAR'}!`, GOOD);
+          break;
+        case 'freeze':
+          break;
+        case 'melt':
+          this.queueMessage('THE ICE MELTS', GUIDE_WARN);
+          break;
+        case 'staticZap':
+          break;
+        case 'windup':
+          this.queueMessage(`${this.nameOf(e.enemy)} IS GOING TO CHARGE! (ARROW)`, GUIDE_WARN);
+          break;
+        case 'shellOpen':
+          this.queueMessage('ITS SHELL IS OPEN! HIT ITS BACK', GOOD);
+          break;
+        case 'ringMark':
+          this.queueMessage('SOLDIER ANTS ARE COMING! (PURPLE RING)', GUIDE_WARN);
+          break;
+        case 'puff':
+          if (e.hit) this.showMessage('STINK!', PUFF_RING);
           break;
         case 'statusDamage':
           this.queueMessage(`${this.nameOf(e.enemy)} BURNS: -${e.damage}`, 0xf8a020);
@@ -1342,6 +1482,18 @@ export class CourseScene extends Phaser.Scene {
           break;
         case 'acorn':
           this.queueMessage(`${(ACORNS.get(e.item)?.name ?? 'ACORN').toUpperCase()}: +${e.slices} WHEEL SLICES THIS COURSE`, 0xf8d030);
+          break;
+        case 'foodFound':
+          // The eat-or-stash card opens from the update loop (the world waits for the answer).
+          break;
+        case 'foodEaten':
+          this.queueMessage(
+            e.auto ? `BAG FULL: ATE THE ${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()} NOW` : `ATE THE ${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()}`,
+            0xf8d030,
+          );
+          break;
+        case 'foodStashed':
+          this.queueMessage(`${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()} STASHED IN YOUR BAG`, 0xf8d030);
           break;
         case 'slamMark':
           this.queueMessage('THE WARDEN WINDS UP: GET OUT OF THE RING!', BAD);
@@ -1372,7 +1524,8 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private nameOf(uid: string): string {
-    return (OBJECTS.get(uid.replace(/^summon:/, '').split('#')[0]!)?.name ?? 'ENEMY').toUpperCase();
+    const e = this.play.enemies.find((x) => x.uid === uid);
+    return (e?.def.name ?? OBJECTS.get(uid.replace(/^summon:/, '').split('#')[0]!)?.name ?? 'ENEMY').toUpperCase();
   }
 
   // -------------------------------------------------------------------------
@@ -1476,6 +1629,158 @@ export class CourseScene extends Phaser.Scene {
     g.setDepth(OVERLAY_DEPTH - 30);
     g.lineStyle(2, SLAM_RING, pulse).strokeEllipse(Math.round(p.x), Math.round(p.y), rx * 2, ry * 2);
     g.fillStyle(SLAM_RING, 0.12 * pulse).fillEllipse(Math.round(p.x), Math.round(p.y), rx * 2, ry * 2);
+  }
+
+  /**
+   * The boss's introduction (owner, 2026-11-19; Milestone 8 sheet section
+   * 10c): a pop-up card with the boss, its name, its title and the region,
+   * for about 3 seconds; any key skips it (and does nothing else). A
+   * placeholder for the Milestone 9 cutscene.
+   */
+  /**
+   * Food picked up on the course (round 2a; owner, 2026-11-21): eat it now (it
+   * works for the rest of this course, which counts as its first) or stash it
+   * in the bag. A full bag never asks: the food is eaten at once.
+   */
+  private foodCard: Phaser.GameObjects.Container | null = null;
+  private showFoodPrompt(): void {
+    if (this.foodCard) return;
+    const id = this.play.foodPending[0];
+    const f = id ? FOODS.get(id) : undefined;
+    if (!id || !f) return;
+    const w = 220;
+    const h = 92;
+    const c = this.add.container(Math.round((VIEW_WIDTH - w) / 2), Math.round((VIEW_HEIGHT - h) / 2)).setScrollFactor(0).setDepth(HUD_DEPTH + 100);
+    this.foodCard = c;
+    c.add(this.add.rectangle(0, 0, w, h, UI_BG, 0.96).setOrigin(0, 0).setStrokeStyle(2, 0xf8d030));
+    const line = (y: number, t: string, color: number) => {
+      const txt = pixelText(this, manifest, 0, y, t, { color });
+      txt.setX(Math.round((w - txt.width) / 2));
+      c.add(txt);
+    };
+    line(7, `YOU FOUND ${f.name.toUpperCase()}!`, 0xf8d030);
+    c.add(this.makeSprite(f.icon).setPosition(w / 2, 34).setScale(2));
+    line(44, foodDesc(id), UI_TEXT);
+    line(54, 'EATEN NOW, IT WORKS FROM NOW ON. LASTS 1 TO 3 COURSES', UI_DIM);
+    line(68, 'E: EAT IT NOW', GOOD);
+    line(78, `S OR ENTER: STASH IT (BAG ${FOOD.bagSlots - this.play.bagRoom}/${FOOD.bagSlots})`, UI_TEXT);
+    const close = (eatIt: boolean) => {
+      window.removeEventListener('keydown', onKey, true);
+      c.destroy();
+      this.foodCard = null;
+      decideFood(this.play, eatIt);
+      this.showEvents(drainLog(this.play));
+    };
+    // Caught before the game sees it, so the key does nothing else.
+    const onKey = (ev: KeyboardEvent) => {
+      const k = ev.key.toLowerCase();
+      if (k !== 'e' && k !== 's' && k !== 'enter') return;
+      ev.stopImmediatePropagation();
+      ev.preventDefault();
+      close(k === 'e');
+    };
+    window.addEventListener('keydown', onKey, true);
+    this.events.once('shutdown', () => window.removeEventListener('keydown', onKey, true));
+  }
+
+  private showBossIntro(bossId: string, region: number): void {
+    const def = BOSSES.get(bossId);
+    const enemy = OBJECTS.get(bossId);
+    if (!def || enemy?.kind !== 'enemy') return;
+    const w = 220;
+    const h = 120;
+    const c = this.add.container(Math.round((VIEW_WIDTH - w) / 2), Math.round((VIEW_HEIGHT - h) / 2)).setScrollFactor(0).setDepth(HUD_DEPTH + 100);
+    c.add(this.add.rectangle(0, 0, w, h, UI_BG, 0.96).setOrigin(0, 0).setStrokeStyle(2, BOSS_BAR));
+    const endless = region > LAST_REGION;
+    const head = endless ? `ENDLESS MODE - REGION ${region}` : region === LAST_REGION ? `REGION ${region} - THE FINAL BOSS` : `REGION ${region} BOSS`;
+    const top = pixelText(this, manifest, 0, 8, head, { color: UI_DIM });
+    top.setX(Math.round((w - top.width) / 2));
+    c.add(top);
+    const img = this.makeSprite(enemy.sprite, manifest.sprites[enemy.sprite]!.frames[0]!).setPosition(w / 2, 72).setScale(1.5);
+    c.add(img);
+    const name = pixelText(this, manifest, 0, 84, def.name.toUpperCase(), { color: BOSS_BAR });
+    name.setX(Math.round((w - name.width) / 2));
+    c.add(name);
+    const title = pixelText(this, manifest, 0, 94, def.title.toUpperCase(), { color: UI_TEXT });
+    title.setX(Math.round((w - title.width) / 2));
+    c.add(title);
+    const hint = pixelText(this, manifest, 0, 108, 'ANY KEY', { color: UI_DIM });
+    hint.setX(Math.round((w - hint.width) / 2));
+    c.add(hint);
+    this.tweens.add({ targets: img, y: 68, duration: 500, yoyo: true, repeat: -1 });
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      window.removeEventListener('keydown', onKey, true);
+      c.destroy();
+    };
+    // Caught before the game sees it, so the key that closes the card does nothing else.
+    const onKey = (ev: KeyboardEvent) => {
+      ev.stopImmediatePropagation();
+      close();
+    };
+    window.addEventListener('keydown', onKey, true);
+    this.time.delayedCall(3000, close);
+    this.events.once('shutdown', close);
+  }
+
+  private marksGfx: Phaser.GameObjects.Graphics | null = null;
+
+  /**
+   * Milestone 8: marks on the ground drawn every frame: Stinkpuff puff rings,
+   * the Brood Queen's soldier rings, Explosive fuses, Gloamhorn's charge arrow,
+   * frozen water, and the Frost and Static auras round the ball.
+   */
+  private drawMarks(): void {
+    const play = this.play;
+    if (!this.marksGfx) this.marksGfx = this.add.graphics();
+    const g = this.marksGfx;
+    g.clear();
+    g.setDepth(OVERLAY_DEPTH - 30);
+    const now = this.time.now;
+    const pulse = 0.55 + 0.45 * Math.abs(Math.sin(now / 180));
+    const ring = (x: number, y: number, r: number, color: number, fill = 0.12) => {
+      const z = groundAt(play.course, x, y)?.h ?? 0;
+      const p = project(x, y, z / STEP_HEIGHT);
+      const rx = r * 16 * Math.SQRT2;
+      const ry = r * 8 * Math.SQRT2;
+      g.lineStyle(2, color, pulse).strokeEllipse(Math.round(p.x), Math.round(p.y), rx * 2, ry * 2);
+      g.fillStyle(color, fill * pulse).fillEllipse(Math.round(p.x), Math.round(p.y), rx * 2, ry * 2);
+    };
+    for (const e of play.enemies) {
+      if (e.defeated) continue;
+      if (e.slamMark && !isBoss(e)) ring(e.slamMark.x, e.slamMark.y, e.slamMark.r, PUFF_RING);
+      if (e.ringMark) ring(e.ringMark.x, e.ringMark.y, e.ringMark.r, SOLDIER_RING);
+      if (e.windup) {
+        // The way Gloamhorn will charge: an arrow along the ground.
+        const z = e.z;
+        const a = project(e.x, e.y, z / STEP_HEIGHT);
+        const b = project(e.x + e.windup.dx * 4, e.y + e.windup.dy * 4, z / STEP_HEIGHT);
+        g.lineStyle(3, SLAM_RING, pulse).lineBetween(a.x, a.y, b.x, b.y);
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        for (const s of [-1, 1]) g.lineBetween(b.x, b.y, b.x - Math.cos(ang + s * 0.5) * 7, b.y - Math.sin(ang + s * 0.5) * 7);
+      }
+    }
+    for (const bl of play.blasts) ring(bl.x, bl.y, TRAIT_RULES.blast.radius, FUSE_RING, 0.2);
+    // Frozen water: an icy sheen over each frozen tile; cracked on its last turn.
+    for (const [key, left] of Object.entries(play.frozen)) {
+      const [tx, ty] = key.split(',').map(Number) as [number, number];
+      const h = groundAt(play.course, tx + 0.5, ty + 0.5)?.h ?? 0;
+      const pts = [project(tx, ty, h / STEP_HEIGHT), project(tx + 1, ty, h / STEP_HEIGHT), project(tx + 1, ty + 1, h / STEP_HEIGHT), project(tx, ty + 1, h / STEP_HEIGHT)];
+      g.fillStyle(FROZEN, left <= 1 ? 0.45 + 0.2 * Math.abs(Math.sin(now / 150)) : 0.7);
+      g.fillPoints(pts.map((p) => new Phaser.Math.Vector2(p.x, p.y)), true);
+      if (left <= 1) {
+        g.lineStyle(1, 0x4070a0, 0.9);
+        const c = project(tx + 0.5, ty + 0.5, h / STEP_HEIGHT);
+        g.lineBetween(c.x - 6, c.y - 2, c.x + 1, c.y + 1).lineBetween(c.x + 1, c.y + 1, c.x + 7, c.y - 1).lineBetween(c.x + 1, c.y + 1, c.x, c.y + 4);
+      }
+    }
+    if (play.aura) {
+      const b = ballNow(play);
+      if (play.aura.kind === 'static') ring(b.x, b.y, (ABILITIES.get('static')!.effect as { radius: number }).radius, STATIC_FIELD, 0.2);
+      else ring(b.x, b.y, 0.4, FROZEN, 0.3);
+    }
   }
 
   private queueMessage(text: string, color: number): void {
@@ -1674,7 +1979,7 @@ export class CourseScene extends Phaser.Scene {
       icon('star-blue', starX + 22, 9);
       c.add(pixelText(this, manifest, starX + 34, barY, `${session.run.blueStars + p.blueStars}`, { color: 0x80c8ff }));
     }
-    if (p.acornSlices > 0) c.add(pixelText(this, manifest, 2, 20, `ACORN +${p.acornSlices} SLICES`, { color: STAR_FILL, background: UI_BG }));
+    if (p.acornSlices > 0) c.add(pixelText(this, manifest, 270, 20, `ACORN +${p.acornSlices} SLICES`, { color: STAR_FILL, background: UI_BG }));
     // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
     const slotX = bgW + 4;
     c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -1687,7 +1992,13 @@ export class CourseScene extends Phaser.Scene {
       c.add(pixelText(this, manifest, slotX + 14, 3, wild >= 0 ? '?' : def.name.toUpperCase(), { color: usedUp ? UI_DIM : UI_TEXT }));
       c.add(pixelText(this, manifest, slotX + 14, 11, usedUp ? 'USED' : 'F: USE', { color: UI_DIM }));
     } else c.add(pixelText(this, manifest, slotX + 3, 7, 'NO ABILITY', { color: UI_DIM }));
-    if (p.ballStatuses.some((st) => st.id === 'stunned')) c.add(this.add.image(x + 2, 0, 'icon-stunned', 0).setOrigin(0, 0));
+    // The ball's statuses (Milestone 8): each icon with the shots it has left.
+    p.ballStatuses.forEach((st, k) => {
+      const icon = STATUSES.get(st.id)?.icon;
+      if (!icon || !manifest.sprites[icon]) return;
+      c.add(this.add.image(x + 2 + k * 16, 0, icon, 0).setOrigin(0, 0));
+      c.add(pixelText(this, manifest, x + 12 + k * 16, 5, `${st.turnsLeft}`, { color: UI_TEXT }));
+    });
     // Gear slots (Milestone 6): weapon, armour, bauble; then the armour's ignored damages left this course.
     const gearX = slotX + 66;
     c.add(this.add.rectangle(gearX, 0, shields > 0 ? 58 : 44, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -1721,7 +2032,7 @@ export class CourseScene extends Phaser.Scene {
               'HEALED TO FULL',
               `SHOTS TAKEN: ${p.shotNumber}`,
               '',
-              session.run!.region >= LAST_REGION ? 'THE RUN IS COMPLETE. ENTER: RUN SUMMARY' : 'ENTER: PICK A REWARD, THEN REGION ' + (session.run!.region + 1),
+              session.run!.region === LAST_REGION ? 'THE RUN IS COMPLETE. ENTER: RUN SUMMARY' : 'ENTER: PICK A REWARD, THEN REGION ' + (session.run!.region + 1),
             ]
           : [
               'COURSE COMPLETE!',

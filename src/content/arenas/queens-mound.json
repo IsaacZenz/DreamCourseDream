@@ -1,0 +1,79 @@
+{
+ "format": 3,
+ "name": "Arena: The Queen's Mound",
+ "legend": {
+  "g": "grass",
+  "r": "rough",
+  "s": "spring"
+ },
+ "tiles": [
+  ". . . . . r6 r6 r6 r6 r6 . . . . .",
+  ". . . r6 r6 r6 r2 r2 r2 r6 r6 r6 . . .",
+  ". . r6 r6 r2 r2 g2 g2 g2 r2 r2 r6 r6 . .",
+  ". r6 r6 r2 g2 g2 g2 g2 g2 g2 g2 r2 r6 r6 .",
+  ". r6 r2 g2 s2 g2 g2 g2 g2 g2 s2 g2 r2 r6 .",
+  "r6 r6 r2 g2 g2 g2 g2 g2 g2 g2 g2 g2 r2 r6 r6",
+  "r6 r2 g3 g3 g2 g2 g2 g2 g2 g2 g2 g3 g3 r2 r6",
+  "r6 r2 g3 g3 g2 g2 g2 g2 g2 g2 g2 g3 g3 r2 r6",
+  "r6 r2 g3 g3 g2 g2 g2 g2 g2 g2 g2 g3 g3 r2 r6",
+  "r6 r6 r2 g2 g2 g2 g2 g2 g2 g2 g2 g2 r2 r6 r6",
+  ". r6 r2 g2 s2 g2 g2 g2 g2 g2 s2 g2 r2 r6 .",
+  ". r6 r6 r2 g2 g2 g2 g2 g2 g2 g2 r2 r6 r6 .",
+  ". . r6 r6 r2 r2 g2 g2 g2 r2 r2 r6 r6 . .",
+  ". . . r6 r6 r6 r2 r2 r2 r6 r6 r6 . . .",
+  ". . . . . r6 r6 r6 r6 r6 . . . . ."
+ ],
+ "start": [
+  7,
+  12
+ ],
+ "exit": [
+  7,
+  2
+ ],
+ "quota": 0,
+ "objects": [
+  {
+   "id": "brood-queen",
+   "at": [
+    7,
+    7
+   ]
+  }
+ ],
+ "spawns": [
+  [
+   5,
+   3
+  ],
+  [
+   9,
+   3
+  ],
+  [
+   3,
+   5
+  ],
+  [
+   11,
+   5
+  ],
+  [
+   3,
+   9
+  ],
+  [
+   11,
+   9
+  ],
+  [
+   5,
+   11
+  ],
+  [
+   9,
+   11
+  ]
+ ],
+ "rails": []
+}

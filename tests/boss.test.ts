@@ -25,18 +25,18 @@ const nudge = (p: PlayState): PlayEvent[] => {
   runShot(p);
   return drainLog(p);
 };
-const warden = (p: PlayState) => p.enemies.find((e) => e.def.id === 'warden')!;
+const warden = (p: PlayState) => p.enemies.find((e) => e.def.id === 'stagwarden')!;
 
 describe('The Warden', () => {
   it('is a tier-5 boss with three phases at 2/3 and 1/3, and uses the boss wheel', () => {
-    const def = BOSSES.get('warden')!;
+    const def = BOSSES.get('stagwarden')!;
     expect(def.phases.map((p) => p.above)).toEqual([2 / 3, 1 / 3, 0]);
     expect(def.phases.map((p) => p.slamRadius)).toEqual([1.5, null, 2.25]);
     expect(def.phases.map((p) => p.maxMinions)).toEqual([0, 3, 2]);
     const p = createPlay(arena('ice-rink'), T, { seed: 'w' });
     expect(isBoss(warden(p))).toBe(true);
     expect(wheelFor(p, warden(p)).size).toBe(20);
-    expect(OBJECTS.get('warden')?.kind === 'enemy' && OBJECTS.get('warden')!.kind).toBe('enemy');
+    expect(OBJECTS.get('stagwarden')?.kind === 'enemy' && OBJECTS.get('stagwarden')!.kind).toBe('enemy');
   });
 
   it('health is set per region, and the region toughness on health does not add to it', () => {
@@ -139,10 +139,12 @@ describe('The Warden', () => {
 
 describe('the arenas (owner, 2026-11-17: five, each with a gimmick)', () => {
   it('five arenas, all valid course files, the Warden in the middle and 6 to 8 spawn spots', () => {
-    expect(ARENA_LIST.map((a) => a.id)).toEqual(BOSSES.get('warden')!.arenas);
-    for (const a of ARENA_LIST) {
+    // Milestone 8: the Queen's Mound is the Brood Queen's; the Stagwarden keeps the first five.
+    const five = ARENA_LIST.filter((a) => BOSSES.get('stagwarden')!.arenas.includes(a.id));
+    expect(five.map((a) => a.id)).toEqual(BOSSES.get('stagwarden')!.arenas);
+    for (const a of five) {
       const c = arena(a.id);
-      expect(c.objects.find((o) => o.id === 'warden')).toMatchObject({ x: 6, y: 6 });
+      expect(c.objects.find((o) => o.id === 'stagwarden')).toMatchObject({ x: 6, y: 6 });
       expect(c.spawns.length).toBeGreaterThanOrEqual(6);
       expect(c.spawns.length).toBeLessThanOrEqual(8);
       expect(c.quota).toBe(0);
@@ -168,14 +170,14 @@ describe('the arenas (owner, 2026-11-17: five, each with a gimmick)', () => {
     run.lastTownVisited = true;
     expect(choices(run).map((n) => n.id)).toEqual(['boss']);
     const cur = enterNode(run, 'boss');
-    expect(cur.boss).toBe('warden');
+    expect(cur.boss).toBe('stagwarden');
     expect(ARENAS.has(cur.arena!)).toBe(true);
     expect(run.lastArena).toBe(cur.arena);
   });
 
   // CLAUDE.md rule 6: hand-built arenas are checked here, with a fresh ball. A short check keeps the
   // test run quick; `npm run arenas` plays 20 seeds per arena and reports the win rate.
-  for (const a of ARENA_LIST) {
+  for (const a of ARENA_LIST.filter((x) => BOSSES.get('stagwarden')!.arenas.includes(x.id))) {
     it(`the bot beats ${a.name} with a fresh ball`, () => {
       const c = arena(a.id);
       const seeds = [`${a.id}-0`, `${a.id}-1`, `${a.id}-2`];

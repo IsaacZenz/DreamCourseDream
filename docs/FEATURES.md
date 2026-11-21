@@ -80,7 +80,19 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 
 **Starter set:** one balanced character with the stats in section 1, no starting ability, no trait. Build in Milestone 3. Built as **Rollo** (working name) in `src/content/characters.ts`.
 
-**Owner idea, 2026-11-15 (planning only, for the Milestone 9 skin):** the hero is an armadillo. It stands on two legs, curls into a ball when launched, and pops back out of ball form when it stops. A ball-to-standing animation on every launch and stop, through the asset manifest like all art. Villains share a theme, still to choose: reptiles and amphibians led by an alligator, or insects. Nothing changes in the rules or the simulation.
+**Owner idea, 2026-11-15 (planning only, for the Milestone 9 skin):** the hero is an armadillo. It stands on two legs, curls into a ball when launched, and pops back out of ball form when it stops. A ball-to-standing animation on every launch and stop, through the asset manifest like all art. ~~Villains share a theme, still to choose: reptiles and amphibians led by an alligator, or insects.~~ (Owner, 2026-11-18: insects.) Nothing changes in the rules or the simulation.
+
+**Decided (owner, 2026-11-19): the armadillo's poses.**
+
+| When | Pose |
+|---|---|
+| Resting, aiming, charging | Standing on two legs |
+| Launched by your own shot, rolling or flying | Curled into a ball |
+| Comes to rest after your shot | Pops out and stands up |
+| **Knocked or hurt when it is not your shot** (a Mudroller, a sliding block, a blast, a slam, a charge) | **Not** curled: a hurt pose, then **knocked onto its back like a tortoise**, sliding or tumbling with legs in the air |
+| Comes to rest after being knocked | Lies on its back a moment, then flips over and stands up |
+
+**Default:** the poses are display only and do not change any rule; the flip back up takes about 0.5 s and does not delay your turn. The simulation already tells a knocked ball from a ball moving under your own shot (`knocked` in `src/sim/play.ts`, used by the "only your own action deals damage" rule), so no simulation change is needed. Art and animation in Milestone 9; round 1 of Milestone 8 checks every knock-back sets that flag (slams, charges, blasts, soldier rings).
 
 **Later examples, Milestone 8:** a heavy ball (more damage, less bounce, shorter shots); a light ball (more bounce, an extra shot, less health).
 
@@ -155,6 +167,15 @@ Early courses use mostly tiers 1 and 2. Later regions shift the mix upward (sect
 
 **Owner, 2026-11-14:** for now every enemy is worth 1 star, whatever its tier (overrides the Stars column of the tier table until the Milestone 8 balance pass).
 
+**Owner, 2026-11-18 (Milestone 8 round 1):**
+
+- **Veterans (tier 3) and Elites (tier 4) are worth 2 stars**; other enemies stay at 1. Collecting the quota must not become easier than it is now (proposed quota rule in `docs/plans/milestone-8.md` section 4.0, waiting for confirmation).
+- **Every enemy is an insect.** Existing enemies are renamed (Mossback → Snoozegrub, Trundler → Mudroller, Spitter → Spittlebug, Lunger → Pouncehopper, Mole → Mole Cricket, the carriers → grubs, the Warden → the Stagwarden); names under review in the sheet, section 7.0.
+- Explosive must not clear the board by accident. **Owner, 2026-11-19:** a blast hurts the ball and nearby enemies but never defeats an enemy (it stops at 1 health), so blasts cannot chain (sheet section 5.1a).
+- **Owner, 2026-11-19: the elements form a circle.** Fire is weak to ice, ice is weak to shock, shock is weak to fire; each resists its own element.
+- **Built 2026-11-19 (Milestone 8 round 1):** everything above, plus Frost and Static, Gloamhorn, the Brood Queen, region three and endless mode. Differences from the sheet are in `docs/plans/milestone-8.md` section 15 (for example: ball statuses count down as each shot is taken, and Burning hurts then).
+- **Owner, 2026-11-19: prices rise with the extra stars.** Gear by rarity 10, 15, 30, 45, 70, 100 (was 10, 15, 25, 35, 50, 70); stat boosts start at 12 in region 1, 16 in region 2, 20 in region 3, +4 per endless region (sheet section 10b).
+
 Tiers 3 and 4, traits, elements, squads and enemy gear are Milestone 8, but the template fields must exist from Milestone 4.
 
 ---
@@ -167,6 +188,8 @@ Tiers 3 and 4, traits, elements, squads and enemy gear are Milestone 8, but the 
 
 id, name, sprite id, health, phases (each with a health threshold, an attack pattern, and a list of enemies it summons), optional gimmick (a weak spot, a shield that must be broken a certain way, or none), arena layout set, element, rewards.
 
+**Decided (owner, 2026-11-19): boss introductions.** Each of the three main bosses (the Stagwarden, Gloamhorn, the Brood Queen) gets a short **cutscene pop-up** before its fight, showing the boss and its name. In endless mode a shared cutscene pop-up shows the boss that was picked, with the region number. **Default:** it plays before every boss fight, lasts about 3 seconds, and any key skips it. Round 1 of Milestone 8 builds it as a placeholder card (name, sprite, region); the real art and animation come in Milestone 9.
+
 **Default rules:**
 
 - The boss summons small enemies during the fight. They drop stars and abilities, so the player's tools keep flowing.
@@ -178,12 +201,12 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 | Working name | Gimmick | Milestone |
 |---|---|---|
 | The Warden | None. Three phases: slow slams, then summons, then both faster. Placeholder boss for every region until Milestone 8 (owner, 2026-11-17). | 7 |
-| Second boss | Shield that only drops after it attacks | 8 |
-| Third and final boss | Decide with the owner | 8 |
+| Second boss | Shield that only drops after it attacks: **Gloamhorn**, a rhinoceros beetle whose wing cases open after it charges | 8 |
+| Third and final boss | **Owner, 2026-11-19: the Brood Queen**, a giant queen ant and the bugs' leader; only hits from above (on her back) count, her sides bite | 8 |
 
 **Decided (owner, 2026-11-17):**
 
-- **Boss randomizer:** each region's boss is a seeded pick from that region's boss pool. New bosses are added to the pools as data.
+- **Boss randomizer:** each region's boss is a seeded pick from that region's boss pool. New bosses are added to the pools as data. **Owner, 2026-11-19:** for now each pool holds one boss: region 1 the Stagwarden, region 2 Gloamhorn, region 3 the Brood Queen.
 - **Arenas:** five hand-picked arenas, each with its own gimmick or theme (Milestone 7: Bumper Ring, Sinkhole Bowl, Ice Rink, The Moat, Storm Steps). The same arena is never used twice in a row, also across runs.
 - **Boss wheel:** success rolls (section 8) against a boss use a 20-slice wheel instead of 10, with the same number of slices filled, so bosses are always harder to affect.
 - Summoned minions leave no flag pole (default kept).
@@ -326,6 +349,8 @@ Replaces the six-item starter set. **Six rarities in three pairs**: (common, unc
 
 ## 9. Run upgrades (stat boosts)
 
+**Owner, 2026-11-21:** these are now foods sold in the food shop (section 11), eaten from the bag before a course, lasting 1 to 3 courses instead of the run; the size of each effect is unchanged.
+
 **Decided:** separate from gear. Plain stat boosts, no slot limit, lost on death.
 
 **Default:** bought in shops or found in caches. Each is one modifier lasting for the run. They stack. The price rises each time the same boost is bought in one run.
@@ -384,6 +409,17 @@ Cost rises with each level. **Owner, 2026-11-17:** Vitality and Stamina 5, 8, 12
 
 Build in Milestone 6.
 
+**Decided (owner, 2026-11-21): two shops and the bag.** Each town has a **food shop** (consumables: food that lasts 1 to 3 courses) and a **gear shop** (gear). The player carries a **bag with 3 slots** for consumables. Before a course starts the player may **eat any number of foods** from the bag (owner, 2026-11-21; was one); **nothing can be eaten during a course**. This replaces the single pocket acorn that was used automatically. Defaults until the design sheet says otherwise:
+
+**Owner, 2026-11-21 (after playing round 2a): food picked up on a course asks at once: eat it now or stash it in the bag.** Eaten now, it works for the rest of that course, which counts as its first. If the bag is full it is simply eaten. (This replaces "found food goes into the bag after the course; swap or leave it when full".) Shop food is still eaten only between courses.
+- Eating is optional; unused food stays in the bag for later courses.
+- **Owner, 2026-11-21: the food shop sells the acorns plus the existing shop items, renamed as food.** The gear shop sells gear only. Each shop has its own stock and its own reroll price. Names: Apple (heal 2) and Garlic (delay the boss) chosen by the owner; Mushroom Stew, Trail Mix, Chili Pepper, Carrot and Clover Honey for the five stat boosts are working names.
+- **Owner, 2026-11-21 (later the same day): every food except Apple and Garlic lasts 1 to 3 courses**, the longer ones rarer (not as rare as gear), and food is cheaper than the old run-long boosts. Durations: 50% one course, 30% two, 20% three (owner, sheet Q1). Garlic works exactly as Delay the Boss did. No extra art: foods use the existing icons. Code names stay the same. **Food shop 4 offers, gear shop 3**, each with its own reroll for yellow stars. Full table, chances and prices: `docs/plans/milestone-8-round-2a.md` section 4 (waiting for sign-off).
+
+Planned in Milestone 8 round 2 (rules) and 8b (walking up to each shop).
+
+**Decided (owner, 2026-11-19), for the Milestone 9 skin:** the shop is a **food stand** with a **shopkeeper**, who animates when you buy something (and, Default, when you reroll or cannot afford something). Display only; the shop's rules do not change. The shopkeeper's species is chosen with the theme in Milestone 9 (Default: a friendly animal, not an insect, since the insects are the villains). **Owner, 2026-11-21:** with two shops, the food stand is the food shop; the gear shop gets its own look and shopkeeper (Default: a tinker's workshop), chosen in Milestone 9.
+
 ---
 
 ## 12. Status effects
@@ -405,6 +441,8 @@ Owner, 2026-11-15: Burning on enemies is built in Milestone 6 (the fire gear nee
 | Stunned | Skips its next turn | Loses 1 shot | 1 turn |
 | Chilled | Cannot move; the next hit on it does double damage | Rolls as if on ice | 2 turns |
 
+**Owner, 2026-11-18:** fire and ice cancel each other (Burning on a chilled thing removes both, and the other way round), and water puts out a burning ball. The Burner ability burns what it hits for 1 turn, with no success roll. Water frozen by the Frost ability stays ice for 2 turns; freezing it again resets the 2 turns.
+
 For the ball, one turn is one shot. Build the system and Stunned in Milestone 4; the rest in Milestone 8.
 
 ---
@@ -420,7 +458,7 @@ For the ball, one turn is one shot. Build the system and Stunned in Milestone 4;
 | Heart | +1 health | Crates, rare enemy drop |
 | Shot orb | +1 shot, up to the maximum | Crates, placed on courses |
 | Wild | A random ability (not the one held), replacing the current one | Small chance from secured crates, 10% times drop luck (owner, 2026-11-14) |
-| Acorn (consumable; owner, 2026-11-17) | Extra filled slices on success wheels for one course: Lucky +2, Golden +3, Star +5 | Crates and secured crates (rarer acorns rarer), and shops |
+| Acorn (consumable; owner, 2026-11-17) | Extra filled slices on success wheels for one course: Lucky +2, Golden +3, Star +5. **Owner, 2026-11-21:** goes into the bag and is eaten before a course (section 11) | Crates and secured crates (rarer acorns rarer), and the food shop |
 
 Build in Milestone 3.
 
@@ -435,6 +473,8 @@ Build in Milestone 3.
 - **Prices:** gear by rarity 10, 15, 25, 35, 50, 70 (owner, 2026-11-15; see `docs/plans/milestone-6.md` section 5.2), stat boost 12 rising by 6, heal 10, first reroll 3.
 - **Budget:** each course has a difficulty budget that rises with each node and jumps after each boss. Enemies, traits, obstacles and hazards each cost budget.
 - **Owner, 2026-11-17: size and toughness scale separately in every region** (DESIGN.md section 10). Course size (areas per journey, area size), threat budget and enemy toughness (region modifiers) are three dials set per region; see `docs/plans/milestone-7.md` section 7.4.
+- **Owner, 2026-11-19 (Milestone 8 round 1):** region three has 4 to 7 areas; a hard course never has more areas than its region's maximum; from region three on the course check's bot also wears Giant's Knuckle, Bastion Plate and Pocket Watch, and has max shots +1 and max health +1 more (sheet section 15a).
+- **Owner, 2026-11-21: regions two and three step up from region one more gently** (region one unchanged: 2 to 5 areas, +1 every 2 nodes, areas 8 to 14 tiles). Region two: 3 to 5 areas, +1 every 3 nodes, areas 8 to 15 tiles. Region three (and endless): 4 to 6 areas, +1 every 3 nodes, areas 9 to 15 tiles. Hard courses still get one area more, never past the maximum.
 - **Owner, 2026-11-18: the course check is relaxed.** The bot plays with a par kit per region (region 1 a fresh ball; region 2 max shots +1, hit damage +1, shot power +10%; region 3 also max shots +2 in all, shot power +20%, max health +2), needs 1 health left, and has 1.5 times the shot limit.
 - **Tier mix by region:** region 1 is mostly tiers 1–2; region 2 adds tier 3; region 3 adds tier 4.
 - **Owner, 2026-11-15 (Milestone 5 testing, before the run exists):** after winning a generated course, the next one's budget rises by a random 0 to 4 (seeded), capped at 40. The Milestone 5 generator rules are in `docs/plans/milestone-5.md`.
@@ -446,7 +486,7 @@ Build in Milestone 3.
 
 **Default.**
 
-- **Regions:** three, each with its own biome, enemy pool, hazard mix and boss. The run ends after the third boss. Reaching the end unlocks an endless mode.
+- **Regions:** three, each with its own biome, enemy pool, hazard mix and boss. ~~The run ends after the third boss. Reaching the end unlocks an endless mode.~~ **Decided (owner, 2026-11-18): after the third boss the run goes on into endless mode.** Each new region scales the same way as the first three (size, threat and toughness as separate dials) and its boss is a seeded pick from the boss randomizer (all bosses, never the same as the last region). **Owner, 2026-11-18: course size caps at region 3's size; threat, toughness, boss health and everything else keep growing each region.** Built in Milestone 8 round 1; numbers in `docs/plans/milestone-8.md` section 10a.
 - **Course modifiers** (Milestone 8, optional): a course may roll one rule change, such as wind, low gravity, or darkness that shortens the guide. Each is a set of modifiers and has a budget cost.
 - **Unlocks:** new content enters the pool through blue star unlocks (section 10) and by beating each boss for the first time.
 
@@ -465,4 +505,4 @@ Opus: use the default and say that you did.
 | F5 | Which elements exist | Fire, ice, shock |
 | F6 | Can the boss countdown be bought back up in a shop? | Yes, +1, once per shop |
 | F7 | Do blue stars found during a run survive death? | **Answered (owner, 2026-11-17): no.** They are carried until deposited, automatically, at a town or on beating a boss; carried blue stars are lost on death or on closing the game outside a town |
-| F8 | Third boss and its gimmick | Decide in Milestone 8 |
+| F8 | Third boss and its gimmick | **Answered (owner, 2026-11-19):** the Brood Queen, hurt only from above |

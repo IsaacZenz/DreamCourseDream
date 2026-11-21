@@ -68,7 +68,7 @@ export const PASSAGES: readonly PassageDef[] = [
   { id: 'step-up', name: 'Step up', weight: 1, minBudget: 6, cost: 1, rise: [2, 2], length: [0, 0], width: [3, 6] },
 ];
 
-export type SetPieceKind = 'pond' | 'spike-pit' | 'sand' | 'arrows';
+export type SetPieceKind = 'pond' | 'spike-pit' | 'sand' | 'arrows' | 'moat' | 'grove' | 'spike-strip' | 'rough' | 'ice';
 
 export interface SetPieceDef {
   readonly id: SetPieceKind;
@@ -84,3 +84,25 @@ export const SET_PIECES: readonly SetPieceDef[] = [
   { id: 'sand', name: 'Sand field', weight: 3, minBudget: 0, cost: 1 },
   { id: 'arrows', name: 'Booster or conveyor run', weight: 2, minBudget: 6, cost: 1 },
 ];
+
+/**
+ * Round 2a set pieces (sheet section 2). They are placed by the detail dial
+ * (gen.ts DetailDef), never from the threat budget, so their weights live in
+ * each region's detail, not here.
+ */
+export const DETAIL_SET_PIECE_NAMES: Readonly<Record<string, string>> = {
+  moat: 'Moat with bridge',
+  grove: 'Dead tree grove',
+  'spike-strip': 'Spike strip',
+  rough: 'Rough patch',
+  ice: 'Ice patch',
+};
+
+/** Sizes and shapes of the round 2a set pieces (sheet sections 2.1 to 2.4). */
+export const DETAIL_PIECES = {
+  moat: { width: [2, 3] as const, minSpan: 5 },
+  grove: { size: 4, trees: [3, 5] as const },
+  spikeStrip: { length: [3, 5] as const, acrossChance: 0.7, gapChance: 0.5 },
+  rough: { w: [3, 5] as const, h: [3, 4] as const },
+  ice: { w: [2, 4] as const, h: [2, 3] as const },
+} as const;

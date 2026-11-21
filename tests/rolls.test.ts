@@ -29,7 +29,7 @@ const weapon = (id: string | null, armour: string | null = null, bauble: string 
 
 /** A Trundler standing still in front of the ball, hit once with a ground shot. */
 function hitOnce(seed: string, lo: Loadout): { play: PlayState; log: PlayEvent[] } {
-  const c = field({ objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] });
+  const c = field({ objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] });
   const play = createPlay(c, T, { seed, loadout: lo });
   play.ball = { ...play.ball, x: 1.5, y: 2.5 };
   takeShot(play, { angle: 0, power: 0.6, type: 'ground', topSpin: 0, sideSpin: 0 });
@@ -58,10 +58,10 @@ describe('the success wheel', () => {
   });
 
   it('Knack and Spinners add to every wheel; Grit adds to the boss wheel only; Golden Spinner shrinks the boss wheel', () => {
-    let p = createPlay(field({ objects: [{ id: 'mossback', at: [6, 2] }] }), T, { seed: 'k', loadout: { gear: weapon('bonk-knob', 'grit-pads', 'brass-spinner'), modifiers: [slices(2)] } });
+    let p = createPlay(field({ objects: [{ id: 'snoozegrub', at: [6, 2] }] }), T, { seed: 'k', loadout: { gear: weapon('bonk-knob', 'grit-pads', 'brass-spinner'), modifiers: [slices(2)] } });
     expect(wheelFor(p, p.enemies[0]!)).toEqual({ filled: 5, size: 10 });
     expect(wheelFor(p, asBoss(p))).toEqual({ filled: 7, size: 20 });
-    p = createPlay(field({ objects: [{ id: 'mossback', at: [6, 2] }] }), T, { seed: 'k', loadout: { gear: weapon('echo-shell', null, 'golden-spinner') } });
+    p = createPlay(field({ objects: [{ id: 'snoozegrub', at: [6, 2] }] }), T, { seed: 'k', loadout: { gear: weapon('echo-shell', null, 'golden-spinner') } });
     expect(wheelFor(p, asBoss(p))).toEqual({ filled: 8, size: 15 });
   });
 
@@ -119,19 +119,20 @@ describe('the success wheel', () => {
 });
 
 describe('acorns', () => {
-  it('a pocket acorn is used as the course starts', () => {
-    const p = createPlay(field({ objects: [{ id: 'mossback', at: [6, 2] }] }), T, { seed: 'a', loadout: { gear: weapon('bonk-knob'), acorn: 'golden-acorn' } });
+  it('an acorn eaten before the course works on it (round 2a)', () => {
+    const p = createPlay(field({ objects: [{ id: 'snoozegrub', at: [6, 2] }] }), T, { seed: 'a', loadout: { gear: weapon('bonk-knob'), acorns: ['golden-acorn'] } });
     expect(drainLog(p)).toContainEqual({ kind: 'acorn', item: 'golden-acorn', slices: 3 });
     expect(wheelFor(p, p.enemies[0]!).filled).toBe(5);
   });
 
-  it('an acorn on the ground works at once for the rest of the course', () => {
-    const p = createPlay(field({ objects: [{ id: 'mossback', at: [8, 2] }, { id: 'star-acorn', at: [4, 2] }] }), T, { seed: 'b', loadout: { gear: weapon('bonk-knob') } });
+  it('an acorn picked up waits for the choice: eat it now or stash it (owner, 2026-11-21)', () => {
+    const p = createPlay(field({ objects: [{ id: 'snoozegrub', at: [8, 2] }, { id: 'star-acorn', at: [4, 2] }] }), T, { seed: 'b', loadout: { gear: weapon('bonk-knob') } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     takeShot(p, { angle: 0, power: 0.4, type: 'ground', topSpin: 0, sideSpin: 0 });
     runShot(p);
-    expect(drainLog(p)).toContainEqual({ kind: 'acorn', item: 'star-acorn', slices: 5 });
-    expect(p.acornSlices).toBe(5);
+    expect(drainLog(p)).toContainEqual({ kind: 'foodFound', item: 'star-acorn' });
+    expect(p.acornSlices).toBe(0);
+    expect(p.foodPending).toEqual(['star-acorn']);
   });
 
   it('crates can drop blue stars and acorns (owner, 2026-11-17)', () => {
@@ -154,21 +155,20 @@ describe('acorns', () => {
 });
 
 describe('acorns in the run', () => {
-  it('a shop acorn goes in the pocket, is taken into the next course, and the pocket empties', async () => {
-    const { createRun, buy, cannotBuy, leaveShop, choices, enterNode, loadoutOf } = await import('../src/sim/run');
+  it('a food-shop acorn goes in the bag; eaten, it works on the next course', async () => {
+    const { createRun, buy, eat, leaveShop, choices, enterNode, loadoutOf } = await import('../src/sim/run');
     const { generateRunMap } = await import('../src/gen/runMap');
     const run = createRun('ACORN', generateRunMap('ACORN'));
     run.status = 'shop';
-    run.current = { id: 'lasttown', row: 1, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, acorn: null, boss: null, arena: null };
-    run.shop = { node: 'lasttown', offers: [{ kind: 'acorn', id: 'lucky-acorn', sold: false }, { kind: 'acorn', id: 'golden-acorn', sold: false }], rerolls: 0, freeRerolls: 0, raised: false };
+    run.current = { id: 'lasttown', row: 1, type: 'shop', early: false, budget: 0, courseSeed: '', gear: null, boss: null, arena: null };
+    run.foodShop = { node: 'lasttown', offers: [{ kind: 'food', id: 'lucky-acorn', sold: false, courses: 1 }], rerolls: 0, freeRerolls: 0, raised: false };
     run.wallet = 30;
-    expect(buy(run, 0)).toBeNull();
-    expect(run.wallet).toBe(24);
-    expect(run.pocket).toBe('lucky-acorn');
-    expect(cannotBuy(run, run.shop.offers[1]!)).toBe('POCKET IS FULL');
+    expect(buy(run, 0, 'food')).toBeNull();
+    expect(run.wallet).toBe(27);
+    expect(run.bag).toEqual([{ id: 'lucky-acorn', courses: 1 }]);
+    expect(eat(run, 0)).toBeNull();
     leaveShop(run);
     enterNode(run, choices(run)[0]!.id);
-    expect(loadoutOf(run).acorn).toBe('lucky-acorn');
-    expect(run.pocket).toBeNull();
+    expect(loadoutOf(run).acorns).toEqual(['lucky-acorn']);
   });
 });

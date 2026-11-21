@@ -21,6 +21,8 @@ export interface SpriteEntry {
 export interface Manifest {
   readonly version: 1;
   readonly sprites: Readonly<Record<string, SpriteEntry>>;
+  /** Milestone 8: colour tints by name (an enemy's element: fire, ice, shock), as "#rrggbb". */
+  readonly tints?: Readonly<Record<string, string>>;
 }
 
 export function frameIndex(entry: SpriteEntry, frame: string): number {

@@ -75,7 +75,7 @@ describe('blue stars: carried, then deposited (owner, 2026-11-17)', () => {
     win(run);
     expect(run.banked).toBe(9);
     expect(run.blueStars).toBe(0);
-    expect(run.bossesBeaten).toEqual(['warden']);
+    expect(run.bossesBeaten).toEqual(['stagwarden']);
   });
 });
 
@@ -187,5 +187,16 @@ describe('the save', () => {
     const back = decodeSave(text);
     expect(back.data.profile.levels).toEqual({ vitality: 5 });
     expect(back.data.burrow.weapon).toBeNull();
+  });
+});
+
+describe('save version 2 (Milestone 8: insect names)', () => {
+  it('an old save that beat the Warden now says it beat the Stagwarden', async () => {
+    const { decodeSave } = await import('../src/save/saveData.ts');
+    const { newProfile } = await import('../src/sim/profile.ts');
+    const p = { ...newProfile(), bossesBeaten: ['warden'] };
+    const loaded = decodeSave(JSON.stringify({ version: 1, profile: p, burrow: null, run: null }));
+    expect(loaded.broken).toEqual([]);
+    expect(loaded.data.profile.bossesBeaten).toEqual(['stagwarden']);
   });
 });

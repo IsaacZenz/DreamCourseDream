@@ -13,7 +13,7 @@
  * Deterministic: everything random comes from the Rng passed in.
  */
 import { GEN } from '../content/gen.ts';
-import { LANDFORMS, PASSAGES, SET_PIECES, type LandformDef, type PassageDef } from '../content/landforms.ts';
+import { DETAIL_PIECES, LANDFORMS, PASSAGES, SET_PIECES, type LandformDef, type PassageDef } from '../content/landforms.ts';
 import { DIRECTION_VECTORS, DIRECTIONS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { MAX_HEIGHT } from '../sim/course.ts';
 import type { Rng } from '../sim/rng.ts';
@@ -64,6 +64,8 @@ export interface Terrain {
   readonly terrainCost: number;
   readonly bareCost: number;
   readonly setPieces: string[];
+  /** Round 2a: dead trees of the groves, to be placed as blockers. */
+  readonly trees: Point[];
 }
 
 export type TerrainResult = { ok: true; terrain: Terrain } | { ok: false; reason: string };
@@ -334,6 +336,10 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
   const reserved = new Set<string>();
   const setPieces: string[] = [];
   const islands: Point[] = [];
+  // Round 2a: each area's way out (the trail's direction through it), dead trees, bridge rails.
+  const areaDir = new Map<number, Direction>();
+  const trees: Point[] = [];
+  const bridgeRails: Point[][] = [];
 
   let dir: Direction = rng.pick(DIRECTIONS);
   let rect: Rect = { x: 0, y: 0, w: rng.int(size.areaSize[0], size.areaSize[1]), h: rng.int(size.areaSize[0], size.areaSize[1]) };
@@ -375,6 +381,7 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
     const base = entryHeight - relAt(entryTile);
     const regionIndex = board.regions.length;
     board.regions.push({ kind: 'area', rect: { ...rect }, name: lf.id, order: i, steep });
+    areaDir.set(regionIndex, nextDir);
     rects.push(rect);
     for (let ly = 0; ly < rect.h; ly++) {
       for (let lx = 0; lx < rect.w; lx++) {
@@ -466,7 +473,28 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
   }
 
   // Set pieces inside areas.
-  for (const r of board.regions) {
+  const detail = size.detail?.setPieces ?? null;
+  for (const [ri, r] of board.regions.entries()) {
+    if (detail) {
+      // Round 2a: the detail dial. More set pieces in bigger areas, free of the threat budget, no kind twice.
+      if (r.kind !== 'area' || r.name === 'pond') continue;
+      const want = Math.min(detail.max, Math.ceil((r.rect.w * r.rect.h) / detail.tilesPer));
+      const tried = new Set<string>();
+      let placed = 0;
+      while (placed < want) {
+        const sp = weighted(rng, Object.entries(detail.weights).filter(([id]) => !tried.has(id)).map(([id, weight]) => ({ id, weight })));
+        if (!sp) break;
+        tried.add(sp.id);
+        const ok = SET_PIECES.some((p) => p.id === sp.id)
+          ? stampSetPiece(board, rng, r, sp.id, reserved, islands, [start, exitTileFinal], areaDir.get(ri) ?? dir)
+          : stampDetailPiece(board, rng, r, sp.id, reserved, [start, exitTileFinal], areaDir.get(ri) ?? dir, detail, trees, bridgeRails);
+        if (ok) {
+          placed++;
+          setPieces.push(sp.id);
+        }
+      }
+      continue;
+    }
     if (r.kind !== 'area' || r.name === 'pond' || terrainLeft <= 0) continue;
     for (let n = 0; n < GEN.setPiecesPerArea; n++) {
       const sp = weighted(rng, SET_PIECES.filter((p) => p.minBudget <= budget && p.cost <= terrainLeft));
@@ -479,7 +507,7 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
   }
 
   // Edges facing nothing: rails, rims or bare drops. Interior rail shapes.
-  const rails: Point[][] = [];
+  const rails: Point[][] = [...bridgeRails];
   const shares = GEN.edges.find((e) => budget < e.under) ?? GEN.edges[GEN.edges.length - 1]!;
   let bareCost = 0;
   for (const r of board.regions) {
@@ -608,6 +636,7 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
       terrainCost: Math.floor(budget * GEN.terrainShare) - terrainLeft,
       bareCost,
       setPieces,
+      trees: trees.map(shift),
     },
   };
 }
@@ -759,6 +788,145 @@ function stampSetPiece(board: Board, rng: Rng, area: Region, id: string, reserve
     }
   }
   return true;
+}
+
+/**
+ * The round 2a set pieces (sheet sections 2.1 to 2.4): moat with a bridge,
+ * dead tree grove, spike strip, rough patch, ice patch. False if it did not fit.
+ */
+function stampDetailPiece(
+  board: Board,
+  rng: Rng,
+  area: Region,
+  id: string,
+  reserved: Set<string>,
+  avoid: Point[],
+  dir: Direction,
+  detail: NonNullable<NonNullable<JourneySize['detail']>['setPieces']>,
+  trees: Point[],
+  bridgeRails: Point[][],
+): boolean {
+  const along = DIRECTION_VECTORS[dir][0] !== 0; // the trail runs along x
+  const fill = (spot: Rect, surface: string) => {
+    for (let y = spot.y; y < spot.y + spot.h; y++) for (let x = spot.x; x < spot.x + spot.w; x++) board.tiles.get(key(x, y))!.surface = surface;
+  };
+  if (id === 'rough' || id === 'ice') {
+    const d = DETAIL_PIECES[id];
+    const spot = findSpot(board, rng, area, rng.int(d.w[0], d.w[1]), rng.int(d.h[0], d.h[1]), reserved, avoid);
+    if (!spot) return false;
+    fill(spot, id);
+    return true;
+  }
+  if (id === 'grove') {
+    const n = DETAIL_PIECES.grove.size;
+    const spot = findSpot(board, rng, area, n, n, reserved, avoid);
+    if (!spot) return false;
+    fill(spot, 'rough');
+    const want = rng.int(DETAIL_PIECES.grove.trees[0], DETAIL_PIECES.grove.trees[1]);
+    const cells: Point[] = [];
+    for (let y = spot.y; y < spot.y + n; y++) for (let x = spot.x; x < spot.x + n; x++) cells.push([x, y]);
+    const picked: Point[] = [];
+    // At least 1.2 tiles apart: no two trees side by side (diagonal neighbours are 1.41 apart).
+    for (const c of rng.shuffle(cells)) {
+      if (picked.length >= want) break;
+      if (picked.some((p) => Math.hypot(p[0] - c[0], p[1] - c[1]) < 1.2)) continue;
+      picked.push(c);
+    }
+    for (const p of picked) {
+      trees.push(p);
+      reserved.add(key(p[0], p[1]));
+    }
+    return true;
+  }
+  if (id === 'spike-strip') {
+    const d = DETAIL_PIECES.spikeStrip;
+    const len = rng.int(d.length[0], d.length[1]);
+    // Across the trail most of the time: perpendicular to the way through.
+    const across = rng.chance(d.acrossChance);
+    const runsX = across ? !along : along;
+    const spot = findSpot(board, rng, area, runsX ? len : 1, runsX ? 1 : len, reserved, avoid);
+    if (!spot) return false;
+    const gap = rng.chance(d.gapChance) ? rng.int(1, len - 2) : -1;
+    for (let k = 0; k < len; k++) {
+      if (k === gap) continue;
+      const x = spot.x + (runsX ? k : 0);
+      const y = spot.y + (runsX ? 0 : k);
+      board.tiles.get(key(x, y))!.surface = 'spikes';
+      reserved.add(key(x, y));
+    }
+    return true;
+  }
+  if (id === 'moat') return stampMoat(board, rng, area, reserved, avoid, along, detail, bridgeRails);
+  return false;
+}
+
+/**
+ * Moat with a bridge (sheet section 2.1): a strip 2 to 3 tiles wide across the
+ * area (inside its border row), lowered one step and filled with water, sand
+ * or spikes, crossed by a plank bridge at the old ground height. A railed
+ * bridge is 3 tiles wide with a rail through each outer column, leaving a lane
+ * 2 tiles wide; an open one is 2 wide (or 1).
+ */
+function stampMoat(
+  board: Board,
+  rng: Rng,
+  area: Region,
+  reserved: Set<string>,
+  avoid: Point[],
+  along: boolean,
+  detail: NonNullable<NonNullable<JourneySize['detail']>['setPieces']>,
+  bridgeRails: Point[][],
+): boolean {
+  const r = area.rect;
+  const mw = rng.int(DETAIL_PIECES.moat.width[0], DETAIL_PIECES.moat.width[1]);
+  // The strip runs across the trail. "across" is the axis the strip spans; "depth" is the axis the trail crosses it on.
+  const spanFrom = along ? r.y + 1 : r.x + 1;
+  const spanTo = along ? r.y + r.h - 2 : r.x + r.w - 2;
+  const depthFrom = (along ? r.x : r.y) + 2;
+  const depthTo = (along ? r.x + r.w : r.y + r.h) - 2 - mw;
+  if (spanTo - spanFrom + 1 < DETAIL_PIECES.moat.minSpan || depthTo < depthFrom) return false;
+  const at = (span: number, depth: number): Point => (along ? [depth, span] : [span, depth]);
+  const railed = rng.chance(detail.railChance);
+  const bw = railed ? 3 : rng.chance(detail.oneWideChance) ? 1 : 2;
+  const fillKind = (weighted(rng, Object.entries(detail.moatFill).map(([id, weight]) => ({ id, weight }))) ?? { id: 'water' }).id;
+  for (let tries = 0; tries < 12; tries++) {
+    const d0 = rng.int(depthFrom, depthTo);
+    let ok = true;
+    for (let s = spanFrom; s <= spanTo && ok; s++) {
+      for (let d = d0; d < d0 + mw && ok; d++) {
+        const p = at(s, d);
+        const t = board.tiles.get(key(p[0], p[1]));
+        if (!t || reserved.has(key(p[0], p[1])) || t.surface !== 'grass') ok = false;
+        else if (shapeOf(t.corners)?.includes('2') ?? true) ok = false;
+        else if (avoid.some((a) => Math.abs(a[0] - p[0]) <= GEN.padRadius && Math.abs(a[1] - p[1]) <= GEN.padRadius)) ok = false;
+      }
+    }
+    // One row of plain ground beyond each side of the moat, so a bridge never leads straight into a pond or a pit.
+    for (let s = spanFrom; s <= spanTo && ok; s++) {
+      for (const d of [d0 - 1, d0 + mw]) {
+        const p = at(s, d);
+        const t = board.tiles.get(key(p[0], p[1]));
+        if (!t || !SURFACES.get(t.surface)?.canHoldBall || (reserved.has(key(p[0], p[1])) && t.surface !== 'grass')) ok = false;
+      }
+    }
+    if (!ok) continue;
+    const b0 = rng.int(spanFrom + 1, Math.max(spanFrom + 1, spanTo - bw));
+    for (let s = spanFrom; s <= spanTo; s++) {
+      for (let d = d0; d < d0 + mw; d++) {
+        const p = at(s, d);
+        const t = board.tiles.get(key(p[0], p[1]))!;
+        if (s >= b0 && s < b0 + bw) t.surface = 'bridge';
+        else {
+          t.surface = fillKind;
+          t.corners = t.corners.map((h) => h - 1) as unknown as Corners;
+        }
+        reserved.add(key(p[0], p[1]));
+      }
+    }
+    if (railed) for (const s of [b0, b0 + bw - 1]) bridgeRails.push([at(s, d0), at(s, d0 + mw - 1)]);
+    return true;
+  }
+  return false;
 }
 
 /** A rail shape inside an area: a U round a spot (open towards the start side) or a short 45-degree wall. */

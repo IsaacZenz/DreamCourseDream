@@ -27,7 +27,20 @@ export type AbilityEffect =
       readonly steerRate: number;
       readonly damage: number;
       readonly endKeep: number;
-    };
+    }
+  /**
+   * Frost (Milestone 8 sheet section 6.1): for `time` seconds, water the ball
+   * touches turns to ice for `freezeTurns` of the ball's turns (owner,
+   * 2026-11-18: 2 turns, and freezing again resets it); enemies it hits are
+   * Chilled for `chillTurns`.
+   */
+  | { readonly kind: 'frost'; readonly time: number; readonly freezeTurns: number; readonly chillTurns: number; readonly lookAhead: number }
+  /**
+   * Static (sheet section 6.2): for `time` seconds a field of `radius` round
+   * the ball does `damage` once to each enemy inside it; the ball passes under
+   * thunder clouds unharmed while it is up.
+   */
+  | { readonly kind: 'static'; readonly time: number; readonly radius: number; readonly damage: number };
 
 export interface AbilityDef {
   readonly id: string;
@@ -60,6 +73,8 @@ const defs: readonly AbilityDef[] = [
     modifiers: [],
     usesPerShot: 1,
   },
+  { id: 'frost', name: 'Frost', icon: 'icon-frost', activation: 'key', effect: { kind: 'frost', time: 2.5, freezeTurns: 2, chillTurns: 2, lookAhead: 0.3 }, duration: 2.5, element: 'ice', modifiers: [], usesPerShot: 1 },
+  { id: 'static', name: 'Static', icon: 'icon-static', activation: 'key', effect: { kind: 'static', time: 1.5, radius: 1, damage: 1 }, duration: 1.5, element: 'shock', modifiers: [], usesPerShot: 1 },
 ];
 
 export const ABILITIES: ReadonlyMap<string, AbilityDef> = new Map(defs.map((d) => [d.id, d]));

@@ -30,8 +30,12 @@ export function benchChoices(): BenchChoice[] {
   return out;
 }
 
-/** Course data for the bench with `choice` at the centre. */
-export function benchCourse(choice: string): unknown {
+/**
+ * Course data for the bench with `choice` at the centre. Milestone 8: an
+ * enemy there can be given a rank, a trait and an element (a trait it may not
+ * have is left off).
+ */
+export function benchCourse(choice: string, extras: { rank?: string; trait?: string; element?: string } = {}): unknown {
   const tiles: string[] = [];
   for (let y = 0; y < SIZE; y++) {
     const row: string[] = [];
@@ -41,15 +45,22 @@ export function benchCourse(choice: string): unknown {
   const [id = '', variant] = choice.split(':');
   const def = OBJECTS.get(id);
   const objects: Record<string, unknown>[] = [];
+  const more: Record<string, unknown> = {};
+  if (def?.kind === 'enemy' && def.behaviour.kind !== 'boss') {
+    if (extras.rank) more.rank = Number(extras.rank);
+    if (extras.trait && def.allowedTraits.includes(extras.trait)) more.traits = [extras.trait];
+    if (extras.element) more.element = extras.element;
+  }
   if (def) {
     const moves = (def.kind === 'enemy' && def.behaviour.kind === 'patrol') || (def.kind === 'mover' && def.motion.kind === 'path') || variant === 'drift';
     // Moving things walk a line across the centre; everything else stands on it.
-    if (moves) objects.push({ id, at: [CENTRE - 3, CENTRE], path: [[CENTRE + 3, CENTRE]] });
-    else objects.push({ id, at: [CENTRE, CENTRE] });
+    if (moves) objects.push({ id, at: [CENTRE - 3, CENTRE], path: [[CENTRE + 3, CENTRE]], ...more });
+    else objects.push({ id, at: [CENTRE, CENTRE], ...more });
   }
   // Guard rails (Milestone 5b): a straight run, a corner and a 45-degree piece around the centre.
   const rails = id === 'rail' ? [[[3, 4], [11, 4]], [[4, 10], [4, 7], [7, 7]], [[9, 7], [11, 9]]] : undefined;
   const stars = def?.kind === 'enemy' ? def.starValue : 0;
+  // Milestone 8: a boss on the bench is tried in the open; a Splitting enemy needs no special room.
   return {
     format: 2,
     name: `Test bench: ${id === 'rail' ? 'Guard rail' : (def?.name ?? 'empty')}`,

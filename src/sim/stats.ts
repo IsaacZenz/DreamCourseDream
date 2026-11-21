@@ -11,7 +11,7 @@
  */
 import { STAT_DEFS, type BaseStats, type StatId } from '../content/stats.ts';
 
-export type ModifierSourceKind = 'permanent' | 'run' | 'gear' | 'ability' | 'status' | 'trait' | 'character' | 'region';
+export type ModifierSourceKind = 'permanent' | 'run' | 'gear' | 'ability' | 'status' | 'trait' | 'character' | 'region' | 'rank';
 
 export interface ModifierSource {
   readonly kind: ModifierSourceKind;

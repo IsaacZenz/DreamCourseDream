@@ -18,6 +18,7 @@
     },
     "^": "spring",
     "x": "spikes",
+    "k": "bridge",
     "w": {
       "surface": "warp",
       "link": "a"
@@ -38,7 +39,7 @@
     "g6 g6 g6 g6 g6 g6 g6446 g4224 g2 g2 g2442 g4 g4224 g2 g2 g2",
     "g6 g6 g6 g6 g6 g6 g6446 g4224 g2 >2 g2422 g4422 g4222 g2 g2 g2",
     "g6 g6 g6 g6 g6 g6 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
-    "g0 ~0 ~0 g0 g0 g0 g0 g0 g2 g2 g2 g2 r2 r2 r2 g2",
+    "g0 ~0 ~0 k0 g0 g0 g0 g0 g2 g2 g2 g2 r2 r2 r2 g2",
     "g0 ~0 ~0 g0 g0 g0 g0 g0 g2 s2 s2 g2 r2 r2 r2 g2",
     "g0 c0 c0 c0 c0 g0 g0 g0 g2 s2 s2 g2 r2 r2 r2 g2",
     "g0 g0 g0 g0 b2 g0 g0 g0 g2 g2 g2 g2 g2 g2 g2 x2",

@@ -62,23 +62,26 @@ describe('regions', () => {
     expect(choices(run).length).toBeGreaterThan(0);
   });
 
-  it('region two: bigger start, more threat (18 + 3 per node, cap 36), +1 health on every enemy; its boss wins the run', () => {
+  it('region two: bigger start, more threat (18 + 3 per node, cap 36), +1 health on every enemy; then region three', () => {
     const run = createRun('R3', generateRunMap('R3'));
     beatBoss(run);
     takeBossReward(run, null, generateRunMap('R3', 2));
     expect(budgetFor(run, 'course')).toBe(18);
     run.counted = 2;
     expect(budgetFor(run, 'course')).toBe(24);
+    expect(sizeFor(run, 'course').areas).toEqual([3, 3]);
+    run.counted = 3;
     expect(sizeFor(run, 'course').areas).toEqual([4, 4]);
-    expect(sizeFor(run, 'course').areaSize).toEqual([9, 15]);
+    expect(sizeFor(run, 'course').areaSize).toEqual([8, 15]);
     expect(enemyModifiersFor(run)).toEqual([{ stat: 'health', op: 'add', amount: 1, source: { kind: 'region', id: 'region2' }, duration: { kind: 'forever' } }]);
     beatBoss(run);
-    expect(run.status).toBe('won');
+    // Milestone 8: region two's boss no longer ends the run; region three follows.
+    expect(run.status).toBe('reward');
     expect(run.banked).toBe(5 + 8);
   });
 
   it('region toughness reaches every enemy on a course', () => {
-    const r = parseCourse({ format: 2, name: 't', legend: { g: 'grass' }, tiles: ['g1 g1 g1', 'g1 g1 g1'], start: [0, 0], exit: [2, 1], quota: 0, objects: [{ id: 'trundler', at: [1, 1], path: [[1, 1]] }] });
+    const r = parseCourse({ format: 2, name: 't', legend: { g: 'grass' }, tiles: ['g1 g1 g1', 'g1 g1 g1'], start: [0, 0], exit: [2, 1], quota: 0, objects: [{ id: 'mudroller', at: [1, 1], path: [[1, 1]] }] });
     if (!r.ok) throw new Error();
     const run = createRun('R4', generateRunMap('R4'));
     run.region = 2;
@@ -99,8 +102,8 @@ describe('regions', () => {
     expect(ok).toBeGreaterThan(0);
   });
 
-  it('every region names a boss pool with the Warden in it (owner: placeholder until Milestone 8)', () => {
-    for (const r of REGIONS) expect(r.bosses).toContain('warden');
+  it('owner, 2026-11-19 (round 1 question 6, B): the Stagwarden, then Gloamhorn, then the Brood Queen', () => {
+    expect(REGIONS.map((r) => r.bosses)).toEqual([['stagwarden'], ['gloamhorn'], ['brood-queen']]);
   });
 });
 
@@ -136,12 +139,13 @@ describe('courses made ahead (owner, 2026-11-18, option B)', () => {
     expect(upcomingJobs(run)[0]!.courseSeed).toBe(`${one}-2`);
   });
 
-  it('owner option A: region two is 3 to 6 areas, threat capped at 36', () => {
+  it('region two is 3 to 5 areas (owner, 2026-11-21), threat capped at 36', () => {
     const run = createRun('R6', generateRunMap('R6'));
     run.region = 2;
     expect(sizeFor(run, 'course').areas).toEqual([3, 3]);
     run.counted = 20;
-    expect(sizeFor(run, 'course').areas).toEqual([6, 6]);
+    expect(sizeFor(run, 'course').areas).toEqual([5, 5]);
+    expect(sizeFor(run, 'hard').areas).toEqual([5, 5]);
     expect(budgetFor(run, 'course')).toBe(36);
   });
 });

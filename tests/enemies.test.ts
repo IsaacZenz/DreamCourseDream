@@ -110,7 +110,7 @@ describe('damage order (FEATURES.md section 2)', () => {
 
 const TEST_ENEMY_BASE = {
   kind: 'enemy',
-  sprite: 'mossback',
+  sprite: 'snoozegrub',
   family: 'sentinel',
   tier: 2,
   starValue: 1,
@@ -125,6 +125,7 @@ const TEST_ENEMY_BASE = {
   bounce: 0.6,
   passByGroundOnly: false,
   contact: 'never',
+  contactStatus: null,
   grantsAbility: null,
   allowedTraits: [],
   allowedGear: [],
@@ -196,40 +197,40 @@ describe('a fourth enemy from a data file alone', () => {
 
 describe('triggers and responses', () => {
   it('none: a Mossback never activates', () => {
-    const p = play(field(10, 3, { objects: [{ id: 'mossback', at: [6, 2] }] }));
+    const p = play(field(10, 3, { objects: [{ id: 'snoozegrub', at: [6, 2] }] }));
     p.ball = { ...p.ball, x: 4.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.05 }));
     expect(kinds(log)).not.toContain('activated');
   });
 
   it('Spitter, rest: activated when the ball stops inside its outer radius', () => {
-    const p = play(field(10, 3, { objects: [{ id: 'spitter', at: [6, 2] }] }));
+    const p = play(field(10, 3, { objects: [{ id: 'spittlebug', at: [6, 2] }] }));
     p.ball = { ...p.ball, x: 3.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.05 }));
-    expect(log).toContainEqual({ kind: 'trigger', enemy: 'spitter#0', trigger: 'rest' });
+    expect(log).toContainEqual({ kind: 'trigger', enemy: 'spittlebug#0', trigger: 'rest' });
     expect(p.enemies[0]!.activated).toBe(true);
   });
 
   it('Spitter, rest: not activated when the ball stops outside its outer radius', () => {
-    const p = play(field(12, 3, { objects: [{ id: 'spitter', at: [10, 2] }] }));
+    const p = play(field(12, 3, { objects: [{ id: 'spittlebug', at: [10, 2] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     fire(p, shot({ power: 0.05 }));
     expect(p.enemies[0]!.activated).toBe(false);
   });
 
   it('Spitter, pass-by: activated when the ball rolls through its inner radius', () => {
-    const p = play(field(14, 5, { objects: [{ id: 'spitter', at: [6, 2] }] }));
+    const p = play(field(14, 5, { objects: [{ id: 'spittlebug', at: [6, 2] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 3.5 };
     const log = fire(p, shot({ power: 0.9 }));
-    expect(log).toContainEqual({ kind: 'trigger', enemy: 'spitter#0', trigger: 'passBy' });
+    expect(log).toContainEqual({ kind: 'trigger', enemy: 'spittlebug#0', trigger: 'passBy' });
     expect(p.enemies[0]!.activated).toBe(true);
   });
 
   it('Spitter, hit: activated when hit and it survives', () => {
-    const p = play(field(10, 3, { objects: [{ id: 'spitter', at: [6, 2] }] }));
+    const p = play(field(10, 3, { objects: [{ id: 'spittlebug', at: [6, 2] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.6 }));
-    expect(log).toContainEqual({ kind: 'trigger', enemy: 'spitter#0', trigger: 'hit' });
+    expect(log).toContainEqual({ kind: 'trigger', enemy: 'spittlebug#0', trigger: 'hit' });
     expect(p.enemies[0]!.health).toBe(1);
     expect(p.enemies[0]!.activated).toBe(true);
   });
@@ -251,7 +252,7 @@ describe('triggers and responses', () => {
   });
 
   it('Lunger, pass-by: launches at once mid-shot, once per shot, and is then activated', () => {
-    const p = play(field(16, 5, { objects: [{ id: 'lunger', at: [6, 2] }] }));
+    const p = play(field(16, 5, { objects: [{ id: 'pouncehopper', at: [6, 2] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 3.5 };
     const log = fire(p, shot({ power: 0.9 }));
     const k = kinds(log);
@@ -292,7 +293,7 @@ describe('Spitter lob', () => {
   });
 
   it('marks a ring on the first enemy turn, then the seed lands there and hurts a ball that stayed', () => {
-    const p = play(field(12, 5, { objects: [{ id: 'spitter', at: [8, 3] }] }));
+    const p = play(field(12, 5, { objects: [{ id: 'spittlebug', at: [8, 3] }] }));
     p.ball = { ...p.ball, x: 5.5, y: 3.5 };
     const first = fire(p, shot({ power: 0.05 }));
     expect(kinds(first)).toContain('lobMark');
@@ -307,7 +308,7 @@ describe('Spitter lob', () => {
   });
 
   it('misses a ball that moved away', () => {
-    const p = play(field(14, 7, { objects: [{ id: 'spitter', at: [8, 4] }] }));
+    const p = play(field(14, 7, { objects: [{ id: 'spittlebug', at: [8, 4] }] }));
     p.ball = { ...p.ball, x: 6.5, y: 4.5 };
     fire(p, shot({ power: 0.05 }));
     const second = fire(p, shot({ power: 0.5, angle: -Math.PI / 2 - 0.4 }));
@@ -316,7 +317,7 @@ describe('Spitter lob', () => {
   });
 
   it('the seed keeps bouncing after it lands, and is gone once it stops', () => {
-    const p = play(field(14, 5, { objects: [{ id: 'spitter', at: [10, 3] }] }));
+    const p = play(field(14, 5, { objects: [{ id: 'spittlebug', at: [10, 3] }] }));
     p.ball = { ...p.ball, x: 7.5, y: 3.5 };
     fire(p, shot({ power: 0.05 }));
     takeShot(p, shot({ power: 0.4, angle: -Math.PI / 2 }));
@@ -339,7 +340,7 @@ describe('Spitter lob', () => {
 
 describe('Lunger', () => {
   it('rest activates it; on the enemy turn it launches at the ball and rolls towards it', () => {
-    const p = play(field(12, 3, { objects: [{ id: 'lunger', at: [8, 2] }] }));
+    const p = play(field(12, 3, { objects: [{ id: 'pouncehopper', at: [8, 2] }] }));
     p.ball = { ...p.ball, x: 6.5, y: 2.5 };
     const startX = p.enemies[0]!.x;
     fire(p, shot({ power: 0.05, angle: Math.PI }));
@@ -353,7 +354,7 @@ describe('Lunger', () => {
     // A strip of high ground at height 1 with a drop to height 0 at x = 11.
     const set: Record<string, string> = {};
     for (let y = 1; y <= 3; y++) set[`11,${y}`] = 'g0';
-    const p = play(field(11, 3, { objects: [{ id: 'lunger', at: [9, 2] }] }, set));
+    const p = play(field(11, 3, { objects: [{ id: 'pouncehopper', at: [9, 2] }] }, set));
     const e = p.enemies[0]!;
     // Launch it hard at the drop.
     e.activated = true;
@@ -365,7 +366,7 @@ describe('Lunger', () => {
 
   it('bounces back out of water and never stops in it', () => {
     const set: Record<string, string> = { '7,1': '~1', '7,2': '~1', '7,3': '~1' };
-    const p = play(field(10, 3, { objects: [{ id: 'lunger', at: [4, 2] }] }, set));
+    const p = play(field(10, 3, { objects: [{ id: 'pouncehopper', at: [4, 2] }] }, set));
     const e = p.enemies[0]!;
     e.activated = true;
     p.ball = { ...p.ball, x: 9.5, y: 2.5 };
@@ -376,7 +377,7 @@ describe('Lunger', () => {
 
   it('spikes hurt it once per launch', () => {
     const set: Record<string, string> = { '5,2': 'x1', '6,2': 'x1' };
-    const p = play(field(10, 3, { objects: [{ id: 'lunger', at: [3, 2] }] }, set));
+    const p = play(field(10, 3, { objects: [{ id: 'pouncehopper', at: [3, 2] }] }, set));
     const e = p.enemies[0]!;
     e.activated = true;
     p.ball = { ...p.ball, x: 9.5, y: 2.5 };
@@ -385,7 +386,7 @@ describe('Lunger', () => {
   });
 
   it('hurts the ball only while it is moving; a resting ball is knocked, not a shot', () => {
-    const p = play(field(10, 3, { objects: [{ id: 'lunger', at: [3, 2] }] }));
+    const p = play(field(10, 3, { objects: [{ id: 'pouncehopper', at: [3, 2] }] }));
     const e = p.enemies[0]!;
     e.activated = true;
     p.ball = { ...p.ball, x: 6.5, y: 2.5 };
@@ -411,19 +412,19 @@ describe('Lunger', () => {
 
 describe('Mole', () => {
   it('rolling over the hill makes it shoot out; flying over does not', () => {
-    const p = play(field(12, 3, { objects: [{ id: 'mole', at: [5, 2] }] }));
+    const p = play(field(12, 3, { objects: [{ id: 'mole-cricket', at: [5, 2] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const rolled = fire(p, shot({ power: 0.6 }));
     expect(kinds(rolled)).toContain('surface');
 
-    const q = play(field(12, 3, { objects: [{ id: 'mole', at: [2, 2] }] }));
+    const q = play(field(12, 3, { objects: [{ id: 'mole-cricket', at: [2, 2] }] }));
     q.ball = { ...q.ball, x: 1.5, y: 2.5 };
     const flew = fire(q, shot({ type: 'lofted', power: 0.6 }));
     expect(kinds(flew)).not.toContain('surface');
   });
 
   it('waits a moment after being rolled over, then shoots up into the air (owner, 2026-11-14)', () => {
-    const p = play(field(12, 3, { objects: [{ id: 'mole', at: [3, 2] }] }));
+    const p = play(field(12, 3, { objects: [{ id: 'mole-cricket', at: [3, 2] }] }));
     const e = p.enemies[0]!;
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     takeShot(p, shot({ power: 0.5 }));
@@ -444,7 +445,7 @@ describe('Mole', () => {
   });
 
   it('does not hurt the ball the moment it pops out, even if the ball is right on the hill', () => {
-    const p = play(field(12, 3, { objects: [{ id: 'mole', at: [3, 2] }] }));
+    const p = play(field(12, 3, { objects: [{ id: 'mole-cricket', at: [3, 2] }] }));
     p.ball = { ...p.ball, x: 3.1, y: 2.5 };
     // A tiny shot that stops on the hill.
     takeShot(p, shot({ power: 0.06 }));
@@ -463,7 +464,7 @@ describe('Mole', () => {
 
   it('the same seed gives the same direction', () => {
     const run = (seed: string) => {
-      const p = play(field(12, 5, { objects: [{ id: 'mole', at: [5, 3] }] }), seed);
+      const p = play(field(12, 5, { objects: [{ id: 'mole-cricket', at: [5, 3] }] }), seed);
       p.ball = { ...p.ball, x: 1.5, y: 3.5 };
       fire(p, shot({ power: 0.6 }));
       return [p.enemies[0]!.x, p.enemies[0]!.y];
@@ -472,7 +473,7 @@ describe('Mole', () => {
   });
 
   it('cannot be hit while moving or underground; burrows after one shot and leaves a new hill where it stopped', () => {
-    const p = play(field(12, 5, { objects: [{ id: 'mole', at: [5, 3] }] }));
+    const p = play(field(12, 5, { objects: [{ id: 'mole-cricket', at: [5, 3] }] }));
     const e = p.enemies[0]!;
     p.ball = { ...p.ball, x: 1.5, y: 3.5 };
     fire(p, shot({ power: 0.6 }));
@@ -492,7 +493,7 @@ describe('Mole', () => {
 
 describe('Trundler and moving obstacles', () => {
   it('a Trundler that survives your hit costs 1 health and knocks the ball away', () => {
-    const p = play(field(10, 3, { objects: [{ id: 'trundler', at: [6, 2], path: [[6, 2]] }] }));
+    const p = play(field(10, 3, { objects: [{ id: 'mudroller', at: [6, 2], path: [[6, 2]] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fire(p, shot({ power: 0.6 }));
     expect(log.some((e) => e.kind === 'hit')).toBe(true);
@@ -501,7 +502,7 @@ describe('Trundler and moving obstacles', () => {
   });
 
   it('runs into a resting ball: keeps to its path, hurts and knocks the ball; no shot used', () => {
-    const p = play(field(10, 3, { objects: [{ id: 'trundler', at: [2, 2], path: [[8, 2]] }] }));
+    const p = play(field(10, 3, { objects: [{ id: 'mudroller', at: [2, 2], path: [[8, 2]] }] }));
     p.ball = { ...p.ball, x: 5.5, y: 2.5 };
     const shots = p.shots;
     let knocked = false;
@@ -521,7 +522,7 @@ describe('Trundler and moving obstacles', () => {
   });
 
   it('a knocked ball rolling into another enemy does not damage it (only your own shots do)', () => {
-    const p = play(field(12, 3, { objects: [{ id: 'sliding-block', at: [2, 2], path: [[4, 2]] }, { id: 'mossback', at: [7, 2] }] }));
+    const p = play(field(12, 3, { objects: [{ id: 'sliding-block', at: [2, 2], path: [[4, 2]] }, { id: 'snoozegrub', at: [7, 2] }] }));
     p.ball = { ...p.ball, x: 4.2, y: 2.5 };
     wait(p, 600);
     const log = drainLog(p);
@@ -542,7 +543,7 @@ describe('Trundler and moving obstacles', () => {
   it('the world clock: the same steps give the same positions; a replay gives the same result', () => {
     const c = field(10, 5, {
       objects: [
-        { id: 'trundler', at: [2, 4], path: [[8, 4]] },
+        { id: 'mudroller', at: [2, 4], path: [[8, 4]] },
         { id: 'sliding-block', at: [2, 2], path: [[8, 2]], phase: 0.3 },
       ],
     });
@@ -574,7 +575,7 @@ describe('Trundler and moving obstacles', () => {
 
 describe('Stunned (FEATURES.md section 12)', () => {
   it('an enemy skips its next action; reapplying is ignored', () => {
-    const p = play(field(10, 3, { objects: [{ id: 'spitter', at: [6, 2] }] }));
+    const p = play(field(10, 3, { objects: [{ id: 'spittlebug', at: [6, 2] }] }));
     const e = p.enemies[0]!;
     e.activated = true;
     applyEnemyStatus(p, e, 'stunned');
@@ -596,7 +597,7 @@ describe('Stunned (FEATURES.md section 12)', () => {
   });
 
   it('a stunned Trundler stops moving until after the next enemy turn', () => {
-    const p = play(field(10, 3, { objects: [{ id: 'trundler', at: [2, 3], path: [[8, 3]] }] }));
+    const p = play(field(10, 3, { objects: [{ id: 'mudroller', at: [2, 3], path: [[8, 3]] }] }));
     const e = p.enemies[0]!;
     applyEnemyStatus(p, e, 'stunned');
     const x = e.x;
@@ -609,7 +610,7 @@ describe('Stunned (FEATURES.md section 12)', () => {
 
 describe('flag poles and secured stars (owner, 2026-11-14)', () => {
   function poleCourse() {
-    return field(14, 3, { objects: [{ id: 'mossback', at: [5, 2] }], quota: 1 });
+    return field(14, 3, { objects: [{ id: 'snoozegrub', at: [5, 2] }], quota: 1 });
   }
 
   it('a slow ball bounces off a pole; a fast one pushes past and loses most of its speed', () => {
@@ -647,8 +648,8 @@ describe('flag poles and secured stars (owner, 2026-11-14)', () => {
   it('an enemy passing over a raised flag lowers it and takes the star; the ball raises it again; the exit stays open', () => {
     const c = field(10, 5, {
       objects: [
-        { id: 'mossback', at: [5, 2] },
-        { id: 'trundler', at: [5, 5], path: [[5, 5]] },
+        { id: 'snoozegrub', at: [5, 2] },
+        { id: 'mudroller', at: [5, 5], path: [[5, 5]] },
       ],
       quota: 1,
     });
@@ -718,7 +719,7 @@ describe('thunder cloud (owner, 2026-11-14)', () => {
   });
 
   it('zaps a rolling Lunger: thrown, no damage', () => {
-    const p = play(field(12, 5, { objects: [{ id: 'lunger', at: [2, 3] }, { id: 'thunder-cloud', at: [5, 3] }] }));
+    const p = play(field(12, 5, { objects: [{ id: 'pouncehopper', at: [2, 3] }, { id: 'thunder-cloud', at: [5, 3] }] }));
     const e = p.enemies[0]!;
     e.activated = true;
     p.ball = { ...p.ball, x: 10.5, y: 3.5 };
@@ -768,7 +769,7 @@ describe('abilities', () => {
   });
 
   it('Anchor: breaks a cracked tile it stops on and stuns enemies within 1 tile', () => {
-    const p = withAbility('anchor', field(12, 3, { objects: [{ id: 'cracked-tile', at: [3, 2] }, { id: 'mossback', at: [4, 2] }] }));
+    const p = withAbility('anchor', field(12, 3, { objects: [{ id: 'cracked-tile', at: [3, 2] }, { id: 'snoozegrub', at: [4, 2] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     // Roll and drop the anchor on the cracked tile, close to the Mossback.
     takeShot(p, shot({ power: 0.3 }));
@@ -793,7 +794,7 @@ describe('abilities', () => {
   });
 
   it('Burner: passes through a tier 1 enemy it defeats with no speed loss', () => {
-    const p = withAbility('burner', field(30, 3, { objects: [{ id: 'mossback', at: [6, 2] }] }));
+    const p = withAbility('burner', field(30, 3, { objects: [{ id: 'snoozegrub', at: [6, 2] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const log = fireWithAbility(p, shot({ power: 0.4 }), 1);
     expect(kinds(log)).toContain('defeat');
@@ -878,14 +879,14 @@ describe('abilities', () => {
   });
 
   it('Tornado: 1 damage to an enemy it spirals into', () => {
-    const p = withAbility('tornado', field(6, 1, { objects: [{ id: 'spitter', at: [4, 1] }] }));
+    const p = withAbility('tornado', field(6, 1, { objects: [{ id: 'spittlebug', at: [4, 1] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 1.5 };
     const log = fireWithAbility(p, shot({ power: 0.2 }), 1);
-    expect(log.some((e) => e.kind === 'hit' && e.enemy === 'spitter#0' && e.damage === 1)).toBe(true);
+    expect(log.some((e) => e.kind === 'hit' && e.enemy === 'spittlebug#0' && e.damage === 1)).toBe(true);
   });
 
   it('once per shot; picking up another replaces it', () => {
-    const p = withAbility('hop', field(14, 3, { objects: [{ id: 'anchorback', at: [6, 2] }] }));
+    const p = withAbility('hop', field(14, 3, { objects: [{ id: 'leadgrub', at: [6, 2] }] }));
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     const inputs: TickInput[] = [];
     inputs[2] = { ability: true };

@@ -85,6 +85,8 @@ const defs: readonly SurfaceDef[] = [
   { id: 'conveyor', name: 'Conveyor', tileSprite: 'tile-conveyor', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsDir: true, effect: 'carry', cost: 1 },
   { id: 'spring', name: 'Spring', tileSprite: 'tile-spring', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, effect: 'launch', cost: 1 },
   { id: 'spikes', name: 'Spikes', tileSprite: 'tile-spikes', faceSprite: 'face-metal', canHoldBall: false, effect: 'damage', cost: 2 },
+  // Round 2a (owner, 2026-11-21): plank bridges across moats. Rolls like grass.
+  { id: 'bridge', name: 'Bridge', tileSprite: 'tile-bridge', faceSprite: 'face-wood', canHoldBall: true },
   { id: 'warp', name: 'Warp', tileSprite: 'tile-warp', faceSprite: 'face-metal', canHoldBall: false, flatOnly: true, needsLink: true, effect: 'warp' },
 ];
 

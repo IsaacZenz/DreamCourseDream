@@ -5,6 +5,7 @@
  * enemy and object costs are the `cost` fields in objects.ts; hazard costs are
  * the `cost` fields in surfaces.ts.
  */
+import type { EnemyMix } from './enemyMods.ts';
 /**
  * How big a journey is, apart from how much is in it (owner, 2026-11-17: size
  * and difficulty scale separately; Milestone 7 sheet section 7.4). The run
@@ -19,6 +20,42 @@ export interface JourneySize {
   readonly maxEnemies: number;
   /** The bot's shot limit. */
   readonly botShots: number;
+  /**
+   * Milestone 8: how enemies are dressed (ranks, themes, leaders) in this
+   * region, whether this is a hard course, and the gear rarity column for
+   * carried gear. Left out: plain enemies, as before.
+   */
+  readonly mix?: EnemyMix;
+  readonly hard?: boolean;
+  readonly oddsColumn?: number;
+  /** Round 2a: the region's detail dial. Left out: no extra set pieces, obstacles or scenery, as before. */
+  readonly detail?: DetailDef;
+}
+
+/**
+ * The detail dial (round 2a sheet section 1; owner, 2026-11-21): how much
+ * terrain, how many extra obstacles and how much scenery a course gets for its
+ * size. Paid for separately from the threat budget.
+ */
+export interface DetailDef {
+  /**
+   * Set pieces per area: one per `tilesPer` tiles of area, rounded up, at most
+   * `max`, picked by `weights` (no kind twice in one area). Null: one per area
+   * from the threat budget, exactly as before (region one).
+   */
+  readonly setPieces: {
+    readonly tilesPer: number;
+    readonly max: number;
+    readonly weights: Readonly<Record<string, number>>;
+    /** Moat filling by weight, the chance of rails on the bridge, and the chance of a 1-wide bridge (no rails). */
+    readonly moatFill: Readonly<Record<'water' | 'sand' | 'spikes', number>>;
+    readonly railChance: number;
+    readonly oneWideChance: number;
+  } | null;
+  /** Extra blockers per 100 tiles of course, picked by weight. Never crates, so stars are unchanged. */
+  readonly extraObstacles: { readonly per100: number; readonly weights: Readonly<Record<string, number>> };
+  /** Scenery (sheet section 2.6): props per 100 tiles, in clusters, picked by weight. */
+  readonly scenery: { readonly per100: number; readonly cluster: readonly [number, number]; readonly weights: Readonly<Record<string, number>> };
 }
 
 export const GEN = {
@@ -80,10 +117,10 @@ export const GEN = {
   minEnemies: 3,
   maxEnemies: 10,
   /** Pick weights for squad members. Enemies not listed are never picked by the generator. */
-  enemyWeights: { mossback: 3, trundler: 2, spitter: 2, lunger: 2, mole: 2 } as Record<string, number>,
+  enemyWeights: { snoozegrub: 3, mudroller: 2, spittlebug: 2, pouncehopper: 2, 'mole-cricket': 2, 'skitter-ant': 2, bristlecrawler: 2, glowmoth: 1, trapjaw: 2, stinkpuff: 2 } as Record<string, number>,
   /** Ability carriers (sheet section 4.2). */
   carrierChance: 0.6,
-  carriers: ['anchorback', 'emberback', 'hopback', 'whirlback'],
+  carriers: ['leadgrub', 'embergrub', 'hopgrub', 'whirlgrub', 'frostgrub', 'sparkgrub'],
   /** Obstacles and hazards (sheet section 4.4): pick weights per spot use. */
   obstacleWeights: { blocker: 3, crate: 2, hazard: 3, cloud: 2, slider: 1, gate: 1, crack: 1 } as Record<string, number>,
   blockers: ['rock', 'stump', 'low-wall'],
