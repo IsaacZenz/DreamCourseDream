@@ -145,6 +145,10 @@ export interface ShotScales {
   readonly frozen?: Readonly<Record<string, number>> | null;
   /** Milestone 8: a Chilled ball rolls as if on ice. */
   readonly iceRoll?: boolean;
+  /** Round 2b course modifiers: gravity scale (1 = normal) and wind in the air (tiles/s²). */
+  readonly gravity?: number;
+  readonly windX?: number;
+  readonly windY?: number;
 }
 
 export interface BallState {
@@ -206,6 +210,10 @@ export interface ShotState {
   glideMaxFall: number;
   /** Burr touched a wall or an obstacle this step: stick as soon as the ball is on the ground. */
   stickNow: boolean;
+  /** Round 2b course modifiers: gravity scale, and the wind's push while in the air (tiles/s²). */
+  gravityScale: number;
+  windX: number;
+  windY: number;
   /** Burner: steps left, and the sideways speed kept up while they last. */
   burnSteps: number;
   burnMin: number;
@@ -329,6 +337,9 @@ export function startShot(tuning: Tuning, from: BallState, cmd: ShotCommand, sca
     glideGravity: 1,
     glideMaxFall: Infinity,
     stickNow: false,
+    gravityScale: scales.gravity ?? 1,
+    windX: scales.windX ?? 0,
+    windY: scales.windY ?? 0,
     burnSteps: 0,
     burnMin: 0,
     hover: null,
@@ -446,7 +457,10 @@ export function stepShot(course: Course, tuning: Tuning, s: ShotState, input: St
   if (s.sticky > 0) s.sticky--;
   if (s.glide > 0) s.glide--;
   if (!b.grounded) {
-    b.vz -= tuning.gravity * DT * (s.glide > 0 ? s.glideGravity : 1);
+    b.vz -= tuning.gravity * s.gravityScale * DT * (s.glide > 0 ? s.glideGravity : 1);
+    // Wind pushes only in the air (round 2b sheet section 3).
+    b.vx += s.windX * DT;
+    b.vy += s.windY * DT;
     if (s.glide > 0 && b.vz < -s.glideMaxFall) b.vz = -s.glideMaxFall;
     b.vx *= drag;
     b.vy *= drag;

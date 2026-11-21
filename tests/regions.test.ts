@@ -171,7 +171,7 @@ describe('relaxed course check (owner, 2026-11-18)', () => {
     const { setGear, addUpgrade } = await import('../src/sim/run');
     const run = createRun('PAR', generateRunMap('PAR'));
     const before = upcomingJobs(run);
-    expect(before[0]!.opts.loadout).toEqual({ ability: null, gear: { weapon: null, armour: null, bauble: null }, modifiers: [] });
+    expect(before[0]!.opts.loadout).toEqual({ ability: null, gear: { weapon: null, armour: null, bauble: null }, modifiers: [], courseMod: null });
     setGear(run, 'iron-shell');
     addUpgrade(run, 'deep-breath');
     run.ability = 'hop';

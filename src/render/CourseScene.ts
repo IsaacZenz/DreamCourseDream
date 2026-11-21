@@ -36,6 +36,9 @@ import { STATUSES } from '../content/statuses';
 import { RANKS, TRAITS, TRAIT_RULES } from '../content/enemyMods';
 import { ELEMENT_IDS, OBJECTS, RAIL } from '../content/objects';
 import { SCENERY } from '../content/scenery';
+import { COURSE_MODS, type CourseMod } from '../content/modifiers';
+import type { Direction } from '../content/surfaces';
+import { courseModBanner, courseModLabel } from './courseModView';
 import { RULES } from '../content/rules';
 import { ABILITIES, ABILITY_IDS } from '../content/abilities';
 import { SPIN_LEVELS, chargeMeter, dragShot, spinValue } from '../input/aim';
@@ -132,12 +135,22 @@ let lastGen: { result: GenResult; ms: number } | null = null;
  * mix and detail of a late course in region N (after 6 counted nodes), so the
  * detail dial and scenery can be seen without playing a run there.
  */
+/** Testing aid (round 2b): ?mod=wind|lowGravity|darkness (and &dir=ne|se|sw|nw for wind) gives a test course that modifier. */
+function testCourseMod(): CourseMod | null {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('mod');
+  if (!id || !COURSE_MODS.has(id)) return null;
+  const dir = params.get('dir') as Direction | null;
+  return id === 'wind' ? { id: 'wind', dir: dir && ['ne', 'se', 'sw', 'nw'].includes(dir) ? dir : 'ne' } : { id: id as CourseMod['id'] };
+}
+
 function testRegionOpts(): GenOptions {
   const n = Number(new URLSearchParams(window.location.search).get('region'));
-  if (!n) return {};
+  const mod = testCourseMod();
+  if (!n) return mod ? { loadout: { courseMod: mod } } : {};
   const r = regionDefFor(n);
   const areas = Math.min(r.areas.max, r.areas.start + Math.floor(6 / r.areas.every));
-  return { size: { areas: [areas, areas], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(areas), mix: mixFor(n), detail: r.detail } };
+  return { size: { areas: [areas, areas], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(areas), mix: mixFor(n), detail: r.detail }, ...(mod && { loadout: { courseMod: mod } }) };
 }
 let viewer: SeedViewer | null = null;
 /** How fast the bot replays (B key), as a multiple of real time. */
@@ -227,7 +240,7 @@ export class CourseScene extends Phaser.Scene {
   private message: Phaser.GameObjects.Container | null = null;
   private messageUntil = 0;
   /** Messages wait their turn so several things in one shot can all be read. */
-  private messageQueue: { text: string; color: number }[] = [];
+  private messageQueue: { text: string; color: number; ms?: number }[] = [];
 
   // Display
   private ballImg!: Phaser.GameObjects.Image;
@@ -354,7 +367,11 @@ export class CourseScene extends Phaser.Scene {
     panel = getPanel();
 
     const run = this.runMode ? session.run : null;
-    this.play = createPlay(course, tuning, { seed: this.runMode ? run!.current!.courseSeed : this.seed, ...(run && { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) }) });
+    const urlMod = testCourseMod();
+    this.play = createPlay(course, tuning, {
+      seed: this.runMode ? run!.current!.courseSeed : this.seed,
+      ...(run ? { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) } : urlMod ? { loadout: { courseMod: urlMod } } : {}),
+    });
     this.runReported = false;
     this.setRunPanel();
     // Owner, 2026-11-19: a boss fight opens with the boss's introduction card.
@@ -386,6 +403,8 @@ export class CourseScene extends Phaser.Scene {
     settings.top = 0;
     settings.side = 0;
     this.messageQueue = [];
+    // Round 2b: a course modifier is announced as the course opens.
+    if (this.play.courseMod) this.queueMessage(courseModBanner(this.play.courseMod), 0xf8a040, 4000);
     this.message = null;
     this.endScreen = null;
     this.statusKey = '';
@@ -474,6 +493,37 @@ export class CourseScene extends Phaser.Scene {
   private syncScenery(): void {
     const show = panel?.showScenery ?? true;
     for (const img of this.sceneryImgs) if (img.visible !== show) img.setVisible(show);
+  }
+
+  /**
+   * Darkness (round 2b sheet section 3): the screen darkens away from the ball.
+   * Looks only; the rule part is the shorter aim guide (a stat).
+   */
+  private darkness: Phaser.GameObjects.Image | null = null;
+  private drawDarkness(): void {
+    if (this.play?.courseMod?.id !== 'darkness') {
+      this.darkness?.setVisible(false);
+      return;
+    }
+    if (!this.darkness || !this.darkness.active) {
+      // A smooth fade from clear round the ball to dark, made once (a display effect, not game art).
+      const key = 'darkness-vignette';
+      if (!this.textures.exists(key)) {
+        const size = 1024;
+        const tex = this.textures.createCanvas(key, size, size)!;
+        const ctx = tex.getContext();
+        const grad = ctx.createRadialGradient(size / 2, size / 2, 30, size / 2, size / 2, 130);
+        grad.addColorStop(0, 'rgba(5,5,16,0)');
+        grad.addColorStop(1, 'rgba(5,5,16,0.85)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+        tex.refresh();
+      }
+      this.darkness = this.add.image(0, 0, key).setDepth(OVERLAY_DEPTH - 40);
+    }
+    const b = ballNow(this.play);
+    const p = project(b.x, b.y, b.z / STEP_HEIGHT);
+    this.darkness.setVisible(true).setPosition(Math.round(p.x), Math.round(p.y));
   }
 
   /** The generated course for this seed and budget, if it has been made (kept for restarts). */
@@ -715,6 +765,7 @@ export class CourseScene extends Phaser.Scene {
 
   override update(_time: number, deltaMs: number): void {
     this.syncScenery();
+    this.drawDarkness();
     const k = this.keys;
     const step = (PAN_SPEED * deltaMs) / 1000;
     // Camera pan moved to I/J/K/L: the arrows and WASD aim (owner, 2026-11-14).
@@ -735,7 +786,7 @@ export class CourseScene extends Phaser.Scene {
     }
     if (!this.message && this.messageQueue.length) {
       const m = this.messageQueue.shift()!;
-      this.showMessage(m.text, m.color);
+      this.showMessage(m.text, m.color, m.ms);
     }
   }
 
@@ -1818,9 +1869,9 @@ export class CourseScene extends Phaser.Scene {
     }
   }
 
-  private queueMessage(text: string, color: number): void {
+  private queueMessage(text: string, color: number, ms?: number): void {
     if (this.messageQueue.some((m) => m.text === text)) return;
-    this.messageQueue.push({ text, color });
+    this.messageQueue.push({ text, color, ...(ms !== undefined && { ms }) });
   }
 
   /**
@@ -1972,7 +2023,7 @@ export class CourseScene extends Phaser.Scene {
     const wild = this.time.now < this.wildUntil ? Math.floor(this.time.now / 90) % ABILITY_IDS.length : -1;
     const usedUp = p.abilityUsed && !!p.shot;
     const shields = shieldsLeft(p);
-    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, shields, p.blueStars, p.acornSlices].join(',');
+    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, shields, p.blueStars, p.acornSlices, p.courseMod?.id ?? ''].join(',');
     if (key === this.statusKey) return;
     this.statusKey = key;
     this.statusHud?.destroy();
@@ -2015,6 +2066,7 @@ export class CourseScene extends Phaser.Scene {
       c.add(pixelText(this, manifest, starX + 34, barY, `${session.run.blueStars + p.blueStars}`, { color: 0x80c8ff }));
     }
     if (p.acornSlices > 0) c.add(pixelText(this, manifest, 270, 20, `ACORN +${p.acornSlices} SLICES`, { color: STAR_FILL, background: UI_BG }));
+    if (p.courseMod) c.add(pixelText(this, manifest, 270, 28, courseModLabel(p.courseMod), { color: 0xf8a040, background: UI_BG }));
     // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
     const slotX = bgW + 4;
     c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));
@@ -2103,11 +2155,11 @@ export class CourseScene extends Phaser.Scene {
     return { plan: '1 PULL OR AIM KEYS', pull: '1 PULL TO PLAN', set: '2 HOLD TO CHARGE', charge: '2 RELEASE!', flight: '-' }[this.phase];
   }
 
-  private showMessage(text: string, color: number): void {
+  private showMessage(text: string, color: number, ms = 1400): void {
     this.message?.destroy();
     this.message = pixelText(this, manifest, 0, 46, text, { color, background: UI_BG }).setScrollFactor(0).setDepth(HUD_DEPTH);
     this.message.x = Math.round((VIEW_WIDTH - this.message.width) / 2);
-    this.messageUntil = this.time.now + 1400;
+    this.messageUntil = this.time.now + ms;
   }
 
   // -------------------------------------------------------------------------

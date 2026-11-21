@@ -99,6 +99,8 @@ export interface RegionDef {
   readonly par: readonly { readonly stat: StatId; readonly amount: number }[];
   /** Round 2a (owner, 2026-11-21): the detail dial: set pieces, extra obstacles and scenery for the course's size. */
   readonly detail: DetailDef;
+  /** Round 2b (sheet section 3): chance a course or hard course rolls a course modifier. Never on boss fights. */
+  readonly courseModChance: number;
   /**
    * Owner, 2026-11-19 (round 1, option C): gear the course check's bot wears in
    * this region, one item per category (gear ids), or none.
@@ -153,10 +155,10 @@ export const DETAIL: readonly DetailDef[] = [
 ];
 
 export const REGIONS: readonly RegionDef[] = [
-  { areas: { start: 2, every: 2, max: 5 }, areaSize: [8, 14], threat: { start: 8, perNode: 2, cap: 30 }, maxEnemies: 10, toughness: [], bosses: ['stagwarden'], oddsColumn: 0, par: [], detail: DETAIL[0]! },
+  { areas: { start: 2, every: 2, max: 5 }, areaSize: [8, 14], threat: { start: 8, perNode: 2, cap: 30 }, maxEnemies: 10, toughness: [], bosses: ['stagwarden'], oddsColumn: 0, par: [], detail: DETAIL[0]!, courseModChance: 0 },
   // Owner, 2026-11-18 (option A): threat capped at 36 (was 45), so courses can be made in time.
   // Owner, 2026-11-21: smaller steps up from region one: 3 to 5 areas, +1 every 3 nodes, areas 8 to 15 tiles (was 3 to 6, every 2, 9 to 15).
-  { areas: { start: 3, every: 3, max: 5 }, areaSize: [8, 15], threat: { start: 18, perNode: 3, cap: 36 }, maxEnemies: 14, toughness: [{ stat: 'health', amount: 1 }], bosses: ['gloamhorn'], oddsColumn: 2, detail: DETAIL[1]!,
+  { areas: { start: 3, every: 3, max: 5 }, areaSize: [8, 15], threat: { start: 18, perNode: 3, cap: 36 }, maxEnemies: 14, toughness: [{ stat: 'health', amount: 1 }], bosses: ['gloamhorn'], oddsColumn: 2, detail: DETAIL[1]!, courseModChance: 0.2,
     par: [
       { stat: 'maxShots', amount: 1 },
       { stat: 'hitDamage', amount: 1 },
@@ -176,6 +178,7 @@ export const REGIONS: readonly RegionDef[] = [
     ],
     bosses: ['brood-queen'],
     detail: DETAIL[2]!,
+    courseModChance: 0.3,
     oddsColumn: 3,
     // Owner, 2026-11-19 (round 1, option C): the bot also gets the Deep Breath and Tough Shell boosts on top
     // (max shots +1, max health +1; was +2 and +2) and the best gear for clearing a course.

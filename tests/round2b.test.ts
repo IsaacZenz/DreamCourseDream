@@ -12,7 +12,9 @@ import { groundAt, startBody, stepShot, type ShotCommand } from '../src/sim/ball
 import { generateAttempt } from '../src/gen/generate';
 import { generateCourse } from '../src/gen/validate';
 import { botShotsFor } from '../src/content/run';
-import { mixFor, regionDefFor } from '../src/sim/run';
+import { budgetFor, choices, courseJobFor, courseModFor, createRun, mixFor, regionDefFor, typeOf } from '../src/sim/run';
+import { generateRunMap } from '../src/gen/runMap';
+import { COURSE_MODS, type CourseMod } from '../src/content/modifiers';
 import type { JourneySize } from '../src/content/gen';
 
 /** A late course's size in region n (after 6 counted nodes), with its detail dial. */
@@ -327,4 +329,73 @@ describe('generated switches (sheet sections 2.2 to 2.4)', () => {
     expect(res.fallback).toBe(false);
     expect(res.course.objects.some((o) => o.id === 'switch')).toBe(true);
   }, 120_000);
+});
+
+// ---------------------------------------------------------------------------
+// Course modifiers (sheet section 3)
+
+describe('course modifiers (sheet section 3)', () => {
+  const flight = (mod: CourseMod | null, cmd: ShotCommand) => {
+    const c = field(40, 40);
+    const p = createPlay(c, T, { seed: 'm', loadout: { courseMod: mod } });
+    p.ball = { ...p.ball, x: 20.5, y: 5.5 };
+    takeShot(p, cmd);
+    const trace: { x: number; y: number; z: number; grounded: boolean }[] = [];
+    for (let i = 0; i < 4000 && p.shot; i++) {
+      tick(p);
+      if (p.shot) trace.push({ ...p.shot.ball });
+    }
+    return { p, trace };
+  };
+  const along = shot({ type: 'lofted', power: 0.6, angle: Math.PI / 2 });
+
+  it('wind pushes the ball sideways in the air', () => {
+    const calm = flight(null, along).trace;
+    const windy = flight({ id: 'wind', dir: 'se' }, along).trace;
+    const land = (t: typeof calm) => t[t.findIndex((b, i) => i > 5 && b.grounded)]!;
+    expect(land(windy).x - land(calm).x).toBeGreaterThan(0.2);
+  });
+
+  it('wind does not push a rolling ball', () => {
+    const roll = shot({ power: 0.6, angle: Math.PI / 2 });
+    expect(flight({ id: 'wind', dir: 'se' }, roll).p.ball.x).toBeCloseTo(flight(null, roll).p.ball.x, 6);
+  });
+
+  it('low gravity: higher and longer shots', () => {
+    // Height above the field's ground (it stands 2 tiles up).
+    const peak = (t: { z: number }[]) => Math.max(...t.map((b) => b.z)) - 2;
+    expect(peak(flight({ id: 'lowGravity' }, along).trace)).toBeGreaterThan(peak(flight(null, along).trace) * 1.4);
+  });
+
+  it('darkness halves the aim guide', () => {
+    const p = createPlay(field(14, 5), T, { seed: 'd', loadout: { courseMod: { id: 'darkness' } } });
+    expect(p.stats.get('guideLength')).toBeCloseTo(0.5);
+  });
+
+  it('none in region 1 or on boss fights; about 20% of courses in region 2 and 30% in region 3; the cost comes off the budget', () => {
+    const rate = (region: number) => {
+      let n = 0;
+      let with_ = 0;
+      for (let i = 0; i < 300; i++) {
+        const run = createRun(`MOD${i}`, generateRunMap(`MOD${i}`));
+        run.region = region;
+        for (const node of choices(run)) {
+          if (typeOf(run, node) === 'boss') expect(courseModFor(run, node)).toBeNull();
+          if (typeOf(run, node) !== 'course') continue;
+          n++;
+          const mod = courseModFor(run, node);
+          if (mod) {
+            with_++;
+            const job = courseJobFor(run, node)!;
+            expect(job.budget).toBe(Math.max(GEN.minBudget, budgetFor(run, 'course') - COURSE_MODS.get(mod.id)!.cost));
+            expect(job.opts.loadout.courseMod).toEqual(mod);
+          }
+        }
+      }
+      return with_ / n;
+    };
+    expect(rate(1)).toBe(0);
+    expect(rate(2)).toBeCloseTo(0.2, 1);
+    expect(rate(3)).toBeCloseTo(0.3, 1);
+  });
 });

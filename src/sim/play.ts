@@ -26,6 +26,7 @@ import { ABILITIES, ABILITY_IDS, type AbilityDef } from '../content/abilities.ts
 import { CHARACTERS, DEFAULT_CHARACTER, type CharacterDef } from '../content/characters.ts';
 import { ACORN_LIST, ACORNS, FOOD, FOODS, acornWeights } from '../content/consumables.ts';
 import { UPGRADES } from '../content/run.ts';
+import { COURSE_MODS, type CourseMod } from '../content/modifiers.ts';
 import { GEAR, GEAR_CATEGORIES, NO_GEAR, RARITY_ODDS, type GearCategory, type GearEffect, type GearSlots } from '../content/gear.ts';
 import {
   ELEMENT_RULES,
@@ -527,6 +528,8 @@ export interface PlayState {
   foodPending: string[];
   foods: { id: string; eaten: boolean }[];
   bagRoom: number;
+  /** Round 2b: this course's modifier, for the display. */
+  readonly courseMod: CourseMod | null;
   /** Fortune's Mail: failed rolls spun again this course. */
   respinsUsed: number;
   /** Hot Streak Charm: successful rolls in shot number `streakShot`. */
@@ -579,6 +582,8 @@ export interface Loadout {
   readonly acorns?: readonly string[];
   /** Round 2a: free slots in the food bag. Left out: a full bag's worth. */
   readonly bagRoom?: number;
+  /** Round 2b: this course's modifier (wind, low gravity, darkness), or none. The bot plays with it too. */
+  readonly courseMod?: CourseMod | null;
   /** Rarity weights (in the order of RARITIES) for things dropped on this course, such as acorns. Region 1's early odds if left out. */
   readonly rarityWeights?: readonly number[];
 }
@@ -684,6 +689,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
   const stats = new StatSheet(character.stats);
   const lo = opts.loadout ?? {};
   for (const m of lo.modifiers ?? []) stats.add(m);
+  for (const m of courseModModifiers(lo.courseMod ?? null)) stats.add(m);
   const startGear = lo.gear ?? NO_GEAR;
   for (const c of GEAR_CATEGORIES) {
     const g = startGear[c] ? GEAR.get(startGear[c]!) : undefined;
@@ -743,6 +749,7 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     foodPending: [],
     foods: [],
     bagRoom: lo.bagRoom ?? FOOD.bagSlots,
+    courseMod: lo.courseMod ?? null,
     respinsUsed: 0,
     streakShot: -1,
     streak: 0,
@@ -1112,7 +1119,29 @@ export function canShoot(play: PlayState): boolean {
 
 /** Shot power and bounce boost from the stat sheet. */
 function scales(play: PlayState) {
-  return { power: play.stats.get('shotPower') * (inWater(play) ? play.tuning.waterShotPower : 1), boost: play.stats.get('bounceBoost'), frozen: play.frozen, iceRoll: ballIceRoll(play) };
+  return {
+    power: play.stats.get('shotPower') * (inWater(play) ? play.tuning.waterShotPower : 1),
+    boost: play.stats.get('bounceBoost'),
+    frozen: play.frozen,
+    iceRoll: ballIceRoll(play),
+    gravity: play.stats.get('gravity'),
+    windX: play.stats.get('windX'),
+    windY: play.stats.get('windY'),
+  };
+}
+
+/** A course modifier as stat modifiers on the ball (round 2b sheet section 3). Wind blows along its direction. */
+export function courseModModifiers(mod: CourseMod | null): Modifier[] {
+  const def = mod ? COURSE_MODS.get(mod.id) : undefined;
+  if (!def) return [];
+  const source = { kind: 'course' as const, id: def.id };
+  const out: Modifier[] = def.stats.map((m) => ({ ...m, source, duration: { kind: 'course' } }));
+  if (def.windAccel && mod!.dir) {
+    const [dx, dy] = DIRECTION_VECTORS[mod!.dir];
+    if (dx) out.push({ stat: 'windX', op: 'add', amount: dx * def.windAccel, source, duration: { kind: 'course' } });
+    if (dy) out.push({ stat: 'windY', op: 'add', amount: dy * def.windAccel, source, duration: { kind: 'course' } });
+  }
+  return out;
 }
 
 /** The resting ball is in water: its next shot is weaker (owner, 2026-11-15). */
