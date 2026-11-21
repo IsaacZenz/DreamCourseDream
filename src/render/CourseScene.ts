@@ -16,6 +16,8 @@ import {
   canUseAbility,
   createPlay,
   debugWin,
+  decideFood,
+  settleFood,
   drainLog,
   equipGear,
   isBoss,
@@ -44,7 +46,8 @@ import { placeGear } from '../gen/placeGear';
 import { mixFor, regionDefFor, upcomingJobs, addUpgrade, bossBlueStars, debugSetCountdown, enemyModifiersFor, finishCourse, genOptionsFor, loadoutOf, rewardFor, bossHealthFor } from '../sim/run';
 import { ARENAS, arenaData } from '../content/arenas';
 import { activeRun, newRunSeed, persist, session, startRun, type RunCourse } from './runSession';
-import { ACORNS, FOODS } from '../content/consumables';
+import { ACORNS, FOOD, FOODS } from '../content/consumables';
+import { foodDesc } from './bagMenu';
 import { jobKey, madeCourse, prefetch, want, type Made } from './genQueue';
 import { BOSSES } from '../content/bosses';
 import { BLUE_STARS } from '../content/progress';
@@ -523,7 +526,8 @@ export class CourseScene extends Phaser.Scene {
     if (!this.runMode || this.runReported || !run || run.status !== 'course') return;
     this.runReported = true;
     const p = this.play;
-    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, blueStars: p.blueStars, found: p.found });
+    settleFood(p);
+    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, blueStars: p.blueStars, foods: p.foods });
     session.course = null;
     // A boss win deposits its blue stars at once (owner, 2026-11-17): save them now.
     persist();
@@ -1226,6 +1230,12 @@ export class CourseScene extends Phaser.Scene {
     this.accumulator = Math.min(this.accumulator + dt * speed, 0.25 * speed);
     let stepped = false;
     while (this.accumulator >= DT && this.play.status === 'playing') {
+      // Round 2a (owner, 2026-11-21): picked-up food asks "eat now or stash it?" and the world waits.
+      if (this.play.foodPending.length) {
+        this.accumulator = 0;
+        this.showFoodPrompt();
+        break;
+      }
       // Bot replay (B key): take its next shot on exactly the clock step it took it.
       const move = this.watching && canShoot(this.play) ? this.botMoves[this.botNext] : undefined;
       if (move) {
@@ -1474,7 +1484,16 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage(`${(ACORNS.get(e.item)?.name ?? 'ACORN').toUpperCase()}: +${e.slices} WHEEL SLICES THIS COURSE`, 0xf8d030);
           break;
         case 'foodFound':
-          this.queueMessage(`FOUND ${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()}: IT GOES IN YOUR BAG AFTER THE COURSE`, 0xf8d030);
+          // The eat-or-stash card opens from the update loop (the world waits for the answer).
+          break;
+        case 'foodEaten':
+          this.queueMessage(
+            e.auto ? `BAG FULL: ATE THE ${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()} NOW` : `ATE THE ${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()}`,
+            0xf8d030,
+          );
+          break;
+        case 'foodStashed':
+          this.queueMessage(`${(FOODS.get(e.item)?.name ?? 'FOOD').toUpperCase()} STASHED IN YOUR BAG`, 0xf8d030);
           break;
         case 'slamMark':
           this.queueMessage('THE WARDEN WINDS UP: GET OUT OF THE RING!', BAD);
@@ -1618,6 +1637,52 @@ export class CourseScene extends Phaser.Scene {
    * for about 3 seconds; any key skips it (and does nothing else). A
    * placeholder for the Milestone 9 cutscene.
    */
+  /**
+   * Food picked up on the course (round 2a; owner, 2026-11-21): eat it now (it
+   * works for the rest of this course, which counts as its first) or stash it
+   * in the bag. A full bag never asks: the food is eaten at once.
+   */
+  private foodCard: Phaser.GameObjects.Container | null = null;
+  private showFoodPrompt(): void {
+    if (this.foodCard) return;
+    const id = this.play.foodPending[0];
+    const f = id ? FOODS.get(id) : undefined;
+    if (!id || !f) return;
+    const w = 220;
+    const h = 92;
+    const c = this.add.container(Math.round((VIEW_WIDTH - w) / 2), Math.round((VIEW_HEIGHT - h) / 2)).setScrollFactor(0).setDepth(HUD_DEPTH + 100);
+    this.foodCard = c;
+    c.add(this.add.rectangle(0, 0, w, h, UI_BG, 0.96).setOrigin(0, 0).setStrokeStyle(2, 0xf8d030));
+    const line = (y: number, t: string, color: number) => {
+      const txt = pixelText(this, manifest, 0, y, t, { color });
+      txt.setX(Math.round((w - txt.width) / 2));
+      c.add(txt);
+    };
+    line(7, `YOU FOUND ${f.name.toUpperCase()}!`, 0xf8d030);
+    c.add(this.makeSprite(f.icon).setPosition(w / 2, 34).setScale(2));
+    line(44, foodDesc(id), UI_TEXT);
+    line(54, 'EATEN NOW, IT WORKS FROM NOW ON. LASTS 1 TO 3 COURSES', UI_DIM);
+    line(68, 'E: EAT IT NOW', GOOD);
+    line(78, `S OR ENTER: STASH IT (BAG ${FOOD.bagSlots - this.play.bagRoom}/${FOOD.bagSlots})`, UI_TEXT);
+    const close = (eatIt: boolean) => {
+      window.removeEventListener('keydown', onKey, true);
+      c.destroy();
+      this.foodCard = null;
+      decideFood(this.play, eatIt);
+      this.showEvents(drainLog(this.play));
+    };
+    // Caught before the game sees it, so the key does nothing else.
+    const onKey = (ev: KeyboardEvent) => {
+      const k = ev.key.toLowerCase();
+      if (k !== 'e' && k !== 's' && k !== 'enter') return;
+      ev.stopImmediatePropagation();
+      ev.preventDefault();
+      close(k === 'e');
+    };
+    window.addEventListener('keydown', onKey, true);
+    this.events.once('shutdown', () => window.removeEventListener('keydown', onKey, true));
+  }
+
   private showBossIntro(bossId: string, region: number): void {
     const def = BOSSES.get(bossId);
     const enemy = OBJECTS.get(bossId);
@@ -1914,7 +1979,7 @@ export class CourseScene extends Phaser.Scene {
       icon('star-blue', starX + 22, 9);
       c.add(pixelText(this, manifest, starX + 34, barY, `${session.run.blueStars + p.blueStars}`, { color: 0x80c8ff }));
     }
-    if (p.acornSlices > 0) c.add(pixelText(this, manifest, 2, 20, `ACORN +${p.acornSlices} SLICES`, { color: STAR_FILL, background: UI_BG }));
+    if (p.acornSlices > 0) c.add(pixelText(this, manifest, 270, 20, `ACORN +${p.acornSlices} SLICES`, { color: STAR_FILL, background: UI_BG }));
     // Ability slot: the icon and name of the held ability (greyed once used this shot). A Wild flicks through them first.
     const slotX = bgW + 4;
     c.add(this.add.rectangle(slotX, 0, 62, 19, UI_BG, 0.85).setOrigin(0, 0));

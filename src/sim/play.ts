@@ -24,7 +24,8 @@
  */
 import { ABILITIES, ABILITY_IDS, type AbilityDef } from '../content/abilities.ts';
 import { CHARACTERS, DEFAULT_CHARACTER, type CharacterDef } from '../content/characters.ts';
-import { ACORN_LIST, ACORNS, acornWeights } from '../content/consumables.ts';
+import { ACORN_LIST, ACORNS, FOOD, FOODS, acornWeights } from '../content/consumables.ts';
+import { UPGRADES } from '../content/run.ts';
 import { GEAR, GEAR_CATEGORIES, NO_GEAR, RARITY_ODDS, type GearCategory, type GearEffect, type GearSlots } from '../content/gear.ts';
 import {
   ELEMENT_RULES,
@@ -353,8 +354,12 @@ export type PlayEvent =
   | { kind: 'blueStar'; x: number; y: number }
   /** An acorn eaten before the course is working: extra slices for this course. */
   | { kind: 'acorn'; item: string; slices: number }
-  /** Round 2a: food picked up on a course. It cannot be eaten here; it goes into the bag afterwards. */
+  /** Round 2a (owner, 2026-11-21): food picked up on a course; the player chooses to eat it now or stash it (decideFood). */
   | { kind: 'foodFound'; item: string }
+  /** Food eaten on the course: chosen, or at once because the bag was full (`auto`). */
+  | { kind: 'foodEaten'; item: string; auto: boolean }
+  /** Food put in the bag for later. */
+  | { kind: 'foodStashed'; item: string }
   /** A boss marked a ring where its next slam lands (Milestone 7). */
   | { kind: 'slamMark'; enemy: string; x: number; y: number; r: number }
   /** A boss's slam landed; `hit` if the ball was inside the ring on the ground. */
@@ -472,8 +477,14 @@ export interface PlayState {
   leechShot: number;
   /** Owner, 2026-11-17: extra filled slices on success wheels from acorns this course. */
   acornSlices: number;
-  /** Round 2a: food picked up on this course (food ids), for the bag afterwards. */
-  found: string[];
+  /**
+   * Round 2a (owner, 2026-11-21): food picked up on this course. `pending`
+   * waits for the player's choice (eat now or stash); `foods` is what was
+   * decided, for the run afterwards. `bagRoom` is how many more fit in the bag.
+   */
+  foodPending: string[];
+  foods: { id: string; eaten: boolean }[];
+  bagRoom: number;
   /** Fortune's Mail: failed rolls spun again this course. */
   respinsUsed: number;
   /** Hot Streak Charm: successful rolls in shot number `streakShot`. */
@@ -524,6 +535,8 @@ export interface Loadout {
   readonly modifiers?: readonly Modifier[];
   /** Round 2a: acorns eaten and still working (ids; the same one twice counts twice). */
   readonly acorns?: readonly string[];
+  /** Round 2a: free slots in the food bag. Left out: a full bag's worth. */
+  readonly bagRoom?: number;
   /** Rarity weights (in the order of RARITIES) for things dropped on this course, such as acorns. Region 1's early odds if left out. */
   readonly rarityWeights?: readonly number[];
 }
@@ -679,7 +692,9 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     echoShot: -1,
     leechShot: -1,
     acornSlices: 0,
-    found: [],
+    foodPending: [],
+    foods: [],
+    bagRoom: lo.bagRoom ?? FOOD.bagSlots,
     respinsUsed: 0,
     streakShot: -1,
     streak: 0,
@@ -1825,6 +1840,51 @@ function wake(play: PlayState, e: EnemyState): void {
 }
 
 /** Stars to the meter and the wallet. Crown of Plenty doubles the wallet's share, except for a raised flag (its star was already counted once). */
+/**
+ * Food eaten on the course (round 2a; owner, 2026-11-21): it works at once for
+ * the rest of this course, which counts as its first. What lasts longer is
+ * kept by the run afterwards (play.foods). Garlic's countdown raise is done by
+ * the run.
+ */
+function eatFoodNow(play: PlayState, id: string, auto: boolean): void {
+  const f = FOODS.get(id);
+  if (!f) return;
+  if (f.kind === 'acorn') {
+    const a = ACORNS.get(id);
+    if (a) {
+      play.acornSlices += a.slices;
+      play.log.push({ kind: 'acorn', item: a.id, slices: a.slices });
+    }
+  } else if (f.kind === 'heal') {
+    play.health = Math.min(play.stats.get('maxHealth'), play.health + FOOD.appleHeal);
+  } else if (f.kind === 'stat') {
+    const u = UPGRADES.get(id);
+    if (u) {
+      play.stats.add({ stat: u.stat, op: u.op, amount: u.amount, source: { kind: 'run', id: `food-now:${id}:${play.foods.length}` }, duration: { kind: 'run' } });
+      play.health = Math.min(play.stats.get('maxHealth'), play.health + u.heal);
+    }
+  }
+  play.foods.push({ id, eaten: true });
+  play.log.push({ kind: 'foodEaten', item: id, auto });
+}
+
+/** The player's answer for the oldest food waiting: eat it now, or put it in the bag. */
+export function decideFood(play: PlayState, eatIt: boolean): void {
+  const id = play.foodPending.shift();
+  if (!id) return;
+  if (eatIt || play.bagRoom <= 0) eatFoodNow(play, id, !eatIt);
+  else {
+    play.bagRoom--;
+    play.foods.push({ id, eaten: false });
+    play.log.push({ kind: 'foodStashed', item: id });
+  }
+}
+
+/** Food still waiting for an answer when the course ends goes in the bag if it fits, otherwise it is eaten. */
+export function settleFood(play: PlayState): void {
+  while (play.foodPending.length) decideFood(play, false);
+}
+
 function addStars(play: PlayState, n: number, x: number, y: number, fromFlag = false): void {
   const wallet = !fromFlag && gearFx(play, 'walletDouble').length ? 2 : 1;
   for (let i = 0; i < n; i++) {
@@ -2506,9 +2566,12 @@ function collectPickups(play: PlayState): void {
       play.blueStars++;
       play.log.push({ kind: 'blueStar', x: p.x, y: p.y });
     } else if (p.def.effect === 'acorn') {
-      // Owner, 2026-11-21: nothing is eaten during a course. The acorn goes into the bag afterwards.
-      play.found.push(p.def.id);
-      play.log.push({ kind: 'foodFound', item: p.def.id });
+      // Owner, 2026-11-21: picked-up food asks "eat now or stash it?"; with the bag full it is eaten at once.
+      if (play.bagRoom - play.foodPending.length <= 0) eatFoodNow(play, p.def.id, true);
+      else {
+        play.foodPending.push(p.def.id);
+        play.log.push({ kind: 'foodFound', item: p.def.id });
+      }
     } else if (p.def.effect === 'wild') {
       // Owner, 2026-11-14: a random ability, never the one already held.
       const options = ABILITY_IDS.filter((id) => id !== play.ability);

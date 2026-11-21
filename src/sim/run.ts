@@ -176,8 +176,6 @@ export interface RunState {
   bag: BagItem[];
   /** Foods eaten and still working. */
   fed: FedFood[];
-  /** Food found on the last course with no room in the bag: the player swaps it in or leaves it. */
-  found: BagItem[];
   /** The town's food shop (the gear shop is `shop`). */
   foodShop: ShopState | null;
   /** The boss reward: a pick of 1 from 3 gear items (Milestone 7 sheet section 2.7). */
@@ -227,7 +225,6 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     lastTownVisited: false,
     bag: [],
     fed: [],
-    found: [],
     foodShop: null,
     reward: null,
     lastArena: start.lastArena ?? null,
@@ -288,7 +285,7 @@ function hasRunEffect(run: RunState, kind: string): boolean {
 /** What the ball brings into a course. */
 export function loadoutOf(run: RunState): Loadout {
   const acorns = run.fed.filter((f) => FOODS.get(f.id)?.kind === 'acorn').map((f) => f.id);
-  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run), acorns, rarityWeights: dropWeights(run) };
+  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run), acorns, bagRoom: FOOD.bagSlots - run.bag.length, rarityWeights: dropWeights(run) };
 }
 
 /** Rarity weights for things dropped on a course (acorns): the run's odds column after drop luck. */
@@ -626,8 +623,8 @@ export interface CourseOutcome {
   readonly gear: GearSlots;
   /** Blue stars picked up on the course (carried). */
   readonly blueStars?: number;
-  /** Round 2a: food picked up on the course (acorn ids); it goes into the bag afterwards. */
-  readonly found?: readonly string[];
+  /** Round 2a: food picked up on the course: eaten there (it keeps working afterwards if it lasts) or stashed in the bag. */
+  readonly foods?: readonly { readonly id: string; readonly eaten: boolean }[];
 }
 
 /** Move the carried blue stars to the stash (owner, 2026-11-17: at a town, or on beating a boss). */
@@ -678,7 +675,7 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
     return;
   }
   run.totals.courses++;
-  afterCourse(run, out.found ?? []);
+  afterCourse(run, out.foods ?? []);
   if (cur.type === 'course') run.blueStars += BLUE_STARS.course;
   else if (cur.type === 'hard') run.blueStars += BLUE_STARS.hard;
   run.wallet += rewardFor(cur.type);
@@ -987,26 +984,25 @@ export function eat(run: RunState, i: number): string | null {
 
 /**
  * After a course is won: every food eaten counts one course down and stops
- * working at 0 (max health trimmed); food found on the course goes into the
- * bag, or waits in `found` for the player to swap it in or leave it.
+ * working at 0 (max health trimmed). Food picked up on the course (owner,
+ * 2026-11-21): stashed food goes into the bag; food eaten there has already
+ * had this course as its first, and keeps working for the rest it lasts.
  */
-function afterCourse(run: RunState, found: readonly string[]): void {
+function afterCourse(run: RunState, foods: readonly { readonly id: string; readonly eaten: boolean }[]): void {
   for (const f of run.fed) f.left--;
   run.fed = run.fed.filter((f) => f.left > 0);
-  clampHealth(run);
   const rng = rngFor(run, `found:${run.region}:${run.counted}:${run.totals.courses}`);
-  for (const id of found) {
-    const item: BagItem = { id, courses: isInstantFood(id) ? 0 : rollCourses(rng) };
-    if (run.bag.length < FOOD.bagSlots) run.bag.push(item);
-    else run.found.push(item);
+  for (const { id, eaten } of foods) {
+    const courses = isInstantFood(id) ? 0 : rollCourses(rng);
+    if (!eaten && run.bag.length < FOOD.bagSlots) run.bag.push({ id, courses });
+    else if (FOODS.get(id)?.kind === 'raise') {
+      if (run.raises < RUN.maxRaises) {
+        run.countdown++;
+        run.raises++;
+      }
+    } else if (courses > 1) run.fed.push({ id, left: courses - 1 });
   }
-}
-
-/** The bag was full when food was found: put it in place of bag item `replace`, or leave it (null). */
-export function keepFound(run: RunState, replace: number | null): void {
-  const item = run.found.shift();
-  if (!item || replace === null || !run.bag[replace]) return;
-  run.bag[replace] = item;
+  clampHealth(run);
 }
 
 // ---------------------------------------------------------------------------

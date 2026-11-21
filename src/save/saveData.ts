@@ -59,7 +59,7 @@ const MIGRATIONS: readonly ((old: Obj) => Obj)[] = [
     if (!isObj(run)) return { ...old, version: 3 };
     const { pocket, ...rest } = run;
     const shop = isObj(run.shop) ? { ...run.shop, offers: Array.isArray(run.shop.offers) ? run.shop.offers.filter((o) => isObj(o) && o.kind === 'gear') : [] } : run.shop;
-    return { ...old, version: 3, run: { ...rest, shop, bag: typeof pocket === 'string' ? [{ id: pocket, courses: 1 }] : [], fed: [], found: [], foodShop: null } };
+    return { ...old, version: 3, run: { ...rest, shop, bag: typeof pocket === 'string' ? [{ id: pocket, courses: 1 }] : [], fed: [], foodShop: null } };
   },
 ];
 
@@ -146,8 +146,8 @@ function readRun(v: unknown): RunSnapshot | null {
   for (const k of ['upgrades', 'bought', 'totals', 'permanent', 'gear', 'burrow']) if (!isObj(v[k])) return null;
   if (!isStrOrNull(v.at) || !isStrOrNull(v.ability)) return null;
   // Round 2a: the food bag and the foods eaten.
-  if (!Array.isArray(v.bag) || !Array.isArray(v.fed) || !Array.isArray(v.found)) return null;
-  for (const b of [...v.bag, ...v.found]) if (!isObj(b) || typeof b.id !== 'string' || !FOODS.has(b.id) || !isNum(b.courses)) return null;
+  if (!Array.isArray(v.bag) || !Array.isArray(v.fed)) return null;
+  for (const b of v.bag) if (!isObj(b) || typeof b.id !== 'string' || !FOODS.has(b.id) || !isNum(b.courses)) return null;
   for (const f of v.fed) if (!isObj(f) || typeof f.id !== 'string' || !FOODS.has(f.id) || !isNum(f.left)) return null;
   if (v.foodShop !== null && v.foodShop !== undefined && (!isObj(v.foodShop) || !Array.isArray(v.foodShop.offers))) return null;
   for (const c of GEAR_CATEGORIES) if (gearOrNull((v.gear as Obj)[c], c) === undefined) return null;

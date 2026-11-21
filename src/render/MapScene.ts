@@ -93,12 +93,11 @@ export class MapScene extends Phaser.Scene {
     this.setProgressPanel(run);
     if (run.status === 'won' || run.status === 'lost') this.drawSummary(run);
     if (run.status === 'reward') this.drawReward(run);
-    // Round 2a: food found on the last course with a full bag: swap it in or leave it.
+    // Round 2a: the food bag (B).
     this.bag = new BagMenu(this, () => {
       this.bag.draw(run);
       this.drawPanel(run);
     });
-    if (run.found.length && run.status === 'map') this.bag.show(run);
   }
 
   private bag!: BagMenu;
@@ -317,7 +316,7 @@ export class MapScene extends Phaser.Scene {
     kb.on('keydown-B', () => {
       if (run.status === 'won' || run.status === 'lost') this.scene.start('burrow');
       else if (run.status === 'map') {
-        if (this.bag.open && !run.found.length) this.bag.key(run, 'back');
+        if (this.bag.open) this.bag.key(run, 'back');
         else if (!this.bag.open) this.bag.show(run);
       }
     });

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { FOOD, FOODS } from '../content/consumables';
 import { UPGRADES } from '../content/run';
-import { cannotEat, eat, keepFound, type BagItem, type RunState } from '../sim/run';
+import { cannotEat, eat, type BagItem, type RunState } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
 import { shared } from './shared';
@@ -31,9 +31,9 @@ export function lastsText(item: BagItem): string {
 
 /**
  * The food bag (round 2a; owner, 2026-11-21): three slots, eaten between
- * courses (on the map or in a town), any number at a time. Also asks what to
- * do with food found on a course when the bag was full. Opened with B; the
- * scene passes its keys here while it is open.
+ * courses (on the map or in a town), any number at a time. Food picked up on
+ * a course is eaten or stashed there (CourseScene). Opened with B; the scene
+ * passes its keys here while it is open.
  */
 export class BagMenu {
   open = false;
@@ -53,7 +53,7 @@ export class BagMenu {
   show(run: RunState): void {
     this.open = true;
     this.sel = 0;
-    this.note = run.found.length ? '' : run.bag.length ? '' : 'YOUR BAG IS EMPTY. BUY FOOD IN A TOWN.';
+    this.note = run.bag.length ? '' : 'YOUR BAG IS EMPTY. BUY FOOD IN A TOWN.';
     this.redraw();
   }
 
@@ -62,18 +62,8 @@ export class BagMenu {
     if (!this.open) return false;
     const n = Math.max(1, run.bag.length);
     if (k === 'left' || k === 'right') this.sel = (this.sel + (k === 'left' ? -1 : 1) + n) % n;
-    else if (k === 'back') {
-      if (run.found.length) {
-        const f = run.found[0]!;
-        keepFound(run, null);
-        this.say(`LEFT THE ${FOODS.get(f.id)?.name.toUpperCase()} BEHIND`, UI_DIM);
-      } else this.open = false;
-    } else if (run.found.length) {
-      const f = run.found[0]!;
-      const out = run.bag[this.sel];
-      keepFound(run, this.sel);
-      this.say(`SWAPPED ${FOODS.get(out?.id ?? '')?.name.toUpperCase()} FOR ${FOODS.get(f.id)?.name.toUpperCase()}`, GOOD);
-    } else {
+    else if (k === 'back') this.open = false;
+    else {
       const item = run.bag[this.sel];
       if (item) {
         const err = eat(run, this.sel);
@@ -81,7 +71,7 @@ export class BagMenu {
         this.sel = Math.min(this.sel, Math.max(0, run.bag.length - 1));
       }
     }
-    if (!run.found.length && !run.bag.length && k === 'ok') this.open = false;
+    if (!run.bag.length && k === 'ok') this.open = false;
     this.redraw();
     return true;
   }
@@ -106,14 +96,8 @@ export class BagMenu {
     this.box = c;
     c.add(s.add.rectangle(0, 0, w, h, UI_BG, 0.97).setOrigin(0, 0).setStrokeStyle(1, SELECT));
     const text = (x: number, y: number, t: string, color = UI_TEXT) => c.add(pixelText(s, m, x, y, t, { color }));
-    const found = run.found[0];
-    if (found) {
-      text(6, 5, `FOUND ${FOODS.get(found.id)?.name.toUpperCase()} (${lastsText(found)}). YOUR BAG IS FULL.`, SELECT);
-      text(6, 12, 'CHOOSE ONE TO SWAP OUT, OR ESC TO LEAVE IT BEHIND.', UI_DIM);
-    } else {
-      text(6, 5, `YOUR BAG (${run.bag.length}/${FOOD.bagSlots}). EAT ANY BEFORE A COURSE.`, GOOD);
-      text(6, 12, 'NOTHING CAN BE EATEN DURING A COURSE.', UI_DIM);
-    }
+    text(6, 5, `YOUR BAG (${run.bag.length}/${FOOD.bagSlots}). EAT ANY BEFORE A COURSE.`, GOOD);
+    text(6, 12, 'FOOD PICKED UP ON A COURSE: EAT IT THERE OR STASH IT.', UI_DIM);
     const cw = 92;
     for (let i = 0; i < FOOD.bagSlots; i++) {
       const item = run.bag[i];
@@ -132,10 +116,8 @@ export class BagMenu {
       text(x + 4, y + 42, lastsText(item), SELECT);
       // Pips: one per course it lasts.
       for (let k = 0; k < item.courses; k++) c.add(s.add.rectangle(x + 4 + k * 6, y + 52, 4, 4, SELECT, 1).setOrigin(0, 0));
-      if (!found) {
-        const why = cannotEat(run, i);
-        if (why) text(x + 4 + 22, y + 51, why, BAD);
-      }
+      const why = cannotEat(run, i);
+      if (why) text(x + 4 + 22, y + 51, why, BAD);
       const hit = s.add.rectangle(x, y, cw, 62, 0, 0).setOrigin(0, 0).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', () => {
         this.sel = i;
@@ -152,6 +134,6 @@ export class BagMenu {
       y += 7;
     }
     if (this.note) text(6, h - 20, this.note, this.noteColor);
-    text(6, h - 10, found ? 'LEFT/RIGHT: CHOOSE   ENTER: SWAP   ESC: LEAVE IT' : 'LEFT/RIGHT: CHOOSE   ENTER: EAT   ESC/B: CLOSE', UI_DIM);
+    text(6, h - 10, 'LEFT/RIGHT: CHOOSE   ENTER: EAT   ESC/B: CLOSE', UI_DIM);
   }
 }

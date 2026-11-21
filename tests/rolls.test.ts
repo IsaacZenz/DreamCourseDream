@@ -125,14 +125,14 @@ describe('acorns', () => {
     expect(wheelFor(p, p.enemies[0]!).filled).toBe(5);
   });
 
-  it('an acorn on the ground is not eaten on the course: it is kept for the bag (owner, 2026-11-21)', () => {
+  it('an acorn picked up waits for the choice: eat it now or stash it (owner, 2026-11-21)', () => {
     const p = createPlay(field({ objects: [{ id: 'snoozegrub', at: [8, 2] }, { id: 'star-acorn', at: [4, 2] }] }), T, { seed: 'b', loadout: { gear: weapon('bonk-knob') } });
     p.ball = { ...p.ball, x: 1.5, y: 2.5 };
     takeShot(p, { angle: 0, power: 0.4, type: 'ground', topSpin: 0, sideSpin: 0 });
     runShot(p);
     expect(drainLog(p)).toContainEqual({ kind: 'foodFound', item: 'star-acorn' });
     expect(p.acornSlices).toBe(0);
-    expect(p.found).toEqual(['star-acorn']);
+    expect(p.foodPending).toEqual(['star-acorn']);
   });
 
   it('crates can drop blue stars and acorns (owner, 2026-11-17)', () => {

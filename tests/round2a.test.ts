@@ -10,7 +10,7 @@ import { SCENERY_SURFACES } from '../src/content/scenery';
 import { FOOD } from '../src/content/consumables';
 import { DETAIL, RUN } from '../src/content/run';
 import { parseCourse, type Course } from '../src/sim/course';
-import { createPlay, drainLog, runShot, takeShot, type PlayEvent } from '../src/sim/play';
+import { createPlay, decideFood, drainLog, runShot, settleFood, takeShot, type PlayEvent } from '../src/sim/play';
 import { startBody, stepShot } from '../src/sim/ball';
 import { Rng } from '../src/sim/rng';
 import { shapeOf } from '../src/sim/tileShape';
@@ -26,7 +26,6 @@ import {
   eat,
   enterNode,
   finishCourse,
-  keepFound,
   leaveCache,
   leaveShop,
   loadoutOf,
@@ -285,7 +284,7 @@ function townRun(seed = 'FOOD'): RunState {
 }
 
 /** Leave the town, play the next course and win it, with `found` food picked up. */
-function playOne(run: RunState, found: string[] = []): void {
+function playOne(run: RunState, foods: { id: string; eaten: boolean }[] = []): void {
   if (run.status === 'shop') leaveShop(run);
   // Walk on through towns and caches until a course comes up.
   for (;;) {
@@ -298,7 +297,7 @@ function playOne(run: RunState, found: string[] = []): void {
     if (run.status === 'shop') leaveShop(run);
     else if (run.status === 'cache') leaveCache(run);
   }
-  finishCourse(run, { won: true, lostBy: null, health: run.health, wallet: run.wallet, ability: run.ability, gear: run.gear, found });
+  finishCourse(run, { won: true, lostBy: null, health: run.health, wallet: run.wallet, ability: run.ability, gear: run.gear, foods });
 }
 
 describe('two shops (sheet section 3)', () => {
@@ -441,20 +440,66 @@ describe('the food bag (sheet section 4)', () => {
     expect(loadoutOf(run).acorns).toEqual(['golden-acorn']);
   });
 
-  it('food found on a course goes into the bag; with the bag full, swap it in or leave it', () => {
+  it('food eaten on a course keeps working afterwards for the rest it lasts; stashed food goes into the bag', () => {
     const run = townRun();
-    playOne(run, ['lucky-acorn']);
+    playOne(run, [{ id: 'golden-acorn', eaten: false }]);
     expect(run.bag).toHaveLength(1);
-    expect(run.bag[0]!.id).toBe('lucky-acorn');
+    expect(run.bag[0]!.id).toBe('golden-acorn');
     expect([1, 2, 3]).toContain(run.bag[0]!.courses);
-    run.bag = [{ id: 'strong-swing', courses: 1 }, { id: 'long-arms', courses: 1 }, { id: 'deep-breath', courses: 1 }];
-    playOne(run, ['star-acorn', 'golden-acorn']);
-    expect(run.found.map((f) => f.id)).toEqual(['star-acorn', 'golden-acorn']);
-    keepFound(run, 1);
-    expect(run.bag[1]!.id).toBe('star-acorn');
-    keepFound(run, null);
-    expect(run.found).toEqual([]);
-    expect(run.bag.map((b) => b.id)).toEqual(['strong-swing', 'star-acorn', 'deep-breath']);
+    // Eaten: this course was its first; a 2- or 3-course acorn is still working (1 or 2 courses left).
+    for (let i = 0; i < 12; i++) {
+      const r = townRun(`EAT${i}`);
+      playOne(r, [{ id: 'star-acorn', eaten: true }]);
+      expect(r.bag).toEqual([]);
+      const left = r.fed.find((f) => f.id === 'star-acorn')?.left ?? 0;
+      expect([0, 1, 2]).toContain(left);
+    }
+  });
+
+});
+
+describe('food picked up on a course (owner, 2026-11-21)', () => {
+  const acornField = () => {
+    const rows = Array.from({ length: 5 }, (_, y) => Array.from({ length: 12 }, (_, x) => (x === 0 || y === 0 || x === 11 || y === 4 ? 'g8' : 'g4')).join(' '));
+    const r = parseCourse({ format: 3, name: 'acorn', legend: { g: 'grass' }, tiles: rows, start: [1, 2], exit: [10, 3], quota: 0, objects: [{ id: 'star-acorn', at: [4, 2] }] });
+    if (!r.ok) throw new Error(r.errors.join('\n'));
+    return r.course;
+  };
+  const roll = (bagRoom: number) => {
+    const p = createPlay(acornField(), T, { seed: 'f', loadout: { bagRoom } });
+    takeShot(p, ground(0.4));
+    runShot(p);
+    return p;
+  };
+
+  it('asks: eat it now or stash it. Eaten, it works at once', () => {
+    const p = roll(2);
+    expect(p.foodPending).toEqual(['star-acorn']);
+    decideFood(p, true);
+    expect(p.acornSlices).toBe(5);
+    expect(p.foods).toEqual([{ id: 'star-acorn', eaten: true }]);
+  });
+
+  it('stashed, it goes in the bag after the course and does nothing now', () => {
+    const p = roll(2);
+    decideFood(p, false);
+    expect(p.acornSlices).toBe(0);
+    expect(p.bagRoom).toBe(1);
+    expect(p.foods).toEqual([{ id: 'star-acorn', eaten: false }]);
+    expect(drainLog(p)).toContainEqual({ kind: 'foodStashed', item: 'star-acorn' });
+  });
+
+  it('with the bag full, it is eaten at once without asking', () => {
+    const p = roll(0);
+    expect(p.foodPending).toEqual([]);
+    expect(p.acornSlices).toBe(5);
+    expect(drainLog(p)).toContainEqual({ kind: 'foodEaten', item: 'star-acorn', auto: true });
+  });
+
+  it('still undecided when the course ends: stashed if it fits', () => {
+    const p = roll(1);
+    settleFood(p);
+    expect(p.foods).toEqual([{ id: 'star-acorn', eaten: false }]);
   });
 });
 
