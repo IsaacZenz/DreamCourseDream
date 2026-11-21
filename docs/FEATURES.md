@@ -349,6 +349,8 @@ Replaces the six-item starter set. **Six rarities in three pairs**: (common, unc
 
 ## 9. Run upgrades (stat boosts)
 
+**Owner, 2026-11-21:** these are now foods sold in the food shop (section 11), eaten from the bag before a course; their effects are unchanged.
+
 **Decided:** separate from gear. Plain stat boosts, no slot limit, lost on death.
 
 **Default:** bought in shops or found in caches. Each is one modifier lasting for the run. They stack. The price rises each time the same boost is bought in one run.
@@ -409,7 +411,20 @@ Build in Milestone 6.
 
 **Decided (owner, 2026-11-21): two shops and the bag.** Each town has a **food shop** (consumables: food that lasts one course) and a **gear shop** (gear). The player carries a **bag with 3 slots** for consumables. Before a course starts the player may **eat one** from the bag; **nothing can be eaten during a course**. This replaces the single pocket acorn that was used automatically. Defaults until the design sheet says otherwise:
 - One item eaten per course, at most. Eating is optional; unused food stays in the bag for later courses.
-- The food shop also sells the Heal service (it is food); the gear shop sells gear, stat boosts and Delay the Boss. Each shop has its own stock and its own reroll price.
+- **Owner, 2026-11-21: the food shop sells the acorns plus the existing shop items, renamed as food.** The gear shop sells gear only. Each shop has its own stock and its own reroll price. Working names (Default, except Apple and Garlic, which the owner chose):
+
+  | Food | Was | Effect when eaten | Lasts |
+  |---|---|---|---|
+  | Apple | Heal service | Heal 2 | at once |
+  | Garlic | Delay the Boss | Boss countdown +1 | at once |
+  | Mushroom Stew | Tough Shell | Max health +1 and heal 1 | rest of the run |
+  | Trail Mix | Deep Breath | Max shots +1 | rest of the run |
+  | Chili Pepper | Strong Swing | Shot power +10% | rest of the run |
+  | Carrot | Long Arms | Star reach +1 | rest of the run |
+  | Clover Honey | Lucky Charm | Drop luck +25% | rest of the run |
+  | Lucky, Golden, Star Acorn | (already food) | +2, +3, +5 wheel slices | one course |
+
+  Default: the stat foods keep lasting the rest of the run (as the boosts did), so prices and balance stay; only the acorns last one course. Effects, prices and the rule that the same item costs more each time it is bought stay as they are; only the names, the icons and where they are bought change. Internal ids stay the same so saved runs still load. Default stock: food shop 5 offers, gear shop 4 gear items (was 2 in the single shop).
 - A consumable found on a course (an acorn from a crate) goes into the bag instead of working at once. If the bag is full, the player chooses: swap it with one in the bag, or leave it.
 - The bag is part of the run: lost on death, kept when the run is saved in a town. The Burrow does not store food.
 - The food shop needs more than three acorns to be worth visiting; new foods (each a one-course modifier, FEATURES.md section 1) are listed in the design sheet for the owner to choose from.
