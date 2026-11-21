@@ -418,6 +418,8 @@ Build in Milestone 6.
 
 Planned in Milestone 8 round 2 (rules) and 8b (walking up to each shop).
 
+**Built (Milestone 8b, owner sign-off 2026-11-21 with every default): walkable towns.** A town is a place the armadillo walks around (W A S D or the arrow keys, Shift runs). Walking into a door opens that shop or the Burrow as a flat room picture with the same menus; Esc goes back outside the door. Each town also has a fenced practice green (step on the tee: a small fixed course where nothing counts) and a way out (asks first; you cannot come back). Places are data: `src/content/places/*.json` (three towns, one per biome, the crossroads templates and the cache clearing), props in `src/content/places.ts`; format in `src/sim/place.ts`. Adding a prop is an entry plus a placeholder sprite.
+
 **Decided (owner, 2026-11-19), for the Milestone 9 skin:** the shop is a **food stand** with a **shopkeeper**, who animates when you buy something (and, Default, when you reroll or cannot afford something). Display only; the shop's rules do not change. The shopkeeper's species is chosen with the theme in Milestone 9 (Default: a friendly animal, not an insect, since the insects are the villains). **Owner, 2026-11-21:** with two shops, the food stand is the food shop; the gear shop gets its own look and shopkeeper (Default: a tinker's workshop), chosen in Milestone 9.
 
 ---

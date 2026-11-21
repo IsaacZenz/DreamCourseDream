@@ -239,3 +239,19 @@ The Burrow, the food shop and the gear shop each open as a **full-screen flat il
 ## 10. Sign-off
 
 - [x] Owner sign-off, 2026-11-21: "Good with all defaults." Every question in section 9 takes its default.
+
+## 11. As built (2026-11-21)
+
+Built as signed off, with these differences and details:
+
+- **Sizes.** Towns are 16 by 14 tiles as planned. The crossroads is 12 by 12 (the sheet said about 12 by 10), and the cache clearing is 9 by 9. The practice green is 4 by 4 tiles inside its fence (the sheet said 5 by 5).
+- **Walking speed** is the same in every direction **along the ground**. Because the ground is squashed on screen, walking straight up or down covers fewer screen pixels than walking sideways, even though it is the same distance on the ground. This is how most isometric games feel. Playtest it (section 8, item 1).
+- **Door hints (added).** Within about a tile of a door, a path end, the tee, the chest or the gate, a line at the bottom of the screen says what it is, for example "THE GEAR SHOP: WALK IN".
+- **Signpost cards** show when the armadillo stands within 1.5 tiles of a signpost. There is no need to press Enter, so Enter and E do nothing else while walking.
+- **The cache.** After the pick (or a skip), you are back in the clearing with the chest open, and a path on the left leads back to the crossroads, as the sheet says.
+- **Practice green.** Health starts full and the run's gear, ability and upgrades work. Nothing from the green goes back to the run. Running out of shots there shows "R: play again" instead of giving unlimited shots.
+- **The flat screens.** The shop cards sit a little lower, so the top of the room picture shows above them. The Burrow's rows are slightly see-through.
+- **Drawing order.** The armadillo is drawn in front of or behind a building by which side of its footprint it is on.
+- **A lamp post was moved during the build.** It stood in front of the Burrow door and got in the way.
+- **Testing aids.** These are `?place=town`, `?place=cache` and `?place=boss` (the boss is next, so its gate shows), each with `&region=N` to choose the region. The planned `?place=crossroads&paths=3` was not built, because the number of paths comes from the run's map. The "Use the map screen" switch is in the U panel, and M shows the map read-only.
+- **Tests.** Every door, the tee and the exit in each town, and every path end and boss gate in 60 crossroads, are checked to be reachable on foot from the arrival spot.
