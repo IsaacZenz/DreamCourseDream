@@ -123,7 +123,8 @@ export const DETAIL: readonly DetailDef[] = [
     setPieces: {
       tilesPer: 70,
       max: 3,
-      weights: { pond: 2, 'spike-pit': 1, sand: 2, arrows: 2, moat: 3, grove: 2, rough: 2 },
+      // Round 2b, Bog (sheet section 4.1): ponds 3 and rough patches 3 (were 2 and 2).
+      weights: { pond: 3, 'spike-pit': 1, sand: 2, arrows: 2, moat: 3, grove: 2, rough: 3 },
       // Owner, 2026-11-21: spike moats can show up in region two, much less often.
       moatFill: { water: 55, sand: 35, spikes: 10 },
       railChance: 0.5,
@@ -134,7 +135,7 @@ export const DETAIL: readonly DetailDef[] = [
     linkedGateChance: 0.25,
     // Built 2026-11-21: 1.0, not the sheet's 1.5, because the groves' trees already add obstacles (target about 2 per 100 tiles).
     extraObstacles: { per100: 1.0, weights: { rock: 2, stump: 2, 'low-wall': 1, 'dead-tree': 3 } },
-    scenery: { per100: 6, cluster: [1, 4], weights: { tuft: 3, flowers: 2, pebbles: 2, mushrooms: 2, leaves: 2 } },
+    scenery: { per100: 6, cluster: [1, 4], weights: { tuft: 3, flowers: 2, pebbles: 2, mushrooms: 4, leaves: 2 } },
   },
   {
     setPieces: {
@@ -150,7 +151,8 @@ export const DETAIL: readonly DetailDef[] = [
     linkedGateChance: 0.4,
     // Built 2026-11-21: 1.5, not the sheet's 2.5, because the groves' trees already add obstacles (target about 3 per 100 tiles).
     extraObstacles: { per100: 1.5, weights: { rock: 2, stump: 2, 'low-wall': 1, 'dead-tree': 3 } },
-    scenery: { per100: 8, cluster: [1, 4], weights: { tuft: 2, pebbles: 2, mushrooms: 2, leaves: 2, bones: 2 } },
+    // Round 2b, Thornwood: more bones (3, was 2).
+    scenery: { per100: 8, cluster: [1, 4], weights: { tuft: 2, pebbles: 2, mushrooms: 2, leaves: 2, bones: 3 } },
   },
 ];
 

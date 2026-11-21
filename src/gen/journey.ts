@@ -371,7 +371,10 @@ export function buildTerrain(rng: Rng, budget: number, size: JourneySize = sizeF
     const { nextDir, exitTile } = plan;
     const er = sideRange(rect, nextDir);
 
-    const lf = weighted(rng, LANDFORMS.filter((l) => l.minBudget <= budget)) ?? LANDFORMS[0]!;
+    // Round 2b: the biome's landform preferences (none in region one, so its courses are unchanged).
+    const lfScale = size.landformScale;
+    const lfs = LANDFORMS.filter((l) => l.minBudget <= budget);
+    const lf = weighted(rng, lfScale ? lfs.map((l) => ({ ...l, weight: l.weight * (lfScale[l.id] ?? 1) })) : lfs) ?? LANDFORMS[0]!;
     const steep = rng.chance(lf.steepChance);
     const scale = steep ? 2 : 1;
     const local = (p: Point): Pad => ({ x: p[0] - rect.x + 0.5, y: p[1] - rect.y + 0.5 });

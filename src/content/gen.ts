@@ -30,6 +30,8 @@ export interface JourneySize {
   readonly oddsColumn?: number;
   /** Round 2a: the region's detail dial. Left out: no extra set pieces, obstacles or scenery, as before. */
   readonly detail?: DetailDef;
+  /** Round 2b: the biome's landform preferences (weights multiplied by these). Left out: as before. */
+  readonly landformScale?: Readonly<Record<string, number>>;
 }
 
 /**

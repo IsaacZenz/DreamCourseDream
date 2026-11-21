@@ -1060,12 +1060,62 @@ function sheet(frames: Image[]): Image {
 }
 
 const sprites: Record<string, SpriteEntry> = {};
+/** Every sprite's image, kept for the theme sets made at the end (round 2b). */
+const images = new Map<string, { img: Image; frameWidth: number; frameHeight: number; frames: string[]; anchor: P }>();
 
 function emit(id: string, img: Image, frameWidth: number, frameHeight: number, frames: string[], anchor: P): void {
   const file = `sprites/${id}.png`;
   mkdirSync(join(OUT, 'sprites'), { recursive: true });
   writeFileSync(join(OUT, file), encodePng(img));
   sprites[id] = { file, frameWidth, frameHeight, frames, anchor };
+  images.set(id, { img, frameWidth, frameHeight, frames, anchor });
+}
+
+// ---------------------------------------------------------------------------
+// Themes (round 2b sheet section 4.2; owner, 2026-11-14 and 2026-11-21): after
+// each boss the look changes; only the art changes. Each theme recolours the
+// ground (tiles, faces, water, shores), scenery and blockers; enemies, the ball,
+// pickups and the HUD stay the same. A themed sprite is "<id>@<theme>"; the
+// game picks it when that theme is on and falls back to "<id>".
+
+type Recolour = (r: number, g: number, b: number) => RGB;
+const lum = (r: number, g: number, b: number) => 0.3 * r + 0.59 * g + 0.11 * b;
+const THEMES: Record<string, { sky: string; recolour: Recolour }> = {
+  // Murky greens and browns, darker water.
+  bog: { sky: '#2a3a2c', recolour: (r, g, b) => [r * 0.7 + g * 0.15 + 12, g * 0.72 + r * 0.1 + 6, b * 0.5 + 8] },
+  // Grey-purple grass, bare brown earth.
+  thornwood: { sky: '#3a2c40', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.8 + r * 0.25, l * 0.62 + g * 0.18, l * 0.78 + b * 0.25]; } },
+  // Deep blue shading everywhere.
+  night: { sky: '#0a0c22', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.3 + r * 0.15, l * 0.38 + g * 0.15, l * 0.55 + b * 0.25 + 28]; } },
+  // Brown and grey stone.
+  underground: { sky: '#1c1610', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.82 + r * 0.12, l * 0.7 + g * 0.08, l * 0.58 + b * 0.08]; } },
+  // Pale greens and purples, fog grey.
+  spooky: { sky: '#2a2a36', recolour: (r, g, b) => { const l = lum(r, g, b); return [l * 0.72 + b * 0.2 + 10, l * 0.88 + 8, l * 0.7 + r * 0.25 + 14]; } },
+};
+
+/** Which sprites a theme recolours. */
+const themed = (id: string) => /^(tile-|face-|scenery-)/.test(id) || ['water-shore', 'rock', 'stump', 'dead-tree', 'low-wall', 'drawbridge-up'].includes(id);
+
+function recolourImage(src: Image, f: Recolour): Image {
+  const out = new Image(src.width, src.height);
+  for (let y = 0; y < src.height; y++) {
+    for (let x = 0; x < src.width; x++) {
+      const [r, g, b, a] = src.get(x, y);
+      if (a === 0) continue;
+      out.set(x, y, c15(f(r, g, b), a));
+    }
+  }
+  return out;
+}
+
+function emitThemes(): Record<string, { sky: string }> {
+  for (const [theme, t] of Object.entries(THEMES)) {
+    for (const [id, e] of [...images]) {
+      if (!themed(id) || id.includes('@')) continue;
+      emit(`${id}@${theme}`, recolourImage(e.img, t.recolour), e.frameWidth, e.frameHeight, e.frames, e.anchor);
+    }
+  }
+  return Object.fromEntries([['day', { sky: '#1d2b53' }], ...Object.entries(THEMES).map(([k, t]) => [k, { sky: t.sky }])]);
 }
 
 const faceIds = new Set<string>();
@@ -1588,6 +1638,7 @@ emit('font', font.img, 4, 6, font.frames, [0, 0]);
 
 // Milestone 8 (sheet section 3): the tint of an enemy with an element, set here so the final art can change it.
 const tints = { fire: '#ff9060', ice: '#a0d8ff', shock: '#fff070' };
-const manifest: Manifest = { version: 1, sprites, tints };
+const themes = emitThemes();
+const manifest: Manifest = { version: 1, sprites, tints, themes };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 console.log(`Wrote ${Object.keys(sprites).length} sprites to assets/sprites and assets/manifest.json`);

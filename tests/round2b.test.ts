@@ -12,7 +12,13 @@ import { groundAt, startBody, stepShot, type ShotCommand } from '../src/sim/ball
 import { generateAttempt } from '../src/gen/generate';
 import { generateCourse } from '../src/gen/validate';
 import { botShotsFor } from '../src/content/run';
-import { budgetFor, choices, courseJobFor, courseModFor, createRun, mixFor, regionDefFor, typeOf } from '../src/sim/run';
+import { budgetFor, choices, courseJobFor, courseModFor, createRun, mixFor, regionDefFor, sizeFor, typeOf } from '../src/sim/run';
+import { readFileSync } from 'node:fs';
+import { THEMES, biomeForRegion, themeForRegion } from '../src/content/biomes';
+import { SURFACES } from '../src/content/surfaces';
+import { buildTerrain } from '../src/gen/journey';
+import { Rng } from '../src/sim/rng';
+import { themedSprite, type Manifest } from '../src/render/manifest';
 import { generateRunMap } from '../src/gen/runMap';
 import { COURSE_MODS, type CourseMod } from '../src/content/modifiers';
 import type { JourneySize } from '../src/content/gen';
@@ -397,5 +403,59 @@ describe('course modifiers (sheet section 3)', () => {
     expect(rate(1)).toBe(0);
     expect(rate(2)).toBeCloseTo(0.2, 1);
     expect(rate(3)).toBeCloseTo(0.3, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Biomes and themes (sheet section 4)
+
+describe('biomes and themes (sheet section 4)', () => {
+  it('themes go day, bog, thornwood, night, underground, spooky, then again from bog', () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 12].map(themeForRegion)).toEqual(['day', 'bog', 'thornwood', 'night', 'underground', 'spooky', 'bog', 'thornwood', 'night', 'bog']);
+  });
+
+  it('biomes: meadow, bog, thornwood, then in turn; region 1 keeps its landforms', () => {
+    expect([1, 2, 3, 4, 5].map((r) => biomeForRegion(r).id)).toEqual(['meadow', 'bog', 'thornwood', 'meadow', 'bog']);
+    const run = createRun('B', generateRunMap('B'));
+    expect(sizeFor(run, 'course').landformScale).toBeUndefined();
+    run.region = 2;
+    expect(sizeFor(run, 'course').landformScale).toEqual({ pond: 2, basin: 2, plateau: 0.5 });
+  });
+
+  it('the bog picks ponds and basins more often', () => {
+    const share = (scale?: Record<string, number>) => {
+      let wet = 0;
+      let all = 0;
+      for (let i = 0; i < 40; i++) {
+        const r = buildTerrain(Rng.fromSeed(`bog${i}`), 20, { ...lateSize(2), ...(scale && { landformScale: scale }) });
+        if (!r.ok) continue;
+        for (const g of r.terrain.regions.filter((x) => x.kind === 'area')) {
+          all++;
+          if (g.name === 'pond' || g.name === 'basin') wet++;
+        }
+      }
+      return wet / all;
+    };
+    expect(share(biomeForRegion(2).landformScale as Record<string, number>)).toBeGreaterThan(share() * 1.3);
+  });
+
+  it('every themed sprite exists in every theme, with the same frames, and each theme has a sky', () => {
+    const manifest = JSON.parse(readFileSync(new URL('../assets/manifest.json', import.meta.url), 'utf8')) as Manifest;
+    const themed = Object.keys(manifest.sprites).filter((id) => id.endsWith('@bog')).map((id) => id.slice(0, -4));
+    expect(themed.length).toBeGreaterThan(20);
+    for (const t of THEMES) expect(manifest.themes?.[t]?.sky).toMatch(/^#[0-9a-f]{6}$/);
+    for (const id of themed) {
+      for (const t of THEMES.filter((x) => x !== 'day')) {
+        const v = manifest.sprites[`${id}@${t}`];
+        expect(v, `${id}@${t}`).toBeDefined();
+        expect(v!.frames).toEqual(manifest.sprites[id]!.frames);
+      }
+    }
+    // Every surface's tile is themed; enemies and the ball are not.
+    for (const s of SURFACES.values()) expect(themed).toContain(s.tileSprite);
+    expect(themed).not.toContain('ball');
+    expect(themed).not.toContain('snoozegrub');
+    expect(themedSprite(manifest, 'tile-grass', 'night')).toBe('tile-grass@night');
+    expect(themedSprite(manifest, 'ball', 'night')).toBe('ball');
   });
 });

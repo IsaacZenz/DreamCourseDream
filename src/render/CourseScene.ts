@@ -57,7 +57,8 @@ import { BLUE_STARS } from '../content/progress';
 import { LAST_REGION } from '../content/run';
 import { getPanel, getTuning, preloadAssets, shared } from './shared';
 import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
-import { frameIndex, type Manifest } from './manifest';
+import { frameIndex, themedSprite, type Manifest } from './manifest';
+import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
 import { pixelText } from './pixelText';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 
@@ -150,7 +151,11 @@ function testRegionOpts(): GenOptions {
   if (!n) return mod ? { loadout: { courseMod: mod } } : {};
   const r = regionDefFor(n);
   const areas = Math.min(r.areas.max, r.areas.start + Math.floor(6 / r.areas.every));
-  return { size: { areas: [areas, areas], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(areas), mix: mixFor(n), detail: r.detail }, ...(mod && { loadout: { courseMod: mod } }) };
+  const lfScale = biomeForRegion(n).landformScale;
+  return {
+    size: { areas: [areas, areas], areaSize: r.areaSize, maxEnemies: r.maxEnemies, botShots: botShotsFor(areas), mix: mixFor(n), detail: r.detail, ...(Object.keys(lfScale).length && { landformScale: lfScale }) },
+    ...(mod && { loadout: { courseMod: mod } }),
+  };
 }
 let viewer: SeedViewer | null = null;
 /** How fast the bot replays (B key), as a multiple of real time. */
@@ -362,9 +367,14 @@ export class CourseScene extends Phaser.Scene {
     this.overview = false;
     this.hiddenHud = [];
     this.tileImgs = [];
+    // Round 2b: the region's theme (or the U panel's pick, or ?theme= / ?region= on a test course).
+    this.theme = this.pickTheme();
+    this.cameras.main.setBackgroundColor(manifest.themes?.[this.theme]?.sky ?? '#1d2b53');
     for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
 
     panel = getPanel();
+    // Round 2b: picking a theme in the U panel shows this course again in it.
+    panel.onTheme = () => (this.runMode ? this.scene.restart({ run: true }) : this.restartCourse());
 
     const run = this.runMode ? session.run : null;
     const urlMod = testCourseMod();
@@ -804,11 +814,30 @@ export class CourseScene extends Phaser.Scene {
     for (const p of buildDrawList(this.play.course)) if (p.kind !== 'exit') this.place(p);
   }
 
+  /** Round 2b: the visual theme on this course ("day" is the plain sprites). */
+  private theme = 'day';
+  private pickTheme(): string {
+    const chosen = getPanel().theme;
+    if (chosen) return chosen;
+    if (this.runMode && session.run) return themeForRegion(session.run.region);
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get('theme');
+    if (t && (THEMES as readonly string[]).includes(t)) return t;
+    const n = Number(params.get('region'));
+    return n ? themeForRegion(n) : 'day';
+  }
+
+  /** The sprite to draw for an id in this course's theme. */
+  private sprite(id: string): string {
+    return themedSprite(manifest, id, this.theme === 'day' ? null : this.theme);
+  }
+
   private place(p: Placement): void {
-    const entry = manifest.sprites[p.sprite];
-    if (!entry) throw new Error(`Sprite "${p.sprite}" is not in the asset manifest.`);
+    const id = this.sprite(p.sprite);
+    const entry = manifest.sprites[id];
+    if (!entry) throw new Error(`Sprite "${id}" is not in the asset manifest.`);
     const img = this.add
-      .image(p.x, p.y, p.sprite, frameIndex(entry, p.frame))
+      .image(p.x, p.y, id, frameIndex(entry, p.frame))
       .setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight)
       .setDepth(p.depth);
     this.tileImgs.push(img);
@@ -946,7 +975,8 @@ export class CourseScene extends Phaser.Scene {
   // -------------------------------------------------------------------------
   // The shot
 
-  private makeSprite(id: string, frame = 'idle'): Phaser.GameObjects.Image {
+  private makeSprite(spriteId: string, frame = 'idle'): Phaser.GameObjects.Image {
+    const id = this.sprite(spriteId);
     const entry = manifest.sprites[id];
     if (!entry) throw new Error(`Sprite "${id}" is not in the asset manifest.`);
     return this.add
@@ -978,8 +1008,9 @@ export class CourseScene extends Phaser.Scene {
         img = this.makeSprite(sprite, opts.frame ?? manifest.sprites[sprite]?.frames[0] ?? 'idle');
         this.objectImgs.set(uid, img);
       }
-      const entry = manifest.sprites[sprite]!;
-      if (img.texture.key !== sprite || opts.frame) img.setTexture(sprite, frameIndex(entry, opts.frame ?? entry.frames[0]!));
+      const themedId = this.sprite(sprite);
+      const entry = manifest.sprites[themedId]!;
+      if (img.texture.key !== themedId || opts.frame) img.setTexture(themedId, frameIndex(entry, opts.frame ?? entry.frames[0]!));
       const p = project(x, y, z / STEP_HEIGHT);
       img
         .setVisible(true)
