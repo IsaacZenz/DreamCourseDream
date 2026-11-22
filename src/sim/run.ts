@@ -447,6 +447,15 @@ export function choices(run: RunState): MapNode[] {
   return here.links.map((id) => nodeById(run.map, id)!).filter(Boolean);
 }
 
+/**
+ * Round 3 (owner, 2026-11-19; sheet section 4): the map node ids the player
+ * may see: the path taken and the nodes reachable next. Everything else is
+ * hidden unless the "show the whole map" testing switch is on.
+ */
+export function mapVisible(run: RunState): Set<string> {
+  return new Set([...run.path, ...choices(run).map((n) => n.id)]);
+}
+
 /** The region's numbers (Milestone 7 sheet section 7.4). Regions past the list use the last entry. */
 export function regionDef(run: RunState): RegionDef {
   return regionDefFor(run.region);

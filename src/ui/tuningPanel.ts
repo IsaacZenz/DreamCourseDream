@@ -91,12 +91,16 @@ export class TuningPanel {
   /** Round 2b: a theme to show every course in ('' = the region's own), and what to do when it changes. */
   theme = '';
   onTheme: (() => void) | null = null;
+  /** Called when the whole-map switch changes (the map screen redraws). */
+  onMap: (() => void) | null = null;
   /** Owner, 2026-11-21: the course check's bot plays the real game while this is on (Y on a course), so you can watch it. */
   botPlays = false;
   /** Milestone 8b: pick courses on the old map screen and use the old town street instead of walking (a testing view). */
   useMapScreen = false;
   /** Owner, 2026-11-21: draw flat grass, rough and sand tiles slightly raised at random (looks only). */
   groundBumps = true;
+  /** Round 3: draw every map node (off: only the path taken and the next choices). */
+  wholeMap = false;
   private botButton: HTMLButtonElement | null = null;
   setBotPlays(on: boolean): void {
     this.botPlays = on;
@@ -158,7 +162,12 @@ export class TuningPanel {
       bumps.textContent = `Ground bumps: ${this.groundBumps ? 'ON' : 'off'}`;
       this.onTheme?.();
     });
-    head.append(copy, reset, scenery, theme, bot, mapScreen, bumps);
+    const whole = this.button('Show the whole map: off', () => {
+      this.wholeMap = !this.wholeMap;
+      whole.textContent = `Show the whole map: ${this.wholeMap ? 'ON' : 'off'}`;
+      this.onMap?.();
+    });
+    head.append(copy, reset, scenery, theme, bot, mapScreen, bumps, whole);
     this.root.appendChild(head);
     this.benchBox = document.createElement('div');
     this.benchBox.className = 'bench';

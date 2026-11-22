@@ -8,7 +8,7 @@ import { courseModLabel } from './courseModView';
 import { BLUE_STARS } from '../content/progress';
 import { generateRunMap } from '../gen/runMap';
 import { prefetch } from './genQueue';
-import { courseModFor, courseJobFor, type CourseJob, LAST_TOWN, addUpgrade, bossBlueStars, bossOf, bossHealthFor, keepGoing, sizeFor, startRegion, takeBossReward, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
+import { courseModFor, courseJobFor, type CourseJob, LAST_TOWN, addUpgrade, bossBlueStars, bossOf, bossHealthFor, keepGoing, sizeFor, startRegion, takeBossReward, budgetFor, choices, debugAddStars, debugSetCountdown, enterNode, rewardFor, rowOf, runStats, mapVisible, setGear, typeOf, type MapNode, type RunState } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
 import { BOSS_FIGHTS, debugBossFight, newRunSeed, persist, session, startRun } from './runSession';
@@ -103,6 +103,8 @@ export class MapScene extends Phaser.Scene {
     this.drawMap(run);
     this.drawPanel(run);
     this.setupKeys(run);
+    getPanel().onMap = () => this.scene.restart({ view: this.view });
+    this.events.once('shutdown', () => (getPanel().onMap = null));
     this.setRunPanel(run);
     this.setProgressPanel(run);
     if (run.status === 'won' || run.status === 'lost') this.drawSummary(run);
@@ -128,11 +130,16 @@ export class MapScene extends Phaser.Scene {
     const bossRow = Math.min(run.map.rows.length + 1, here + run.countdown + 1);
     const onPath = new Set(run.path);
     const next = new Set(this.options.map((n) => n.id));
+    // Round 3: only the path taken and the next choices, unless the testing switch shows the whole map.
+    const whole = getPanel().wholeMap;
+    const seen = mapVisible(run);
+    const shown = (id: string) => whole || seen.has(id);
     // Links.
     for (const row of run.map.rows) {
       for (const n of row) {
         const a = this.nodeXY(n.row, n.lane);
         for (const id of n.links) {
+          if (!shown(n.id) || !shown(id)) continue;
           const t = run.map.rows[n.row]!.find((x) => x.id === id)!;
           const b = this.nodeXY(t.row, t.lane);
           const pathLink = onPath.has(n.id) && onPath.has(t.id);
@@ -145,6 +152,7 @@ export class MapScene extends Phaser.Scene {
     // From the start to row 1.
     const start = { x: MAP_X + LANE_W * 1.5, y: 0 };
     for (const n of run.map.rows[0]!) {
+      if (!shown(n.id)) continue;
       const b = this.nodeXY(1, n.lane);
       const lit = !run.at || run.path[0] === n.id;
       g.lineStyle(lit ? 2 : 1, run.path[0] === n.id ? LINE_PATH : !run.at ? LINE_NEXT : LINE_DIM, 1);
@@ -154,6 +162,7 @@ export class MapScene extends Phaser.Scene {
     // Nodes.
     for (const row of run.map.rows) {
       for (const n of row) {
+        if (!shown(n.id)) continue;
         const p = this.nodeXY(n.row, n.lane);
         const visited = onPath.has(n.id);
         const type = typeOf(run, n);
@@ -171,6 +180,14 @@ export class MapScene extends Phaser.Scene {
             this.refreshSelection(run);
           });
         }
+      }
+    }
+    // A faint "?" above the next choices: the map carries on, unseen.
+    if (!whole && run.status === 'map') {
+      const top = Math.max(here, ...this.options.map((o) => o.row));
+      if (top + 1 < bossRow) {
+        const q = pixelText(this, m, 0, 0, '?  ?  ?', { color: UI_DIM });
+        q.setPosition(MAP_X + LANE_W * 1.5 - Math.round(q.width / 2), -(top + 1) * ROW_H - 3).setAlpha(0.5);
       }
     }
     // The boss, just above the row the countdown points to: a red line across the map with the boss at its end.
