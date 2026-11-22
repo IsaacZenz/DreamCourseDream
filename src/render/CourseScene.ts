@@ -1826,7 +1826,7 @@ export class CourseScene extends Phaser.Scene {
     c.add(g);
     const hand = this.add.graphics();
     c.add(hand);
-    const word = ({ burn: 'BURN', stun: 'STUN', zap: 'ZAP', heal: 'HEAL', knock: 'KNOCK', echo: 'ECHO' } as const)[e.effect];
+    const word = ({ burn: 'BURN', poison: 'POISON', stun: 'STUN', zap: 'ZAP', heal: 'HEAL', knock: 'KNOCK', echo: 'ECHO' } as const)[e.effect];
     const label = pixelText(this, manifest, -r, r + 2, `${word} ${e.filled}/${n}${e.respun ? ' AGAIN' : ''}`, { color: UI_TEXT, background: UI_BG });
     c.add(label);
     // Two and a bit turns, ending in the middle of the target slice.

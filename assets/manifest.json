@@ -1014,6 +1014,18 @@
         7
       ]
     },
+    "grab-bag": {
+      "file": "sprites/grab-bag.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
     "shot-orb": {
       "file": "sprites/shot-orb.png",
       "frameWidth": 9,
@@ -1715,6 +1727,54 @@
     },
     "gear-gong-knob": {
       "file": "sprites/gear-gong-knob.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-pin-needle": {
+      "file": "sprites/gear-pin-needle.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-thistle-needle": {
+      "file": "sprites/gear-thistle-needle.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-venom-needle": {
+      "file": "sprites/gear-venom-needle.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-hex-needle": {
+      "file": "sprites/gear-hex-needle.png",
       "frameWidth": 12,
       "frameHeight": 12,
       "frames": [

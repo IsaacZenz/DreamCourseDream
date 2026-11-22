@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, RARITY_INFO, type GearCategory } from '../content/gear';
 import { RUN, UPGRADE_LIST, UPGRADES } from '../content/run';
 import {
+  settleGrab,
+  waitingGrab,
   addUpgrade,
   burrowSwap,
   upcomingJobs,
@@ -84,7 +86,7 @@ export class TownScene extends Phaser.Scene {
   private sel = 0;
   private message = '';
   private messageColor = UI_TEXT;
-  private confirm: { lines: string[]; yes: () => void } | null = null;
+  private confirm: { lines: string[]; yes: () => void; no?: () => void } | null = null;
   /** Which shop is open in 'shop' mode. */
   private which: ShopKind = 'gear';
   private bag!: BagMenu;
@@ -276,6 +278,12 @@ export class TownScene extends Phaser.Scene {
       const a = ACORNS.get(o.id)!;
       return { kind: 'CONSUMABLE', name: a.name, rarity: RARITY_INFO[a.rarity].name, rarityColor: RARITY_COLOR[a.rarity]!, desc: `+${a.slices} wheel slices next course`, icon: a.sprite };
     }
+    if (o.kind === 'grab') {
+      // Round 3: the Grab Bag shows what it was once bought.
+      const g = o.got ? GEAR.get(o.got) : undefined;
+      if (g) return { kind: 'GRAB BAG', name: g.name, rarity: RARITY_INFO[g.rarity].name, rarityColor: RARITY_COLOR[g.rarity]!, desc: g.desc, icon: g.icon };
+      return { kind: 'GRAB BAG', name: 'Grab Bag', rarity: 'MYSTERY GEAR', rarityColor: STAR, desc: 'A random gear item, better odds. Once per visit', icon: 'grab-bag' };
+    }
     return { kind: 'SERVICE', name: 'Delay the Boss', rarity: 'ONCE PER SHOP', rarityColor: UI_DIM, desc: 'Boss countdown +1', icon: 'node-boss' };
   }
 
@@ -289,6 +297,9 @@ export class TownScene extends Phaser.Scene {
     const chars = Math.floor((w - 6) / 4);
     let ty = y + 4;
     this.text(x + 4, ty, L.kind, UI_DIM);
+    // Round 3: Sale and Chef's Special tags.
+    const tag = o.sale ? 'SALE' : o.special ? 'SPECIAL' : '';
+    if (tag && !o.sold) this.text(x + w - 4 - tag.length * 4, ty, tag, BAD);
     ty += 8;
     this.add.image(x + w / 2, ty + 12, L.icon, 0).setScale(2).setAlpha(o.sold ? 0.3 : 1);
     ty += 28;
@@ -313,7 +324,7 @@ export class TownScene extends Phaser.Scene {
     // Milestone 8b: a flat room picture, with the cards in front of its lower part.
     this.add.image(0, 0, this.which === 'food' ? 'room-food' : 'room-gear', 0).setOrigin(0, 0);
     this.add.rectangle(0, 46, VIEW_WIDTH, VIEW_HEIGHT - 46, UI_BG, 0.55).setOrigin(0, 0);
-    const w = this.which === 'food' ? 86 : 100;
+    const w = 86;
     const gap = 6;
     const x0 = Math.round((VIEW_WIDTH - (shop.offers.length * (w + gap) - gap)) / 2);
     shop.offers.forEach((o, i) =>
@@ -363,8 +374,34 @@ export class TownScene extends Phaser.Scene {
     this.withGearCheck(run, o, () => {
       const err = buy(run, this.sel, this.which);
       this.say(err ?? `BOUGHT ${this.offerLines(run, o).name.toUpperCase()}`, err ? BAD : GOOD);
+      // Round 3: a Grab Bag for a full category asks before replacing.
+      const grab = waitingGrab(run);
+      if (grab) this.askGrab(run, grab);
       this.redraw(run);
     });
+  }
+
+  private askGrab(run: RunState, o: Offer): void {
+    const g = GEAR.get(o.got!)!;
+    const og = GEAR.get(run.gear[g.category]!)!;
+    this.confirm = {
+      lines: [
+        `THE GRAB BAG HELD ${g.name.toUpperCase()}!`,
+        `REPLACE YOUR ${g.category.toUpperCase()}?`,
+        '',
+        `YOURS: ${og.name.toUpperCase()} (${RARITY_INFO[og.rarity].name.toUpperCase()})`,
+        `  ${og.desc.toUpperCase()}`,
+        `NEW:   ${g.name.toUpperCase()} (${RARITY_INFO[g.rarity].name.toUpperCase()})`,
+        `  ${g.desc.toUpperCase()}`,
+        '',
+        'ENTER: REPLACE   ESC: KEEP MINE (IT STAYS IN THE SHOP)',
+      ],
+      yes: () => {
+        settleGrab(run, true);
+        this.redraw(run);
+      },
+      no: () => settleGrab(run, false),
+    };
   }
 
   private drawCache(run: RunState): void {
@@ -533,7 +570,9 @@ export class TownScene extends Phaser.Scene {
     kb.on('keydown-ESC', () => {
       if (this.bag.key(run, 'back')) return;
       if (this.confirm) {
+        const no = this.confirm.no;
         this.confirm = null;
+        no?.();
         this.redraw(run);
         return;
       }

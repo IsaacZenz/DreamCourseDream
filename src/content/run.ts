@@ -61,6 +61,13 @@ export const RUN = {
     rerollStart: 3,
     heal: { amount: 2, price: 10 },
     raise: { price: 8 },
+    // Round 3 (owner, 2026-11-22): shop variety.
+    /** One gear offer per stock is on sale at this fraction off. */
+    sale: { off: 0.3 },
+    /** A 4th gear-shop card: a random gear item, rarity rolled one column better, once per visit. */
+    grabBag: { price: 25 },
+    /** One food offer per stock always lasts this many courses (the Chef's Special). */
+    chefSpecial: { courses: 3 },
   },
   cache: { heal: 2 },
 } as const;

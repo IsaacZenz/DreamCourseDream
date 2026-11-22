@@ -498,6 +498,18 @@ function drawHeart(): Image {
   return img;
 }
 
+/** Round 3: the Grab Bag, a tied sack with a "?" on it (12x12, like a gear icon). */
+function drawGrabBag(): Image {
+  const img = new Image(12, 12);
+  const rows = ['....oooo....', '.....oo.....', '....o44o....', '...o4433o...', '..o443333o..', '.o44333332o.', '.o43333332o.', '.o33333322o.', '.o33333222o.', '..o332222o..', '...oooooo...', '............'];
+  const sh = ramp('#c89858');
+  const edge = hex2('#402810');
+  rows.forEach((r, y) => [...r].forEach((ch, x) => (ch === 'o' ? img.set(x, y, edge) : ch !== '.' && img.set(x, y, sh[Number(ch)]!))));
+  const w = hex2('#f8f0c0');
+  for (const [x, y] of [[5, 4], [6, 4], [7, 5], [6, 6], [6, 8]] as const) img.set(x, y, w);
+  return img;
+}
+
 function drawShotOrb(): Image {
   const img = new Image(9, 9);
   blob(img, 4.5, 4.5, 4.5, 4.5, '#40c8e8', '#103048');
@@ -1197,6 +1209,7 @@ emit('ball-shadow', drawShadow(), 8, 4, ['idle'], [4, 2]);
 emit('exit', sheet([drawExit(false), drawExit(true)]), 16, 10, ['closed', 'open'], [8, 5]);
 emit('star-yellow', drawStar('#f8d030'), 11, 11, ['idle'], [5, 10]);
 emit('heart', drawHeart(), 9, 8, ['idle'], [4, 7]);
+emit('grab-bag', drawGrabBag(), 12, 12, ['idle'], [6, 11]);
 emit('shot-orb', drawShotOrb(), 9, 9, ['idle'], [4, 8]);
 emit('rock', drawRock(), 20, 14, ['idle'], [10, 10]);
 emit('stump', drawStump(), 10, 28, ['idle'], [5, 25]);
@@ -1249,6 +1262,8 @@ const FAMILY_FILL: Record<string, string> = {
   Shell: '#a8a8b8', Coat: '#e05828', Knob: '#a87848', Lining: '#e0d0a0', Guard: '#48a048', Hide: '#8a6040', Magnet: '#d83838', Sight: '#48a8e8', Pebble: '#58c878',
   // Milestone 7 (owner, 2026-11-17): slice perks.
   Grit: '#9a8878', Spinner: '#e8c048',
+  // Round 3: the Needle family (poison green).
+  Needle: '#78c838',
 };
 const UNIQUE_FILL: Record<string, string> = {
   'thunder-knuckle': '#f0e040', 'wrecking-shell': '#606878', 'leech-fang': '#c02848', 'sunfire-crown': '#f8a020', 'giants-knuckle': '#b08060', 'echo-shell': '#a080f0',
@@ -1269,6 +1284,8 @@ const GEAR_MARKS: Record<string, P[]> = {
   Magnet: [[3, 3], [3, 4], [3, 5], [7, 3], [7, 4], [7, 5], [4, 6], [5, 6], [6, 6]], Sight: [[3, 4], [4, 3], [5, 3], [6, 3], [7, 4], [5, 4]], Pebble: [[5, 3], [4, 4], [6, 4], [5, 5]],
   // A little wheel with a spoke (Spinner) and a bar (Grit).
   Spinner: [[4, 3], [5, 3], [6, 3], [3, 4], [7, 4], [3, 5], [5, 5], [7, 5], [4, 6], [5, 6], [6, 6], [5, 4]], Grit: [[3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [5, 5], [5, 6]],
+  // A slanted needle.
+  Needle: [[7, 3], [6, 4], [5, 5], [4, 6], [3, 7]],
 };
 function uniqueMark(id: string): P[] {
   // A star-shaped mark, turned a little differently for each item.

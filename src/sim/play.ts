@@ -436,7 +436,7 @@ export type PlayEvent =
   | { kind: 'ring'; enemy: string; x: number; y: number; r: number; hit: boolean };
 
 /** What a success roll is for: the word shown on the wheel's filled slices. */
-export type RollEffect = 'burn' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
+export type RollEffect = 'burn' | 'poison' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
 
 export type PlayStatus = 'playing' | 'won' | 'lost';
 
@@ -1774,6 +1774,8 @@ function weaponEffects(play: PlayState, e: EnemyState, s: ShotState): void {
   const alive = e.health > 0;
   // Owner, 2026-11-17: each special effect works only on a successful roll (Milestone 7 sheet section 4b).
   for (const fx of gearFx(play, 'burn')) if (alive && successRoll(play, e, 'burn')) applyEnemyStatus(play, e, 'burning', fx.turns);
+  // Round 3 (owner, 2026-11-22): the Needle family.
+  for (const fx of gearFx(play, 'poison')) if (alive && successRoll(play, e, 'poison')) applyEnemyStatus(play, e, 'poisoned', fx.turns);
   if (gearFx(play, 'stun').length && alive && successRoll(play, e, 'stun')) applyEnemyStatus(play, e, 'stunned');
   for (const fx of gearFx(play, 'leech')) {
     if (play.leechShot === play.shotNumber) break;

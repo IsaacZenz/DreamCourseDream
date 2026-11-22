@@ -90,11 +90,19 @@ export interface CurrentNode {
  * 'gear'. The cache still offers gear, an upgrade (for the run) or a heal.
  */
 export interface Offer {
-  readonly kind: 'gear' | 'upgrade' | 'heal' | 'raise' | 'acorn' | 'food';
+  readonly kind: 'gear' | 'upgrade' | 'heal' | 'raise' | 'acorn' | 'food' | 'grab';
   readonly id: string;
   sold: boolean;
   /** Food: how many courses it lasts once eaten (0 for Apple and Garlic, which work at once). */
   readonly courses?: number;
+  /** Round 3: a gear offer on sale (RUN.shop.sale.off cheaper). */
+  readonly sale?: boolean;
+  /** Round 3: the food shop's Chef's Special (always lasts RUN.shop.chefSpecial.courses). */
+  readonly special?: boolean;
+  /** Round 3: what a Grab Bag turned out to be, once bought. */
+  got?: string;
+  /** Round 3: a Grab Bag bought for a full category, waiting for "replace?" (settleGrab). */
+  waiting?: boolean;
 }
 
 /** A food in the bag (round 2a sheet section 4.1). `courses` is 0 for Apple and Garlic. */
@@ -846,7 +854,9 @@ export function priceOf(run: RunState, offer: Offer): number {
   else if (offer.kind === 'upgrade') base = UPGRADE_PRICE.base + UPGRADE_PRICE.perRegion * (Math.max(1, run.region) - 1);
   else if (offer.kind === 'heal') base = RUN.shop.heal.price;
   else if (offer.kind === 'acorn') base = ACORNS.get(offer.id)!.price;
+  else if (offer.kind === 'grab') base = RUN.shop.grabBag.price;
   else base = RUN.shop.raise.price;
+  if (offer.sale) base *= 1 - RUN.shop.sale.off;
   return Math.max(0, Math.round(base * runStats(run).get('shopPrices')));
 }
 
@@ -877,6 +887,14 @@ function shopStock(run: RunState, shop: ShopState, keep: readonly Offer[]): Offe
     const id = rollGear(run, rng, { exclude: [...takenGear, ...out.filter((o) => o.kind === 'gear').map((o) => o.id)] });
     if (id) out.push({ kind: 'gear', id, sold: false });
   }
+  // Round 3: one of the new offers is on sale (a reroll may move it).
+  const fresh = out.map((o, i) => (o.sold ? -1 : i)).filter((i) => i >= 0);
+  if (fresh.length && !out.some((o) => o.sale && o.sold)) {
+    const i = fresh[rng.int(0, fresh.length - 1)]!;
+    out[i] = { ...out[i]!, sale: true };
+  }
+  // Round 3: the Grab Bag, a 4th card, once per visit (kept as it is through rerolls).
+  out.push(keep.find((o) => o.kind === 'grab') ?? { kind: 'grab', id: 'grab-bag', sold: false });
   return out;
 }
 
@@ -917,6 +935,12 @@ function foodStock(run: RunState, shop: ShopState, keep: readonly Offer[]): Offe
     if (id === 'acorn') id = ACORN_LIST[rng.weighted(acornWeights(dropWeights(run)))]!.id;
     out.push({ kind: 'food', id, sold: false, courses: isInstantFood(id) ? 0 : rollCourses(rng) });
   }
+  // Round 3: the Chef's Special, one food that always lasts the longest.
+  const lasting = out.map((o, i) => (!o.sold && !isInstantFood(o.id) ? i : -1)).filter((i) => i >= 0);
+  if (lasting.length && !out.some((o) => o.special)) {
+    const i = lasting[rng.int(0, lasting.length - 1)]!;
+    out[i] = { ...out[i]!, courses: RUN.shop.chefSpecial.courses, special: true };
+  }
   return out;
 }
 
@@ -937,6 +961,16 @@ export function cannotBuy(run: RunState, offer: Offer, free = false): string | n
 
 function applyOffer(run: RunState, offer: Offer): void {
   if (offer.kind === 'gear') setGear(run, offer.id);
+  else if (offer.kind === 'grab') {
+    // Round 3: rarity one column better than the shop's own odds, like a hard course.
+    const got = rollGear(run, rngFor(run, `grab:${run.shop?.node ?? 'shop'}`), { better: true });
+    if (got) {
+      offer.got = got;
+      // A full category asks first (settleGrab); an empty one takes it at once.
+      if (run.gear[GEAR.get(got)!.category]) offer.waiting = true;
+      else setGear(run, got);
+    }
+  }
   else if (offer.kind === 'food') {
     run.bag.push({ id: offer.id, courses: offer.courses ?? 0 });
     // Garlic: once per shop, as Delay the Boss was.
@@ -965,6 +999,25 @@ export function buy(run: RunState, i: number, which: ShopKind = 'gear'): string 
   applyOffer(run, offer);
   offer.sold = true;
   return null;
+}
+
+/**
+ * Round 3: answer the "replace?" question for a Grab Bag that turned out to be
+ * for a full category. Yes puts it on; no leaves it in the shop as an ordinary
+ * gear offer at its normal price.
+ */
+export function settleGrab(run: RunState, take: boolean): void {
+  const i = run.shop?.offers.findIndex((o) => o.kind === 'grab' && o.waiting) ?? -1;
+  if (!run.shop || i < 0) return;
+  const o = run.shop.offers[i]!;
+  o.waiting = false;
+  if (take) setGear(run, o.got!);
+  else run.shop.offers[i] = { kind: 'gear', id: o.got!, sold: false };
+}
+
+/** The Grab Bag waiting for an answer, if any. */
+export function waitingGrab(run: RunState): Offer | null {
+  return run.shop?.offers.find((o) => o.kind === 'grab' && o.waiting) ?? null;
 }
 
 /** Replace every unsold offer in one shop. Returns null, or why it could not be done. */
