@@ -12,7 +12,7 @@ import { LAST_REGION } from '../content/run';
 import { STEP_HEIGHT } from '../content/tuning';
 import { groundAt } from '../sim/ball';
 import { railTileList, tileAt } from '../sim/course';
-import { triggerCentre, type Place, type Point, type Trigger } from '../sim/place';
+import { inTrigger, triggerCentre, type Place, type Point, type Trigger } from '../sim/place';
 import { createWalker, placeWalker, stepWalker, walkFrame, walkHeight, type Facing, type Walker } from '../sim/walk';
 import { buildCrossroads, loadPlace } from '../gen/crossroads';
 import { generateRunMap } from '../gen/runMap';
@@ -459,7 +459,8 @@ export class PlaceScene extends Phaser.Scene {
       this.accumulator = Math.min(this.accumulator + delta / 1000, 0.25);
       while (this.accumulator >= STEP) {
         this.accumulator -= STEP;
-        const fired = stepWalker(this.place, this.walker, input, STEP, this.triggers);
+        // Owner, 2026-11-22: the chest opens with Enter, not by walking into it.
+        const fired = stepWalker(this.place, this.walker, input, STEP, this.triggers).filter((t) => t.kind !== 'chest');
         if (fired.length) {
           this.drawHero();
           this.fire(fired[0]!);
@@ -518,7 +519,8 @@ export class PlaceScene extends Phaser.Scene {
         const n = this.options[t.slot ?? 0];
         const run = session.run;
         text = n && run ? `THIS WAY: ${n.id === LAST_TOWN ? 'LAST TOWN' : NODE_NAME[typeOf(run, n)]}` : '';
-      } else text = NEAR_LABEL[t.kind] ?? '';
+      } else if (t.kind === 'chest') text = inTrigger(t, w.x, w.y) ? 'ENTER: OPEN THE CHEST' : (NEAR_LABEL.chest ?? '');
+      else text = NEAR_LABEL[t.kind] ?? '';
       break;
     }
     if (text !== this.hintText) {
@@ -725,10 +727,14 @@ export class PlaceScene extends Phaser.Scene {
         const yes = this.onYes;
         this.closeModal();
         yes();
+        return;
       }
+      // Owner, 2026-11-22: next to the chest, Enter (or E) opens it.
+      if (!this.modal && !this.overview && this.triggers.some((t) => t.kind === 'chest' && inTrigger(t, this.walker.x, this.walker.y))) this.fire(this.triggers.find((t) => t.kind === 'chest')!);
     };
     kb.on('keydown-ENTER', ok);
     kb.on('keydown-SPACE', ok);
+    kb.on('keydown-E', ok);
     kb.on('keydown-ESC', () => {
       if (this.bag.key(run, 'back')) return;
       if (this.onNo) {

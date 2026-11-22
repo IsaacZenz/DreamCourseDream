@@ -3260,6 +3260,18 @@
         24
       ]
     },
+    "place-path-post": {
+      "file": "sprites/place-path-post.png",
+      "frameWidth": 10,
+      "frameHeight": 34,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        5,
+        33
+      ]
+    },
     "room-food": {
       "file": "sprites/room-food.png",
       "frameWidth": 384,

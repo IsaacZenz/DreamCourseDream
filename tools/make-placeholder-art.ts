@@ -1893,6 +1893,22 @@ function drawTeeMat(): Image {
   return img;
 }
 
+/** Owner, 2026-11-22: a post either side of a path's far end, with a small lantern, marking the way to the next course. */
+function drawPathPost(): Image {
+  const img = new Image(10, 34);
+  const wood = ramp('#8a5a30');
+  const edge = hex2('#281810');
+  for (let y = 10; y < 33; y++) for (let x = 3; x < 7; x++) img.set(x, y, x === 3 || x === 6 ? edge : wood[x === 4 ? 4 : 2]!);
+  for (let x = 2; x < 8; x++) img.set(x, 33, edge);
+  // A cap and a lantern hanging from it.
+  for (let x = 1; x < 9; x++) {
+    img.set(x, 9, edge);
+    img.set(x, 8, wood[3]!);
+  }
+  for (let y = 1; y < 8; y++) for (let x = 2; x < 8; x++) img.set(x, y, x === 2 || x === 7 || y === 1 || y === 7 ? edge : hex2(y < 4 ? '#fff4b0' : '#f8c840'));
+  return img;
+}
+
 function drawPracticeFlag(): Image {
   const img = new Image(12, 26);
   for (let y = 2; y < 25; y++) {
@@ -1983,6 +1999,7 @@ emit('place-boss-gate', sheet([drawBossGate(false), drawBossGate(true)]), 64, 84
 emit('place-chest', sheet([drawChest(false), drawChest(true)]), 18, 16, ['closed', 'open'], [9, 11]);
 emit('place-tee-mat', drawTeeMat(), 26, 14, ['idle'], [13, 7]);
 emit('place-practice-flag', drawPracticeFlag(), 12, 26, ['idle'], [2, 24]);
+emit('place-path-post', drawPathPost(), 10, 34, ['idle'], [5, 33]);
 for (const k of ['food', 'gear', 'burrow'] as const) emit(`room-${k}`, drawRoom(k), 384, 216, ['idle'], [0, 0]);
 
 const font = drawFont();

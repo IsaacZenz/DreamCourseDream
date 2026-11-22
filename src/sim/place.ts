@@ -8,7 +8,7 @@
  *     "ground": { ...a course file: format, legend, tiles, start, exit, quota, objects, rails, scenery },
  *     "props": [ { "id": "food-hut", "at": [4, 3] } ],
  *     "triggers": [ { "kind": "food", "at": [5, 2], "size": [1, 2], "back": [5.8, 3] } ],
- *     "slots": [ { "end": { ...trigger }, "gate": { ...trigger }, "gateAt": [x, y], "sign": [x, y] } ]
+ *     "slots": [ { "end": { ...trigger }, "gate": { ...trigger }, "gateAt": [x, y], "sign": [x, y], "posts": [[x, y], [x, y]] } ]
  *   }
  *
  * - ground: read with parseCourse, so heights, tiles, rails (used as fences),
@@ -20,7 +20,8 @@
  *   wide and deep (default 1 by 1). "back" is where the armadillo stands
  *   after a flat screen closes. "slot" says which path (crossroads).
  * - slots (crossroads only): the 3 possible paths, left to right. Each has its
- *   path end, the boss gate's trigger and spot, and its signpost's spot.
+ *   path end, the boss gate's trigger and spot, its signpost's spot, and the
+ *   two posts either side of the path's far end (owner, 2026-11-22).
  *
  * `parsePlace` returns readable errors instead of a place if anything is wrong.
  */
@@ -56,6 +57,8 @@ export interface Slot {
   readonly gate: Trigger;
   readonly gateAt: Point;
   readonly sign: Point;
+  /** Owner, 2026-11-22: the two posts either side of the path's far end. */
+  readonly posts: readonly Point[];
 }
 
 export interface Place {
@@ -144,9 +147,11 @@ export function parsePlace(raw: unknown): PlaceResult {
         const gate = parseTrigger(s.gate, `${where}.gate`, ground, errors);
         const gateAt = point(s.gateAt);
         const sign = point(s.sign);
+        const posts = s.posts === undefined ? [] : Array.isArray(s.posts) ? s.posts.map(point) : [null];
+        if (posts.some((q) => !q)) errors.push(`${where}: "posts" must be a list of [x, y].`);
         if (!gateAt) errors.push(`${where}: "gateAt" must be [x, y].`);
         if (!sign) errors.push(`${where}: "sign" must be [x, y].`);
-        if (end && gate && gateAt && sign) slots.push({ end: { ...end, kind: 'path', slot: i }, gate: { ...gate, kind: 'gate', slot: i }, gateAt, sign });
+        if (end && gate && gateAt && sign) slots.push({ end: { ...end, kind: 'path', slot: i }, gate: { ...gate, kind: 'gate', slot: i }, gateAt, sign, posts: posts.filter((q): q is Point => !!q) });
       });
   }
   if (raw.kind === 'crossroads' && raw.slots === undefined) errors.push('A crossroads needs "slots".');

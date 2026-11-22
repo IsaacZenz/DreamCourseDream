@@ -26,9 +26,9 @@ export const WALK = {
   stepSeconds: 0.16,
   /**
    * How close the camera is (sheet section 1.5): 2 is every art pixel drawn 2 by 2.
-   * Owner, 2026-11-21: "a hair too zoomed in", so 1.5. A whole number keeps every pixel the same size.
+   * Owner, 2026-11-21: "a hair too zoomed in", so 1.5; owner, 2026-11-22: 1.25. A whole number keeps every pixel the same size.
    */
-  cameraZoom: 1.5,
+  cameraZoom: 1.25,
 } as const;
 
 /** Ground the armadillo walks on. Water, spikes and pads block it. */
@@ -56,6 +56,8 @@ export const PROP_LIST: readonly PropDef[] = [
   { id: 'boss-gate', name: 'Boss gate', sprite: 'place-boss-gate', footprint: { kind: 'box', hx: 1, hy: 1 } },
   { id: 'chest', name: 'Chest', sprite: 'place-chest', footprint: { kind: 'box', hx: 0.3, hy: 0.3 } },
   { id: 'practice-flag', name: 'Practice flag', sprite: 'place-practice-flag', footprint: { kind: 'round', r: 0.06 } },
+  // Owner, 2026-11-22: a post on each side of a path's far end, marking the way into the next course.
+  { id: 'path-post', name: 'Path post', sprite: 'place-path-post', footprint: { kind: 'round', r: 0.1 } },
   { id: 'tee-mat', name: 'Tee mat', sprite: 'place-tee-mat', footprint: null },
 ];
 
@@ -66,7 +68,7 @@ export const PROPS: ReadonlyMap<string, PropDef> = new Map(PROP_LIST.map((p) => 
  * - food, gear, burrow: open that place's flat screen.
  * - exit: leave the town (asks first).
  * - tee: start the practice course.
- * - chest: open the cache's pick.
+ * - chest: open the cache's pick (owner, 2026-11-22: by pressing Enter while next to the chest, not by walking into it).
  * - path: go to the node on that path (crossroads; `slot` says which path).
  * - gate: the boss gate (crossroads; replaces a path end when the boss is on that path).
  * - back: back to the crossroads (the cache clearing, after the pick).

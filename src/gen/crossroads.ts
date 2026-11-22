@@ -56,7 +56,7 @@ export function buildCrossroads(spec: CrossroadsSpec): Crossroads {
     ground: RawGround;
     props: { id: string; at: [number, number] }[];
     triggers: Record<string, unknown>[];
-    slots: { end: Record<string, unknown>; gate: Record<string, unknown>; gateAt: [number, number]; sign: [number, number] }[];
+    slots: { end: Record<string, unknown>; gate: Record<string, unknown>; gateAt: [number, number]; sign: [number, number]; posts?: [number, number][] }[];
   };
   const rng = Rng.fromSeed(`${spec.seed}/crossroads`);
   const used = slotsFor(count);
@@ -74,7 +74,14 @@ export function buildCrossroads(spec: CrossroadsSpec): Crossroads {
       raw.props.push({ id: 'boss-gate', at: s.gateAt });
       raw.triggers.push({ ...s.gate, kind: 'gate', slot: choice });
       keepClear.push({ x: s.gateAt[0], y: s.gateAt[1] });
-    } else raw.triggers.push({ ...s.end, kind: 'path', slot: choice });
+    } else {
+      raw.triggers.push({ ...s.end, kind: 'path', slot: choice });
+      // Owner, 2026-11-22: a post either side of the path's far end, the way into the next course.
+      for (const p of s.posts ?? []) {
+        raw.props.push({ id: 'path-post', at: p });
+        keepClear.push({ x: p[0], y: p[1] });
+      }
+    }
   });
 
   // Scatter: blockers away from paths and props; scenery on grass.
