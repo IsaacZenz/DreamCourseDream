@@ -15,7 +15,8 @@
     "art": "node tools/make-placeholder-art.ts",
     "gen": "node tools/gen.ts",
     "gen:batch": "node tools/gen-batch.ts",
-    "arenas": "node tools/arena-check.ts"
+    "arenas": "node tools/arena-check.ts",
+    "balance": "node tools/balance.ts"
   },
   "dependencies": {
     "phaser": "4.2.1"

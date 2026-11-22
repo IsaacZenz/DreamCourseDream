@@ -172,14 +172,14 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [x] Remaining statuses: Poisoned, Burning, Chilled (round 1)
 - [x] More enemy types in both families; a second and third boss, one with a gimmick (round 1: five new bugs, Gloamhorn, the Brood Queen)
 - [x] Linked objects (switches, gates, bridges); optional course modifiers (round 2b)
-- [ ] Second gear slot unlocks; extra characters
+- [x] Second gear slot unlocks; extra characters (round 3: three second pockets at 17 blue stars; Thud and Pip at 21)
 - [x] Three biomes (round 2b: Meadow, Bog, Thornwood; landform preferences and detail weights, as the generator no longer uses chunks)
 - [x] Theme switch after each boss (day, night, jungle, underground, spooky): same objects, different art set through the manifest (owner, 2026-11-14; round 2b: day, bog, thornwood, night, underground, spooky)
-- [ ] More gear and shop variety
+- [x] More gear and shop variety (round 3: the Needle poison family; Sale, Grab Bag, Chef's Special)
 - [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
-- [ ] Resolve the remaining open questions with the owner
+- [x] Resolve the remaining open questions with the owner (2026-11-22: every remaining default kept)
 - [x] Owner, 2026-11-19: boss introduction cutscene pop-ups (placeholder cards built in round 1; art in Milestone 9)
-- [ ] Owner, 2026-11-19: the map shows only the path taken and the next 1 to 3 choices, with a testing switch to show the whole map (round 3)
+- [x] Owner, 2026-11-19: the map shows only the path taken and the next 1 to 3 choices, with a testing switch to show the whole map (round 3)
 - [x] Owner, 2026-11-18: endless mode after the third region: each new region scales the same way, bosses from the boss randomizer (round 1)
 
 **Done when:** three regions and a final boss are playable and the owner judges the difficulty curve fair.

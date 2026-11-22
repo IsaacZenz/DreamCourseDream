@@ -328,6 +328,7 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 - Rolling over gear of a category already held drops the current item and equips the new one automatically.
 - Gear never needs a button. Weapon effects are automatic and trigger only on contact with an enemy.
 - Gear is lost on death, except gear stored in the Burrow (owner, 2026-11-15; section 11).
+- **Built (round 3, owner 2026-11-22): the Needle family**, weapons that poison on a successful roll: Pin Needle (common, 1 turn), Thistle Needle (uncommon, 2 turns), Venom Needle (rare, 2 turns, hit damage +1), Hex Needle (double rare, 3 turns, hit damage +1). Weapons now have 4 items per rarity from common to double rare, like armour and baubles (70 items in all). With two weapons, each spins its own success wheel with its own slices; the first one's element is used.
 
 **Default:**
 
@@ -424,6 +425,8 @@ Build in Milestone 6.
 - Eating is optional; unused food stays in the bag for later courses.
 - **Owner, 2026-11-21: the food shop sells the acorns plus the existing shop items, renamed as food.** The gear shop sells gear only. Each shop has its own stock and its own reroll price. Names: Apple (heal 2) and Garlic (delay the boss) chosen by the owner; Mushroom Stew, Trail Mix, Chili Pepper, Carrot and Clover Honey for the five stat boosts are working names.
 - **Owner, 2026-11-21 (later the same day): every food except Apple and Garlic lasts 1 to 3 courses**, the longer ones rarer (not as rare as gear), and food is cheaper than the old run-long boosts. Durations: 50% one course, 30% two, 20% three (owner, sheet Q1). Garlic works exactly as Delay the Boss did. No extra art: foods use the existing icons. Code names stay the same. **Food shop 4 offers, gear shop 3**, each with its own reroll for yellow stars. Full table, chances and prices: `docs/plans/milestone-8-round-2a.md` section 4 (waiting for sign-off).
+
+**Built (round 3, owner 2026-11-22): shop variety.** The gear shop marks one of its 3 offers **SALE** (30% off; a reroll may move it) and has a 4th card, the **Grab Bag**: 25 stars for a random gear item rolled one rarity column better than the shop's own odds, once per visit; if it is for a full category you are asked which to replace, and saying no leaves it in the shop at its normal price. The food shop marks one food the **Chef's Special**: it always lasts 3 courses, at its normal price. Numbers in `src/content/run.ts` (`RUN.shop`).
 
 Planned in Milestone 8 round 2 (rules) and 8b (walking up to each shop).
 
