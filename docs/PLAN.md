@@ -306,3 +306,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-21 — Owner after playing 8b: walking camera zoom 1.5 (was 2), drawn as one scaled picture so tiles have no seams; crossroads signposts show the destination's map icon. Test build updated.
 - 2026-11-22 — Owner: walking camera zoom 1.25; the cache chest opens with Enter; lantern posts either side of each path's far end at the crossroads. Test build updated.
 - 2026-11-22 — Owner: crossroads signposts removed; each destination's map icon floats past its path's end between the posts, and nearing the entrance pops up its card. Test build updated.
+- 2026-11-22 — Owner: crossroads path ends and the boss gate are taken with Enter (standing at them shows the card and "ENTER: GO THIS WAY"). Test build updated.

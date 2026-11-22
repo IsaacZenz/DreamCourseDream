@@ -49,6 +49,9 @@ export interface PlaceSceneData {
   back?: TriggerKind;
 }
 
+/** Owner, 2026-11-22: these are used with Enter, not by walking onto them. */
+const ENTER_TO_USE: ReadonlySet<TriggerKind> = new Set(['chest', 'path', 'gate']);
+
 /** What a trigger is called when the armadillo is near it. */
 const NEAR_LABEL: Partial<Record<TriggerKind, string>> = {
   food: 'THE FOOD SHOP: WALK IN',
@@ -464,7 +467,8 @@ export class PlaceScene extends Phaser.Scene {
       while (this.accumulator >= STEP) {
         this.accumulator -= STEP;
         // Owner, 2026-11-22: the chest opens with Enter, not by walking into it.
-        const fired = stepWalker(this.place, this.walker, input, STEP, this.triggers).filter((t) => t.kind !== 'chest');
+        // Owner, 2026-11-22: the chest, the path ends and the boss gate need Enter; only doors open by walking in.
+        const fired = stepWalker(this.place, this.walker, input, STEP, this.triggers).filter((t) => !ENTER_TO_USE.has(t.kind));
         if (fired.length) {
           this.drawHero();
           this.fire(fired[0]!);
@@ -522,8 +526,10 @@ export class PlaceScene extends Phaser.Scene {
       if (t.kind === 'path') {
         const n = this.options[t.slot ?? 0];
         const run = session.run;
-        text = n && run ? `THIS WAY: ${n.id === LAST_TOWN ? 'LAST TOWN' : NODE_NAME[typeOf(run, n)]}` : '';
-      } else if (t.kind === 'chest') text = inTrigger(t, w.x, w.y) ? 'ENTER: OPEN THE CHEST' : (NEAR_LABEL.chest ?? '');
+        const name = n && run ? (n.id === LAST_TOWN ? 'LAST TOWN' : NODE_NAME[typeOf(run, n)]) : '';
+        text = this.atEntrance() === t ? `ENTER: GO THIS WAY (${name})` : `THIS WAY: ${name}`;
+      } else if (t.kind === 'gate') text = this.atEntrance() === t ? 'ENTER: THE BOSS GATE' : (NEAR_LABEL.gate ?? '');
+      else if (t.kind === 'chest') text = inTrigger(t, w.x, w.y) ? 'ENTER: OPEN THE CHEST' : (NEAR_LABEL.chest ?? '');
       else text = NEAR_LABEL[t.kind] ?? '';
       break;
     }
@@ -579,6 +585,22 @@ export class PlaceScene extends Phaser.Scene {
         );
       }
     }
+  }
+
+  /** The path end or boss gate the armadillo is standing at (within a tile of it), if any; the nearest wins. */
+  private atEntrance(): Trigger | null {
+    const w = this.walker;
+    let best: Trigger | null = null;
+    let bestD = 1;
+    for (const t of this.triggers) {
+      if (t.kind !== 'path' && t.kind !== 'gate') continue;
+      const d = Math.hypot(w.x - Math.max(t.x0, Math.min(t.x1, w.x)), w.y - Math.max(t.y0, Math.min(t.y1, w.y)));
+      if (d <= bestD) {
+        best = t;
+        bestD = d;
+      }
+    }
+    return best;
   }
 
   /** "Not yet" or "stay": stand back from the trigger. */
@@ -733,8 +755,11 @@ export class PlaceScene extends Phaser.Scene {
         yes();
         return;
       }
-      // Owner, 2026-11-22: next to the chest, Enter (or E) opens it.
-      if (!this.modal && !this.overview && this.triggers.some((t) => t.kind === 'chest' && inTrigger(t, this.walker.x, this.walker.y))) this.fire(this.triggers.find((t) => t.kind === 'chest')!);
+      if (this.modal || this.overview) return;
+      // Owner, 2026-11-22: next to the chest, Enter (or E) opens it; at a path's end or the boss gate, Enter goes that way.
+      const chest = this.triggers.find((t) => t.kind === 'chest' && inTrigger(t, this.walker.x, this.walker.y));
+      const way = chest ?? this.atEntrance();
+      if (way) this.fire(way);
     };
     kb.on('keydown-ENTER', ok);
     kb.on('keydown-SPACE', ok);
