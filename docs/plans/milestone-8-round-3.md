@@ -1,6 +1,6 @@
 # Milestone 8 round 3 design sheet: second gear slots, characters, more gear and shop variety, the map, and the balance pass
 
-**Status: waiting for the owner's sign-off.** Nothing on this sheet is built yet.
+**Status: signed off by the owner 2026-11-22**, with two changes: each second pocket costs **17** blue stars (was 15) and each new character costs **21** (was 20). Everything else uses the defaults.
 
 ## 0. Where this fits
 
@@ -28,9 +28,9 @@ These are permanent, bought with blue stars in the Burrow between runs, or in a 
 
 | Unlock | Cost (blue stars) | What it does |
 |---|---|---|
-| Second Weapon Pocket | 15 | Hold two weapons |
-| Second Armour Pocket | 15 | Hold two pieces of armour |
-| Second Bauble Pocket | 15 | Hold two baubles |
+| Second Weapon Pocket | 17 | Hold two weapons |
+| Second Armour Pocket | 17 | Hold two pieces of armour |
+| Second Bauble Pocket | 17 | Hold two baubles |
 
 For scale, a region gives about 12 to 15 blue stars: 1 per course, 2 per hard course and 5 to 12 for the boss. One pocket is about one region's earnings.
 
@@ -60,7 +60,7 @@ The names are working names, and the art is a recoloured placeholder. Each is a 
 
 | Field | **Rollo** (now) | **Thud** (heavy) | **Pip** (light) |
 |---|---|---|---|
-| Unlock cost (blue stars) | free | 20 | 20 |
+| Unlock cost (blue stars) | free | 21 | 21 |
 | Max health | 5 | 6 | 4 |
 | Max shots | 4 | 4 | 5 |
 | Hit damage | 1 | 2 | 1 |
@@ -227,4 +227,4 @@ Question 9 (the game's name, setting and final boss) belongs to Milestone 9 and 
 
 ## 11. Sign-off
 
-- [ ] Owner sign-off, with any changes, recorded here and in FEATURES.md and DESIGN.md.
+- [x] Owner sign-off, 2026-11-22: "Pocket cost 17 stars. Character cost 21. Rest is the defaults." Questions 1 and 3 changed (17 and 21 blue stars); questions 2 and 4 to 10 use their defaults. Recorded in FEATURES.md and DESIGN.md.

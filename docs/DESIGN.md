@@ -297,12 +297,12 @@ Opus: use the default and say that you did. The owner can change any of these at
 | # | Question | Default until answered |
 |---|---|---|
 | 1 | Boss countdown length, and whether it varies by region | **Answered (owner, 2026-11-15): 7**, same for every region, stored as a tuning number. The boss may still be offered earlier. Before the forced boss there is always an optional last town |
-| 2 | Reward for fighting the boss early | +1 blue star per countdown step remaining |
-| 3 | Does recovering refill all shots or only some? | All |
+| 2 | Reward for fighting the boss early | **Answered (owner, 2026-11-22): default kept.** +1 blue star per countdown step remaining |
+| 3 | Does recovering refill all shots or only some? | **Answered (owner, 2026-11-22): default kept.** All |
 | 4 | ~~Power input: sweeping meter, or drag distance?~~ | Answered 2026-11-14: sweeping meter (see section 5) |
-| 5 | How many uses does an ability have? | Unlimited uses, one per shot, until replaced |
-| 6 | Can gear be sold? | No. Swapping is covered in FEATURES.md section 8 |
-| 7 | Is there healing outside shops and caches? (Owner, 2026-11-15: default kept) | Bosses heal fully; nothing else |
+| 5 | How many uses does an ability have? | **Answered (owner, 2026-11-22): default kept.** Unlimited uses, one per shot, until replaced |
+| 6 | Can gear be sold? | **Answered (owner, 2026-11-22): default kept.** No. Swapping is covered in FEATURES.md section 8 |
+| 7 | Is there healing outside shops and caches? (Owner, 2026-11-15: default kept) | **Answered (owner, 2026-11-22): default kept.** Bosses heal fully; nothing else |
 | 8 | Does the run have an end, or go until death? | **Answered (owner, 2026-11-18):** three regions and a final boss, then the run carries on into **endless mode**: each new region scales the same way (size, threat, toughness), and each region's boss comes from the boss randomizer. Course size caps at region 3's size; everything else keeps growing. Details in `docs/plans/milestone-8.md` section 10a |
 | 9 | Theme, setting, main character and the game's name | **Partly answered (owner, 2026-11-15), planning only:** the hero is an **armadillo** who stands on two legs, rolls up into a ball when launched, and pops back out when the ball stops. ~~Villains share one theme, not yet chosen: either reptiles and amphibians with an alligator as the main villain, or insects.~~ **Owner, 2026-11-18: the villains are insects.** Every enemy is a bug (names in `docs/plans/milestone-8.md` section 7.0); the leader is the final boss, still being chosen. Name and setting still undecided; all needed before Milestone 9 |
-| 10 | Do patrollers hurt, or only block and deflect? | Per type; the first patroller built deals 1 damage and knocks the ball back |
+| 10 | Do patrollers hurt, or only block and deflect? | **Answered (owner, 2026-11-22): default kept.** Per type; the first patroller built deals 1 damage and knocks the ball back |
