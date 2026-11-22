@@ -302,7 +302,7 @@ function playOne(run: RunState, foods: { id: string; eaten: boolean }[] = []): v
 }
 
 describe('two shops (sheet section 3)', () => {
-  it('arriving in a town opens a food shop with 4 foods and a gear shop with 3 gear items', () => {
+  it('arriving in a town opens a food shop with 4 foods and a gear shop with 3 gear items (round 3: and a Grab Bag)', () => {
     const run = createRun('TOWN', generateRunMap('TOWN'));
     run.health = 1;
     // With the countdown at 0 the map offers the last town before the boss: go in.
@@ -311,8 +311,9 @@ describe('two shops (sheet section 3)', () => {
     expect(run.status).toBe('shop');
     expect(run.foodShop!.offers).toHaveLength(FOOD.foodOffers);
     expect(run.foodShop!.offers.every((o) => o.kind === 'food')).toBe(true);
-    expect(run.shop!.offers).toHaveLength(FOOD.gearOffers);
-    expect(run.shop!.offers.every((o) => o.kind === 'gear')).toBe(true);
+    expect(run.shop!.offers).toHaveLength(FOOD.gearOffers + 1);
+    expect(run.shop!.offers.slice(0, FOOD.gearOffers).every((o) => o.kind === 'gear')).toBe(true);
+    expect(run.shop!.offers[FOOD.gearOffers]!.kind).toBe('grab');
   });
 
   it('each shop rerolls on its own, at its own price', () => {
@@ -327,13 +328,15 @@ describe('two shops (sheet section 3)', () => {
 
   it('food lasts 1, 2 or 3 courses, about 50%, 30% and 20% of the time; Apple and Garlic work at once', () => {
     const counts = [0, 0, 0];
-    for (let i = 0; i < 300; i++) {
+    // Round 3: more towns, since the Chef's Special is left out of the sample.
+    for (let i = 0; i < 800; i++) {
       const run = townRun(`D${i}`);
       run.health = 1;
       openFoodShop(run);
       for (const o of run.foodShop!.offers) {
         if (o.id === 'heal' || o.id === 'raise') expect(o.courses).toBe(0);
-        else counts[o.courses! - 1]!++;
+        // Round 3: the Chef's Special always lasts 3, so it is left out of the odds.
+        else if (!o.special) counts[o.courses! - 1]!++;
       }
     }
     const total = counts.reduce((a, b) => a + b, 0);
