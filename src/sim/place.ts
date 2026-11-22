@@ -21,7 +21,8 @@
  *   after a flat screen closes. "slot" says which path (crossroads).
  * - slots (crossroads only): the 3 possible paths, left to right. Each has its
  *   path end, the boss gate's trigger and spot, its signpost's spot, and the
- *   two posts either side of the path's far end (owner, 2026-11-22).
+ *   two posts either side of the path's far end, and "beyond", where the
+ *   destination's icon floats past the end (owner, 2026-11-22).
  *
  * `parsePlace` returns readable errors instead of a place if anything is wrong.
  */
@@ -59,6 +60,8 @@ export interface Slot {
   readonly sign: Point;
   /** Owner, 2026-11-22: the two posts either side of the path's far end. */
   readonly posts: readonly Point[];
+  /** Owner, 2026-11-22: where the destination's map icon floats, just past the path's end (off the ground). */
+  readonly beyond: Point | null;
 }
 
 export interface Place {
@@ -149,9 +152,11 @@ export function parsePlace(raw: unknown): PlaceResult {
         const sign = point(s.sign);
         const posts = s.posts === undefined ? [] : Array.isArray(s.posts) ? s.posts.map(point) : [null];
         if (posts.some((q) => !q)) errors.push(`${where}: "posts" must be a list of [x, y].`);
+        const beyond = s.beyond === undefined ? null : point(s.beyond);
+        if (s.beyond !== undefined && !beyond) errors.push(`${where}: "beyond" must be [x, y].`);
         if (!gateAt) errors.push(`${where}: "gateAt" must be [x, y].`);
         if (!sign) errors.push(`${where}: "sign" must be [x, y].`);
-        if (end && gate && gateAt && sign) slots.push({ end: { ...end, kind: 'path', slot: i }, gate: { ...gate, kind: 'gate', slot: i }, gateAt, sign, posts: posts.filter((q): q is Point => !!q) });
+        if (end && gate && gateAt && sign) slots.push({ end: { ...end, kind: 'path', slot: i }, gate: { ...gate, kind: 'gate', slot: i }, gateAt, sign, posts: posts.filter((q): q is Point => !!q), beyond });
       });
   }
   if (raw.kind === 'crossroads' && raw.slots === undefined) errors.push('A crossroads needs "slots".');

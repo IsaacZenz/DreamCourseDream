@@ -185,10 +185,12 @@ describe('Milestone 8b: the crossroads', () => {
     expect(c.place.ground.objects).not.toEqual(a.place.ground.objects);
   });
 
-  it('has one signpost and one path end per choice, and a boss gate on the boss path', () => {
+  it('has one path end per choice with a post either side, a boss gate on the boss path, an icon spot past each end, and no signposts', () => {
     const x = buildCrossroads({ seed: 'S', count: 2, boss: 1 });
-    expect(x.signs.length).toBe(2);
-    expect(x.place.props.filter((p) => p.id === 'signpost').length).toBe(2);
+    expect(x.ends.length).toBe(2);
+    expect(x.beyond.every((b) => b !== null)).toBe(true);
+    expect(x.place.props.filter((p) => p.id === 'signpost').length).toBe(0);
+    expect(x.place.props.filter((p) => p.id === 'path-post').length).toBe(2);
     expect(x.place.props.filter((p) => p.id === 'boss-gate').length).toBe(1);
     expect(x.place.triggers.map((t) => [t.kind, t.slot])).toEqual([
       ['path', 0],

@@ -63,8 +63,12 @@ const NEAR_LABEL: Partial<Record<TriggerKind, string>> = {
 
 interface Sign {
   readonly at: Point;
-  /** The destination's map icon, shown above the signpost (sheet section 3.3). */
+  /** The destination's map icon (sheet section 3.3)... */
   readonly icon?: string;
+  /** ...floating here, just past the path's end between its posts (owner, 2026-11-22). */
+  readonly iconAt?: Point | null;
+  /** How near the armadillo must be for the card to show, in tiles. */
+  readonly reach?: number;
   readonly title: string;
   readonly color: number;
   readonly lines: readonly string[];
@@ -212,13 +216,13 @@ export class PlaceScene extends Phaser.Scene {
         const type = typeOf(run, n);
         const mod = courseModFor(run, n);
         const lines = n.id === LAST_TOWN ? ['OPTIONAL: SHOP AND BURROW', 'BEFORE THE BOSS'] : nodeInfo(run, type);
-        this.signs.push({
-          at: x.signs[i]!,
-          icon: n.id === LAST_TOWN ? 'node-shop' : `node-${type}`,
+        const card = {
           title: n.id === LAST_TOWN ? 'LAST TOWN' : NODE_NAME[type],
           color: type === 'boss' ? BOSS_RED : type === 'hard' ? 0xf8a040 : GOOD,
           lines: [...lines, ...(mod ? [courseModLabel(mod)] : [])],
-        });
+        };
+        // Owner, 2026-11-22: the entrance at the path's end shows the card, with the icon floating past it (no signposts).
+        this.signs.push({ at: x.ends[i]!, icon: n.id === LAST_TOWN ? 'node-shop' : `node-${type}`, iconAt: x.beyond[i] ?? null, reach: 2.2, ...card });
       });
     }
   }
@@ -331,11 +335,11 @@ export class PlaceScene extends Phaser.Scene {
       } else if (p.id === 'tee-mat') this.image(def.sprite, frame, q.x, q.y, tileDepth(Math.floor(p.x), Math.floor(p.y), 'arrow'), false);
       else this.image(def.sprite, frame, q.x, q.y, this.standingDepth(p.x, p.y), !!def.themed);
     }
-    // Each crossroads signpost shows its destination's map icon, bobbing above the board.
+    // Owner, 2026-11-22: each path's destination icon floats out in space just past its end, between the posts.
     for (const s of this.signs) {
-      if (!s.icon || !m.sprites[s.icon]) continue;
-      const q = this.onGround(s.at.x, s.at.y);
-      const icon = this.image(s.icon, 'idle', q.x, q.y - 38, this.standingDepth(s.at.x, s.at.y) + 0.01, false);
+      if (!s.icon || !s.iconAt || !m.sprites[s.icon]) continue;
+      const q = project(s.iconAt.x, s.iconAt.y, this.groundZ(s.at.x, s.at.y));
+      const icon = this.image(s.icon, 'idle', q.x, q.y - 20, 1e6, false);
       this.tweens.add({ targets: icon, y: icon.y - 2, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
     this.heroShadow = this.image('ball-shadow', 'idle', 0, 0, 0, false).setScale(1.6, 1.4);
@@ -495,10 +499,10 @@ export class PlaceScene extends Phaser.Scene {
   private updateNear(): void {
     const w = this.walker;
     let best: Sign | null = null;
-    let bestD = 1.5;
+    let bestD = Infinity;
     for (const s of this.signs) {
       const d = Math.hypot(w.x - s.at.x, w.y - s.at.y);
-      if (d < bestD) {
+      if (d < (s.reach ?? 1.5) && d < bestD) {
         best = s;
         bestD = d;
       }
@@ -681,7 +685,7 @@ export class PlaceScene extends Phaser.Scene {
     this.message = null;
     if (!text) return;
     const t = pixelText(this, shared.manifest, 0, 0, text, { color, background: UI_BG });
-    this.message = this.add.container(Math.round((VIEW_WIDTH - t.width) / 2), 20, [t]).setScrollFactor(0).setDepth(UI_DEPTH + 1);
+    this.message = this.add.container(Math.round((VIEW_WIDTH - t.width) / 2), VIEW_HEIGHT - 20, [t]).setScrollFactor(0).setDepth(UI_DEPTH + 1);
   }
 
   /** Health, stars, the countdown, the bag and the gear along the top, as in the town. */

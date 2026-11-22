@@ -2,11 +2,11 @@
  * Builds a crossroads (Milestone 8b design sheet section 3.2): one of three
  * hand-made templates (1, 2 or 3 paths), with props and scenery scattered by
  * the seeded random number generator from the run seed and the node, so the
- * same run always looks the same. Adds a signpost at the start of each path,
- * and the boss gate at the end of the boss's path.
+ * same run always looks the same. Adds a lantern post either side of each
+ * path's far end, and the boss gate at the end of the boss's path.
  */
 import { PLACE_FILES } from '../content/places/index.ts';
-import { parsePlace, type Place, type Point } from '../sim/place.ts';
+import { parsePlace, triggerCentre, type Place, type Point } from '../sim/place.ts';
 import { Rng } from '../sim/rng.ts';
 
 /** Which template paths the choices use, left to right (sheet section 3.2). */
@@ -29,6 +29,10 @@ export interface Crossroads {
   readonly place: Place;
   /** Each choice's signpost, by choice index. */
   readonly signs: readonly Point[];
+  /** Each choice's entrance: the middle of its path end (or its boss gate's trigger), by choice index. */
+  readonly ends: readonly Point[];
+  /** Where each choice's map icon floats, just past its path end (owner, 2026-11-22), by choice index. */
+  readonly beyond: readonly (Point | null)[];
 }
 
 const SCENERY_WEIGHTS: Readonly<Record<string, number>> = { tuft: 4, flowers: 3, pebbles: 2, mushrooms: 1, leaves: 1, fireflies: 0.5 };
@@ -68,7 +72,7 @@ export function buildCrossroads(spec: CrossroadsSpec): Crossroads {
   const keepClear: Point[] = [];
   used.forEach((slot, choice) => {
     const s = raw.slots[slot]!;
-    raw.props.push({ id: 'signpost', at: s.sign });
+    // Owner, 2026-11-22: no signposts at the crossroads (the icon past each path's end and its card do the job); the spot stays clear.
     keepClear.push({ x: s.sign[0], y: s.sign[1] });
     if (choice === spec.boss) {
       raw.props.push({ id: 'boss-gate', at: s.gateAt });
@@ -103,7 +107,13 @@ export function buildCrossroads(spec: CrossroadsSpec): Crossroads {
   }
   const res = parsePlace(raw);
   if (!res.ok) throw new Error(`Crossroads did not build: ${res.errors.join(' ')}`);
-  return { place: res.place, signs: used.map((slot) => ({ x: raw.slots[slot]!.sign[0], y: raw.slots[slot]!.sign[1] })) };
+  const slots = used.map((slot) => res.place.slots[slot]!);
+  return {
+    place: res.place,
+    signs: slots.map((s) => s.sign),
+    ends: slots.map((s, choice) => triggerCentre(choice === spec.boss ? s.gate : s.end)),
+    beyond: slots.map((s) => s.beyond),
+  };
 }
 
 /** A hand-built place by file id (towns, the cache clearing). */
