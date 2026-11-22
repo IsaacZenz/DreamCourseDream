@@ -5,7 +5,7 @@
  * between runs, in the Burrow. Plain TypeScript; the display saves it.
  */
 import { ABILITY_PRICE, PERMANENT_UPGRADE_LIST, PERMANENT_UPGRADES, STARTING_ABILITIES } from '../content/progress.ts';
-import { DEFAULT_CHARACTER } from '../content/characters.ts';
+import { CHARACTER_LIST, CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import type { Modifier } from './stats.ts';
 
 export interface Profile {
@@ -17,8 +17,10 @@ export interface Profile {
   readonly abilities: string[];
   /** The one a run starts with, or null. */
   startAbility: string | null;
-  /** Always Rollo for now; Milestone 8 adds characters. */
+  /** The character a run starts with (round 3: Rollo, or an owned one). */
   character: string;
+  /** Round 3: characters bought (Rollo is always owned and not listed). */
+  readonly characters: string[];
   /** Boss ids beaten at least once (FEATURES.md section 15: first-time unlocks). */
   readonly bossesBeaten: string[];
   /** The arena of the last boss fight, so the next one differs (owner, 2026-11-17). */
@@ -28,7 +30,7 @@ export interface Profile {
 }
 
 export function newProfile(): Profile {
-  return { stash: 0, levels: {}, abilities: [], startAbility: null, character: DEFAULT_CHARACTER, bossesBeaten: [], lastArena: null, totals: { runs: 0, bossWins: 0, bestRegion: 1, wins: 0 } };
+  return { stash: 0, levels: {}, abilities: [], startAbility: null, character: DEFAULT_CHARACTER, characters: [], bossesBeaten: [], lastArena: null, totals: { runs: 0, bossWins: 0, bestRegion: 1, wins: 0 } };
 }
 
 /** Levels as permanent modifiers (FEATURES.md section 1). */
@@ -86,4 +88,37 @@ export function cycleStartAbility(p: Profile, dir: 1 | -1): void {
   const options: (string | null)[] = [null, ...STARTING_ABILITIES.filter((a) => p.abilities.includes(a))];
   const i = options.indexOf(p.startAbility);
   p.startAbility = options[(i + dir + options.length) % options.length] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Characters (round 3, owner 2026-11-22): bought once with blue stars, then chosen per run.
+
+export function ownsCharacter(p: Profile, id: string): boolean {
+  const c = CHARACTERS.get(id);
+  return !!c && (c.unlockCost === 0 || p.characters.includes(id));
+}
+
+export function cannotBuyCharacter(p: Profile, id: string): string | null {
+  const c = CHARACTERS.get(id);
+  if (!c) return 'NOT FOR SALE';
+  if (ownsCharacter(p, id)) return 'OWNED';
+  if (c.unlockCost > p.stash) return 'NOT ENOUGH BLUE STARS';
+  return null;
+}
+
+/** Buy a character. It becomes the chosen one. */
+export function buyCharacter(p: Profile, id: string): string | null {
+  const why = cannotBuyCharacter(p, id);
+  if (why) return why;
+  p.stash -= CHARACTERS.get(id)!.unlockCost;
+  p.characters.push(id);
+  p.character = id;
+  return null;
+}
+
+/** Step the character toggle through the owned characters. */
+export function cycleCharacter(p: Profile, dir: 1 | -1): void {
+  const options = CHARACTER_LIST.filter((c) => ownsCharacter(p, c.id)).map((c) => c.id);
+  const i = Math.max(0, options.indexOf(p.character));
+  p.character = options[(i + dir + options.length) % options.length] ?? DEFAULT_CHARACTER;
 }

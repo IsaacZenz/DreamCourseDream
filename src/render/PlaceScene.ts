@@ -16,7 +16,7 @@ import { triggerCentre, type Place, type Point, type Trigger } from '../sim/plac
 import { createWalker, placeWalker, stepWalker, walkFrame, walkHeight, type Facing, type Walker } from '../sim/walk';
 import { buildCrossroads, loadPlace } from '../gen/crossroads';
 import { generateRunMap } from '../gen/runMap';
-import { addUpgrade, bossOf, choices, debugVisit, courseJobFor, courseModFor, debugAddStars, debugSetCountdown, enterNode, leaveShop, runStats, setGear, startRegion, typeOf, upcomingJobs, LAST_TOWN, type CourseJob, type MapNode, type RunState } from '../sim/run';
+import { addUpgrade, bossOf, characterOf, choices, debugVisit, courseJobFor, courseModFor, debugAddStars, debugSetCountdown, enterNode, leaveShop, runStats, setGear, startRegion, typeOf, upcomingJobs, LAST_TOWN, type CourseJob, type MapNode, type RunState } from '../sim/run';
 import { courseModLabel } from './courseModView';
 import { BagMenu } from './bagMenu';
 import { prefetch } from './genQueue';
@@ -359,7 +359,7 @@ export class PlaceScene extends Phaser.Scene {
       this.tweens.add({ targets: icon, y: icon.y - 2, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
     this.heroShadow = this.image('ball-shadow', 'idle', 0, 0, 0, false).setScale(1.6, 1.4);
-    this.hero = this.image('armadillo', 'dr-stand', 0, 0, 0, false);
+    this.hero = this.image(this.walkSprite(), 'dr-stand', 0, 0, 0, false);
     const b = courseBounds(g);
     this.origin = { x: Math.ceil(24 - b.left), y: Math.ceil(56 - b.top) };
     const w = Math.ceil(b.right - b.left + 48);
@@ -387,6 +387,11 @@ export class PlaceScene extends Phaser.Scene {
     return `${sy < 0 ? 'u' : 'd'}${sx < 0 ? 'l' : 'r'}` as Facing;
   }
 
+  /** Round 3: the run's character, as a walking armadillo. */
+  private walkSprite(): string {
+    return characterOf(session.run?.character).walkSprite;
+  }
+
   private drawHero(): void {
     const w = this.walker;
     const h = walkHeight(this.place, w.x, w.y) ?? 0;
@@ -395,7 +400,7 @@ export class PlaceScene extends Phaser.Scene {
     const under = getPanel().groundBumps ? tileAt(this.place.ground, Math.floor(w.x), Math.floor(w.y)) : null;
     if (under) p.y -= groundBump(under);
     const left = w.facing[1] === 'l';
-    const id = left ? 'armadillo-left' : 'armadillo';
+    const id = left ? `${this.walkSprite()}-left` : this.walkSprite();
     const entry = shared.manifest.sprites[id]!;
     this.hero.setTexture(id, frameIndex(entry, `${w.facing}-${walkFrame(w)}`));
     this.hero.setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight);

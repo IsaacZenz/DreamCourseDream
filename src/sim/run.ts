@@ -17,7 +17,7 @@
  * stored gear is safe from death, so it lives outside the run and is passed in
  * when a run starts. The display saves it in the browser.
  */
-import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
+import { CHARACTERS, DEFAULT_CHARACTER, type CharacterDef } from '../content/characters.ts';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, LUCK_SHIFT, NO_GEAR, RARITIES, RARITY_ODDS, type GearCategory, type GearDef, type GearSlots } from '../content/gear.ts';
 import { ACORN_LIST, ACORNS, ACORN_SHOP_WEIGHT, FOOD, FOOD_LIST, FOODS, acornWeights, isInstantFood } from '../content/consumables.ts';
 import { BOSSES, BOSS_IDS, bossHealthIn } from '../content/bosses.ts';
@@ -198,6 +198,8 @@ export interface RunState {
   lastArena: string | null;
   /** Milestone 8: the final boss (region three) was beaten on this run: the run is won, and may carry on into endless mode. */
   beatFinal: boolean;
+  /** Round 3 (owner, 2026-11-22): the character this run is played with. */
+  readonly character: string;
 }
 
 /** What a run starts with from the player's permanent progress (Milestone 7). */
@@ -206,6 +208,8 @@ export interface RunStart {
   readonly startAbility?: string | null;
   /** The arena of the player's last boss fight, so the next one differs (owner, 2026-11-17). */
   readonly lastArena?: string | null;
+  /** Round 3: the character chosen in the Burrow (Rollo if left out or unknown). */
+  readonly character?: string;
 }
 
 export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR, start: RunStart = {}): RunState {
@@ -228,7 +232,7 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     toStash: 0,
     permanent: { ...(start.levels ?? {}) },
     bossesBeaten: [],
-    ability: start.startAbility !== undefined && start.startAbility !== null ? start.startAbility : CHARACTERS.get(DEFAULT_CHARACTER)!.startingAbility,
+    ability: start.startAbility !== undefined && start.startAbility !== null ? start.startAbility : characterOf(start.character).startingAbility,
     gear: { ...NO_GEAR },
     upgrades: {},
     bought: {},
@@ -243,12 +247,18 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     reward: null,
     lastArena: start.lastArena ?? null,
     beatFinal: false,
+    character: characterOf(start.character).id,
   };
   const stats = runStats(run);
   run.health = stats.get('maxHealth');
   // Head Start (owner, 2026-11-17).
   run.wallet = stats.get('startingStars');
   return run;
+}
+
+/** A character by id, falling back to Rollo. */
+export function characterOf(id: string | null | undefined): CharacterDef {
+  return (id && CHARACTERS.get(id)) || CHARACTERS.get(DEFAULT_CHARACTER)!;
 }
 
 /** A saved id that is still a gear item of that category, or null. */
@@ -279,7 +289,7 @@ function upgradeModifiers(run: RunState): Modifier[] {
 
 /** The ball's stat sheet between courses: the character, run upgrades and gear. */
 export function runStats(run: RunState): StatSheet {
-  const sheet = new StatSheet(CHARACTERS.get(DEFAULT_CHARACTER)!.stats);
+  const sheet = new StatSheet(characterOf(run.character).stats);
   for (const m of upgradeModifiers(run)) sheet.add(m);
   for (const c of GEAR_CATEGORIES) {
     const g = run.gear[c] ? GEAR.get(run.gear[c]!) : undefined;

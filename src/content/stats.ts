@@ -31,6 +31,8 @@ export const STAT_IDS = [
   'gravity',
   'windX',
   'windY',
+  /** Round 3 (owner, 2026-11-22): the speed knock-backs give the ball (1 = normal; Thud's Steady trait is 0.65, about half the distance on grass). */
+  'knockBack',
   // Enemies
   'health',
   'moveRange',
@@ -68,6 +70,7 @@ export const STAT_DEFS: Readonly<Record<StatId, StatDef>> = {
   gravity: { name: 'Gravity', min: 0.1, max: 3, whole: false },
   windX: { name: 'Wind (x)', min: -10, max: 10, whole: false },
   windY: { name: 'Wind (y)', min: -10, max: 10, whole: false },
+  knockBack: { name: 'Knock-back', min: 0, max: 3, whole: false },
   health: { name: 'Health', min: 1, max: 999, whole: true },
   moveRange: { name: 'Move range', min: 0, max: 20, whole: false },
   attackDamage: { name: 'Attack damage', min: 0, max: 99, whole: true },

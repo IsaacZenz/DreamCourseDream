@@ -169,3 +169,87 @@ describe('Round 3: shop variety', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+import { CHARACTERS, CHARACTER_LIST } from '../src/content/characters';
+import { buyCharacter, cannotBuyCharacter, cycleCharacter, newProfile, ownsCharacter } from '../src/sim/profile';
+import { decodeSave, encodeSave, emptySave, snapshotRun } from '../src/save/saveData';
+import { runStats } from '../src/sim/run';
+
+describe('Round 3: characters', () => {
+  it('Thud and Pip cost 21 blue stars each and have the owner-approved numbers', () => {
+    const t = CHARACTERS.get('thud')!;
+    const p = CHARACTERS.get('pip')!;
+    expect([t.unlockCost, p.unlockCost]).toEqual([21, 21]);
+    expect(t.stats).toMatchObject({ maxHealth: 6, maxShots: 4, hitDamage: 2, shotPower: 0.9, bounceBoost: 0.8, knockBack: 0.65 });
+    expect(p.stats).toMatchObject({ maxHealth: 4, maxShots: 5, hitDamage: 1, shotPower: 1.05, bounceBoost: 1.2, starReach: 1.5 });
+    expect([t.trait, p.trait]).toEqual(['steady', 'nimble']);
+    expect(CHARACTER_LIST.map((c) => c.id)).toEqual(['rollo', 'thud', 'pip']);
+  });
+
+  it('buying: needs the blue stars, once; the bought one is chosen; the toggle steps through owned ones only', () => {
+    const p = newProfile();
+    p.stash = 20;
+    expect(cannotBuyCharacter(p, 'thud')).toBe('NOT ENOUGH BLUE STARS');
+    p.stash = 21;
+    expect(buyCharacter(p, 'thud')).toBeNull();
+    expect(p.stash).toBe(0);
+    expect(p.character).toBe('thud');
+    expect(buyCharacter(p, 'thud')).toBe('OWNED');
+    expect(ownsCharacter(p, 'pip')).toBe(false);
+    cycleCharacter(p, 1);
+    expect(p.character).toBe('rollo');
+    cycleCharacter(p, 1);
+    expect(p.character).toBe('thud');
+  });
+
+  it("a run uses the chosen character's stats; the profile's choice survives a save", () => {
+    const run = createRun('CHAR', generateRunMap('CHAR'), undefined, { character: 'pip' });
+    expect(run.character).toBe('pip');
+    expect(run.health).toBe(4);
+    expect(runStats(run).get('maxShots')).toBe(5);
+    const p = newProfile();
+    p.stash = 30;
+    buyCharacter(p, 'pip');
+    const back = decodeSave(encodeSave({ ...emptySave(), profile: p })).data.profile;
+    expect(back.characters).toEqual(['pip']);
+    expect(back.character).toBe('pip');
+    // A character not owned is never chosen from a save.
+    const bad = decodeSave(encodeSave({ ...emptySave(), profile: { ...p, characters: [], character: 'thud' } })).data.profile;
+    expect(bad.character).toBe('rollo');
+  });
+
+  it('a saved run from before characters plays as Rollo', () => {
+    const run = createRun('OLD', generateRunMap('OLD'));
+    debugVisit(run, 'shop');
+    const snap = snapshotRun(run) as unknown as Record<string, unknown>;
+    delete snap.character;
+    const back = decodeSave(JSON.stringify({ version: 3, profile: newProfile(), burrow: null, run: snap })).data.run;
+    expect(back?.character).toBe('rollo');
+  });
+
+  it('Steady: a Stagwarden slam on grass pushes Thud about half as far as Rollo', () => {
+    const rows: string[] = [];
+    for (let y = 0; y < 16; y++) rows.push(Array.from({ length: 16 }, (_, x) => (x === 0 || y === 0 || x === 15 || y === 15 ? 'g4' : 'g1')).join(' '));
+    const arena = parseCourse({ format: 2, name: 'kb', legend: { g: 'grass' }, tiles: rows, start: [7, 7], exit: [14, 14], quota: 0, objects: [{ id: 'stagwarden', at: [12, 12] }] });
+    if (!arena.ok) throw new Error('arena');
+    const moved = (character: string) => {
+      const p = createPlay(arena.course, DEFAULT_TUNING, { seed: 's', character });
+      const nudge = () => {
+        takeShot(p, { angle: -Math.PI / 4, power: 0.05, type: 'ground', topSpin: 0, sideSpin: 0 });
+        runShot(p);
+        return drainLog(p);
+      };
+      nudge();
+      const at = { ...p.ball };
+      const log = nudge();
+      expect(log.some((e) => e.kind === 'knocked')).toBe(true);
+      return Math.hypot(p.ball.x - at.x, p.ball.y - at.y);
+    };
+    const rollo = moved('rollo');
+    const thud = moved('thud');
+    expect(rollo).toBeGreaterThan(2);
+    expect(thud / rollo).toBeGreaterThan(0.4);
+    expect(thud / rollo).toBeLessThan(0.6);
+  });
+});

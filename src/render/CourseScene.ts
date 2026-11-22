@@ -400,6 +400,8 @@ export class CourseScene extends Phaser.Scene {
     const urlMod = testCourseMod();
     this.play = createPlay(course, tuning, {
       seed: this.runMode ? run!.current!.courseSeed : this.seed,
+      // Round 3: the run's character (or, on the practice green, the one chosen in the Burrow).
+      ...(run ? { character: run.character } : this.practiceMode ? { character: session.run?.character ?? session.profile.character } : {}),
       ...(run ? { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) } : this.practiceMode ? { loadout: practiceLoadout() } : urlMod ? { loadout: { courseMod: urlMod } } : {}),
     });
     this.runReported = false;

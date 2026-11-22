@@ -1356,7 +1356,10 @@ function stepBall(play: PlayState, input: TickInput): void {
   }
   steerBall(play, s, input);
   const before = s.events.length;
-  stepShot(play.course, play.tuning, s, input.boost ? { boost: true } : {}, play.world);
+  // Round 3: the knock-back stat (Thud's Steady trait) softens pushes from moving things.
+  const kb = play.stats.get('knockBack');
+  const world = kb === 1 ? play.world : { ...play.world, obstacles: play.world.obstacles.map((o) => (o.knock ? { ...o, knock: o.knock * kb } : o)) };
+  stepShot(play.course, play.tuning, s, input.boost ? { boost: true } : {}, world);
   for (const e of s.events.slice(before)) {
     if (e.kind === 'hazard') damageBall(play, RULES.spikeDamage, 'spikes');
     else if (e.kind === 'anchorStop') anchorEffects(play, e.x, e.y);
@@ -1969,8 +1972,8 @@ function goOff(play: PlayState, bl: BlastState): void {
     if (play.status !== 'playing') return;
     const s = ensureBallMoving(play);
     const a = d > 1e-3 ? Math.atan2(b.y - bl.y, b.x - bl.x) : play.rng.float(0, Math.PI * 2);
-    s.ball.vx = Math.cos(a) * R.knockSpeed;
-    s.ball.vy = Math.sin(a) * R.knockSpeed;
+    s.ball.vx = Math.cos(a) * R.knockSpeed * play.stats.get('knockBack');
+    s.ball.vy = Math.sin(a) * R.knockSpeed * play.stats.get('knockBack');
     s.ball.vz = R.knockHop;
     s.ball.grounded = false;
     s.ball.z += 0.001;
@@ -2241,8 +2244,8 @@ function landSlam(play: PlayState, e: EnemyState, def: BossDef): void {
   const s = ensureBallMoving(play);
   // Away from the ring's centre (a random way if the ball is right on it).
   const a = d > 1e-3 ? Math.atan2(b.y - m.y, b.x - m.x) : play.rng.float(0, Math.PI * 2);
-  s.ball.vx = Math.cos(a) * def.slam.knockSpeed;
-  s.ball.vy = Math.sin(a) * def.slam.knockSpeed;
+  s.ball.vx = Math.cos(a) * def.slam.knockSpeed * play.stats.get('knockBack');
+  s.ball.vy = Math.sin(a) * def.slam.knockSpeed * play.stats.get('knockBack');
   s.ball.vz = def.slam.knockHop;
   s.ball.grounded = false;
   s.ball.z += 0.001;
@@ -2587,8 +2590,8 @@ function meetBodies(play: PlayState): void {
         damageBall(play, ch.damage, 'charge', e);
         if (play.status !== 'playing') return;
         const a = Math.atan2(b.y - o.y, b.x - o.x);
-        b.vx = Math.cos(a) * ch.knockSpeed;
-        b.vy = Math.sin(a) * ch.knockSpeed;
+        b.vx = Math.cos(a) * ch.knockSpeed * play.stats.get('knockBack');
+        b.vy = Math.sin(a) * ch.knockSpeed * play.stats.get('knockBack');
         b.vz = ch.knockHop;
         b.grounded = false;
         b.z += 0.001;

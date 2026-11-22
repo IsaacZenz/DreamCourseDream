@@ -11,7 +11,8 @@
  */
 import { GEAR, GEAR_CATEGORIES, NO_GEAR, type GearSlots } from '../content/gear.ts';
 import { PERMANENT_UPGRADES, STARTING_ABILITIES } from '../content/progress.ts';
-import { newProfile, type Profile } from '../sim/profile.ts';
+import { newProfile, ownsCharacter, type Profile } from '../sim/profile.ts';
+import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { openFoodShop, type RunMap, type RunState } from '../sim/run.ts';
 import { FOODS } from '../content/consumables.ts';
 
@@ -111,7 +112,9 @@ function readProfile(v: unknown): Profile | null {
   }
   for (const a of v.abilities) if (typeof a === 'string' && STARTING_ABILITIES.includes(a) && !p.abilities.includes(a)) p.abilities.push(a);
   p.startAbility = v.startAbility && p.abilities.includes(v.startAbility) ? v.startAbility : null;
-  if (typeof v.character === 'string') p.character = v.character;
+  // Round 3: characters bought; the chosen one must be owned.
+  if (Array.isArray(v.characters)) for (const c of v.characters) if (typeof c === 'string' && CHARACTERS.has(c) && !p.characters.includes(c)) p.characters.push(c);
+  if (typeof v.character === 'string' && ownsCharacter(p, v.character)) p.character = v.character;
   for (const b of v.bossesBeaten) if (typeof b === 'string') p.bossesBeaten.push(b);
   p.lastArena = (v.lastArena as string | null | undefined) ?? null;
   const t = v.totals;
@@ -153,6 +156,8 @@ function readRun(v: unknown): RunSnapshot | null {
   for (const c of GEAR_CATEGORIES) if (gearOrNull((v.gear as Obj)[c], c) === undefined) return null;
   const shop = v.shop;
   if (!Array.isArray(shop.offers) || !isNum(shop.rerolls) || !isNum(shop.freeRerolls) || typeof shop.raised !== 'boolean') return null;
+  // Round 3: a run saved before characters is played as Rollo.
+  if (typeof v.character !== 'string' || !CHARACTERS.has(v.character)) v.character = DEFAULT_CHARACTER;
   return v as unknown as RunSnapshot;
 }
 
