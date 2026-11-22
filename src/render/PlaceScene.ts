@@ -12,7 +12,7 @@ import { LAST_REGION } from '../content/run';
 import { STEP_HEIGHT } from '../content/tuning';
 import { groundAt } from '../sim/ball';
 import { railTileList, tileAt } from '../sim/course';
-import { inTrigger, triggerCentre, type Place, type Point, type Trigger } from '../sim/place';
+import { triggerCentre, type Place, type Point, type Trigger } from '../sim/place';
 import { createWalker, placeWalker, stepWalker, walkFrame, walkHeight, type Facing, type Walker } from '../sim/walk';
 import { buildCrossroads, loadPlace } from '../gen/crossroads';
 import { generateRunMap } from '../gen/runMap';
@@ -50,18 +50,31 @@ export interface PlaceSceneData {
 }
 
 /** Owner, 2026-11-22: these are used with Enter, not by walking onto them. */
-const ENTER_TO_USE: ReadonlySet<TriggerKind> = new Set(['chest', 'path', 'gate']);
+/** Owner, 2026-11-22: everything is used with Enter while standing at it; nothing happens just by walking onto it. */
+const AT_REACH: Partial<Record<TriggerKind, number>> = { path: 1, gate: 1 };
 
 /** What a trigger is called when the armadillo is near it. */
 const NEAR_LABEL: Partial<Record<TriggerKind, string>> = {
-  food: 'THE FOOD SHOP: WALK IN',
-  gear: 'THE GEAR SHOP: WALK IN',
-  burrow: 'YOUR BURROW: WALK IN',
-  tee: 'PRACTICE GREEN: STEP ON THE TEE. NOTHING COUNTS THERE',
+  food: 'THE FOOD SHOP',
+  gear: 'THE GEAR SHOP',
+  burrow: 'YOUR BURROW',
+  tee: 'PRACTICE GREEN: NOTHING COUNTS THERE',
   exit: 'THE WAY OUT OF TOWN',
-  chest: 'THE CACHE: WALK UP TO THE CHEST',
+  chest: 'THE CACHE CHEST',
   back: 'BACK TO THE CROSSROADS',
   gate: 'THE BOSS GATE',
+};
+
+/** What the bottom line says when Enter would use it. */
+const AT_LABEL: Partial<Record<TriggerKind, string>> = {
+  food: 'ENTER: GO IN (THE FOOD SHOP)',
+  gear: 'ENTER: GO IN (THE GEAR SHOP)',
+  burrow: 'ENTER: GO IN (YOUR BURROW)',
+  tee: 'ENTER: PLAY THE PRACTICE GREEN',
+  exit: 'ENTER: LEAVE TOWN',
+  chest: 'ENTER: OPEN THE CHEST',
+  back: 'ENTER: BACK TO THE CROSSROADS',
+  gate: 'ENTER: THE BOSS GATE',
 };
 
 interface Sign {
@@ -467,13 +480,8 @@ export class PlaceScene extends Phaser.Scene {
       while (this.accumulator >= STEP) {
         this.accumulator -= STEP;
         // Owner, 2026-11-22: the chest opens with Enter, not by walking into it.
-        // Owner, 2026-11-22: the chest, the path ends and the boss gate need Enter; only doors open by walking in.
-        const fired = stepWalker(this.place, this.walker, input, STEP, this.triggers).filter((t) => !ENTER_TO_USE.has(t.kind));
-        if (fired.length) {
-          this.drawHero();
-          this.fire(fired[0]!);
-          return;
-        }
+        // Owner, 2026-11-22: nothing is used by walking onto it; Enter uses what the armadillo stands at.
+        stepWalker(this.place, this.walker, input, STEP, this.triggers);
       }
     } else this.walker.moving = false;
     this.drawHero();
@@ -517,9 +525,10 @@ export class PlaceScene extends Phaser.Scene {
       this.signCard?.destroy();
       this.signCard = best && !this.modal ? this.card(best.title, best.color, best.lines, VIEW_WIDTH - 6, 20, 'right') : null;
     }
-    // A door or path end within a tile: say what it is.
+    // A door or path end within a tile: say what it is, and say "ENTER" when Enter would use it.
     let text = '';
-    for (const t of this.triggers) {
+    const at = this.atEntrance();
+    for (const t of at ? [at] : this.triggers) {
       const cx = Math.max(t.x0, Math.min(t.x1, w.x));
       const cy = Math.max(t.y0, Math.min(t.y1, w.y));
       if (Math.hypot(w.x - cx, w.y - cy) > 1.2) continue;
@@ -528,9 +537,7 @@ export class PlaceScene extends Phaser.Scene {
         const run = session.run;
         const name = n && run ? (n.id === LAST_TOWN ? 'LAST TOWN' : NODE_NAME[typeOf(run, n)]) : '';
         text = this.atEntrance() === t ? `ENTER: GO THIS WAY (${name})` : `THIS WAY: ${name}`;
-      } else if (t.kind === 'gate') text = this.atEntrance() === t ? 'ENTER: THE BOSS GATE' : (NEAR_LABEL.gate ?? '');
-      else if (t.kind === 'chest') text = inTrigger(t, w.x, w.y) ? 'ENTER: OPEN THE CHEST' : (NEAR_LABEL.chest ?? '');
-      else text = NEAR_LABEL[t.kind] ?? '';
+      } else text = (at === t ? AT_LABEL[t.kind] : NEAR_LABEL[t.kind]) ?? '';
       break;
     }
     if (text !== this.hintText) {
@@ -565,7 +572,7 @@ export class PlaceScene extends Phaser.Scene {
         return this.ask(['LEAVE TOWN?', '', 'ON TO THE CROSSROADS. YOU CANNOT COME BACK.', '', 'ENTER: LEAVE   ESC: STAY'], () => {
           leaveShop(run);
           goRun(this);
-        }, () => this.stepBack(t));
+        }, () => undefined);
       case 'path': {
         const n = this.options[t.slot ?? 0];
         if (!n) return;
@@ -581,21 +588,24 @@ export class PlaceScene extends Phaser.Scene {
             session.skipBossIntro = true;
             enterNode(run, bossNode.id);
             goRun(this);
-          }, () => this.stepBack(t)),
+          }, () => undefined),
         );
       }
     }
   }
 
-  /** The path end or boss gate the armadillo is standing at (within a tile of it), if any; the nearest wins. */
+  /**
+   * What Enter would use: a trigger the armadillo stands in (doors, the tee,
+   * the exit, the chest's area), or a path end or the boss gate within a
+   * tile. The nearest wins.
+   */
   private atEntrance(): Trigger | null {
     const w = this.walker;
     let best: Trigger | null = null;
-    let bestD = 1;
+    let bestD = Infinity;
     for (const t of this.triggers) {
-      if (t.kind !== 'path' && t.kind !== 'gate') continue;
       const d = Math.hypot(w.x - Math.max(t.x0, Math.min(t.x1, w.x)), w.y - Math.max(t.y0, Math.min(t.y1, w.y)));
-      if (d <= bestD) {
+      if (d <= (AT_REACH[t.kind] ?? 0.05) && d < bestD) {
         best = t;
         bestD = d;
       }
@@ -603,13 +613,7 @@ export class PlaceScene extends Phaser.Scene {
     return best;
   }
 
-  /** "Not yet" or "stay": stand back from the trigger. */
-  private stepBack(t: Trigger): void {
-    const c = triggerCentre(t);
-    const b = t.back ?? { x: this.walker.x + Math.sign(this.place.ground.start.x + 0.5 - c.x) * 0.8, y: this.walker.y + Math.sign(this.place.ground.start.y + 0.5 - c.y) * 0.8 };
-    placeWalker(this.walker, b.x, b.y, this.facingFrom(b.x - c.x, b.y - c.y), this.triggers);
-    this.drawHero();
-  }
+
 
   // -------------------------------------------------------------------------
   // Cards and prompts (fixed to the screen)
@@ -756,9 +760,8 @@ export class PlaceScene extends Phaser.Scene {
         return;
       }
       if (this.modal || this.overview) return;
-      // Owner, 2026-11-22: next to the chest, Enter (or E) opens it; at a path's end or the boss gate, Enter goes that way.
-      const chest = this.triggers.find((t) => t.kind === 'chest' && inTrigger(t, this.walker.x, this.walker.y));
-      const way = chest ?? this.atEntrance();
+      // Owner, 2026-11-22: Enter (or E) uses whatever the armadillo stands at: a door, the tee, the exit, the chest, a path end, the gate.
+      const way = this.atEntrance();
       if (way) this.fire(way);
     };
     kb.on('keydown-ENTER', ok);
