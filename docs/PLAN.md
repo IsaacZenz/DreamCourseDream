@@ -308,3 +308,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-22 — Owner: crossroads signposts removed; each destination's map icon floats past its path's end between the posts, and nearing the entrance pops up its card. Test build updated.
 - 2026-11-22 — Owner: crossroads path ends and the boss gate are taken with Enter (standing at them shows the card and "ENTER: GO THIS WAY"). Test build updated.
 - 2026-11-22 — Owner: every door, the tee, the exit, the chest, path ends and the boss gate are used with Enter (nothing by walking in). Test build updated.
+- 2026-11-22 — Owner: town signposts stay for now; **Milestone 8b approved and merged to `main`.**
