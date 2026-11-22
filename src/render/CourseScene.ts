@@ -7,7 +7,7 @@ import { Rng } from '../sim/rng';
 import { SeedViewer } from '../ui/seedViewer';
 import { BENCH_ID, benchChoices, benchCourse } from '../content/courses/testBench';
 import { SURFACES } from '../content/surfaces';
-import { parseCourse, railTileList, type Course } from '../sim/course';
+import { parseCourse, railTileList, tileAt, type Course } from '../sim/course';
 import { STEP_HEIGHT, type Tuning } from '../content/tuning';
 import { DT, groundAt, type BallState, type ShotCommand, type ShotType } from '../sim/ball';
 import {
@@ -35,7 +35,7 @@ import {
 import { STATUSES } from '../content/statuses';
 import { RANKS, TRAITS, TRAIT_RULES } from '../content/enemyMods';
 import { ELEMENT_IDS, OBJECTS, RAIL } from '../content/objects';
-import { SCENERY } from '../content/scenery';
+import { GROUND_BUMPS, SCENERY } from '../content/scenery';
 import { COURSE_MODS, type CourseMod } from '../content/modifiers';
 import type { Direction } from '../content/surfaces';
 import { courseModBanner, courseModShort } from './courseModView';
@@ -56,11 +56,22 @@ import { BOSSES } from '../content/bosses';
 import { BLUE_STARS } from '../content/progress';
 import { LAST_REGION } from '../content/run';
 import { getPanel, getTuning, preloadAssets, shared } from './shared';
-import { buildDrawList, courseBounds, pickTile, project, tileDepth, type Placement } from './iso';
+import { buildDrawList, bumpTopDepth, courseBounds, groundBump, pickTile, project, tileDepth, type Placement } from './iso';
 import { frameIndex, themedSprite, type Manifest } from './manifest';
 import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
 import { pixelText } from './pixelText';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
+import { goRun, walking } from './nav';
+import practiceGreen from '../content/courses/practice-green.json';
+import type { Loadout } from '../sim/play';
+
+/** The practice green's loadout: the run's gear, ability and upgrades, full health, no course modifier. */
+function practiceLoadout(): Loadout {
+  const run = session.run!;
+  const out: Loadout & { health?: number } = { ...loadoutOf(run), courseMod: null };
+  delete out.health;
+  return out;
+}
 
 /** Loaded from assets/manifest.json on first boot. */
 let manifest: Manifest = { version: 1, sprites: {} };
@@ -190,6 +201,8 @@ export interface CourseSceneData {
   watch?: boolean;
   /** Milestone 6: play the run's current course node. */
   run?: boolean;
+  /** Milestone 8b: the town's practice green (nothing counts). */
+  practice?: boolean;
 }
 
 /** Six letters and digits from a random stream, for the next generated course's seed. */
@@ -277,6 +290,8 @@ export class CourseScene extends Phaser.Scene {
   private runMode = false;
   /** The course result has been given to the run (only once). */
   private runReported = false;
+  /** Milestone 8b (sheet section 2.3): the practice green. Nothing counts; Esc or sinking the ball goes back to town. */
+  private practiceMode = false;
 
   constructor() {
     super('course');
@@ -294,6 +309,8 @@ export class CourseScene extends Phaser.Scene {
     genBudget = Phaser.Math.Clamp(Math.round(genBudget), GEN.minBudget, GEN.maxBudget);
     this.watching = data.watch === true;
     this.runMode = data.run === true && !!session.run?.current;
+    this.practiceMode = data.practice === true && !!session.run;
+    if (this.practiceMode) this.courseIndex = 0;
     this.thumb = params.get('thumb') === '1';
     // ?bench=<object id> opens the test bench with that thing at its centre (for example ?course=test-bench&bench=rail).
     if (!benchShown && params.get('bench') !== null) bench.object = params.get('bench')!;
@@ -341,7 +358,8 @@ export class CourseScene extends Phaser.Scene {
         return;
       }
       data = ready.raw;
-    } else if (file.id === BENCH_ID) data = benchCourse(bench.object, bench);
+    } else if (this.practiceMode) data = practiceGreen;
+    else if (file.id === BENCH_ID) data = benchCourse(bench.object, bench);
     else if (file.id === GENERATED_ID) {
       const ready = this.cachedGen();
       if (!ready) {
@@ -376,18 +394,20 @@ export class CourseScene extends Phaser.Scene {
 
     panel = getPanel();
     // Round 2b: picking a theme in the U panel shows this course again in it.
-    panel.onTheme = () => (this.runMode ? this.scene.restart({ run: true }) : this.restartCourse());
+    panel.onTheme = () => (this.runMode ? this.scene.restart({ run: true }) : this.practiceMode ? this.scene.restart({ practice: true }) : this.restartCourse());
 
     const run = this.runMode ? session.run : null;
     const urlMod = testCourseMod();
     this.play = createPlay(course, tuning, {
       seed: this.runMode ? run!.current!.courseSeed : this.seed,
-      ...(run ? { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) } : urlMod ? { loadout: { courseMod: urlMod } } : {}),
+      ...(run ? { loadout: loadoutOf(run), enemyModifiers: enemyModifiersFor(run), bossHealth: bossHealthFor(run) } : this.practiceMode ? { loadout: practiceLoadout() } : urlMod ? { loadout: { courseMod: urlMod } } : {}),
     });
     this.runReported = false;
     this.setRunPanel();
     // Owner, 2026-11-19: a boss fight opens with the boss's introduction card.
-    if (run && arena && run.current?.boss) this.showBossIntro(run.current.boss, run.region);
+    // Milestone 8b: unless it was just shown at the boss gate.
+    if (run && arena && run.current?.boss && !session.skipBossIntro) this.showBossIntro(run.current.boss, run.region);
+    session.skipBossIntro = false;
     // Owner, 2026-11-18: while this course is played, make the next ones in the background.
     if (run && run.status === 'course') prefetch(upcomingJobs(run));
     if (file.id === BENCH_ID && bench.ability) this.play.ability = bench.ability;
@@ -471,6 +491,7 @@ export class CourseScene extends Phaser.Scene {
       tiles.forEach((t, k) => {
         const z = groundAt(course, t.x + 0.5, t.y + 0.5)?.h ?? 0;
         const p = project(t.x + 0.5, t.y + 0.5, z / STEP_HEIGHT);
+        p.y -= this.bumpAt(t.x + 0.5, t.y + 0.5);
         this.makeSprite(RAIL.postSprite).setPosition(p.x, p.y).setDepth(this.standingDepth(t.x + 0.5, t.y + 0.5));
         const n = tiles[k + 1];
         if (!n) return;
@@ -482,6 +503,7 @@ export class CourseScene extends Phaser.Scene {
           const y = t.y + 0.5 + dy * f;
           const h = groundAt(course, x, y)?.h ?? z;
           const q = project(x, y, h / STEP_HEIGHT);
+          q.y -= this.bumpAt(x, y);
           this.makeSprite(RAIL.barSprite, frame).setPosition(q.x, q.y).setDepth(this.standingDepth(x, y));
         }
       });
@@ -501,6 +523,7 @@ export class CourseScene extends Phaser.Scene {
       const def = SCENERY.get(s.id)!;
       const z = groundAt(course, s.x, s.y)?.h ?? 0;
       const p = project(s.x, s.y, z / STEP_HEIGHT);
+      p.y -= this.bumpAt(s.x, s.y);
       const frame = manifest.sprites[this.sprite(def.sprite)]?.frames[0] ?? 'idle';
       // Lying on the ground, under everything standing; fireflies float above what stands on their tile.
       const depth = def.floats ? this.standingDepth(s.x, s.y) + 0.2 : tileDepth(Math.floor(s.x), Math.floor(s.y), 'arrow') + 0.5;
@@ -690,6 +713,11 @@ export class CourseScene extends Phaser.Scene {
     this.time.delayedCall(400, () => img.destroy());
   }
 
+  /** Milestone 8b: leave the practice green, standing next to it. */
+  private backToTown(): void {
+    this.scene.start('place', { kind: 'town', back: 'tee' });
+  }
+
   /** Key 7: start a run, or go back to the one in progress. */
   private openRun(): void {
     const run = activeRun();
@@ -698,8 +726,7 @@ export class CourseScene extends Phaser.Scene {
       this.scene.start('burrow');
     } else if (run.status === 'course') {
       if (!this.runMode) this.scene.restart({ run: true, debug: this.debugMode });
-    } else if (run.status === 'shop' || run.status === 'cache') this.scene.start('town');
-    else this.scene.start('map');
+    } else goRun(this);
   }
 
   /** The run section of the U panel (testing aids). */
@@ -902,7 +929,7 @@ export class CourseScene extends Phaser.Scene {
   private pickTheme(): string {
     const chosen = getPanel().theme;
     if (chosen) return chosen;
-    if (this.runMode && session.run) return themeForRegion(session.run.region, session.run.seed);
+    if ((this.runMode || this.practiceMode) && session.run) return themeForRegion(session.run.region, session.run.seed);
     const params = new URLSearchParams(window.location.search);
     const t = params.get('theme');
     if (t && (THEMES as readonly string[]).includes(t)) return t;
@@ -924,6 +951,14 @@ export class CourseScene extends Phaser.Scene {
       .setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight)
       .setDepth(p.depth);
     this.tileImgs.push(img);
+    // Owner, 2026-11-21: ground bumps, for looks only.
+    const t = p.kind === 'top' && panel?.groundBumps !== false ? tileAt(this.course!, p.tile.x, p.tile.y) : null;
+    const lift = t ? groundBump(t) : 0;
+    if (lift && t) {
+      const depth = bumpTopDepth(this.course!, t);
+      this.tileImgs.push(this.add.image(p.x, p.y, id, frameIndex(entry, p.frame)).setOrigin(img.originX, img.originY).setDepth(depth - 0.01).setTint(GROUND_BUMPS.edgeTint));
+      img.setDepth(depth).y -= lift;
+    }
     // Animated overlays (water shimmer, Milestone 5b) have frames "<shape>~1", "<shape>~2", ...
     if (entry.frames.includes(`${p.frame}~1`)) this.animated.push({ img, frame: p.frame, entry });
   }
@@ -1101,6 +1136,7 @@ export class CourseScene extends Phaser.Scene {
       const entry = manifest.sprites[themedId]!;
       if (img.texture.key !== themedId || opts.frame) img.setTexture(themedId, frameIndex(entry, opts.frame ?? entry.frames[0]!));
       const p = project(x, y, z / STEP_HEIGHT);
+      p.y -= this.bumpAt(x, y, z);
       img
         .setVisible(true)
         .setAlpha(opts.alpha ?? 1)
@@ -1200,6 +1236,7 @@ export class CourseScene extends Phaser.Scene {
       const c = play.course;
       const t = groundAt(c, c.exit.x + 0.5, c.exit.y + 0.5);
       const p = project(c.exit.x + 0.5, c.exit.y + 0.5, (t?.h ?? 0) / STEP_HEIGHT);
+      p.y -= this.bumpAt(c.exit.x + 0.5, c.exit.y + 0.5);
       const entry = manifest.sprites.exit!;
       this.exitImg
         .setTexture('exit', frameIndex(entry, play.exitOpen ? 'open' : 'closed'))
@@ -1210,12 +1247,26 @@ export class CourseScene extends Phaser.Scene {
   }
 
   /** Put the ball and its shadow on screen. Heights in the sim are tiles; the screen uses steps. */
+  /**
+   * Owner, 2026-11-21: pixels a thing at (x, y), at height z (tiles), is drawn
+   * raised because its tile is drawn raised (ground bumps). Fades out as it
+   * rises above the ground, so flying things do not jump between tiles.
+   */
+  private bumpAt(x: number, y: number, z?: number): number {
+    if (panel?.groundBumps === false || !this.course) return 0;
+    const g = groundAt(this.course, x, y);
+    if (!g) return 0;
+    return groundBump(g.tile) * Math.max(0, 1 - ((z ?? g.h) - g.h) / 0.25);
+  }
+
   private drawBall(b: BallState): void {
     const course = this.course!;
     const tx = Math.floor(b.x);
     const ty = Math.floor(b.y);
-    const p = project(b.x, b.y, b.z / STEP_HEIGHT);
     const g = groundAt(course, b.x, b.y);
+    // Owner, 2026-11-21: on a tile drawn raised (ground bumps), the ball is drawn raised too.
+    const p = project(b.x, b.y, b.z / STEP_HEIGHT);
+    p.y -= this.bumpAt(b.x, b.y, b.z);
     // In water the ball is drawn under the see-through surface; flying over it, on top.
     const inWater = !!g && !!SURFACES.get(g.tile.surface)?.sinks && b.z <= g.h + 0.05;
     const overWater = !!g && !!SURFACES.get(g.tile.surface)?.overlaySprite && !inWater;
@@ -1236,6 +1287,7 @@ export class CourseScene extends Phaser.Scene {
       .setAlpha(isImmune(this.play) && Math.floor(this.time.now / 70) % 2 ? 0.35 : 1);
     if (g && g.h <= b.z + 0.01 && !inWater) {
       const sp = project(b.x, b.y, g.h / STEP_HEIGHT);
+      sp.y -= this.bumpAt(b.x, b.y);
       this.shadowImg.setVisible(true).setPosition(Math.round(sp.x), Math.round(sp.y)).setDepth(tileDepth(tx, ty, 'shadow'));
     } else {
       this.shadowImg.setVisible(false);
@@ -1264,7 +1316,8 @@ export class CourseScene extends Phaser.Scene {
       this.drawShotHud();
     });
     onKey('R', () => {
-      if (this.runMode) this.showMessage('NO RESTARTS IN A RUN', BAD);
+      if (this.practiceMode) this.scene.restart({ practice: true });
+      else if (this.runMode) this.showMessage('NO RESTARTS IN A RUN', BAD);
       else this.restartCourse();
     });
     onKey('ENTER', () => {
@@ -1272,6 +1325,10 @@ export class CourseScene extends Phaser.Scene {
         if (this.play.status === 'playing') return;
         this.reportRun();
         this.scene.start('map');
+        return;
+      }
+      if (this.practiceMode) {
+        if (this.play.status !== 'playing') this.backToTown();
         return;
       }
       if (this.play.status === 'won' && this.isGenerated) {
@@ -1306,7 +1363,11 @@ export class CourseScene extends Phaser.Scene {
     onKey('F', () => {
       if (canUseAbility(this.play)) this.abilityQueued = true;
     });
-    onKey('ESC', () => this.cancelCharge());
+    onKey('ESC', () => {
+      // On the practice green, Esc while planning goes back to town (sheet section 2.3).
+      if (this.practiceMode && (this.phase === 'plan' || this.play.status !== 'playing')) this.backToTown();
+      else this.cancelCharge();
+    });
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (!this.course || !canShoot(this.play)) return;
@@ -2259,12 +2320,13 @@ export class CourseScene extends Phaser.Scene {
               `FINISH REWARD: +${rewardFor(cur.type)} STARS, +${cur.type === 'hard' ? BLUE_STARS.hard : BLUE_STARS.course} BLUE (CARRIED)`,
               `HEALTH LEFT: ${p.health}`,
               '',
-              'ENTER: BACK TO THE MAP',
+              walking() ? 'ENTER: ON TO THE CROSSROADS' : 'ENTER: BACK TO THE MAP',
             ]
         : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', 'CARRIED BLUE STARS ARE LOST.', 'GEAR IN YOUR BURROW IS SAFE.', '', 'ENTER: RUN SUMMARY']
       : won
       ? ['COURSE COMPLETE!', '', `SHOTS TAKEN: ${p.shotNumber}`, `STARS: ${p.meter} (QUOTA ${p.quota})`, `HEALTH LEFT: ${p.health}`, '', 'ENTER: NEXT COURSE   R: PLAY AGAIN']
       : ['RUN OVER', '', p.lostBy === 'shots' ? 'OUT OF SHOTS, WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.', `STARS: ${p.meter} OF ${p.quota}`, `SHOTS TAKEN: ${p.shotNumber}`, '', 'ENTER OR R: RESTART'];
+    if (this.practiceMode) lines.splice(0, lines.length, ...(won ? ['IN THE HOLE! NICE PRACTICE.', '', 'NOTHING COUNTS HERE: NO STARS, NO DAMAGE KEPT.', '', 'ENTER OR ESC: BACK TO TOWN   R: PLAY AGAIN'] : ['OUT OF SHOTS. IN PRACTICE THAT IS FINE.', '', 'ENTER OR ESC: BACK TO TOWN   R: PLAY AGAIN']));
     const text = pixelText(this, manifest, 0, 0, lines.join('\n'), { color: won ? GOOD : BAD });
     const w = text.width + 16;
     const h = text.height + 14;
@@ -2303,7 +2365,9 @@ export class CourseScene extends Phaser.Scene {
       ? cur.arena
         ? `RUN #${session.run!.seed}  REGION ${session.run!.region}  ${BOSSES.get(cur.boss ?? '')?.name.toUpperCase() ?? 'BOSS'}  ARENA: ${ARENAS.get(cur.arena)!.name.toUpperCase()} (${ARENAS.get(cur.arena)!.gimmick.toUpperCase()})`
         : `RUN #${session.run!.seed}  REGION ${session.run!.region}  ${cur.type === 'hard' ? 'HARD COURSE' : 'COURSE'}  ROW ${cur.row}  BUDGET ${cur.budget}`
-      : `${n} ${course.name}`;
+      : this.practiceMode
+        ? 'PRACTICE GREEN: NOTHING COUNTS. YOUR GEAR WORKS. ESC: BACK TO TOWN'
+        : `${n} ${course.name}`;
     pixelText(this, manifest, 2, 2, label, { color: UI_TEXT, background: UI_BG })
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH)

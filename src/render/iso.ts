@@ -16,6 +16,7 @@
 import { tileAt, type Course, type Tile } from '../sim/course.ts';
 import { heightAt } from '../sim/tileShape.ts';
 import { ARROW_SPRITE, SURFACES } from '../content/surfaces.ts';
+import { GROUND_BUMPS } from '../content/scenery.ts';
 
 export const HALF_W = 16;
 export const HALF_H = 8;
@@ -219,4 +220,33 @@ export function pickTile(course: Course, sx: number, sy: number): Tile | null {
     }
   }
   return null;
+}
+
+/**
+ * Ground bumps (owner, 2026-11-21): how many pixels to draw a tile's top
+ * raised, for looks only. Flat grass, rough and sand tiles only; the same
+ * tile always gets the same lift. Never changes where anything is in the game.
+ */
+export function groundBump(tile: Tile): number {
+  if (tile.shape !== '0000' || !GROUND_BUMPS.surfaces.includes(tile.surface)) return 0;
+  let h = (tile.x * 374761393 + tile.y * 668265263) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  let r = ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  for (let px = 0; px < GROUND_BUMPS.weights.length; px++) {
+    r -= GROUND_BUMPS.weights[px]!;
+    if (r < 0) return px;
+  }
+  return 0;
+}
+
+/**
+ * The draw depth for a raised (ground bump) tile top: just under anything
+ * standing on the row behind it, so its lifted back edge never covers the
+ * feet of the ball, the armadillo or an enemy there. Only where the tiles
+ * behind are no higher (a real ledge must still hide what is behind it).
+ */
+export function bumpTopDepth(course: Course, tile: Tile): number {
+  const behind = [tileAt(course, tile.x - 1, tile.y), tileAt(course, tile.x, tile.y - 1), tileAt(course, tile.x - 1, tile.y - 1)];
+  const flat = behind.every((b) => !b || Math.max(...b.corners) <= tile.base);
+  return flat ? tileDepth(tile.x, tile.y, 'top') - DEPTH_PER_DIAGONAL + 1.5 : tileDepth(tile.x, tile.y, 'top');
 }

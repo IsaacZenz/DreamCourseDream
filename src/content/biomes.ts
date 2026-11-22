@@ -34,7 +34,7 @@ export const THEMES = ['day', 'bog', 'thornwood', 'starfall', 'night', 'undergro
 export type ThemeId = (typeof THEMES)[number];
 
 /** A small stable hash of text, for picking a theme from the run seed without the game's random streams. */
-function hashOf(text: string): number {
+export function hashOf(text: string): number {
   let h = 2166136261;
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
   return h >>> 0;

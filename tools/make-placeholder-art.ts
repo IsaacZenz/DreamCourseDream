@@ -118,6 +118,8 @@ const LOOKS: Record<string, SurfaceLook> = {
   spikes: { base: '#6e6670' },
   warp: { base: '#7a3cc8' },
   // Round 2a: plank bridge. Planks run one way, with dark gaps between them.
+  // Milestone 8b: a trodden dirt path with small stones.
+  path: { base: '#b08a58', pattern: (x, y) => (hash(x, y, 9) < 0.07 ? -1 : hash(x, y, 10) < 0.04 ? 1 : 0) },
   bridge: { base: '#a87840', pattern: (x, y) => ((x + 2 * y) % 8 === 0 ? -2 : hash(x, y, 7) < 0.1 ? -1 : 0) },
 };
 
@@ -1664,6 +1666,341 @@ for (const t of ['shielded', 'armoured', 'swift', 'explosive', 'regenerating', '
 emit('rank-veteran', drawRank(false), 9, 5, ['idle'], [4, 4]);
 emit('rank-elite', drawRank(true), 9, 5, ['idle'], [4, 4]);
 emit('facing-mark', drawFacingMark(), 7, 5, ['idle'], [3, 2]);
+
+// ---------------------------------------------------------------------------
+// Milestone 8b (sheet docs/plans/milestone-8b.md): the armadillo, town buildings,
+// crossroads props and the flat room pictures. All original placeholders.
+
+/** The walking armadillo, 14x20, facing down-right ("dr") or up-right ("ur"); left is a flipped copy. */
+function drawArmadillo(facing: 'dr' | 'ur', step: 0 | 1 | 2): Image {
+  const img = new Image(14, 20);
+  const skin = ramp('#e0b898');
+  const edge = hex2('#303048');
+  const legC = hex2('#a07860');
+  // Legs first (behind the shell). Step frames move one leg forward.
+  const legs: [number, number][] = [
+    [4, step === 1 ? 15 : 16],
+    [8, step === 2 ? 15 : 16],
+  ];
+  for (const [lx, top] of legs) {
+    for (let y = top; y < 20; y++) for (let x = lx; x < lx + 2; x++) img.set(x, y, y === 19 ? edge : legC);
+  }
+  const head = facing === 'dr' ? { x: 10, y: 6 } : { x: 9, y: 4 };
+  const drawHead = () => {
+    blob(img, head.x, head.y, 3.6, 3.2, '#e0b898', '#303048');
+    // Ears.
+    for (const [x, y] of facing === 'dr' ? [[8, 2], [8, 3], [10, 2]] : [[7, 1], [7, 2], [9, 1]]) img.set(x!, y!, skin[2]!);
+    if (facing === 'dr') {
+      // Snout and eye.
+      for (const [x, y] of [[12, 7], [13, 7], [13, 8], [12, 8]]) img.set(x!, y!, skin[3]!);
+      img.set(13, 7, edge);
+      img.set(10, 5, hex2('#101010'));
+    }
+  };
+  if (facing === 'ur') drawHead();
+  // The shell: banded, in the ball's pale colours, so the two read as one character.
+  blob(img, 6.5, 11.5, 5.6, 5.8, '#d0d0e0', '#303048');
+  for (let y = 7; y < 17; y++) {
+    if ((y - 7) % 3 !== 2) continue;
+    for (let x = 1; x < 13; x++) {
+      const [, , , a] = img.get(x, y);
+      const inside = Math.hypot((x + 0.5 - 6.5) / 4.6, (y + 0.5 - 11.5) / 4.8) < 1;
+      if (a && inside) img.set(x, y, hex2('#8888a8'));
+    }
+  }
+  if (facing === 'dr') {
+    drawHead();
+    // A little arm in front.
+    img.set(9, 12, skin[2]!);
+    img.set(10, 12, skin[2]!);
+  }
+  return img;
+}
+
+function flipX(src: Image): Image {
+  const out = new Image(src.width, src.height);
+  for (let y = 0; y < src.height; y++) for (let x = 0; x < src.width; x++) out.set(src.width - 1 - x, y, src.get(x, y));
+  return out;
+}
+
+/** Fill every pixel inside a polygon. */
+function fillPoly(img: Image, pts: readonly P[], c: RGBA | ((x: number, y: number) => RGBA | null)): void {
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      if (!insidePoly(x + BIAS_X, y + BIAS_Y, pts)) continue;
+      const col = typeof c === 'function' ? c(x, y) : c;
+      if (col) img.set(x, y, col);
+    }
+  }
+}
+
+/**
+ * An isometric house on a 2x2-tile footprint (a 64 px wide diamond, inset a
+ * little). Its anchor is the footprint's centre on the ground: [32, H - 17].
+ */
+function drawHouse(o: { wall: string; roof: string; wallH: number; roofH: number; door: 'left' | 'right'; pattern?: (x: number, y: number) => boolean; sign?: (img: Image, x: number, y: number) => void }): Image {
+  const H = 34 + o.wallH + o.roofH + 2;
+  const img = new Image(64, H);
+  const cy = H - 17;
+  const k = 0.92;
+  const pt = (x: number, y: number): P => [32 + (x - 32) * k, cy + (y - cy) * k];
+  const N = pt(32, cy - 16);
+  const E = pt(64, cy);
+  const S = pt(32, cy + 16);
+  const W = pt(0, cy);
+  const up = (p: P, h: number): P => [p[0], p[1] - h];
+  const wall = ramp(o.wall);
+  const roof = ramp(o.roof);
+  const edge = hex2('#281810');
+  const pat = (sh: RGBA, dark: RGBA) => (x: number, y: number) => (o.pattern?.(x, y) ? dark : sh);
+  fillPoly(img, [W, S, up(S, o.wallH), up(W, o.wallH)], pat(wall[3]!, wall[2]!));
+  fillPoly(img, [S, E, up(E, o.wallH), up(S, o.wallH)], pat(wall[2]!, wall[1]!));
+  // Corner and base lines.
+  for (let y = Math.round(S[1] - o.wallH); y <= Math.round(S[1]); y++) img.set(32, y, edge);
+  // Door: a parallelogram on one face, from the ground up 13 px.
+  const face = o.door === 'right' ? [S, E] : [W, S];
+  const doorT = o.door === 'right' ? [0.32, 0.58] : [0.42, 0.68];
+  const at = (t: number): P => [face[0]![0] + (face[1]![0] - face[0]![0]) * t, face[0]![1] + (face[1]![1] - face[0]![1]) * t];
+  const d0 = at(doorT[0]!);
+  const d1 = at(doorT[1]!);
+  fillPoly(img, [d0, d1, up(d1, 13), up(d0, 13)], (_x, y) => (y % 4 === 0 ? hex2('#3a2010') : hex2('#5a3418')));
+  const knob = at((doorT[0]! + doorT[1]!) / 2 + 0.06);
+  img.set(Math.round(knob[0]), Math.round(knob[1] - 7), hex2('#f8e048'));
+  // A window on the other face.
+  const wface = o.door === 'right' ? [W, S] : [S, E];
+  const wat = (t: number): P => [wface[0]![0] + (wface[1]![0] - wface[0]![0]) * t, wface[0]![1] + (wface[1]![1] - wface[0]![1]) * t];
+  const w0 = up(wat(0.35), 7);
+  const w1 = up(wat(0.62), 7);
+  fillPoly(img, [w0, w1, up(w1, 7), up(w0, 7)], hex2('#f0d878'));
+  // Roof: a pyramid with a small overhang.
+  const r = 1.12;
+  const rp = (p: P): P => [32 + (p[0] - 32) * r, cy - o.wallH + (p[1] - cy) * r];
+  const [RN, RE, RS, RW] = [rp(N), rp(E), rp(S), rp(W)];
+  const A: P = [32, cy - o.wallH - o.roofH];
+  fillPoly(img, [RW, RN, A], roof[4]!);
+  fillPoly(img, [RN, RE, A], roof[3]!);
+  fillPoly(img, [RW, RS, A], (x, y) => ((x + y) % 5 === 0 ? roof[2]! : roof[3]!));
+  fillPoly(img, [RS, RE, A], (x, y) => ((x - y) % 5 === 0 ? roof[0]! : roof[1]!));
+  o.sign?.(img, Math.round(S[0]), Math.round(S[1] - o.wallH - 2));
+  return img;
+}
+
+function drawFoodHut(): Image {
+  const img = drawHouse({ wall: '#d8b070', roof: '#4a9a40', wallH: 20, roofH: 16, door: 'right', pattern: (_x, y) => y % 5 === 0 });
+  // A crate of produce by the door.
+  const cy = img.height - 17;
+  for (let y = cy + 2; y < cy + 7; y++) for (let x = 52; x < 60; x++) img.set(x, y, hex2(y === cy + 2 ? '#e04030' : y === cy + 3 ? '#f8a030' : '#8a5a28'));
+  return img;
+}
+
+function drawGearShop(): Image {
+  return drawHouse({
+    wall: '#9098a8',
+    roof: '#3a4a7a',
+    wallH: 22,
+    roofH: 14,
+    door: 'right',
+    pattern: (x, y) => (y % 6 === 0 || (x + Math.floor(y / 6) * 5) % 10 === 0),
+    sign: (img, x, y) => {
+      // A round sign with a gear-tooth ring above the corner.
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+        const d = Math.hypot(dx, dy);
+        if (d <= 4.2) img.set(x + dx, y + dy - 6, d > 3.2 ? hex2('#281810') : d < 1.5 ? hex2('#303040') : hex2('#f0c040'));
+      }
+    },
+  });
+}
+
+function drawBurrowMound(): Image {
+  const img = new Image(64, 48);
+  const cy = 48 - 17;
+  blob(img, 32, cy - 6, 31, 21, '#58a048', '#183010');
+  // Clip the bottom to the footprint's lower half so it sits on the ground.
+  for (let y = 0; y < 48; y++) for (let x = 0; x < 64; x++) if (y > cy + 14 - Math.abs(x - 32) * 0.45) img.set(x, y, [0, 0, 0, 0]);
+  // Round door on the lower-left face.
+  blob(img, 20, cy + 1, 7, 8, '#4a2c14', '#140c04');
+  for (let y = cy - 6; y < cy + 9; y++) for (let x = 14; x < 27; x++) if (Math.hypot((x + 0.5 - 20) / 4.6, (y + 0.5 - cy - 2) / 6) < 1) img.set(x, y, hex2('#100804'));
+  // A lamp by the door, and a few flowers.
+  for (let y = cy - 12; y < cy + 6; y++) img.set(31, y, hex2('#403020'));
+  for (const [x, y] of [[30, cy - 14], [31, cy - 14], [32, cy - 14], [30, cy - 13], [31, cy - 13], [32, cy - 13]]) img.set(x!, y!, hex2('#f8e048'));
+  for (const [x, y, c] of [[42, cy - 12, '#f070a0'], [48, cy - 8, '#f8f070'], [38, cy - 20, '#f070a0'], [50, cy - 16, '#a0c8f8']] as const) img.set(x, y, hex2(c));
+  return img;
+}
+
+function drawLamp(): Image {
+  const img = new Image(8, 28);
+  const iron = hex2('#303040');
+  for (let y = 8; y < 26; y++) {
+    img.set(3, y, iron);
+    img.set(4, y, hex2('#505068'));
+  }
+  for (let x = 2; x < 6; x++) img.set(x, 26, iron);
+  for (let y = 1; y < 8; y++) for (let x = 1; x < 7; x++) img.set(x, y, x === 1 || x === 6 || y === 1 || y === 7 ? iron : hex2(y < 4 ? '#fff8c0' : '#f8d850'));
+  return img;
+}
+
+function drawBarrel(): Image {
+  const img = new Image(12, 14);
+  blob(img, 6, 7, 5.5, 6.6, '#9a6430', '#281408');
+  for (const y of [3, 10]) for (let x = 1; x < 11; x++) if (img.get(x, y)[3]) img.set(x, y, hex2('#505060'));
+  return img;
+}
+
+function drawBossGate(open: boolean): Image {
+  // A stone gate on a 2x2 footprint: two pillars, a lintel with an insect mark, iron bars when closed.
+  const img = new Image(64, 84);
+  const cy = 84 - 17;
+  const stone = ramp('#7a7088');
+  const edge = hex2('#181420');
+  // The base slab.
+  fillPoly(img, [[2, cy], [32, cy - 15], [62, cy], [32, cy + 15]], stone[2]!);
+  const pillar = (px: number) => {
+    for (let y = cy - 56; y < cy + 2; y++) for (let x = px - 5; x < px + 5; x++) img.set(x, y, x === px - 5 || x === px + 4 ? edge : stone[x < px ? 4 : 2]!);
+  };
+  pillar(10);
+  pillar(54);
+  // Lintel.
+  for (let y = cy - 64; y < cy - 54; y++) for (let x = 3; x < 61; x++) img.set(x, y, y === cy - 64 || y === cy - 55 ? edge : stone[3]!);
+  // An insect mark: a beetle shape with red eyes.
+  blob(img, 32, cy - 59, 6, 4, '#402838', '#181420');
+  img.set(30, cy - 60, hex2('#ff3030'));
+  img.set(34, cy - 60, hex2('#ff3030'));
+  if (!open) {
+    for (let x = 16; x < 50; x += 5) for (let y = cy - 54; y < cy + 1; y++) img.set(x, y, hex2(y % 9 === 0 ? '#8a8a98' : '#4a4a58'));
+    for (let x = 15; x < 50; x++) img.set(x, cy - 30, hex2('#4a4a58'));
+  } else {
+    for (let y = cy - 54; y < cy + 1; y++) for (let x = 15; x < 50; x++) if ((x + y) % 3 === 0) img.set(x, y, hex2('#4a1868'));
+  }
+  return img;
+}
+
+function drawChest(open: boolean): Image {
+  const img = new Image(18, 16);
+  const box = drawBlockSprite(18, 9, 7, '#a06a30', (x, y) => y === 9 || (x === 9 && y > 9));
+  img.blit(box, 0, 0);
+  for (let x = 7; x < 11; x++) img.set(x, 11, hex2('#f8d030'));
+  if (open) {
+    for (let y = 0; y < 5; y++) for (let x = 2; x < 16; x++) img.set(x, y, hex2(y === 0 ? '#5a3418' : '#fff0a0'));
+  }
+  return img;
+}
+
+function drawTeeMat(): Image {
+  const img = new Image(26, 14);
+  fillPoly(img, [[13, 1], [25, 7], [13, 13], [1, 7]], (x, y) => hex2((x + y) % 4 < 2 ? '#2e7a30' : '#38883a'));
+  img.set(13, 6, hex2('#f8f8f8'));
+  img.set(13, 7, hex2('#c0c0c8'));
+  return img;
+}
+
+/** Owner, 2026-11-22: a post either side of a path's far end, with a small lantern, marking the way to the next course. */
+function drawPathPost(): Image {
+  const img = new Image(10, 34);
+  const wood = ramp('#8a5a30');
+  const edge = hex2('#281810');
+  for (let y = 10; y < 33; y++) for (let x = 3; x < 7; x++) img.set(x, y, x === 3 || x === 6 ? edge : wood[x === 4 ? 4 : 2]!);
+  for (let x = 2; x < 8; x++) img.set(x, 33, edge);
+  // A cap and a lantern hanging from it.
+  for (let x = 1; x < 9; x++) {
+    img.set(x, 9, edge);
+    img.set(x, 8, wood[3]!);
+  }
+  for (let y = 1; y < 8; y++) for (let x = 2; x < 8; x++) img.set(x, y, x === 2 || x === 7 || y === 1 || y === 7 ? edge : hex2(y < 4 ? '#fff4b0' : '#f8c840'));
+  return img;
+}
+
+function drawPracticeFlag(): Image {
+  const img = new Image(12, 26);
+  for (let y = 2; y < 25; y++) {
+    img.set(2, y, hex2('#e8e8e8'));
+    img.set(3, y, hex2('#9898a0'));
+  }
+  for (let y = 2; y < 9; y++) for (let x = 4; x < 4 + Math.round((9 - y) * 1.1) + 1 && x < 12; x++) img.set(x, y, hex2(y < 5 ? '#f8e048' : '#e0c030'));
+  return img;
+}
+
+/** A flat room picture (sheet section 4), 384 x 216. */
+function drawRoom(kind: 'food' | 'gear' | 'burrow'): Image {
+  const W = 384;
+  const Hh = 216;
+  const img = new Image(W, Hh);
+  const horizon = 150;
+  const rect = (x0: number, y0: number, w: number, h: number, c: string) => {
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) img.set(x, y, hex2(c));
+  };
+  if (kind === 'burrow') {
+    // Earth all round, a rounded room carved out.
+    for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) {
+      const inside = Math.hypot((x - 192) / 200, (y - 160) / 150) < 1;
+      img.set(x, y, hex2(inside ? (y > horizon ? ((x >> 3) + (y >> 3)) % 2 ? '#6a4a2a' : '#624426' : hash(x >> 2, y >> 2, 3) < 0.08 ? '#4a3018' : '#5a3a1e') : hash(x >> 2, y >> 2, 4) < 0.1 ? '#2a1a0c' : '#3a2412'));
+    }
+    // Roots from the ceiling.
+    for (const rx of [70, 130, 250, 310]) for (let y = 12; y < 40 + (rx % 30); y++) img.set(rx + Math.round(Math.sin(y / 5) * 2), y, hex2('#2a1a0c'));
+    // A bed of leaves (left), a stash chest (right), a shelf of jars (back), a warm lamp.
+    for (let y = 150; y < 176; y++) for (let x = 30; x < 120; x++) if (Math.hypot((x - 75) / 45, (y - 163) / 13) < 1) img.set(x, y, hex2(hash(x, y, 5) < 0.5 ? '#c86a28' : '#e0a030'));
+    rect(280, 130, 64, 36, '#8a5a28');
+    rect(280, 130, 64, 4, '#5a3418');
+    rect(308, 142, 8, 8, '#f8d030');
+    rect(140, 70, 104, 4, '#5a3418');
+    for (let i = 0; i < 6; i++) rect(146 + i * 16, 56, 10, 14, ['#80c8f0', '#f070a0', '#a0e070', '#f8e048', '#c0a0f8', '#f0a060'][i]!);
+    rect(186, 20, 12, 10, '#f8e048');
+    for (let y = 0; y < 20; y++) img.set(192, y, hex2('#2a1a0c'));
+    return img;
+  }
+  const wallA = kind === 'food' ? '#e0c890' : '#8890a0';
+  const wallB = kind === 'food' ? '#d4ba80' : '#7a8292';
+  for (let y = 0; y < horizon; y++) for (let x = 0; x < W; x++) {
+    const plank = kind === 'food' ? (x % 24 === 0 ? '#b09060' : wallA) : ((y >> 4) + (x >> 5)) % 2 ? wallA : wallB;
+    img.set(x, y, hex2(kind === 'gear' && (y % 16 === 0 || (x + ((y >> 4) % 2) * 16) % 32 === 0) ? '#5a6070' : plank));
+  }
+  for (let y = horizon; y < Hh; y++) for (let x = 0; x < W; x++) img.set(x, y, hex2(((x >> 4) + (y >> 3)) % 2 ? '#7a5030' : '#6a4428'));
+  // Shelves on the back wall.
+  for (const sy of [40, 72, 104]) {
+    rect(30, sy, 324, 4, '#5a3418');
+    for (let i = 0; i < 18; i++) {
+      const x = 36 + i * 18;
+      if (kind === 'food') {
+        const c = ['#e04030', '#f8a030', '#60c040', '#f8e048', '#a05030', '#e070c0'][(i + sy) % 6]!;
+        for (let y = sy - 9; y < sy; y++) for (let xx = x; xx < x + 10; xx++) if (Math.hypot((xx - x - 5) / 5, (y - sy + 4.5) / 4.5) < 1) img.set(xx, y, hex2(c));
+      } else {
+        const c = ['#c0c8d8', '#f0c040', '#6898f8', '#b878f8', '#58d058', '#f8a040'][(i + sy) % 6]!;
+        rect(x + 1, sy - 10, 8, 10, '#303040');
+        rect(x + 2, sy - 9, 6, 8, c);
+      }
+    }
+  }
+  // The counter.
+  rect(0, 128, W, 22, kind === 'food' ? '#9a6430' : '#5a5a68');
+  rect(0, 128, W, 3, kind === 'food' ? '#c08848' : '#8a8a98');
+  if (kind === 'gear') {
+    // An anvil on the counter.
+    rect(300, 112, 30, 8, '#303038');
+    rect(308, 120, 14, 8, '#303038');
+  } else {
+    // A basket of apples on the counter.
+    for (let y = 114; y < 128; y++) for (let x = 60; x < 100; x++) if (Math.hypot((x - 80) / 20, (y - 128) / 14) < 1) img.set(x, y, hex2(y < 120 ? '#e04030' : '#a07040'));
+  }
+  return img;
+}
+
+emit('armadillo', sheet((['dr', 'ur'] as const).flatMap((f) => ([0, 1, 2] as const).map((s) => drawArmadillo(f, s)))), 14, 20, ['dr-stand', 'dr-step1', 'dr-step2', 'ur-stand', 'ur-step1', 'ur-step2'], [7, 19]);
+emit('armadillo-left', sheet((['dr', 'ur'] as const).flatMap((f) => ([0, 1, 2] as const).map((s) => flipX(drawArmadillo(f, s))))), 14, 20, ['dl-stand', 'dl-step1', 'dl-step2', 'ul-stand', 'ul-step1', 'ul-step2'], [6, 19]);
+{
+  const food = drawFoodHut();
+  emit('place-food-hut', food, 64, food.height, ['idle'], [32, food.height - 17]);
+  const gear = drawGearShop();
+  emit('place-gear-shop', gear, 64, gear.height, ['idle'], [32, gear.height - 17]);
+}
+emit('place-burrow', drawBurrowMound(), 64, 48, ['idle'], [32, 31]);
+emit('place-signpost', drawSignpost(), 28, 32, ['idle'], [14, 31]);
+emit('place-lamp', drawLamp(), 8, 28, ['idle'], [4, 26]);
+emit('place-barrel', drawBarrel(), 12, 14, ['idle'], [6, 12]);
+emit('place-boss-gate', sheet([drawBossGate(false), drawBossGate(true)]), 64, 84, ['closed', 'open'], [32, 67]);
+emit('place-chest', sheet([drawChest(false), drawChest(true)]), 18, 16, ['closed', 'open'], [9, 11]);
+emit('place-tee-mat', drawTeeMat(), 26, 14, ['idle'], [13, 7]);
+emit('place-practice-flag', drawPracticeFlag(), 12, 26, ['idle'], [2, 24]);
+emit('place-path-post', drawPathPost(), 10, 34, ['idle'], [5, 33]);
+for (const k of ['food', 'gear', 'burrow'] as const) emit(`room-${k}`, drawRoom(k), 384, 216, ['idle'], [0, 0]);
 
 const font = drawFont();
 emit('font', font.img, 4, 6, font.frames, [0, 0]);
