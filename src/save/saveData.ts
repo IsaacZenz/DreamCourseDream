@@ -9,14 +9,14 @@
  *
  * Plain TypeScript (no browser): `store.ts` puts the text in local storage.
  */
-import { GEAR, GEAR_CATEGORIES, NO_GEAR, type GearSlots } from '../content/gear.ts';
+import { GEAR, GEAR_CATEGORIES, NO_GEAR, type GearCategory, type GearSlots } from '../content/gear.ts';
 import { PERMANENT_UPGRADES, STARTING_ABILITIES } from '../content/progress.ts';
 import { newProfile, ownsCharacter, type Profile } from '../sim/profile.ts';
 import { CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import { openFoodShop, type RunMap, type RunState } from '../sim/run.ts';
 import { FOODS } from '../content/consumables.ts';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /** A run without its map (the map is made again from the seed). */
 export type RunSnapshot = Omit<RunState, 'map'>;
@@ -61,6 +61,12 @@ const MIGRATIONS: readonly ((old: Obj) => Obj)[] = [
     const { pocket, ...rest } = run;
     const shop = isObj(run.shop) ? { ...run.shop, offers: Array.isArray(run.shop.offers) ? run.shop.offers.filter((o) => isObj(o) && o.kind === 'gear') : [] } : run.shop;
     return { ...old, version: 3, run: { ...rest, shop, bag: typeof pocket === 'string' ? [{ id: pocket, courses: 1 }] : [], fed: [], foodShop: null } };
+  },
+  // 3 -> 4 (round 3, owner 2026-11-22): second gear pockets (none unlocked; held gear stays in the first pocket) and characters.
+  (old) => {
+    const profile = isObj(old.profile) ? { ...old.profile, pockets: [], characters: [] } : old.profile;
+    const run = isObj(old.run) ? { ...old.run, gear2: { ...NO_GEAR }, pockets: [] } : old.run;
+    return { ...old, version: 4, profile, run };
   },
 ];
 
@@ -112,6 +118,8 @@ function readProfile(v: unknown): Profile | null {
   }
   for (const a of v.abilities) if (typeof a === 'string' && STARTING_ABILITIES.includes(a) && !p.abilities.includes(a)) p.abilities.push(a);
   p.startAbility = v.startAbility && p.abilities.includes(v.startAbility) ? v.startAbility : null;
+  // Round 3: second pockets bought.
+  if (Array.isArray(v.pockets)) for (const c of v.pockets) if ((GEAR_CATEGORIES as readonly unknown[]).includes(c) && !p.pockets.includes(c as GearCategory)) p.pockets.push(c as GearCategory);
   // Round 3: characters bought; the chosen one must be owned.
   if (Array.isArray(v.characters)) for (const c of v.characters) if (typeof c === 'string' && CHARACTERS.has(c) && !p.characters.includes(c)) p.characters.push(c);
   if (typeof v.character === 'string' && ownsCharacter(p, v.character)) p.character = v.character;
@@ -156,6 +164,9 @@ function readRun(v: unknown): RunSnapshot | null {
   for (const c of GEAR_CATEGORIES) if (gearOrNull((v.gear as Obj)[c], c) === undefined) return null;
   const shop = v.shop;
   if (!Array.isArray(shop.offers) || !isNum(shop.rerolls) || !isNum(shop.freeRerolls) || typeof shop.raised !== 'boolean') return null;
+  // Round 3: the second pockets.
+  if (!isObj(v.gear2) || !Array.isArray(v.pockets)) return null;
+  for (const c of GEAR_CATEGORIES) if (gearOrNull((v.gear2 as Obj)[c], c) === undefined) return null;
   // Round 3: a run saved before characters is played as Rollo.
   if (typeof v.character !== 'string' || !CHARACTERS.has(v.character)) v.character = DEFAULT_CHARACTER;
   return v as unknown as RunSnapshot;

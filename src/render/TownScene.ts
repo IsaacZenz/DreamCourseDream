@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { GEAR, GEAR_CATEGORIES, GEAR_LIST, RARITY_INFO, type GearCategory } from '../content/gear';
 import { RUN, UPGRADE_LIST, UPGRADES } from '../content/run';
 import {
+  addPocket,
+  gearFull,
   settleGrab,
   waitingGrab,
   addUpgrade,
@@ -26,6 +28,8 @@ import {
 } from '../sim/run';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 import { pixelText } from './pixelText';
+import { gearBoxes } from './shared';
+import type { Pocket } from '../sim/pockets';
 import { persist, session, storeBurrow } from './runSession';
 import { prefetch } from './genQueue';
 import { drawRows, progressRows } from './progressMenu';
@@ -86,7 +90,7 @@ export class TownScene extends Phaser.Scene {
   private sel = 0;
   private message = '';
   private messageColor = UI_TEXT;
-  private confirm: { lines: string[]; yes: () => void; no?: () => void } | null = null;
+  private confirm: { lines: string[]; yes: () => void; no?: () => void; choices?: string[]; pick?: number; onPick?: (i: number) => void } | null = null;
   /** Which shop is open in 'shop' mode. */
   private which: ShopKind = 'gear';
   private bag!: BagMenu;
@@ -156,7 +160,7 @@ export class TownScene extends Phaser.Scene {
       const t = pixelText(this, shared.manifest, 0, 0, this.message, { color: this.messageColor, background: UI_BG });
       t.setPosition(Math.round((VIEW_WIDTH - t.width) / 2), VIEW_HEIGHT - 26).setDepth(50);
     }
-    if (this.confirm) this.drawConfirm(this.confirm.lines);
+    if (this.confirm) this.drawConfirm(this.confirm.choices ? [...this.confirm.lines, ...this.confirm.choices.map((c, i) => `${i === this.confirm!.pick ? '> ' : '  '}${c}`), '', 'LEFT/RIGHT: CHOOSE   ENTER: OK   ESC: CANCEL'] : this.confirm.lines);
     this.bag?.draw(run);
   }
 
@@ -178,9 +182,10 @@ export class TownScene extends Phaser.Scene {
     this.text(46, 8, `STARS ${run.wallet}`, STAR).setDepth(41);
     this.text(100, 8, run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS NEXT', 0xff8080).setDepth(41);
     this.text(150, 8, `BAG ${run.bag.length}/${FOOD.bagSlots} (B)`, STAR).setDepth(41);
-    let x = VIEW_WIDTH - 3 * 14 - 2;
-    for (const c of GEAR_CATEGORIES) {
-      const id = run.gear[c];
+    // Round 3: a box per pocket; second pockets only once unlocked.
+    const boxes = gearBoxes(run.gear, run.gear2, run.pockets);
+    let x = VIEW_WIDTH - boxes.length * 14 - 2;
+    for (const id of boxes) {
       if (id) this.add.image(x, 1, GEAR.get(id)!.icon, 0).setOrigin(0, 0).setDepth(41);
       else this.add.rectangle(x + 1, 2, 10, 10, 0, 0).setOrigin(0, 0).setStrokeStyle(1, 0x404058).setDepth(41);
       x += 14;
@@ -338,27 +343,41 @@ export class TownScene extends Phaser.Scene {
     this.help([`LEFT/RIGHT: CHOOSE   ENTER: BUY   R: REROLL (${rp === 0 ? 'FREE' : `${rp} STARS`})   ESC: BACK TO TOWN`]);
   }
 
-  /** Buying gear for a filled slot asks first, showing both items (FEATURES.md section 8). */
-  private withGearCheck(run: RunState, o: Offer, act: () => void): void {
-    if (o.kind !== 'gear') return act();
+  /**
+   * Buying gear for a filled slot asks first, showing both items (FEATURES.md
+   * section 8). Round 3: with both pockets full, it asks which one to replace.
+   */
+  private withGearCheck(run: RunState, o: Offer, act: (pocket: Pocket) => void): void {
+    if (o.kind !== 'gear') return act(1);
     const g = GEAR.get(o.id)!;
-    const old = run.gear[g.category];
-    if (!old) return act();
-    const og = GEAR.get(old)!;
-    this.confirm = {
-      lines: [
-        `REPLACE YOUR ${g.category.toUpperCase()}?`,
-        '',
-        `YOURS: ${og.name.toUpperCase()} (${RARITY_INFO[og.rarity].name.toUpperCase()})`,
-        `  ${og.desc.toUpperCase()}`,
-        `NEW:   ${g.name.toUpperCase()} (${RARITY_INFO[g.rarity].name.toUpperCase()})`,
-        `  ${g.desc.toUpperCase()}`,
-        '',
-        'YOURS WILL BE LOST. TIP: STORE IT IN YOUR BURROW FIRST.',
-        'ENTER: REPLACE   ESC: KEEP MINE',
-      ],
-      yes: act,
+    if (!gearFull(run, g.category)) return act(1);
+    this.askReplace(run, g.id, [], act, () => this.redraw(run));
+  }
+
+  /** "Replace which?" for a new item whose category is full. `head` lines come first. */
+  private askReplace(run: RunState, id: string, head: string[], act: (pocket: Pocket) => void, keep: () => void): void {
+    const g = GEAR.get(id)!;
+    const c = g.category;
+    const line = (x: string) => {
+      const d = GEAR.get(x)!;
+      return `${d.name.toUpperCase()} (${RARITY_INFO[d.rarity].name.toUpperCase()}): ${d.desc.toUpperCase()}`;
     };
+    if (!run.pockets.includes(c)) {
+      this.confirm = {
+        lines: [...head, `REPLACE YOUR ${c.toUpperCase()}?`, '', `YOURS: ${line(run.gear[c]!)}`, `NEW:   ${line(id)}`, '', 'YOURS WILL BE LOST. TIP: STORE IT IN YOUR BURROW FIRST.', 'ENTER: REPLACE   ESC: KEEP MINE'],
+        yes: () => act(1),
+        no: keep,
+      };
+    } else {
+      this.confirm = {
+        lines: [...head, `BOTH ${c.toUpperCase()} POCKETS ARE FULL. REPLACE WHICH?`, '', `NEW: ${line(id)}`, '', 'THE ONE REPLACED WILL BE LOST. TIP: STORE IT IN YOUR BURROW FIRST.', ''],
+        choices: [`REPLACE ${line(run.gear[c]!)}`, `REPLACE ${line(run.gear2[c]!)}`, 'KEEP BOTH'],
+        pick: 0,
+        yes: () => undefined,
+        no: keep,
+        onPick: (i) => (i === 2 ? keep() : act(i === 0 ? 1 : 2)),
+      };
+    }
     this.redraw(run);
   }
 
@@ -371,8 +390,8 @@ export class TownScene extends Phaser.Scene {
       this.redraw(run);
       return;
     }
-    this.withGearCheck(run, o, () => {
-      const err = buy(run, this.sel, this.which);
+    this.withGearCheck(run, o, (pocket) => {
+      const err = buy(run, this.sel, this.which, pocket);
       this.say(err ?? `BOUGHT ${this.offerLines(run, o).name.toUpperCase()}`, err ? BAD : GOOD);
       // Round 3: a Grab Bag for a full category asks before replacing.
       const grab = waitingGrab(run);
@@ -383,25 +402,19 @@ export class TownScene extends Phaser.Scene {
 
   private askGrab(run: RunState, o: Offer): void {
     const g = GEAR.get(o.got!)!;
-    const og = GEAR.get(run.gear[g.category]!)!;
-    this.confirm = {
-      lines: [
-        `THE GRAB BAG HELD ${g.name.toUpperCase()}!`,
-        `REPLACE YOUR ${g.category.toUpperCase()}?`,
-        '',
-        `YOURS: ${og.name.toUpperCase()} (${RARITY_INFO[og.rarity].name.toUpperCase()})`,
-        `  ${og.desc.toUpperCase()}`,
-        `NEW:   ${g.name.toUpperCase()} (${RARITY_INFO[g.rarity].name.toUpperCase()})`,
-        `  ${g.desc.toUpperCase()}`,
-        '',
-        'ENTER: REPLACE   ESC: KEEP MINE (IT STAYS IN THE SHOP)',
-      ],
-      yes: () => {
-        settleGrab(run, true);
+    this.askReplace(
+      run,
+      g.id,
+      [`THE GRAB BAG HELD ${g.name.toUpperCase()}!`, 'IF YOU KEEP YOURS, IT STAYS IN THE SHOP AT ITS NORMAL PRICE.', ''],
+      (pocket) => {
+        settleGrab(run, true, pocket);
         this.redraw(run);
       },
-      no: () => settleGrab(run, false),
-    };
+      () => {
+        settleGrab(run, false);
+        this.redraw(run);
+      },
+    );
   }
 
   private drawCache(run: RunState): void {
@@ -428,8 +441,8 @@ export class TownScene extends Phaser.Scene {
       this.redraw(run);
       return;
     }
-    this.withGearCheck(run, o, () => {
-      takeFromCache(run, this.sel);
+    this.withGearCheck(run, o, (pocket) => {
+      takeFromCache(run, this.sel, pocket);
       this.leaveCacheScreen();
     });
   }
@@ -445,7 +458,10 @@ export class TownScene extends Phaser.Scene {
     this.text(6, 26, 'AND WAITS HERE FOR YOUR NEXT RUN. ONE PER KIND.', GOOD);
     this.text(66, 38, 'WEARING', UI_DIM);
     this.text(248, 38, 'STORED', UI_DIM);
-    GEAR_CATEGORIES.forEach((c, i) => this.drawBurrowRow(run, c, 46 + i * 44, i === this.sel));
+    // Round 3: a row per pocket (second pockets once unlocked); smaller rows when there are more than three.
+    const rows = this.burrowRows(run);
+    const h = rows.length > 3 ? Math.floor(132 / rows.length) : 44;
+    rows.forEach((r, i) => this.drawBurrowRow(run, r.c, r.pocket, 46 + i * h, h - 4, i === this.sel));
     this.text(6, 180, `BLUE STAR STASH: ${session.profile.stash} (YOUR BLUE STARS WERE DEPOSITED WHEN YOU ARRIVED)`, 0x80c8ff);
     this.help(['UP/DOWN: CHOOSE  ENTER: SWAP (STORE, TAKE OUT OR BOTH)  P: SPEND BLUE STARS  ESC: BACK']);
   }
@@ -453,11 +469,17 @@ export class TownScene extends Phaser.Scene {
   // Owner, 2026-11-17 (question I): permanent upgrades can be bought in a town's Burrow too, and work at once.
 
   private permRows(run: RunState) {
-    return progressRows(session.profile, (id) => {
-      const err = buyPermanentInTown(run, session.profile, id);
-      if (!err) persist();
-      return err;
-    }, false);
+    return progressRows(
+      session.profile,
+      (id) => {
+        const err = buyPermanentInTown(run, session.profile, id);
+        if (!err) persist();
+        return err;
+      },
+      false,
+      // Round 3: a second pocket bought in town works at once.
+      (c) => addPocket(run, c),
+    );
   }
 
   private drawPerm(run: RunState): void {
@@ -479,35 +501,52 @@ export class TownScene extends Phaser.Scene {
     this.redraw(run);
   }
 
-  private drawBurrowRow(run: RunState, c: GearCategory, y: number, selected: boolean): void {
-    this.add.rectangle(4, y, VIEW_WIDTH - 8, 40, CARD_BG, 0.85).setOrigin(0, 0).setStrokeStyle(selected ? 2 : 1, selected ? SELECT : 0x5a4030);
-    const hit = this.add.rectangle(4, y, VIEW_WIDTH - 8, 40, 0, 0).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+  /** Round 3: one row per pocket the run has. */
+  private burrowRows(run: RunState): { c: GearCategory; pocket: Pocket }[] {
+    return GEAR_CATEGORIES.flatMap((c) => (run.pockets.includes(c) ? [{ c, pocket: 1 as const }, { c, pocket: 2 as const }] : [{ c, pocket: 1 as const }]));
+  }
+
+  private drawBurrowRow(run: RunState, c: GearCategory, pocket: Pocket, y: number, h: number, selected: boolean): void {
+    const index = this.burrowRows(run).findIndex((r) => r.c === c && r.pocket === pocket);
+    this.add.rectangle(4, y, VIEW_WIDTH - 8, h, CARD_BG, 0.85).setOrigin(0, 0).setStrokeStyle(selected ? 2 : 1, selected ? SELECT : 0x5a4030);
+    const hit = this.add.rectangle(4, y, VIEW_WIDTH - 8, h, 0, 0).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     hit.on('pointerdown', () => {
-      this.sel = GEAR_CATEGORIES.indexOf(c);
+      this.sel = index;
       this.swapSelected(run);
     });
-    this.text(9, y + 17, c.toUpperCase(), UI_DIM);
+    const mid = y + Math.floor(h / 2) - 3;
+    this.text(9, mid, run.pockets.includes(c) ? `${c.toUpperCase()} ${pocket}` : c.toUpperCase(), UI_DIM);
+    // The stored item shows once per category, on its first row.
+    const compact = h < 40;
     const item = (id: string | null, x: number) => {
       if (!id) {
-        this.text(x, y + 17, '(EMPTY)', UI_DIM);
+        this.text(x, mid, '(EMPTY)', UI_DIM);
         return;
       }
       const gd = GEAR.get(id)!;
+      if (compact) {
+        this.add.image(x + 6, mid + 3, gd.icon, 0);
+        this.text(x + 15, mid - 3, gd.name, UI_TEXT);
+        this.text(x + 15, mid + 4, RARITY_INFO[gd.rarity].name, RARITY_COLOR[gd.rarity]!);
+        return;
+      }
       this.add.image(x + 6, y + 20, gd.icon, 0).setScale(2);
       this.text(x + 18, y + 6, gd.name, UI_TEXT);
       this.text(x + 18, y + 13, RARITY_INFO[gd.rarity].name, RARITY_COLOR[gd.rarity]!);
       wrap(gd.desc, 26).forEach((l, k) => this.text(x + 18, y + 21 + k * 7, l, UI_DIM));
     };
-    item(run.gear[c], 54);
-    this.text(184, y + 17, '<>', selected ? SELECT : UI_DIM);
+    item((pocket === 1 ? run.gear : run.gear2)[c], 54);
+    this.text(184, mid, '<>', selected ? SELECT : UI_DIM);
     item(run.burrow[c], 236);
   }
 
   private swapSelected(run: RunState): void {
-    const c = GEAR_CATEGORIES[this.sel]!;
-    const worn = run.gear[c];
+    const row = this.burrowRows(run)[this.sel];
+    if (!row) return;
+    const { c, pocket } = row;
+    const worn = (pocket === 1 ? run.gear : run.gear2)[c];
     const stored = run.burrow[c];
-    if (!burrowSwap(run, c)) {
+    if (!burrowSwap(run, c, pocket)) {
       this.say('NOTHING TO SWAP', BAD);
     } else {
       storeBurrow();
@@ -533,16 +572,25 @@ export class TownScene extends Phaser.Scene {
     const kb = this.input.keyboard!;
     const move = (d: number) => () => {
       if (this.confirm) return;
-      const n = this.mode === 'town' ? SPOTS.length : this.mode === 'shop' ? this.shopNow(run).offers.length : this.mode === 'cache' ? run.cache!.offers.length : this.mode === 'perm' ? this.permRows(run).length : GEAR_CATEGORIES.length;
+      const n = this.mode === 'town' ? SPOTS.length : this.mode === 'shop' ? this.shopNow(run).offers.length : this.mode === 'cache' ? run.cache!.offers.length : this.mode === 'perm' ? this.permRows(run).length : this.burrowRows(run).length;
       this.sel = (this.sel + d + n) % n;
       this.message = '';
       this.redraw(run);
     };
     const horizontal = (d: number) => () => {
+      if (this.confirm?.choices) {
+        const n = this.confirm.choices.length;
+        this.confirm.pick = ((this.confirm.pick ?? 0) + d + n) % n;
+        this.redraw(run);
+        return;
+      }
       if (this.bag.key(run, d < 0 ? 'left' : 'right')) return;
       if (this.mode !== 'burrow' && this.mode !== 'perm') move(d)();
     };
-    const vertical = (d: number) => () => (this.mode === 'burrow' || this.mode === 'perm') && move(d)();
+    const vertical = (d: number) => () => {
+      if (this.confirm?.choices) return horizontal(d)();
+      if (this.mode === 'burrow' || this.mode === 'perm') move(d)();
+    };
     kb.on('keydown-LEFT', horizontal(-1));
     kb.on('keydown-A', horizontal(-1));
     kb.on('keydown-RIGHT', horizontal(1));
@@ -554,9 +602,10 @@ export class TownScene extends Phaser.Scene {
     const ok = () => {
       if (this.bag.key(run, 'ok')) return;
       if (this.confirm) {
-        const yes = this.confirm.yes;
+        const { yes, onPick, pick } = this.confirm;
         this.confirm = null;
-        yes();
+        if (onPick) onPick(pick ?? 0);
+        else yes();
         return;
       }
       if (this.mode === 'town') this.enterSpot(run);

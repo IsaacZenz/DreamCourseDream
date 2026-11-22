@@ -54,7 +54,7 @@ export function newRunSeed(): string {
 
 export function startRun(seed: string): RunState {
   const p = session.profile;
-  session.run = createRun(seed, generateRunMap(seed), session.burrow, { levels: p.levels, startAbility: p.startAbility, lastArena: p.lastArena, character: p.character });
+  session.run = createRun(seed, generateRunMap(seed), session.burrow, { levels: p.levels, startAbility: p.startAbility, lastArena: p.lastArena, character: p.character, pockets: p.pockets });
   session.course = null;
   session.pending = null;
   session.saved = null;

@@ -268,8 +268,8 @@ export class MapScene extends Phaser.Scene {
     line(`COURSES DONE ${run.totals.courses}`, UI_DIM);
     y += 3;
     // Gear: icon and name per slot.
-    for (const cat of GEAR_CATEGORIES) {
-      const id = run.gear[cat];
+    // Round 3: second pockets get a line each once unlocked.
+    for (const [cat, id] of [...GEAR_CATEGORIES.map((k) => [k, run.gear[k]] as const), ...GEAR_CATEGORIES.filter((k) => run.pockets.includes(k)).map((k) => [k, run.gear2[k]] as const)]) {
       if (id) c.add(this.add.image(4, y - 1, GEAR.get(id)!.icon, 0).setOrigin(0, 0));
       else c.add(this.add.rectangle(5, y, 10, 10, 0, 0).setOrigin(0, 0).setStrokeStyle(1, 0x404058));
       c.add(pixelText(this, m, 19, y + 2, id ? GEAR.get(id)!.name : `NO ${cat}`, { color: id ? UI_TEXT : UI_DIM }));
@@ -444,7 +444,7 @@ export class MapScene extends Phaser.Scene {
       }
       if (line) c.add(pixelText(this, m, x + 4, ly, line, { color: UI_DIM }));
     });
-    c.add(pixelText(this, m, 8, h - 12, 'LEFT/RIGHT: CHOOSE  ENTER: TAKE IT (REPLACES THAT SLOT)  ESC: NONE', { color: UI_DIM }));
+    c.add(pixelText(this, m, 8, h - 12, 'LEFT/RIGHT: CHOOSE  ENTER: TAKE IT (FULL? IT REPLACES THE LOWER RARITY)  ESC: NONE', { color: UI_DIM }));
   }
 
   private takeReward(run: RunState, i: number | null): void {
@@ -487,7 +487,7 @@ export class MapScene extends Phaser.Scene {
     const won = run.status === 'won';
     const reason = won ? `YOU BEAT ${(BOSSES.get(run.bossesBeaten[run.bossesBeaten.length - 1] ?? '')?.name ?? 'THE BOSS').toUpperCase()}, THE FINAL BOSS!` : run.endedBy === 'shots' ? 'OUT OF SHOTS WITH NO NAPS LEFT.' : 'YOUR HEALTH RAN OUT.';
     const endless = won && run.beatFinal && run.region === LAST_REGION;
-    const gear = GEAR_CATEGORIES.map((c) => run.gear[c]).filter(Boolean).map((id) => GEAR.get(id!)!.name);
+    const gear = [...GEAR_CATEGORIES.map((c) => run.gear[c]), ...GEAR_CATEGORIES.map((c) => run.gear2[c])].filter(Boolean).map((id) => GEAR.get(id!)!.name);
     const stored = GEAR_CATEGORIES.map((c) => run.burrow[c]).filter(Boolean).map((id) => GEAR.get(id!)!.name);
     const lines = [
       won ? 'RUN COMPLETE!' : 'RUN OVER',

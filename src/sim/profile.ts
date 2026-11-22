@@ -4,7 +4,8 @@
  * abilities owned and the one chosen, and records for later unlocks. Kept
  * between runs, in the Burrow. Plain TypeScript; the display saves it.
  */
-import { ABILITY_PRICE, PERMANENT_UPGRADE_LIST, PERMANENT_UPGRADES, STARTING_ABILITIES } from '../content/progress.ts';
+import { ABILITY_PRICE, PERMANENT_UPGRADE_LIST, PERMANENT_UPGRADES, POCKET_UNLOCKS, STARTING_ABILITIES } from '../content/progress.ts';
+import type { GearCategory } from '../content/gear.ts';
 import { CHARACTER_LIST, CHARACTERS, DEFAULT_CHARACTER } from '../content/characters.ts';
 import type { Modifier } from './stats.ts';
 
@@ -21,6 +22,8 @@ export interface Profile {
   character: string;
   /** Round 3: characters bought (Rollo is always owned and not listed). */
   readonly characters: string[];
+  /** Round 3: gear categories with a second pocket unlocked. */
+  readonly pockets: GearCategory[];
   /** Boss ids beaten at least once (FEATURES.md section 15: first-time unlocks). */
   readonly bossesBeaten: string[];
   /** The arena of the last boss fight, so the next one differs (owner, 2026-11-17). */
@@ -30,7 +33,7 @@ export interface Profile {
 }
 
 export function newProfile(): Profile {
-  return { stash: 0, levels: {}, abilities: [], startAbility: null, character: DEFAULT_CHARACTER, characters: [], bossesBeaten: [], lastArena: null, totals: { runs: 0, bossWins: 0, bestRegion: 1, wins: 0 } };
+  return { stash: 0, levels: {}, abilities: [], startAbility: null, character: DEFAULT_CHARACTER, characters: [], pockets: [], bossesBeaten: [], lastArena: null, totals: { runs: 0, bossWins: 0, bestRegion: 1, wins: 0 } };
 }
 
 /** Levels as permanent modifiers (FEATURES.md section 1). */
@@ -121,4 +124,23 @@ export function cycleCharacter(p: Profile, dir: 1 | -1): void {
   const options = CHARACTER_LIST.filter((c) => ownsCharacter(p, c.id)).map((c) => c.id);
   const i = Math.max(0, options.indexOf(p.character));
   p.character = options[(i + dir + options.length) % options.length] ?? DEFAULT_CHARACTER;
+}
+
+// ---------------------------------------------------------------------------
+// Second pockets (round 3, owner 2026-11-22): one unlock per gear category, bought once.
+
+export function cannotBuyPocket(p: Profile, c: GearCategory): string | null {
+  const u = POCKET_UNLOCKS.find((x) => x.category === c);
+  if (!u) return 'NOT FOR SALE';
+  if (p.pockets.includes(c)) return 'OWNED';
+  if (u.cost > p.stash) return 'NOT ENOUGH BLUE STARS';
+  return null;
+}
+
+export function buyPocket(p: Profile, c: GearCategory): string | null {
+  const why = cannotBuyPocket(p, c);
+  if (why) return why;
+  p.stash -= POCKET_UNLOCKS.find((x) => x.category === c)!.cost;
+  p.pockets.push(c);
+  return null;
 }

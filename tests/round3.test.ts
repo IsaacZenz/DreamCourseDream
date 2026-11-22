@@ -253,3 +253,149 @@ describe('Round 3: characters', () => {
     expect(thud / rollo).toBeLessThan(0.6);
   });
 });
+
+// ---------------------------------------------------------------------------
+import { pickUp, putIn, type Slots } from '../src/sim/pockets';
+import { burrowSwap, finishCourse, gearFull, loadoutOf, takeBossReward } from '../src/sim/run';
+import { buyPocket, cannotBuyPocket } from '../src/sim/profile';
+import { POCKET_UNLOCKS } from '../src/content/progress';
+import { equipGear, wheelFor } from '../src/sim/play';
+
+describe('Round 3: second gear pockets', () => {
+  const empty = (): Slots => ({ weapon: null, armour: null, bauble: null });
+
+  it('three unlocks at 17 blue stars each, bought once', () => {
+    expect(POCKET_UNLOCKS.map((u) => [u.category, u.cost])).toEqual([['weapon', 17], ['armour', 17], ['bauble', 17]]);
+    const p = newProfile();
+    p.stash = 16;
+    expect(cannotBuyPocket(p, 'weapon')).toBe('NOT ENOUGH BLUE STARS');
+    p.stash = 17;
+    expect(buyPocket(p, 'weapon')).toBeNull();
+    expect(p.pockets).toEqual(['weapon']);
+    expect(p.stash).toBe(0);
+    expect(buyPocket(p, 'weapon')).toBe('OWNED');
+  });
+
+  it('without the unlock, a new item replaces the old one as before', () => {
+    const g1 = empty();
+    const g2 = empty();
+    expect(pickUp(g1, g2, [], 'studded-shell')).toBeNull();
+    expect(pickUp(g1, g2, [], 'iron-shell')).toBe('studded-shell');
+    expect([g1.weapon, g2.weapon]).toEqual(['iron-shell', null]);
+  });
+
+  it('a pickup fills the free pocket, then replaces the lower rarity; the same rarity replaces the one held longest', () => {
+    const g1 = empty();
+    const g2 = empty();
+    const W = ['weapon'] as const;
+    pickUp(g1, g2, W, 'iron-shell'); // rare
+    pickUp(g1, g2, W, 'studded-shell'); // common
+    expect([g1.weapon, g2.weapon]).toEqual(['iron-shell', 'studded-shell']);
+    // A new uncommon replaces the common (the lower rarity).
+    expect(pickUp(g1, g2, W, 'thump-knob')).toBe('studded-shell');
+    expect([g1.weapon, g2.weapon]).toEqual(['iron-shell', 'thump-knob']);
+    // Lower in pocket 1 this time: a new item replaces it, and the order stays oldest first.
+    const h1 = empty();
+    const h2 = empty();
+    pickUp(h1, h2, W, 'bonk-knob'); // common, older
+    pickUp(h1, h2, W, 'clang-knob'); // rare
+    expect(pickUp(h1, h2, W, 'cinder-coat')).toBe('bonk-knob');
+    expect([h1.weapon, h2.weapon]).toEqual(['clang-knob', 'cinder-coat']);
+    // Same rarity: the one held longest goes.
+    const k1 = empty();
+    const k2 = empty();
+    pickUp(k1, k2, W, 'bonk-knob');
+    pickUp(k1, k2, W, 'ember-coat');
+    expect(pickUp(k1, k2, W, 'pin-needle')).toBe('bonk-knob');
+    expect([k1.weapon, k2.weapon]).toEqual(['ember-coat', 'pin-needle']);
+  });
+
+  it('a shop buy replaces the pocket the player chose', () => {
+    const g1 = empty();
+    const g2 = empty();
+    putIn(g1, g2, ['bauble'], 'star-magnet');
+    putIn(g1, g2, ['bauble'], 'long-sight');
+    expect(putIn(g1, g2, ['bauble'], 'lucky-pebble', 2)).toBe('long-sight');
+    expect([g1.bauble, g2.bauble]).toEqual(['star-magnet', 'lucky-pebble']);
+  });
+
+  it("both items work: their stats add up on the run and on a course, and the same item twice stacks", () => {
+    const run = createRun('POCK', generateRunMap('POCK'), undefined, { pockets: ['armour'] });
+    setGear(run, 'thick-hide'); // +1 max health
+    expect(gearFull(run, 'armour')).toBe(false);
+    setGear(run, 'thick-hide'); // the same item in pocket 2
+    expect([run.gear.armour, run.gear2.armour]).toEqual(['thick-hide', 'thick-hide']);
+    expect(runStats(run).get('maxHealth')).toBe(7);
+    expect(gearFull(run, 'armour')).toBe(true);
+    const play = createPlay(field(), DEFAULT_TUNING, { seed: 'p', loadout: loadoutOf(run) });
+    expect(play.stats.get('maxHealth')).toBe(7);
+    // Swapping one out on a course takes only that one's stats off.
+    equipGear(play, 'padded-lining');
+    expect(play.stats.get('maxHealth')).toBe(6);
+  });
+
+  it('two weapons each spin their own wheel, with their own slices', () => {
+    const lo = { gear: { weapon: 'ember-coat', armour: null, bauble: null }, gear2: { weapon: 'thistle-needle', armour: null, bauble: null }, pockets: ['weapon' as const], modifiers: [slices(30)] };
+    const { play, log } = hitOnce('two', lo);
+    const effects = log.filter((e): e is Extract<PlayEvent, { kind: 'roll' }> => e.kind === 'roll').map((e) => e.effect);
+    expect(effects).toEqual(expect.arrayContaining(['burn', 'poison']));
+    expect(play.enemies.length).toBe(1);
+    // Without extra slices: Ember Coat (common) fills 2, Thistle Needle (uncommon) 3.
+    const plain = hitOnce('two', { ...lo, modifiers: [] }).play;
+    const e = plain.enemies[0]!;
+    expect([wheelFor(plain, e, 'ember-coat').filled, wheelFor(plain, e, 'thistle-needle').filled]).toEqual([2, 3]);
+  });
+
+  it('the course hands both pockets back to the run, and a pickup on a course follows the rarity rule', () => {
+    const run = createRun('POCK2', generateRunMap('POCK2'), undefined, { pockets: ['weapon'] });
+    enterNode(run, choices(run)[0]!.id);
+    const play = createPlay(field(), DEFAULT_TUNING, { seed: 'q', loadout: loadoutOf(run) });
+    equipGear(play, 'iron-shell');
+    equipGear(play, 'studded-shell');
+    expect(equipGear(play, 'cinder-coat')).toBe('studded-shell');
+    finishCourse(run, { won: true, lostBy: null, health: play.health, wallet: play.wallet, ability: play.ability, gear: play.gear, gear2: play.gear2 });
+    expect([run.gear.weapon, run.gear2.weapon]).toEqual(['iron-shell', 'cinder-coat']);
+  });
+
+  it('the Burrow stores one per category, from either pocket', () => {
+    const run = createRun('POCK3', generateRunMap('POCK3'), undefined, { pockets: ['weapon'] });
+    debugVisit(run, 'shop');
+    setGear(run, 'iron-shell');
+    setGear(run, 'bonk-knob');
+    // Store pocket 1's: pocket 2's moves up.
+    expect(burrowSwap(run, 'weapon', 1)).toBe(true);
+    expect([run.gear.weapon, run.gear2.weapon, run.burrow.weapon]).toEqual(['bonk-knob', null, 'iron-shell']);
+    // Take it out again: it goes in the free pocket.
+    expect(burrowSwap(run, 'weapon', 2)).toBe(true);
+    expect([run.gear.weapon, run.gear2.weapon, run.burrow.weapon]).toEqual(['bonk-knob', 'iron-shell', null]);
+  });
+
+  it('a boss reward with both pockets full replaces the lower rarity', () => {
+    const run = createRun('POCK4', generateRunMap('POCK4'), undefined, { pockets: ['weapon'] });
+    setGear(run, 'iron-shell');
+    setGear(run, 'bonk-knob');
+    run.status = 'reward';
+    run.reward = [{ kind: 'gear', id: 'steel-shell', sold: false }];
+    takeBossReward(run, 0, generateRunMap('POCK4', 2));
+    expect([run.gear.weapon, run.gear2.weapon]).toEqual(['iron-shell', 'steel-shell']);
+  });
+
+  it('old saves (version 3) load with their gear in the first pocket and no second pockets', () => {
+    const run = createRun('V3', generateRunMap('V3'));
+    debugVisit(run, 'shop');
+    setGear(run, 'iron-shell');
+    const snap = snapshotRun(run) as unknown as Record<string, unknown>;
+    delete snap.gear2;
+    delete snap.pockets;
+    delete snap.character;
+    const prof = { ...newProfile() } as unknown as Record<string, unknown>;
+    delete prof.pockets;
+    delete prof.characters;
+    const back = decodeSave(JSON.stringify({ version: 3, profile: prof, burrow: null, run: snap }));
+    expect(back.broken).toEqual([]);
+    expect(back.data.run?.gear.weapon).toBe('iron-shell');
+    expect(back.data.run?.gear2).toEqual({ weapon: null, armour: null, bauble: null });
+    expect(back.data.run?.pockets).toEqual([]);
+    expect(back.data.profile.pockets).toEqual([]);
+  });
+});

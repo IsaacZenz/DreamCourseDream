@@ -28,6 +28,7 @@ import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../co
 import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
 import { buyUpgrade, permanentModifiers, type Profile } from './profile.ts';
 import { Rng } from './rng.ts';
+import { heldItems, isFull, pickUp, putIn, sourceId, takeOut, type Pocket } from './pockets.ts';
 import { StatSheet, type Modifier } from './stats.ts';
 import { COURSE_MOD_LIST, courseModCost, type CourseMod } from '../content/modifiers.ts';
 import { DIRECTIONS } from '../content/surfaces.ts';
@@ -174,6 +175,10 @@ export interface RunState {
   readonly bossesBeaten: string[];
   ability: string | null;
   gear: { -readonly [C in GearCategory]: string | null };
+  /** Round 3 (owner, 2026-11-22): the second pockets; pocket 1 (`gear`) always holds the older item. */
+  gear2: { -readonly [C in GearCategory]: string | null };
+  /** Round 3: categories with a second pocket unlocked (from the profile; one bought in a town works at once). */
+  pockets: GearCategory[];
   /** Times each run upgrade was bought (or taken from a cache). */
   readonly upgrades: Record<string, number>;
   /** Times each upgrade was bought in a shop, for its rising price. Caches do not raise it. */
@@ -208,6 +213,8 @@ export interface RunStart {
   readonly startAbility?: string | null;
   /** The arena of the player's last boss fight, so the next one differs (owner, 2026-11-17). */
   readonly lastArena?: string | null;
+  /** Round 3: categories with a second pocket. */
+  readonly pockets?: readonly GearCategory[];
   /** Round 3: the character chosen in the Burrow (Rollo if left out or unknown). */
   readonly character?: string;
 }
@@ -234,6 +241,8 @@ export function createRun(seed: string, map: RunMap, burrow: GearSlots = NO_GEAR
     bossesBeaten: [],
     ability: start.startAbility !== undefined && start.startAbility !== null ? start.startAbility : characterOf(start.character).startingAbility,
     gear: { ...NO_GEAR },
+    gear2: { ...NO_GEAR },
+    pockets: [...(start.pockets ?? [])],
     upgrades: {},
     bought: {},
     shop: null,
@@ -291,9 +300,8 @@ function upgradeModifiers(run: RunState): Modifier[] {
 export function runStats(run: RunState): StatSheet {
   const sheet = new StatSheet(characterOf(run.character).stats);
   for (const m of upgradeModifiers(run)) sheet.add(m);
-  for (const c of GEAR_CATEGORIES) {
-    const g = run.gear[c] ? GEAR.get(run.gear[c]!) : undefined;
-    for (const m of g?.modifiers ?? []) sheet.add({ ...m, source: { kind: 'gear', id: g!.id }, duration: { kind: 'equipped' } });
+  for (const h of heldItems(run.gear, run.gear2)) {
+    for (const m of GEAR.get(h.id)?.modifiers ?? []) sheet.add({ ...m, source: { kind: 'gear', id: sourceId(h.id, h.pocket) }, duration: { kind: 'equipped' } });
   }
   return sheet;
 }
@@ -303,13 +311,13 @@ function clampHealth(run: RunState): void {
 }
 
 function hasRunEffect(run: RunState, kind: string): boolean {
-  return GEAR_CATEGORIES.some((c) => run.gear[c] && GEAR.get(run.gear[c]!)?.effects.some((fx) => fx.kind === kind));
+  return heldItems(run.gear, run.gear2).some((h) => GEAR.get(h.id)?.effects.some((fx) => fx.kind === kind));
 }
 
 /** What the ball brings into a course. */
 export function loadoutOf(run: RunState): Loadout {
   const acorns = run.fed.filter((f) => FOODS.get(f.id)?.kind === 'acorn').map((f) => f.id);
-  return { health: run.health, ability: run.ability, gear: { ...run.gear }, wallet: run.wallet, modifiers: upgradeModifiers(run), acorns, bagRoom: FOOD.bagSlots - run.bag.length, rarityWeights: dropWeights(run), courseMod: run.current?.mod ?? null };
+  return { health: run.health, ability: run.ability, gear: { ...run.gear }, gear2: { ...run.gear2 }, pockets: [...run.pockets], wallet: run.wallet, modifiers: upgradeModifiers(run), acorns, bagRoom: FOOD.bagSlots - run.bag.length, rarityWeights: dropWeights(run), courseMod: run.current?.mod ?? null };
 }
 
 /** Rarity weights for things dropped on a course (acorns): the run's odds column after drop luck. */
@@ -403,14 +411,26 @@ export function upcomingJobs(run: RunState): CourseJob[] {
     .filter((j): j is CourseJob => j !== null);
 }
 
-/** Put on an item between courses (shop, cache, testing aid). The old one is lost. */
-export function setGear(run: RunState, id: string): string | null {
-  const g = GEAR.get(id);
-  if (!g) return null;
-  const old = run.gear[g.category];
-  run.gear[g.category] = id;
+/**
+ * Put on an item between courses (shop, cache, testing aid): into a free
+ * pocket, or replacing the item in `pocket` (round 3: the player chooses when
+ * both are full). The replaced one is lost.
+ */
+export function setGear(run: RunState, id: string, pocket: Pocket = 1): string | null {
+  if (!GEAR.get(id)) return null;
+  const old = putIn(run.gear, run.gear2, run.pockets, id, pocket);
   clampHealth(run);
   return old;
+}
+
+/** Round 3: whether a new item of this category would replace one (so a shop asks which). */
+export function gearFull(run: RunState, c: GearCategory): boolean {
+  return isFull(run.gear, run.gear2, run.pockets, c);
+}
+
+/** Round 3: a second pocket bought in a town's Burrow works at once. */
+export function addPocket(run: RunState, c: GearCategory): void {
+  if (!run.pockets.includes(c)) run.pockets.push(c);
 }
 
 /** Add one run upgrade (shop, cache, testing aid). */
@@ -607,7 +627,7 @@ export function rarityWeights(column: number, dropLuck: number): number[] {
  * excluded. Rarities with nothing left to offer are skipped.
  */
 export function rollGear(run: RunState, rng: Rng, opts: { better?: boolean; category?: GearCategory; exclude?: readonly string[] } = {}): string | null {
-  const held = new Set([...GEAR_CATEGORIES.map((c) => run.gear[c]), ...(opts.exclude ?? [])]);
+  const held = new Set([...heldItems(run.gear, run.gear2).map((h) => h.id), ...(opts.exclude ?? [])]);
   const pool = (r: string): GearDef[] => GEAR_LIST.filter((g) => g.rarity === r && !held.has(g.id) && (!opts.category || g.category === opts.category));
   const weights = rarityWeights(oddsColumn(run, !!opts.better), runStats(run).get('dropLuck')).map((w, i) => (pool(RARITIES[i]!).length ? w : 0));
   const total = weights.reduce((a, b) => a + b, 0);
@@ -688,6 +708,8 @@ export interface CourseOutcome {
   readonly wallet: number;
   readonly ability: string | null;
   readonly gear: GearSlots;
+  /** Round 3: the second pockets after the course (left out: unchanged). */
+  readonly gear2?: GearSlots;
   /** Blue stars picked up on the course (carried). */
   readonly blueStars?: number;
   /** Round 2a: food picked up on the course: eaten there (it keeps working afterwards if it lasts) or stashed in the bag. */
@@ -735,6 +757,7 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   run.wallet = out.wallet;
   run.ability = out.ability;
   run.gear = { ...out.gear };
+  if (out.gear2) run.gear2 = { ...out.gear2 };
   run.blueStars += out.blueStars ?? 0;
   if (!out.won) {
     run.status = 'lost';
@@ -748,8 +771,8 @@ export function finishCourse(run: RunState, out: CourseOutcome): void {
   run.wallet += rewardFor(cur.type);
   run.totals.stars += rewardFor(cur.type);
   // Granite Hide: heal after each course.
-  for (const c of GEAR_CATEGORIES) {
-    for (const fx of (run.gear[c] && GEAR.get(run.gear[c]!)?.effects) || []) if (fx.kind === 'healAfterCourse') run.health += fx.amount;
+  for (const h of heldItems(run.gear, run.gear2)) {
+    for (const fx of GEAR.get(h.id)?.effects ?? []) if (fx.kind === 'healAfterCourse') run.health += fx.amount;
   }
   clampHealth(run);
   if (cur.type === 'boss') {
@@ -809,7 +832,11 @@ export function isEndless(run: RunState): boolean {
 export function takeBossReward(run: RunState, i: number | null, nextMap: RunMap): void {
   if (run.status !== 'reward') return;
   const offer = i === null ? undefined : run.reward?.[i];
-  if (offer) setGear(run, offer.id);
+  // Round 3: with both pockets full, the reward replaces like a course pickup (the lower rarity).
+  if (offer) {
+    pickUp(run.gear, run.gear2, run.pockets, offer.id);
+    clampHealth(run);
+  }
   run.reward = null;
   startRegion(run, run.region + 1, nextMap);
 }
@@ -969,15 +996,15 @@ export function cannotBuy(run: RunState, offer: Offer, free = false): string | n
   return null;
 }
 
-function applyOffer(run: RunState, offer: Offer): void {
-  if (offer.kind === 'gear') setGear(run, offer.id);
+function applyOffer(run: RunState, offer: Offer, pocket: Pocket = 1): void {
+  if (offer.kind === 'gear') setGear(run, offer.id, pocket);
   else if (offer.kind === 'grab') {
     // Round 3: rarity one column better than the shop's own odds, like a hard course.
     const got = rollGear(run, rngFor(run, `grab:${run.shop?.node ?? 'shop'}`), { better: true });
     if (got) {
       offer.got = got;
       // A full category asks first (settleGrab); an empty one takes it at once.
-      if (run.gear[GEAR.get(got)!.category]) offer.waiting = true;
+      if (gearFull(run, GEAR.get(got)!.category)) offer.waiting = true;
       else setGear(run, got);
     }
   }
@@ -999,14 +1026,14 @@ function applyOffer(run: RunState, offer: Offer): void {
 }
 
 /** Buy offer `i` in one of the town's shops. Returns null, or the reason it could not be bought. */
-export function buy(run: RunState, i: number, which: ShopKind = 'gear'): string | null {
+export function buy(run: RunState, i: number, which: ShopKind = 'gear', pocket: Pocket = 1): string | null {
   const shop = shopOf(run, which);
   const offer = shop?.offers[i];
   if (!shop || run.status !== 'shop' || !offer) return 'NOTHING THERE';
   const why = cannotBuy(run, offer);
   if (why) return why;
   run.wallet -= priceOf(run, offer);
-  applyOffer(run, offer);
+  applyOffer(run, offer, pocket);
   offer.sold = true;
   return null;
 }
@@ -1016,12 +1043,12 @@ export function buy(run: RunState, i: number, which: ShopKind = 'gear'): string 
  * for a full category. Yes puts it on; no leaves it in the shop as an ordinary
  * gear offer at its normal price.
  */
-export function settleGrab(run: RunState, take: boolean): void {
+export function settleGrab(run: RunState, take: boolean, pocket: Pocket = 1): void {
   const i = run.shop?.offers.findIndex((o) => o.kind === 'grab' && o.waiting) ?? -1;
   if (!run.shop || i < 0) return;
   const o = run.shop.offers[i]!;
   o.waiting = false;
-  if (take) setGear(run, o.got!);
+  if (take) setGear(run, o.got!, pocket);
   else run.shop.offers[i] = { kind: 'gear', id: o.got!, sold: false };
 }
 
@@ -1124,12 +1151,16 @@ function afterCourse(run: RunState, foods: readonly { readonly id: string; reado
  * Swap the equipped item of a category with the Burrow's: store it, take the
  * stored one out, or both at once. Free. Returns false if there is nothing to swap.
  */
-export function burrowSwap(run: RunState, c: GearCategory): boolean {
+export function burrowSwap(run: RunState, c: GearCategory, pocket: Pocket = 1): boolean {
   if (run.status !== 'shop') return false;
-  const worn = run.gear[c];
+  const slots = pocket === 1 ? run.gear : run.gear2;
+  const worn = slots[c];
   const stored = run.burrow[c];
   if (!worn && !stored) return false;
-  run.gear[c] = stored;
+  // Round 3: the Burrow still stores one item per category.
+  if (!worn) putIn(run.gear, run.gear2, run.pockets, stored!);
+  else if (!stored) takeOut(run.gear, run.gear2, c, pocket);
+  else slots[c] = stored;
   run.burrow[c] = worn;
   clampHealth(run);
   return true;
@@ -1149,13 +1180,13 @@ function cacheStock(run: RunState, node: string): Offer[] {
 }
 
 /** Take offer `i` from the cache (free; an upgrade does not raise its shop price). Taking one finishes the node. */
-export function takeFromCache(run: RunState, i: number): string | null {
+export function takeFromCache(run: RunState, i: number, pocket: Pocket = 1): string | null {
   const cache = run.cache;
   const offer = cache?.offers[i];
   if (!cache || run.status !== 'cache' || !offer) return 'NOTHING THERE';
   const why = cannotBuy(run, offer, true);
   if (why) return why;
-  applyOffer(run, offer);
+  applyOffer(run, offer, pocket);
   offer.sold = true;
   leaveCache(run);
   return null;

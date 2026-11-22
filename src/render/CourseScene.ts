@@ -55,7 +55,7 @@ import { jobKey, madeCourse, prefetch, want, type Made } from './genQueue';
 import { BOSSES } from '../content/bosses';
 import { BLUE_STARS } from '../content/progress';
 import { LAST_REGION } from '../content/run';
-import { getPanel, getTuning, preloadAssets, shared } from './shared';
+import { gearBoxes, getPanel, getTuning, preloadAssets, shared } from './shared';
 import { buildDrawList, bumpTopDepth, courseBounds, groundBump, pickTile, project, tileDepth, type Placement } from './iso';
 import { frameIndex, themedSprite, type Manifest } from './manifest';
 import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
@@ -697,7 +697,7 @@ export class CourseScene extends Phaser.Scene {
     this.runReported = true;
     const p = this.play;
     settleFood(p);
-    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, blueStars: p.blueStars, foods: p.foods });
+    finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, gear2: p.gear2, blueStars: p.blueStars, foods: p.foods });
     session.course = null;
     // A boss win deposits its blue stars at once (owner, 2026-11-17): save them now.
     persist();
@@ -2215,7 +2215,7 @@ export class CourseScene extends Phaser.Scene {
     const wild = this.time.now < this.wildUntil ? Math.floor(this.time.now / 90) % ABILITY_IDS.length : -1;
     const usedUp = p.abilityUsed && !!p.shot;
     const shields = shieldsLeft(p);
-    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, shields, p.blueStars, p.acornSlices, p.courseMod?.id ?? ''].join(',');
+    const key = [p.health, maxHealth, p.shots, maxShots, p.meter, p.quota, p.wallet, p.exitOpen, p.ability, usedUp, wild, p.ballStatuses.length, p.gear.weapon, p.gear.armour, p.gear.bauble, p.gear2.weapon, p.gear2.armour, p.gear2.bauble, shields, p.blueStars, p.acornSlices, p.courseMod?.id ?? ''].join(',');
     if (key === this.statusKey) return;
     this.statusKey = key;
     this.statusHud?.destroy();
@@ -2281,17 +2281,20 @@ export class CourseScene extends Phaser.Scene {
     });
     // Gear slots (Milestone 6): weapon, armour, bauble; then the armour's ignored damages left this course.
     const gearX = slotX + 66;
-    c.add(this.add.rectangle(gearX, 0, shields > 0 ? 58 : 44, 19, UI_BG, 0.85).setOrigin(0, 0));
-    GEAR_CATEGORIES.forEach((cat, i) => {
-      const id = p.gear[cat];
+    // Round 3: second pockets add a box each, after the first three (labelled with the same letter).
+    const extra = GEAR_CATEGORIES.filter((cat) => p.pockets.includes(cat));
+    const boxes = gearBoxes(p.gear, p.gear2, p.pockets);
+    const gearW = boxes.length * 14 + 2;
+    c.add(this.add.rectangle(gearX, 0, gearW + (shields > 0 ? 14 : 0), 19, UI_BG, 0.85).setOrigin(0, 0));
+    boxes.forEach((id, i) => {
       const gx = gearX + 2 + i * 14;
       if (id) c.add(this.add.image(gx, 1, GEAR.get(id)!.icon, 0).setOrigin(0, 0));
       else c.add(this.add.rectangle(gx + 1, 2, 10, 10, 0x000000, 0).setOrigin(0, 0).setStrokeStyle(1, 0x404058));
     });
-    c.add(pixelText(this, manifest, gearX + 3, 13, 'W  A  B', { color: UI_DIM }));
+    c.add(pixelText(this, manifest, gearX + 3, 13, ['W', 'A', 'B', ...extra.map((cat) => cat[0]!.toUpperCase())].join('  '), { color: UI_DIM }));
     if (shields > 0) {
-      c.add(this.add.image(gearX + 44, 1, 'icon-shield', 0).setOrigin(0, 0));
-      c.add(pixelText(this, manifest, gearX + 47, 12, String(shields), { color: UI_TEXT }));
+      c.add(this.add.image(gearX + gearW, 1, 'icon-shield', 0).setOrigin(0, 0));
+      c.add(pixelText(this, manifest, gearX + gearW + 3, 12, String(shields), { color: UI_TEXT }));
     }
     this.statusHud = c;
   }

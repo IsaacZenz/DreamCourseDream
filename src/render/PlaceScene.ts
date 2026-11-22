@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
+import { GEAR, GEAR_LIST } from '../content/gear';
 import { UPGRADE_LIST } from '../content/run';
 import { FOOD } from '../content/consumables';
 import { OBJECTS, RAIL } from '../content/objects';
@@ -26,7 +26,7 @@ import { NODE_NAME, nodeInfo } from './MapScene';
 import { goRun } from './nav';
 import { pixelText } from './pixelText';
 import { BOSS_FIGHTS, debugBossFight, persist, session } from './runSession';
-import { getPanel, preloadAssets, shared } from './shared';
+import { gearBoxes, getPanel, preloadAssets, shared } from './shared';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 
 const UI_TEXT = 0xf0f0f0;
@@ -731,9 +731,9 @@ export class PlaceScene extends Phaser.Scene {
     c.add(pixelText(this, m, 46, 8, `STARS ${run.wallet}`, { color: STAR }));
     c.add(pixelText(this, m, 100, 8, run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS NEXT', { color: BAD }));
     c.add(pixelText(this, m, 150, 8, `BAG ${run.bag.length}/${FOOD.bagSlots} (B)`, { color: STAR }));
-    let x = VIEW_WIDTH - 3 * 14 - 2;
-    for (const cat of GEAR_CATEGORIES) {
-      const id = run.gear[cat];
+    const boxes = gearBoxes(run.gear, run.gear2, run.pockets);
+    let x = VIEW_WIDTH - boxes.length * 14 - 2;
+    for (const id of boxes) {
       if (id) c.add(this.add.image(x, 1, GEAR.get(id)!.icon, 0).setOrigin(0, 0));
       else c.add(this.add.rectangle(x + 1, 2, 10, 10, 0, 0).setOrigin(0, 0).setStrokeStyle(1, 0x404058));
       x += 14;

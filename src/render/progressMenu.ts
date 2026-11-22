@@ -5,8 +5,9 @@
  */
 import Phaser from 'phaser';
 import { ABILITIES } from '../content/abilities';
-import { ABILITY_PRICE, PERMANENT_UPGRADE_LIST, STARTING_ABILITIES } from '../content/progress';
-import { buyAbility, buyCharacter, cannotBuyAbility, cannotBuyCharacter, cannotBuyUpgrade, cycleCharacter, cycleStartAbility, ownsCharacter, upgradeCost, type Profile } from '../sim/profile';
+import { ABILITY_PRICE, PERMANENT_UPGRADE_LIST, POCKET_UNLOCKS, STARTING_ABILITIES } from '../content/progress';
+import type { GearCategory } from '../content/gear';
+import { buyAbility, buyCharacter, buyPocket, cannotBuyPocket, cannotBuyAbility, cannotBuyCharacter, cannotBuyUpgrade, cycleCharacter, cycleStartAbility, ownsCharacter, upgradeCost, type Profile } from '../sim/profile';
 import { CHARACTER_LIST, CHARACTER_TRAITS, CHARACTERS, DEFAULT_CHARACTER } from '../content/characters';
 import { pixelText } from './pixelText';
 import { shared } from './shared';
@@ -33,7 +34,7 @@ const BLUE = 0x80c8ff;
  * the profile's; in a town it also applies the level to the run at once).
  * `toggle` is false in a town: the run has already started.
  */
-export function progressRows(p: Profile, buyUpgrade: (id: string) => string | null, toggle: boolean): MenuRow[] {
+export function progressRows(p: Profile, buyUpgrade: (id: string) => string | null, toggle: boolean, onPocket?: (c: GearCategory) => void): MenuRow[] {
   const rows: MenuRow[] = [];
   // Round 3 (owner, 2026-11-22): characters, bought once and chosen per run.
   const me = CHARACTERS.get(p.character) ?? CHARACTERS.get(DEFAULT_CHARACTER)!;
@@ -55,6 +56,21 @@ export function progressRows(p: Profile, buyUpgrade: (id: string) => string | nu
       act: () => {
         const err = buyCharacter(p, c.id);
         return err ? { ok: false, say: err } : { ok: true, say: `${c.name.toUpperCase()} JOINS YOU! ${toggle ? 'CHOSEN FOR THE NEXT RUN' : 'PLAY AS THEM FROM THE NEXT RUN'}` };
+      },
+    });
+  }
+  // Round 3: second gear pockets, bought once each.
+  for (const u of POCKET_UNLOCKS) {
+    const owned = p.pockets.includes(u.category);
+    rows.push({
+      icon: null,
+      text: `${u.name.toUpperCase()}`,
+      detail: owned ? 'OWNED' : `${u.desc.toUpperCase()}   ${u.cost} BLUE`,
+      dim: !owned && !!cannotBuyPocket(p, u.category),
+      act: () => {
+        const err = buyPocket(p, u.category);
+        if (!err) onPocket?.(u.category);
+        return err ? { ok: false, say: err } : { ok: true, say: `${u.name.toUpperCase()}! ${u.desc.toUpperCase()}` };
       },
     });
   }
