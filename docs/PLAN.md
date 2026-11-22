@@ -309,3 +309,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-22 — Owner: crossroads path ends and the boss gate are taken with Enter (standing at them shows the card and "ENTER: GO THIS WAY"). Test build updated.
 - 2026-11-22 — Owner: every door, the tee, the exit, the chest, path ends and the boss gate are used with Enter (nothing by walking in). Test build updated.
 - 2026-11-22 — Owner: town signposts stay for now; **Milestone 8b approved and merged to `main`.**
+- 2026-11-22 — Milestone 8 round 3 design sheet written: `docs/plans/milestone-8-round-3.md` (second gear pockets, two new characters, the Needle poison family and shop variety, the map showing only the next choices, the balance pass, the remaining open questions). Ten questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
