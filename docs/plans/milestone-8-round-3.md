@@ -228,3 +228,16 @@ Question 9 (the game's name, setting and final boss) belongs to Milestone 9 and 
 ## 11. Sign-off
 
 - [x] Owner sign-off, 2026-11-22: "Pocket cost 17 stars. Character cost 21. Rest is the defaults." Questions 1 and 3 changed (17 and 21 blue stars); questions 2 and 4 to 10 use their defaults. Recorded in FEATURES.md and DESIGN.md.
+
+## 12. As built (2026-11-22)
+
+Built in the sheet's order: the map, the Needles and shop variety, the characters, the second pockets, then the balance tool. Choices made while building, each a **Default** the owner may change:
+
+- **Steady (Thud)** is a new stat, `knockBack` (1 for everyone else), so it goes through the modifier system like any other stat. It scales the speed a knock-back gives the ball. Halving the speed pushed Thud only about a third as far (the ball also slides less), so Thud's number is **0.65**, which measured **about half the distance** on grass against a Stagwarden slam (test in `tests/round3.test.ts`).
+- **Nimble (Pip)** is Pip's base star reach of 1.5 instead of 1.
+- **The boss reward** with both pockets full replaces like a course pickup (the lower rarity, ties the one held longest); there is no extra question on the reward screen.
+- **Pockets keep their age order:** pocket 1 always holds the older item. Taking pocket 1's item out (Burrow, or a replacement) moves pocket 2's up.
+- **The Burrow screen** shows one row per pocket (WEAPON 1, WEAPON 2 ...), with the stored item beside each; it still stores one per category.
+- **The practice green** uses the run's character.
+- **The course check's bot** still plays as Rollo with the par kit and one pocket per category, so unlocks only make the game easier for you.
+- **Save version 4.** A version 3 save loads with its gear in the first pocket, no second pockets, no characters bought, and a saved run played as Rollo.
