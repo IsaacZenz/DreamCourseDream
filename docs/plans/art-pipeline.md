@@ -253,3 +253,22 @@ which and how big it is. For animated items it shows every frame.
   grass and dotted shadows. Written into `art/STYLE.md`; sprite files got `outline: ink`;
   the three mock-ups were redrawn in B2. The palette is kept as it is (the B2 samples use it).
 - **Hero size chosen (owner, 2026-11-23): Rollo, Thud and Pip are 18×24** (were 14×20), after a size test in the town (`art/drafts/H6-size-test-*.sprite`). Recorded in `art/targets.json`, which the Art List shows in bold and the press enforces. **Owner, 2026-11-23: enemies keep today's size**, so their art stays close to their 0.6-tile physics body.
+- **First pilot drawing (owner, 2026-11-23): a test Rollo (H6), not the final design.**
+  - **How photos arrive:** a photo attached in the Claude app reaches the session as a
+    file, so it can be kept (`art/inbox/H6-test-drawing.jpg`) and read by tools. The
+    GitHub upload fallback was not needed.
+  - **Automatic step:** a prototype reads the drawing's lines and enclosed shapes (shell
+    cap, bands, belly strip, head, tail, feet, the eye dot) and shrinks them to the sprite
+    size. It got the layout and silhouette right, but at 18×24 the lines filled whole
+    bands and the head lost its ears and snout (`art/drafts/H6-test-a-automatic.sprite`).
+  - **Hand finish:** Claude redrew it by hand following the shapes: thick drawn lines
+    became ink, thin band lines became soft grey lines, the dot eye became the B2 eye
+    (`art/drafts/H6-test-b-hand-finished.sprite`). Two rounds were needed (the first came
+    out boxy with a neck-like belly strip). Checked in the town, then removed.
+  - **Learned:** the drawing was a little wider than tall (long snout and tail), while
+    Rollo's box is taller than wide; the snout and tail were shortened to fill the
+    height. Worth keeping in mind when drawing: roughly fit the item's box shape.
+  - **Tool decision:** the shape reader is worth turning into a proper tool for large
+    items (rooms, buildings, bosses), where it saves the most; for small sprites it is
+    only a starting layout.
+
