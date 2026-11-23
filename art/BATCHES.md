@@ -5,7 +5,7 @@ Draw a batch on one sketchbook page if you like, with each code next to its draw
 send one photo. Pictures of today's placeholders: `art/list/batch-<n>.png`.
 Made by `npm run art:list` from `art/batches.json`.
 
-## Batch 1: Pickups (8 of 9 done)
+## Batch 1: Pickups (9 of 9 done)
 
 On every course: stars, the apple, the shot orb, acorns and the Grab Bag. Picture: [batch-1.png](list/batch-1.png)
 
@@ -19,7 +19,7 @@ On every course: stars, the apple, the shot orb, acorns and the Grab Bag. Pictur
 | **O25** | Lucky Acorn | 10×11 | approved |
 | **O26** | Golden Acorn | 10×11 | approved, made from O25 |
 | **O27** | Star Acorn | 10×11 | approved, made from O25 |
-| **O5** | Grab bag | 12×12 | placeholder |
+| **O5** | Grab bag | 12×12 | approved |
 
 ## Batch 2: The ball and ability icons (0 of 14 done)
 

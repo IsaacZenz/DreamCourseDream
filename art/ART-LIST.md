@@ -116,7 +116,7 @@ a mistake, never to renumber.
 | **O2** | `exit` | Exit | 16×10 | 2: closed, open |  | placeholder |
 | **O3** | `star-yellow` | Yellow star | 11×11 | 1 |  | approved |
 | **O4** | `heart` | Apple | 11×12 | 1 |  | approved |
-| **O5** | `grab-bag` | Grab bag | 12×12 | 1 |  | placeholder |
+| **O5** | `grab-bag` | Grab bag | 12×12 | 1 |  | approved |
 | **O6** | `shot-orb` | Shot orb | 11×11 | 1 |  | approved |
 | **O7** | `switch` | Switch | 32×16 | 2: off, on |  | placeholder |
 | **O8** | `linked-gate` | Linked gate | 32×26 | 2: open, closed |  | placeholder |
