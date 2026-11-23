@@ -1,0 +1,26 @@
+# Approved by the owner 2026-11-23. Shot orb from the owner's drawing art/inbox/O6-drawing.jpg (2026-11-23), version B (11x11), lighter blue: a raised rim (lit top-left), a recessed darker centre with its shadow on the right and bottom, a white plus.
+code: O6
+id: shot-orb
+status: approved
+size: 11x11
+anchor: 5 10
+outline: ink
+key 4 blue 4
+key 3 blue 3
+key 2 blue 3
+key b blue 3
+key a blue 2
+key w grey 4
+key r grey 4
+frame: idle
+...........
+...44443...
+..4bbbbb3..
+.4bbbwbba3.
+.4bbbwbba3.
+.4bwwwwwa3.
+.3bbbwbaa2.
+.3bbbwaaa2.
+..3aaaaa2..
+...22222...
+...........

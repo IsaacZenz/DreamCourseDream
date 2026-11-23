@@ -3252,14 +3252,14 @@
     },
     "shot-orb": {
       "file": "sprites/shot-orb.png",
-      "frameWidth": 9,
-      "frameHeight": 9,
+      "frameWidth": 11,
+      "frameHeight": 11,
       "frames": [
         "idle"
       ],
       "anchor": [
-        4,
-        8
+        5,
+        10
       ]
     },
     "rock": {

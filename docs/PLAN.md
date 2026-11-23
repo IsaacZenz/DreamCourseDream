@@ -358,3 +358,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-23 — Owner drew the apple (`art/inbox/O4-apple-drawing.jpg`): round, stem leaning left with a bud, Y dimple, marker shadow on the right and bottom with a reflection streak, dotted highlight. Two render-downs, 9×10 and 11×12 (`art/drafts/O4-apple-c/d.sprite`; the drawing is taller than the old 9×8 heart). Waiting for the owner's pick.
 - 2026-11-23 — Batch 1: the owner's apple (O4), version B2 (11×12, true red, pink-lit), approved and in the game as the health pickup and the Apple food icon.
 - 2026-11-23 — Owner compared an in-between apple (`art/drafts/O4-apple-g.sprite`) and kept the pink-lit version B2 already in the game.
+- 2026-11-23 — Batch 1: the owner's shot orb (O6), version B in a lighter blue (11×11: raised rim, recessed centre, white plus), approved and in the game.
