@@ -39,6 +39,7 @@ more painterly options. In short: *soft shapes, bold ink, a touch of light.*
   Shades 0 and 1 are kept for ink lines, tiles, shadows and themes.
 - Keep shading in big, simple areas. Avoid "pillow shading" (dark all round the edge,
   light in the middle): it makes things look flat.
+- **Red things** (owner's bubble heart, 2026-11-23): the red ramp's light shades lean orange, so a red object uses red 1 (shadow) and red 2 (body) and is lit with pink 3 and pink 4 instead. It stays red, not orange.
 - **Rim light:** a few blue 4 pixels on the right-hand edge of round shapes, as if a
   cool light were behind them. Small sprites get one or two pixels at most (a big rim
   on a 12-pixel item looks like a blue shard).

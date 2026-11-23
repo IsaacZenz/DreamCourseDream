@@ -1,0 +1,24 @@
+# Bubble heart (owner, 2026-11-23: "a bubble heart in the style we created"; no drawing), version B (11x10, red).
+code: O4
+id: heart
+status: draft
+size: 11x10
+anchor: 5 9
+outline: ink
+key 2 red 1
+key 3 red 2
+key 4 pink 3
+key h pink 4
+key w grey 4
+key r blue 4
+frame: idle
+...........
+..444.433..
+.4ww44433r.
+.4wh443333.
+.444443332.
+..4443332..
+...44332...
+....432....
+.....2.....
+...........
