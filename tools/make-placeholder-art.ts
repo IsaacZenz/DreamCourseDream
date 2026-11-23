@@ -18,6 +18,7 @@ import { UPGRADE_LIST } from '../src/content/run.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../src/content/surfaces.ts';
 import type { Manifest, SpriteEntry } from '../src/render/manifest.ts';
 import { SHAPES, triangles, type ShapeId } from '../src/sim/tileShape.ts';
+import { loadArt, pressApproved } from './art/press.ts';
 import { Image, encodePng, type RGBA } from './png.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -2030,6 +2031,14 @@ emit('font', font.img, 4, 6, font.frames, [0, 0]);
 // Milestone 8 (sheet section 3): the tint of an enemy with an element, set here so the final art can change it.
 const tints = { fire: '#ff9060', ice: '#a0d8ff', shock: '#fff070' };
 const themes = emitThemes();
+// Art pipeline (docs/plans/art-pipeline.md): the owner's approved sprites go in
+// last, so a placeholder never overwrites them.
+const press = pressApproved(sprites, loadArt(ROOT), true);
+if (press.errors.length) {
+  console.error(press.errors.join('\n'));
+  process.exit(1);
+}
+if (press.pressed.length) console.log(`Owner art: ${press.pressed.length} sprites from art/src`);
 const manifest: Manifest = { version: 1, sprites, tints, themes };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 console.log(`Wrote ${Object.keys(sprites).length} sprites to assets/sprites and assets/manifest.json`);

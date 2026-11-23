@@ -1,0 +1,15 @@
+{
+  "note": "The master palette (art/STYLE.md). Ten ramps of five shades, 0 darkest to 4 lightest. Shadows lean cool, highlights lean warm. Every colour is rounded to 16-bit console depth (5 bits per channel) when used. Shade 0 of each ramp is that ramp's outline colour.",
+  "ramps": {
+    "red":    ["#3a0f24", "#7a1a2a", "#b8302c", "#e0603a", "#f8a46a"],
+    "orange": ["#4a1e18", "#8a3a16", "#cc6a1c", "#f0a030", "#ffd47a"],
+    "gold":   ["#40301a", "#86641c", "#c8a02a", "#ecd04a", "#fff6a6"],
+    "green":  ["#10302c", "#1e5a34", "#3a8a3a", "#6cbc44", "#b6e66a"],
+    "blue":   ["#141a4a", "#1e3a86", "#2c64c0", "#4c9ae8", "#a0d6ff"],
+    "purple": ["#1e1038", "#3c1e66", "#643a9c", "#9468c8", "#cca8ee"],
+    "pink":   ["#3a1032", "#6e1e54", "#a83a7c", "#dc6aa2", "#f8aecc"],
+    "brown":  ["#22140e", "#4a2a18", "#7a4a28", "#a87444", "#d6aa7a"],
+    "tan":    ["#46302a", "#7a5a40", "#b08a60", "#dcbc8c", "#f8eccc"],
+    "grey":   ["#14141e", "#36364a", "#62627a", "#9a98ae", "#e0deea"]
+  }
+}

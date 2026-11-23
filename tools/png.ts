@@ -1,8 +1,8 @@
 /**
  * A tiny RGBA image buffer and PNG writer, so the placeholder art script needs
- * no extra packages. Uses Node's built-in zlib.
+ * no extra packages. Uses Node's built-in zlib. Also reads PNGs back for the art pipeline.
  */
-import { deflateSync } from 'node:zlib';
+import { deflateSync, inflateSync } from 'node:zlib';
 
 export type RGBA = readonly [number, number, number, number];
 
@@ -90,4 +90,70 @@ export function encodePng(img: Image): Uint8Array {
     o += p.length;
   }
   return png;
+}
+
+/**
+ * Read a PNG back (art pipeline): 8-bit RGB or RGBA, not interlaced, which is
+ * what this project writes. Other kinds throw with a plain message.
+ */
+export function decodePng(bytes: Uint8Array): Image {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let o = 8;
+  let width = 0;
+  let height = 0;
+  let type = 0;
+  const idat: Uint8Array[] = [];
+  while (o < bytes.length) {
+    const len = view.getUint32(o);
+    const name = String.fromCharCode(...bytes.subarray(o + 4, o + 8));
+    const body = bytes.subarray(o + 8, o + 8 + len);
+    if (name === 'IHDR') {
+      width = view.getUint32(o + 8);
+      height = view.getUint32(o + 12);
+      const depth = body[8]!;
+      type = body[9]!;
+      if (depth !== 8 || (type !== 6 && type !== 2) || body[12] !== 0) throw new Error('Only 8-bit RGB or RGBA PNGs without interlacing can be read');
+    } else if (name === 'IDAT') idat.push(body);
+    else if (name === 'IEND') break;
+    o += 12 + len;
+  }
+  const joined = new Uint8Array(idat.reduce((n, p) => n + p.length, 0));
+  let k = 0;
+  for (const p of idat) {
+    joined.set(p, k);
+    k += p.length;
+  }
+  const raw = inflateSync(joined);
+  const bpp = type === 6 ? 4 : 3;
+  const stride = width * bpp;
+  const px = new Uint8Array(stride * height);
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (stride + 1)]!;
+    const line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
+    for (let x = 0; x < stride; x++) {
+      const a = x >= bpp ? px[y * stride + x - bpp]! : 0;
+      const b = y > 0 ? px[(y - 1) * stride + x]! : 0;
+      const c = x >= bpp && y > 0 ? px[(y - 1) * stride + x - bpp]! : 0;
+      let v = line[x]!;
+      if (filter === 1) v += a;
+      else if (filter === 2) v += b;
+      else if (filter === 3) v += (a + b) >> 1;
+      else if (filter === 4) {
+        const p = a + b - c;
+        const pa = Math.abs(p - a);
+        const pb = Math.abs(p - b);
+        const pc = Math.abs(p - c);
+        v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      }
+      px[y * stride + x] = v & 255;
+    }
+  }
+  const img = new Image(width, height);
+  for (let i = 0; i < width * height; i++) {
+    img.data[i * 4] = px[i * bpp]!;
+    img.data[i * 4 + 1] = px[i * bpp + 1]!;
+    img.data[i * 4 + 2] = px[i * bpp + 2]!;
+    img.data[i * 4 + 3] = bpp === 4 ? px[i * bpp + 3]! : 255;
+  }
+  return img;
 }
