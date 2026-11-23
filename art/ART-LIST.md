@@ -173,7 +173,7 @@ a mistake, never to renumber.
 | **G10** | `gear-thump-knob` | Thump knob | 12×12 | 1 |  | placeholder |
 | **G11** | `gear-clang-knob` | Clang knob | 12×12 | 1 |  | placeholder |
 | **G12** | `gear-gong-knob` | Gong knob | 12×12 | 1 |  | placeholder |
-| **G13** | `gear-pin-needle` | Pin needle | 12×12 | 1 |  | placeholder |
+| **G13** | `gear-pin-needle` | Pin needle | 12×12 | 1 |  | approved |
 | **G14** | `gear-thistle-needle` | Thistle needle | 12×12 | 1 |  | placeholder |
 | **G15** | `gear-venom-needle` | Venom needle | 12×12 | 1 |  | placeholder |
 | **G16** | `gear-hex-needle` | Hex needle | 12×12 | 1 |  | placeholder |

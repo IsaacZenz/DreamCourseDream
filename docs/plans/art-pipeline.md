@@ -273,3 +273,13 @@ which and how big it is. For animated items it shows every frame.
     only a starting layout.
   - **Owner's edit, 2026-11-23:** the owner picked A (automatic) and asked for the shell 1 pixel thinner and the snout 1 pixel longer with a squared end like B. A's snout already touched the box edge, so the drawing was moved 1 pixel left and the tail tip trimmed 1 pixel to keep the outline inside the 18×24 box (`art/drafts/H6-test-c-from-a.sprite`). Lesson: edits are quick in the text grid, and the box edge needs a free pixel for the outline.
   - **Owner, 2026-11-23:** the edited A "looks good for the test". Pilot item 1 of 3 done (test only; the final Rollo comes later). Next: G13.
+- **Pilot item 2: G13 Pin Needle (owner, 2026-11-23) — first owner art in the game.**
+  The drawing had five elements (needle eye with hole, teardrop shaft, tip drop, two
+  drips, three fumes); 12×12 leaves a 10×10 drawing area, so three render-downs kept
+  different things (`art/drafts/G13-a/b/c.sprite`). The owner chose **C, poison-coated**:
+  the shaft turns green towards the tip, one drip, a teardrop drop, fumes as two specks.
+  Approved as `art/src/G13-gear-pin-needle.sprite`, pressed into the game, checked on the
+  test bench. Learned: a lone pixel gets its own ink outline, so tiny details (fumes)
+  turn to noise; a rim-light pixel next to a hole reads as a gem; green poison is a little
+  muted on grass but the ink outline keeps it readable.
+
