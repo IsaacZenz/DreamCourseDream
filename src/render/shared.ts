@@ -1,3 +1,4 @@
+import { GEAR_CATEGORIES, type GearCategory, type GearSlots } from '../content/gear';
 /**
  * Things every scene shares: the asset manifest, the tuning numbers and the
  * debug panel. Whichever scene starts first loads the assets.
@@ -40,4 +41,9 @@ export function getPanel(): TuningPanel {
     if (new URLSearchParams(window.location.search).get('tune') === '1') shared.panel.toggle(true);
   }
   return shared.panel;
+}
+
+/** Round 3: the HUD's gear boxes: one per category, then each unlocked second pocket. */
+export function gearBoxes(gear: GearSlots, gear2: GearSlots, pockets: readonly GearCategory[]): (string | null)[] {
+  return [...GEAR_CATEGORIES.map((c) => gear[c]), ...GEAR_CATEGORIES.filter((c) => pockets.includes(c)).map((c) => gear2[c])];
 }

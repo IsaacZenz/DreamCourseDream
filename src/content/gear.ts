@@ -67,6 +67,8 @@ export type GearEffect =
   // Weapons: on contact with an enemy.
   /** Hits set the enemy burning for this many turns. */
   | { readonly kind: 'burn'; readonly turns: number }
+  /** Round 3 (owner, 2026-11-22): hits poison the enemy for this many turns (on a successful roll). */
+  | { readonly kind: 'poison'; readonly turns: number }
   /** A hit stuns the enemy (on a successful roll, Milestone 7). */
   | { readonly kind: 'stun' }
   /** Extra damage on hits against a stunned enemy. */
@@ -169,6 +171,11 @@ const entries: readonly Entry[] = [
   { name: 'Thump Knob', category: 'weapon', rarity: 'uncommon', family: 'Knob', effects: [{ kind: 'stun' }], desc: 'Stun on a roll (3 slices)' },
   { name: 'Clang Knob', category: 'weapon', rarity: 'rare', family: 'Knob', effects: [{ kind: 'stun' }], desc: 'Stun on a roll (4 slices)' },
   { name: 'Gong Knob', category: 'weapon', rarity: 'doubleRare', family: 'Knob', effects: [{ kind: 'stun' }, { kind: 'stunnedBonus', damage: 1 }], desc: 'Stun (5 slices), +1 damage to stunned' },
+  // Needle family (round 3, owner 2026-11-22): poison.
+  { name: 'Pin Needle', category: 'weapon', rarity: 'common', family: 'Needle', effects: [{ kind: 'poison', turns: 1 }], desc: 'Poison 1 turn (on a roll)' },
+  { name: 'Thistle Needle', category: 'weapon', rarity: 'uncommon', family: 'Needle', effects: [{ kind: 'poison', turns: 2 }], desc: 'Poison 2 turns (on a roll)' },
+  { name: 'Venom Needle', category: 'weapon', rarity: 'rare', family: 'Needle', modifiers: [add('hitDamage', 1)], effects: [{ kind: 'poison', turns: 2 }], desc: 'Poison 2 turns (roll), hit damage +1' },
+  { name: 'Hex Needle', category: 'weapon', rarity: 'doubleRare', family: 'Needle', modifiers: [add('hitDamage', 1)], effects: [{ kind: 'poison', turns: 3 }], desc: 'Poison 3 turns (roll), hit damage +1' },
   // Special rare.
   { name: 'Thunder Knuckle', category: 'weapon', rarity: 'specialRare', element: 'shock', effects: [{ kind: 'chainZap', range: 3, damage: 1 }], desc: 'Hits may zap the nearest other enemy' },
   { name: 'Wrecking Shell', category: 'weapon', rarity: 'specialRare', modifiers: [add('hitDamage', 2)], effects: [{ kind: 'rollThrough' }], desc: 'Hit damage +2, rolls on through defeats' },

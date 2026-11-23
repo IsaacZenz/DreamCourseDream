@@ -27,7 +27,7 @@ import { CHARACTERS, DEFAULT_CHARACTER, type CharacterDef } from '../content/cha
 import { ACORN_LIST, ACORNS, FOOD, FOODS, acornWeights } from '../content/consumables.ts';
 import { UPGRADES } from '../content/run.ts';
 import { COURSE_MODS, windAccel, type CourseMod } from '../content/modifiers.ts';
-import { GEAR, GEAR_CATEGORIES, NO_GEAR, RARITY_ODDS, type GearCategory, type GearEffect, type GearSlots } from '../content/gear.ts';
+import { GEAR, NO_GEAR, RARITY_ODDS, type GearCategory, type GearEffect, type GearSlots } from '../content/gear.ts';
 import {
   ELEMENT_RULES,
   OBJECTS,
@@ -77,6 +77,7 @@ import { ENEMY_GEAR, NO_EXTRAS, SPOTS, TRAIT_RULES, rankDef, type TraitId } from
 import { computeHit, wedgeOf } from './damage.ts';
 import { Rng, type Seed } from './rng.ts';
 import { StatSheet, type Modifier } from './stats.ts';
+import { heldItems, pickUp, sourceId, takeOut } from './pockets.ts';
 
 const steps = (seconds: number) => Math.round(seconds * STEPS_PER_SECOND);
 
@@ -436,7 +437,7 @@ export type PlayEvent =
   | { kind: 'ring'; enemy: string; x: number; y: number; r: number; hit: boolean };
 
 /** What a success roll is for: the word shown on the wheel's filled slices. */
-export type RollEffect = 'burn' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
+export type RollEffect = 'burn' | 'poison' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
 
 export type PlayStatus = 'playing' | 'won' | 'lost';
 
@@ -513,6 +514,10 @@ export interface PlayState {
   frozen: Record<string, number>;
   /** Gear held, one per category (Milestone 6). */
   gear: { -readonly [C in GearCategory]: string | null };
+  /** Round 3: the second pockets (only the unlocked categories are ever filled). */
+  gear2: { -readonly [C in GearCategory]: string | null };
+  /** Round 3: the categories with a second pocket unlocked. */
+  readonly pockets: readonly GearCategory[];
   /** Gear lying on the course. */
   readonly gearItems: GearItemState[];
   /** Damages ignored by armour on this course (Lining family, Bastion Plate). */
@@ -577,6 +582,9 @@ export interface Loadout {
   readonly health?: number;
   readonly ability?: string | null;
   readonly gear?: GearSlots;
+  /** Round 3: the second pockets, and which categories have one. */
+  readonly gear2?: GearSlots;
+  readonly pockets?: readonly GearCategory[];
   readonly wallet?: number;
   /** Run upgrades: modifiers that last the run. */
   readonly modifiers?: readonly Modifier[];
@@ -693,9 +701,9 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
   for (const m of lo.modifiers ?? []) stats.add(m);
   for (const m of courseModModifiers(lo.courseMod ?? null)) stats.add(m);
   const startGear = lo.gear ?? NO_GEAR;
-  for (const c of GEAR_CATEGORIES) {
-    const g = startGear[c] ? GEAR.get(startGear[c]!) : undefined;
-    for (const m of g?.modifiers ?? []) stats.add({ ...m, source: { kind: 'gear', id: g!.id }, duration: { kind: 'equipped' } });
+  const startGear2 = lo.gear2 ?? NO_GEAR;
+  for (const h of heldItems(startGear, startGear2)) {
+    for (const m of GEAR.get(h.id)?.modifiers ?? []) stats.add({ ...m, source: { kind: 'gear', id: sourceId(h.id, h.pocket) }, duration: { kind: 'equipped' } });
   }
   const play: PlayState = {
     course,
@@ -743,6 +751,8 @@ export function createPlay(course: Course, tuning: Tuning, opts: PlayOptions): P
     ballStatuses: [],
     frozen: {},
     gear: { weapon: startGear.weapon, armour: startGear.armour, bauble: startGear.bauble },
+    gear2: { weapon: startGear2.weapon, armour: startGear2.armour, bauble: startGear2.bauble },
+    pockets: [...(lo.pockets ?? [])],
     gearItems: [],
     shieldsUsed: 0,
     echoShot: -1,
@@ -939,42 +949,51 @@ function setElement(e: EnemyState, el: Element | null): void {
 }
 
 export function gearFx<K extends GearEffect['kind']>(play: PlayState, kind: K): Extract<GearEffect, { kind: K }>[] {
-  const out: Extract<GearEffect, { kind: K }>[] = [];
-  for (const c of GEAR_CATEGORIES) {
-    const id = play.gear[c];
-    if (!id) continue;
-    for (const fx of GEAR.get(id)?.effects ?? []) if (fx.kind === kind) out.push(fx as Extract<GearEffect, { kind: K }>);
+  return gearFxItems(play, kind).map((x) => x.fx);
+}
+
+/** Round 3: each effect of this kind with the item that has it (both pockets), so two weapons each spin their own wheel. */
+export function gearFxItems<K extends GearEffect['kind']>(play: PlayState, kind: K): { fx: Extract<GearEffect, { kind: K }>; item: string }[] {
+  const out: { fx: Extract<GearEffect, { kind: K }>; item: string }[] = [];
+  for (const h of heldItems(play.gear, play.gear2)) {
+    for (const fx of GEAR.get(h.id)?.effects ?? []) if (fx.kind === kind) out.push({ fx: fx as Extract<GearEffect, { kind: K }>, item: h.id });
   }
   return out;
 }
 
 /** The item held that has an effect of this kind (for messages). */
 function gearWith(play: PlayState, kind: GearEffect['kind']): string {
-  for (const c of GEAR_CATEGORIES) {
-    const id = play.gear[c];
-    if (id && GEAR.get(id)?.effects.some((fx) => fx.kind === kind)) return id;
-  }
-  return '';
+  return gearFxItems(play, kind)[0]?.item ?? '';
 }
 
-/** Take an item off: its modifiers go with it. Health and shots stay inside the new limits. */
-function unequip(play: PlayState, c: GearCategory): void {
-  const id = play.gear[c];
-  if (!id) return;
-  play.stats.removeSource({ kind: 'gear', id });
-  play.gear[c] = null;
+/**
+ * Change what is held (round 3: both pockets), with the gear modifiers taken
+ * off before and put back after. Health and shots stay inside the new limits.
+ */
+function changeGear(play: PlayState, change: () => void): void {
+  for (const h of heldItems(play.gear, play.gear2)) play.stats.removeSource({ kind: 'gear', id: sourceId(h.id, h.pocket) });
+  change();
+  for (const h of heldItems(play.gear, play.gear2)) {
+    for (const m of GEAR.get(h.id)?.modifiers ?? []) play.stats.add({ ...m, source: { kind: 'gear', id: sourceId(h.id, h.pocket) }, duration: { kind: 'equipped' } });
+  }
   play.health = Math.min(play.health, play.stats.get('maxHealth'));
   play.shots = Math.min(play.shots, play.stats.get('maxShots'));
 }
 
-/** Put an item on (replacing the one in its category). Returns the id it replaced, or null. */
+/** Take one item off (the Phoenix Plate crumbling): the pocket that holds it. */
+function unequipItem(play: PlayState, id: string): void {
+  const c = GEAR.get(id)!.category;
+  changeGear(play, () => void takeOut(play.gear, play.gear2, c, play.gear[c] === id ? 1 : 2));
+}
+
+/**
+ * Put an item on, as a course pickup: a free pocket, or (round 3) replacing
+ * the lower rarity of two. Returns the id it replaced, or null.
+ */
 export function equipGear(play: PlayState, id: string): string | null {
-  const g = GEAR.get(id);
-  if (!g) return null;
-  const old = play.gear[g.category];
-  unequip(play, g.category);
-  play.gear[g.category] = id;
-  for (const m of g.modifiers) play.stats.add({ ...m, source: { kind: 'gear', id }, duration: { kind: 'equipped' } });
+  if (!GEAR.get(id)) return null;
+  let old: string | null = null;
+  changeGear(play, () => (old = pickUp(play.gear, play.gear2, play.pockets, id)));
   return old;
 }
 
@@ -1356,7 +1375,10 @@ function stepBall(play: PlayState, input: TickInput): void {
   }
   steerBall(play, s, input);
   const before = s.events.length;
-  stepShot(play.course, play.tuning, s, input.boost ? { boost: true } : {}, play.world);
+  // Round 3: the knock-back stat (Thud's Steady trait) softens pushes from moving things.
+  const kb = play.stats.get('knockBack');
+  const world = kb === 1 ? play.world : { ...play.world, obstacles: play.world.obstacles.map((o) => (o.knock ? { ...o, knock: o.knock * kb } : o)) };
+  stepShot(play.course, play.tuning, s, input.boost ? { boost: true } : {}, world);
   for (const e of s.events.slice(before)) {
     if (e.kind === 'hazard') damageBall(play, RULES.spikeDamage, 'spikes');
     else if (e.kind === 'anchorStop') anchorEffects(play, e.x, e.y);
@@ -1565,8 +1587,7 @@ function damageBall(play: PlayState, amount: number, cause: Extract<PlayEvent, {
   if (play.health <= 0 && phoenix) {
     // Phoenix Plate: stay alive, and the plate crumbles.
     const item = gearWith(play, 'phoenix');
-    const cat = GEAR.get(item)!.category;
-    unequip(play, cat);
+    unequipItem(play, item);
     play.health = Math.min(play.stats.get('maxHealth'), phoenix.health);
     play.log.push({ kind: 'phoenix', item, health: play.health });
     return;
@@ -1611,7 +1632,8 @@ function onBallContact(play: PlayState, o: Obstacle, s: ShotState): ContactResul
  * hits are fire; otherwise the weapon's element, if it has one (Milestone 6).
  */
 function hitStats(play: PlayState, s: ShotState): { base: number; element: AbilityDef['element'] } {
-  const weapon = play.gear.weapon ? (GEAR.get(play.gear.weapon)?.element ?? null) : null;
+  // Round 3: with two weapons, the first one's element, else the second's.
+  const weapon = [play.gear.weapon, play.gear2.weapon].map((id) => (id ? (GEAR.get(id)?.element ?? null) : null)).find((x) => x) ?? null;
   if (s.hover) {
     const fx = ABILITIES.get('tornado')!.effect;
     return { base: fx.kind === 'tornado' ? fx.damage : 1, element: weapon };
@@ -1672,7 +1694,7 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
     let echo = false;
     if (res.damage > 0 && gearFx(play, 'echo').length > 0 && play.echoShot !== play.shotNumber) {
       play.echoShot = play.shotNumber;
-      echo = successRoll(play, e, 'echo');
+      echo = successRoll(play, e, 'echo', gearWith(play, 'echo'));
       if (echo) play.log.push({ kind: 'echo' });
     }
     let damage = res.damage * (echo ? 2 : 1);
@@ -1728,8 +1750,10 @@ export function isBoss(e: EnemyState): boolean {
  * slices + every-wheel slices (Knack, Spinners) + boss-wheel slices on a boss
  * + acorns this course + Hot Streak this shot, at most the wheel's size.
  */
-export function wheelFor(play: PlayState, e: EnemyState): { filled: number; size: number } {
-  const weapon = play.gear.weapon ? GEAR.get(play.gear.weapon) : undefined;
+export function wheelFor(play: PlayState, e: EnemyState, weaponId?: string): { filled: number; size: number } {
+  // Round 3: each weapon spins its own wheel with its own slices.
+  const wid = weaponId ?? play.gear.weapon;
+  const weapon = wid ? GEAR.get(wid) : undefined;
   const boss = isBoss(e);
   const bossSize = Math.min(RULES.bossWheelSlices, ...gearFx(play, 'bossWheel').map((fx) => fx.slices));
   const size = boss ? bossSize : RULES.wheelSlices;
@@ -1739,9 +1763,9 @@ export function wheelFor(play: PlayState, e: EnemyState): { filled: number; size
 }
 
 /** Spin the wheel for one weapon effect. Fortune's Mail spins a failed roll again; Hot Streak Charm adds a slice per success this shot. */
-function successRoll(play: PlayState, e: EnemyState, effect: RollEffect): boolean {
+function successRoll(play: PlayState, e: EnemyState, effect: RollEffect, weaponId?: string): boolean {
   const spin = (respun: boolean): boolean => {
-    const { filled, size } = wheelFor(play, e);
+    const { filled, size } = wheelFor(play, e, weaponId);
     const success = play.rng.int(0, size - 1) < filled;
     play.log.push({ kind: 'roll', enemy: e.uid, effect, filled, size, success, respun });
     return success;
@@ -1773,18 +1797,25 @@ function abilityHitEffects(play: PlayState, e: EnemyState): void {
 function weaponEffects(play: PlayState, e: EnemyState, s: ShotState): void {
   const alive = e.health > 0;
   // Owner, 2026-11-17: each special effect works only on a successful roll (Milestone 7 sheet section 4b).
-  for (const fx of gearFx(play, 'burn')) if (alive && successRoll(play, e, 'burn')) applyEnemyStatus(play, e, 'burning', fx.turns);
-  if (gearFx(play, 'stun').length && alive && successRoll(play, e, 'stun')) applyEnemyStatus(play, e, 'stunned');
-  for (const fx of gearFx(play, 'leech')) {
+  for (const { fx, item } of gearFxItems(play, 'burn')) if (alive && successRoll(play, e, 'burn', item)) applyEnemyStatus(play, e, 'burning', fx.turns);
+  // Round 3 (owner, 2026-11-22): the Needle family.
+  for (const { fx, item } of gearFxItems(play, 'poison')) if (alive && successRoll(play, e, 'poison', item)) applyEnemyStatus(play, e, 'poisoned', fx.turns);
+  // Round 3: two stun weapons each spin; the first success stuns.
+  for (const { item } of gearFxItems(play, 'stun')) {
+    if (!alive || !successRoll(play, e, 'stun', item)) continue;
+    applyEnemyStatus(play, e, 'stunned');
+    break;
+  }
+  for (const { fx, item } of gearFxItems(play, 'leech')) {
     if (play.leechShot === play.shotNumber) break;
     play.leechShot = play.shotNumber;
-    if (!successRoll(play, e, 'heal')) break;
+    if (!successRoll(play, e, 'heal', item)) break;
     const before = play.health;
     play.health = Math.min(play.stats.get('maxHealth'), play.health + fx.heal);
     if (play.health > before) play.log.push({ kind: 'healed', amount: play.health - before, item: gearWith(play, 'leech') });
   }
-  for (const fx of gearFx(play, 'chainZap')) {
-    if (!successRoll(play, e, 'zap')) continue;
+  for (const { fx, item } of gearFxItems(play, 'chainZap')) {
+    if (!successRoll(play, e, 'zap', item)) continue;
     let best: EnemyState | null = null;
     let bestD = fx.range;
     for (const o of play.enemies) {
@@ -1800,10 +1831,10 @@ function weaponEffects(play: PlayState, e: EnemyState, s: ShotState): void {
       hurtEnemy(play, best, fx.damage);
     }
   }
-  for (const fx of gearFx(play, 'knockBack')) {
+  for (const { fx, item } of gearFxItems(play, 'knockBack')) {
     // Patrollers keep to their path, and a Mole underground cannot be moved.
     if (!alive || e.def.behaviour.kind === 'patrol' || !standing(e)) continue;
-    if (!successRoll(play, e, 'knock')) continue;
+    if (!successRoll(play, e, 'knock', item)) continue;
     const b = s.ball;
     const dx = e.x - b.x;
     const dy = e.y - b.y;
@@ -1967,8 +1998,8 @@ function goOff(play: PlayState, bl: BlastState): void {
     if (play.status !== 'playing') return;
     const s = ensureBallMoving(play);
     const a = d > 1e-3 ? Math.atan2(b.y - bl.y, b.x - bl.x) : play.rng.float(0, Math.PI * 2);
-    s.ball.vx = Math.cos(a) * R.knockSpeed;
-    s.ball.vy = Math.sin(a) * R.knockSpeed;
+    s.ball.vx = Math.cos(a) * R.knockSpeed * play.stats.get('knockBack');
+    s.ball.vy = Math.sin(a) * R.knockSpeed * play.stats.get('knockBack');
     s.ball.vz = R.knockHop;
     s.ball.grounded = false;
     s.ball.z += 0.001;
@@ -2239,8 +2270,8 @@ function landSlam(play: PlayState, e: EnemyState, def: BossDef): void {
   const s = ensureBallMoving(play);
   // Away from the ring's centre (a random way if the ball is right on it).
   const a = d > 1e-3 ? Math.atan2(b.y - m.y, b.x - m.x) : play.rng.float(0, Math.PI * 2);
-  s.ball.vx = Math.cos(a) * def.slam.knockSpeed;
-  s.ball.vy = Math.sin(a) * def.slam.knockSpeed;
+  s.ball.vx = Math.cos(a) * def.slam.knockSpeed * play.stats.get('knockBack');
+  s.ball.vy = Math.sin(a) * def.slam.knockSpeed * play.stats.get('knockBack');
   s.ball.vz = def.slam.knockHop;
   s.ball.grounded = false;
   s.ball.z += 0.001;
@@ -2585,8 +2616,8 @@ function meetBodies(play: PlayState): void {
         damageBall(play, ch.damage, 'charge', e);
         if (play.status !== 'playing') return;
         const a = Math.atan2(b.y - o.y, b.x - o.x);
-        b.vx = Math.cos(a) * ch.knockSpeed;
-        b.vy = Math.sin(a) * ch.knockSpeed;
+        b.vx = Math.cos(a) * ch.knockSpeed * play.stats.get('knockBack');
+        b.vy = Math.sin(a) * ch.knockSpeed * play.stats.get('knockBack');
         b.vz = ch.knockHop;
         b.grounded = false;
         b.z += 0.001;

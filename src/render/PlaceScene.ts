@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GEAR, GEAR_CATEGORIES, GEAR_LIST } from '../content/gear';
+import { GEAR, GEAR_LIST } from '../content/gear';
 import { UPGRADE_LIST } from '../content/run';
 import { FOOD } from '../content/consumables';
 import { OBJECTS, RAIL } from '../content/objects';
@@ -16,7 +16,7 @@ import { triggerCentre, type Place, type Point, type Trigger } from '../sim/plac
 import { createWalker, placeWalker, stepWalker, walkFrame, walkHeight, type Facing, type Walker } from '../sim/walk';
 import { buildCrossroads, loadPlace } from '../gen/crossroads';
 import { generateRunMap } from '../gen/runMap';
-import { addUpgrade, bossOf, choices, debugVisit, courseJobFor, courseModFor, debugAddStars, debugSetCountdown, enterNode, leaveShop, runStats, setGear, startRegion, typeOf, upcomingJobs, LAST_TOWN, type CourseJob, type MapNode, type RunState } from '../sim/run';
+import { addUpgrade, bossOf, characterOf, choices, debugVisit, courseJobFor, courseModFor, debugAddStars, debugSetCountdown, enterNode, leaveShop, runStats, setGear, startRegion, typeOf, upcomingJobs, LAST_TOWN, type CourseJob, type MapNode, type RunState } from '../sim/run';
 import { courseModLabel } from './courseModView';
 import { BagMenu } from './bagMenu';
 import { prefetch } from './genQueue';
@@ -26,7 +26,7 @@ import { NODE_NAME, nodeInfo } from './MapScene';
 import { goRun } from './nav';
 import { pixelText } from './pixelText';
 import { BOSS_FIGHTS, debugBossFight, persist, session } from './runSession';
-import { getPanel, preloadAssets, shared } from './shared';
+import { gearBoxes, getPanel, preloadAssets, shared } from './shared';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
 
 const UI_TEXT = 0xf0f0f0;
@@ -359,7 +359,7 @@ export class PlaceScene extends Phaser.Scene {
       this.tweens.add({ targets: icon, y: icon.y - 2, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
     this.heroShadow = this.image('ball-shadow', 'idle', 0, 0, 0, false).setScale(1.6, 1.4);
-    this.hero = this.image('armadillo', 'dr-stand', 0, 0, 0, false);
+    this.hero = this.image(this.walkSprite(), 'dr-stand', 0, 0, 0, false);
     const b = courseBounds(g);
     this.origin = { x: Math.ceil(24 - b.left), y: Math.ceil(56 - b.top) };
     const w = Math.ceil(b.right - b.left + 48);
@@ -387,6 +387,11 @@ export class PlaceScene extends Phaser.Scene {
     return `${sy < 0 ? 'u' : 'd'}${sx < 0 ? 'l' : 'r'}` as Facing;
   }
 
+  /** Round 3: the run's character, as a walking armadillo. */
+  private walkSprite(): string {
+    return characterOf(session.run?.character).walkSprite;
+  }
+
   private drawHero(): void {
     const w = this.walker;
     const h = walkHeight(this.place, w.x, w.y) ?? 0;
@@ -395,7 +400,7 @@ export class PlaceScene extends Phaser.Scene {
     const under = getPanel().groundBumps ? tileAt(this.place.ground, Math.floor(w.x), Math.floor(w.y)) : null;
     if (under) p.y -= groundBump(under);
     const left = w.facing[1] === 'l';
-    const id = left ? 'armadillo-left' : 'armadillo';
+    const id = left ? `${this.walkSprite()}-left` : this.walkSprite();
     const entry = shared.manifest.sprites[id]!;
     this.hero.setTexture(id, frameIndex(entry, `${w.facing}-${walkFrame(w)}`));
     this.hero.setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight);
@@ -726,9 +731,9 @@ export class PlaceScene extends Phaser.Scene {
     c.add(pixelText(this, m, 46, 8, `STARS ${run.wallet}`, { color: STAR }));
     c.add(pixelText(this, m, 100, 8, run.countdown > 0 ? `BOSS IN ${run.countdown}` : 'BOSS NEXT', { color: BAD }));
     c.add(pixelText(this, m, 150, 8, `BAG ${run.bag.length}/${FOOD.bagSlots} (B)`, { color: STAR }));
-    let x = VIEW_WIDTH - 3 * 14 - 2;
-    for (const cat of GEAR_CATEGORIES) {
-      const id = run.gear[cat];
+    const boxes = gearBoxes(run.gear, run.gear2, run.pockets);
+    let x = VIEW_WIDTH - boxes.length * 14 - 2;
+    for (const id of boxes) {
       if (id) c.add(this.add.image(x, 1, GEAR.get(id)!.icon, 0).setOrigin(0, 0));
       else c.add(this.add.rectangle(x + 1, 2, 10, 10, 0, 0).setOrigin(0, 0).setStrokeStyle(1, 0x404058));
       x += 14;

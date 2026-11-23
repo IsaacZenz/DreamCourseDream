@@ -5,8 +5,10 @@
  */
 import Phaser from 'phaser';
 import { ABILITIES } from '../content/abilities';
-import { ABILITY_PRICE, PERMANENT_UPGRADE_LIST, STARTING_ABILITIES } from '../content/progress';
-import { buyAbility, cannotBuyAbility, cannotBuyUpgrade, cycleStartAbility, upgradeCost, type Profile } from '../sim/profile';
+import { ABILITY_PRICE, PERMANENT_UPGRADE_LIST, POCKET_UNLOCKS, STARTING_ABILITIES } from '../content/progress';
+import type { GearCategory } from '../content/gear';
+import { buyAbility, buyCharacter, buyPocket, cannotBuyPocket, cannotBuyAbility, cannotBuyCharacter, cannotBuyUpgrade, cycleCharacter, cycleStartAbility, ownsCharacter, upgradeCost, type Profile } from '../sim/profile';
+import { CHARACTER_LIST, CHARACTER_TRAITS, CHARACTERS, DEFAULT_CHARACTER } from '../content/characters';
 import { pixelText } from './pixelText';
 import { shared } from './shared';
 
@@ -32,8 +34,46 @@ const BLUE = 0x80c8ff;
  * the profile's; in a town it also applies the level to the run at once).
  * `toggle` is false in a town: the run has already started.
  */
-export function progressRows(p: Profile, buyUpgrade: (id: string) => string | null, toggle: boolean): MenuRow[] {
+export function progressRows(p: Profile, buyUpgrade: (id: string) => string | null, toggle: boolean, onPocket?: (c: GearCategory) => void): MenuRow[] {
   const rows: MenuRow[] = [];
+  // Round 3 (owner, 2026-11-22): characters, bought once and chosen per run.
+  const me = CHARACTERS.get(p.character) ?? CHARACTERS.get(DEFAULT_CHARACTER)!;
+  rows.push({
+    icon: me.sprite,
+    text: `PLAY AS: < ${me.name.toUpperCase()} >`,
+    detail: toggle ? `${characterLine(me.id)}` : 'CHOSEN BETWEEN RUNS',
+    dim: !toggle,
+    ...(toggle && { step: (dir: 1 | -1) => cycleCharacter(p, dir) }),
+  });
+  for (const c of CHARACTER_LIST) {
+    if (c.unlockCost === 0) continue;
+    const owned = ownsCharacter(p, c.id);
+    rows.push({
+      icon: c.sprite,
+      text: `${c.name.toUpperCase()} (CHARACTER)`,
+      detail: owned ? `OWNED. ${characterLine(c.id)}` : `${characterLine(c.id)}   ${c.unlockCost} BLUE`,
+      dim: !owned && !!cannotBuyCharacter(p, c.id),
+      act: () => {
+        const err = buyCharacter(p, c.id);
+        return err ? { ok: false, say: err } : { ok: true, say: `${c.name.toUpperCase()} JOINS YOU! ${toggle ? 'CHOSEN FOR THE NEXT RUN' : 'PLAY AS THEM FROM THE NEXT RUN'}` };
+      },
+    });
+  }
+  // Round 3: second gear pockets, bought once each.
+  for (const u of POCKET_UNLOCKS) {
+    const owned = p.pockets.includes(u.category);
+    rows.push({
+      icon: null,
+      text: `${u.name.toUpperCase()}`,
+      detail: owned ? 'OWNED' : `${u.desc.toUpperCase()}   ${u.cost} BLUE`,
+      dim: !owned && !!cannotBuyPocket(p, u.category),
+      act: () => {
+        const err = buyPocket(p, u.category);
+        if (!err) onPocket?.(u.category);
+        return err ? { ok: false, say: err } : { ok: true, say: `${u.name.toUpperCase()}! ${u.desc.toUpperCase()}` };
+      },
+    });
+  }
   for (const u of PERMANENT_UPGRADE_LIST) {
     const lv = p.levels[u.id] ?? 0;
     const cost = upgradeCost(p, u.id);
@@ -72,6 +112,14 @@ export function progressRows(p: Profile, buyUpgrade: (id: string) => string | nu
     ...(toggle && { step: (dir: 1 | -1) => cycleStartAbility(p, dir) }),
   });
   return rows;
+}
+
+/** A character's numbers in a few words: health, shots, damage and trait. */
+export function characterLine(id: string): string {
+  const c = CHARACTERS.get(id)!;
+  const s = c.stats;
+  const t = c.trait ? CHARACTER_TRAITS[c.trait] : undefined;
+  return `HP ${s.maxHealth} SHOTS ${s.maxShots} DMG ${s.hitDamage}${t ? ` ${t.name.toUpperCase()}` : ''}`;
 }
 
 /** Draw rows from `first`, `count` at a time, with the selected one framed. */

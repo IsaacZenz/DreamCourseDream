@@ -85,7 +85,8 @@ const defs: readonly BossDef[] = [
     title: 'Guard of the first wood',
     gimmick: null,
     arenas: ['bumper-ring', 'sinkhole-bowl', 'ice-rink', 'the-moat', 'storm-steps'],
-    health: [12, 18, 24],
+    // Owner, 2026-11-23 (balance P2): region 1 health 12 -> 11.
+    health: [11, 18, 24],
     phases: [
       // Phase 1: slow slams.
       { above: 2 / 3, slamRadius: 1.5, maxMinions: 0, pool: [] },
@@ -108,7 +109,8 @@ const defs: readonly BossDef[] = [
     gimmick: { kind: 'shell', closedBounce: 0.8, openHits: 2 },
     // The open arenas; the Moat and the Sinkhole Bowl do not suit a charging boss.
     arenas: ['bumper-ring', 'ice-rink', 'storm-steps'],
-    health: [8, 12, 16],
+    // Owner, 2026-11-23 (balance P3): region 2 health 12 -> 11.
+    health: [8, 11, 16],
     phases: [
       // 1 Rumble: wind up one turn, charge the next.
       { above: 2 / 3, slamRadius: null, maxMinions: 0, pool: [], charge: 'alternate' },
@@ -132,7 +134,8 @@ const defs: readonly BossDef[] = [
     title: 'Mother of the swarm',
     gimmick: { kind: 'crown', biteDamage: 1 },
     arenas: ['queens-mound'],
-    health: [12, 16, 20],
+    // Owner, 2026-11-23 (balance P1): region 3 health 20 -> 26, so the final boss is the hardest.
+    health: [12, 16, 26],
     phases: [
       // 1 Acid rain: three globs, marked a turn ahead.
       { above: 2 / 3, slamRadius: null, maxMinions: 0, pool: [], globs: { count: 3, spread: 1.5 } },

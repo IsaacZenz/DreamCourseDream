@@ -163,7 +163,7 @@ After playing the first generator, the owner asked for larger, more open, much m
 
 ## Milestone 8 — Content and balance
 
-- [ ] **Plan gate:** design sheet for every new ability, enemy, trait, status, boss, linked object, biome, gear item and character in this milestone. (Round 1 sheet `docs/plans/milestone-8.md` signed off 2026-11-19. Owner, 2026-11-21: round 2 split into 2a (terrain, shops, food; sheet `docs/plans/milestone-8-round-2a.md`, signed off 2026-11-21) and 2b (abilities, linked objects, course modifiers, biomes and themes; sheet `docs/plans/milestone-8-round-2b.md`, signed off 2026-11-21); round 3 to come.) Owner signs it off before any of them is built. This milestone is large; it may be planned and built in several rounds, each with its own sheet.
+- [ ] **Plan gate:** design sheet for every new ability, enemy, trait, status, boss, linked object, biome, gear item and character in this milestone. (Round 1 sheet `docs/plans/milestone-8.md` signed off 2026-11-19. Owner, 2026-11-21: round 2 split into 2a (terrain, shops, food; sheet `docs/plans/milestone-8-round-2a.md`, signed off 2026-11-21) and 2b (abilities, linked objects, course modifiers, biomes and themes; sheet `docs/plans/milestone-8-round-2b.md`, signed off 2026-11-21); round 3 sheet `docs/plans/milestone-8-round-3.md` signed off 2026-11-22 with pockets at 17 and characters at 21 blue stars.) Owner signs it off before any of them is built. This milestone is large; it may be planned and built in several rounds, each with its own sheet.
 - [x] Owner, 2026-11-21 (round 2a): a food shop and a gear shop in each town; a 3-slot bag for consumables, any number eaten before a course, none during; food lasts 1 to 3 courses (FEATURES.md section 11); the food shop sells the acorns and the existing boosts and services renamed as food (Apple heals 2, Garlic delays the boss; table in FEATURES.md section 11); the gear shop sells gear only
 - [x] Owner, 2026-11-21 (round 2a): a detail dial per region (terrain features and scenery per 100 tiles, region one unchanged); bridges over water, sand or spikes; dead trees; more spikes in region three
 - [x] Owner, 2026-11-21 (after round 2b; small changes, "round 2c"): the exit of a boss arena sits under the boss's starting spot; a wind vane on the HUD (and a strength gauge if wind strength varies); spiked tops on gates (closed gate: landing on or clipping its top hurts; open gate: no damage); a few more low-risk obstacles in region 1; endless mode starts with its own theme, then a random theme each region (repeats allowed). **Owner answers, 2026-11-21:** wind strength varies (light 1.0, medium 1.5, strong 2.2; cost 1, 2, 3) with a vane and a 1-3 bar gauge; spiked tops on both kinds of gate; region 1 gets about 4-8 extra rocks, stumps and low walls; endless mode's own theme is a new **Starfall** theme (deep purple sky); fireflies added now as scenery
@@ -172,14 +172,14 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [x] Remaining statuses: Poisoned, Burning, Chilled (round 1)
 - [x] More enemy types in both families; a second and third boss, one with a gimmick (round 1: five new bugs, Gloamhorn, the Brood Queen)
 - [x] Linked objects (switches, gates, bridges); optional course modifiers (round 2b)
-- [ ] Second gear slot unlocks; extra characters
+- [x] Second gear slot unlocks; extra characters (round 3: three second pockets at 17 blue stars; Thud and Pip at 21)
 - [x] Three biomes (round 2b: Meadow, Bog, Thornwood; landform preferences and detail weights, as the generator no longer uses chunks)
 - [x] Theme switch after each boss (day, night, jungle, underground, spooky): same objects, different art set through the manifest (owner, 2026-11-14; round 2b: day, bog, thornwood, night, underground, spooky)
-- [ ] More gear and shop variety
-- [ ] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost
-- [ ] Resolve the remaining open questions with the owner
+- [x] More gear and shop variety (round 3: the Needle poison family; Sale, Grab Bag, Chef's Special)
+- [x] Balance pass using the headless bot across many seeds: completion rate per region, stars earned, health lost (round 3: `npm run balance`, report `docs/plans/balance-report.md`; owner approved P1 to P5, 2026-11-23)
+- [x] Resolve the remaining open questions with the owner (2026-11-22: every remaining default kept)
 - [x] Owner, 2026-11-19: boss introduction cutscene pop-ups (placeholder cards built in round 1; art in Milestone 9)
-- [ ] Owner, 2026-11-19: the map shows only the path taken and the next 1 to 3 choices, with a testing switch to show the whole map (round 3)
+- [x] Owner, 2026-11-19: the map shows only the path taken and the next 1 to 3 choices, with a testing switch to show the whole map (round 3)
 - [x] Owner, 2026-11-18: endless mode after the third region: each new region scales the same way, bosses from the boss randomizer (round 1)
 
 **Done when:** three regions and a final boss are playable and the owner judges the difficulty curve fair.
@@ -309,3 +309,7 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-22 — Owner: crossroads path ends and the boss gate are taken with Enter (standing at them shows the card and "ENTER: GO THIS WAY"). Test build updated.
 - 2026-11-22 — Owner: every door, the tee, the exit, the chest, path ends and the boss gate are used with Enter (nothing by walking in). Test build updated.
 - 2026-11-22 — Owner: town signposts stay for now; **Milestone 8b approved and merged to `main`.**
+- 2026-11-22 — Milestone 8 round 3 design sheet written: `docs/plans/milestone-8-round-3.md` (second gear pockets, two new characters, the Needle poison family and shop variety, the map showing only the next choices, the balance pass, the remaining open questions). Ten questions for the owner, each with a default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-22 — Owner signed off the round 3 sheet: second pockets 17 blue stars each, Thud and Pip 21 each, everything else the defaults (Needle family, Sale, Grab Bag, Chef's Special, map shows only the next choices, balance targets, build order). Every remaining open question (DESIGN 2, 3, 5, 6, 7, 10; FEATURES F1 to F4, F6) keeps its default. Recorded in the sheet, FEATURES.md and DESIGN.md.
+- 2026-11-22 — Milestone 8 round 3 built: the map shows only the next choices (U-panel "Show the whole map"); the Needle poison family; Sale, Grab Bag and Chef's Special; Thud and Pip (21 blue stars; Steady is a new knockBack stat at 0.65); three second gear pockets (17 blue stars; save version 4); `npm run balance` and `docs/plans/balance-report.md` (540 courses and boss fights). 520 tests pass. **Waiting for the owner:** balance proposals P1 to P5, then the owner's playtest to judge the curve fair (the milestone's done-when).
+- 2026-11-23 — Owner approved balance proposals P1 to P5: boss health Stagwarden 11 (region 1), Gloamhorn 11 (region 2), Brood Queen 26 (region 3); the first-try win target dropped; course damage unchanged until the owner's playtest. Round 3 merged. Milestone 8 is done when the owner judges the curve fair after a playtest.

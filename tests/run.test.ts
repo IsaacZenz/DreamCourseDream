@@ -275,13 +275,13 @@ describe('run rules', () => {
 });
 
 describe('gear rarity', () => {
-  it('has 66 items: 3 weapons and (owner, 2026-11-17) 4 armour and 4 baubles per rarity, with the owner prices', () => {
-    expect(GEAR_LIST.length).toBe(66);
-    for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === 'weapon' && g.rarity === r).length).toBe(3);
+  it('has 70 items: 3 weapons per rarity plus (round 3) the 4 Needles, and (owner, 2026-11-17) 4 armour and 4 baubles per rarity, with the owner prices', () => {
+    expect(GEAR_LIST.length).toBe(70);
+    for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === 'weapon' && g.rarity === r).length).toBe(RARITIES.indexOf(r) < 4 ? 4 : 3);
     for (const c of ['armour', 'bauble']) for (const r of RARITIES) expect(GEAR_LIST.filter((g) => g.category === c && g.rarity === r).length).toBe(4);
     // Owner, 2026-11-19 (Milestone 8): dearer high-rarity gear.
     expect(RARITIES.map((r) => RARITY_INFO[r].price)).toEqual([10, 15, 30, 45, 70, 100]);
-    expect(new Set(GEAR_LIST.map((g) => g.id)).size).toBe(66);
+    expect(new Set(GEAR_LIST.map((g) => g.id)).size).toBe(70);
   });
 
   it('drop luck moves 5 points up per +25%', () => {

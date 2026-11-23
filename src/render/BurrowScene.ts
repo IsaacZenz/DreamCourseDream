@@ -129,7 +129,7 @@ export class BurrowScene extends Phaser.Scene {
       const t = pixelText(this, m, 0, 0, this.message, { color: this.messageColor, background: UI_BG });
       t.setPosition(Math.round((VIEW_WIDTH - t.width) / 2), VIEW_HEIGHT - 18);
     }
-    pixelText(this, m, 3, VIEW_HEIGHT - 8, 'UP/DOWN: CHOOSE  ENTER: BUY OR GO  LEFT/RIGHT: START ABILITY  U: TESTS  1-6: COURSES', { color: UI_DIM });
+    pixelText(this, m, 3, VIEW_HEIGHT - 8, 'UP/DOWN: CHOOSE  ENTER: BUY OR GO  LEFT/RIGHT: CHARACTER, ABILITY  U: TESTS  1-6: COURSES', { color: UI_DIM });
   }
 
   private activate(): void {

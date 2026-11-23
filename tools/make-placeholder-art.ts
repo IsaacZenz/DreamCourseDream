@@ -394,9 +394,9 @@ function drawArrow(dir: Direction): Image {
 // ---------------------------------------------------------------------------
 // Ball, shadow and exit.
 
-function drawBall(): Image {
+function drawBall(color = '#e8e8f0'): Image {
   const img = new Image(8, 8);
-  const shades = ramp('#e8e8f0');
+  const shades = ramp(color);
   const outline = hex2('#303048');
   for (let y = 0; y < 8; y++) {
     for (let x = 0; x < 8; x++) {
@@ -495,6 +495,18 @@ function drawHeart(): Image {
   const sh = ramp('#e83c50');
   const edge = hex2('#401018');
   rows.forEach((r, y) => [...r].forEach((ch, x) => ch === 'o' ? img.set(x, y, edge) : ch !== '.' && img.set(x, y, sh[Number(ch)]!)));
+  return img;
+}
+
+/** Round 3: the Grab Bag, a tied sack with a "?" on it (12x12, like a gear icon). */
+function drawGrabBag(): Image {
+  const img = new Image(12, 12);
+  const rows = ['....oooo....', '.....oo.....', '....o44o....', '...o4433o...', '..o443333o..', '.o44333332o.', '.o43333332o.', '.o33333322o.', '.o33333222o.', '..o332222o..', '...oooooo...', '............'];
+  const sh = ramp('#c89858');
+  const edge = hex2('#402810');
+  rows.forEach((r, y) => [...r].forEach((ch, x) => (ch === 'o' ? img.set(x, y, edge) : ch !== '.' && img.set(x, y, sh[Number(ch)]!))));
+  const w = hex2('#f8f0c0');
+  for (const [x, y] of [[5, 4], [6, 4], [7, 5], [6, 6], [6, 8]] as const) img.set(x, y, w);
   return img;
 }
 
@@ -1193,10 +1205,13 @@ for (const id of faceIds) {
 }
 emit('arrow', sheet(DIRECTIONS.map(drawArrow)), 32, 16, [...DIRECTIONS], [16, 8]);
 emit('ball', drawBall(), 8, 8, ['idle'], [4, 7]);
+emit('ball-thud', drawBall('#9098a8'), 8, 8, ['idle'], [4, 7]);
+emit('ball-pip', drawBall('#f0d080'), 8, 8, ['idle'], [4, 7]);
 emit('ball-shadow', drawShadow(), 8, 4, ['idle'], [4, 2]);
 emit('exit', sheet([drawExit(false), drawExit(true)]), 16, 10, ['closed', 'open'], [8, 5]);
 emit('star-yellow', drawStar('#f8d030'), 11, 11, ['idle'], [5, 10]);
 emit('heart', drawHeart(), 9, 8, ['idle'], [4, 7]);
+emit('grab-bag', drawGrabBag(), 12, 12, ['idle'], [6, 11]);
 emit('shot-orb', drawShotOrb(), 9, 9, ['idle'], [4, 8]);
 emit('rock', drawRock(), 20, 14, ['idle'], [10, 10]);
 emit('stump', drawStump(), 10, 28, ['idle'], [5, 25]);
@@ -1249,6 +1264,8 @@ const FAMILY_FILL: Record<string, string> = {
   Shell: '#a8a8b8', Coat: '#e05828', Knob: '#a87848', Lining: '#e0d0a0', Guard: '#48a048', Hide: '#8a6040', Magnet: '#d83838', Sight: '#48a8e8', Pebble: '#58c878',
   // Milestone 7 (owner, 2026-11-17): slice perks.
   Grit: '#9a8878', Spinner: '#e8c048',
+  // Round 3: the Needle family (poison green).
+  Needle: '#78c838',
 };
 const UNIQUE_FILL: Record<string, string> = {
   'thunder-knuckle': '#f0e040', 'wrecking-shell': '#606878', 'leech-fang': '#c02848', 'sunfire-crown': '#f8a020', 'giants-knuckle': '#b08060', 'echo-shell': '#a080f0',
@@ -1269,6 +1286,8 @@ const GEAR_MARKS: Record<string, P[]> = {
   Magnet: [[3, 3], [3, 4], [3, 5], [7, 3], [7, 4], [7, 5], [4, 6], [5, 6], [6, 6]], Sight: [[3, 4], [4, 3], [5, 3], [6, 3], [7, 4], [5, 4]], Pebble: [[5, 3], [4, 4], [6, 4], [5, 5]],
   // A little wheel with a spoke (Spinner) and a bar (Grit).
   Spinner: [[4, 3], [5, 3], [6, 3], [3, 4], [7, 4], [3, 5], [5, 5], [7, 5], [4, 6], [5, 6], [6, 6], [5, 4]], Grit: [[3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [5, 5], [5, 6]],
+  // A slanted needle.
+  Needle: [[7, 3], [6, 4], [5, 5], [4, 6], [3, 7]],
 };
 function uniqueMark(id: string): P[] {
   // A star-shaped mark, turned a little differently for each item.
@@ -1672,7 +1691,7 @@ emit('facing-mark', drawFacingMark(), 7, 5, ['idle'], [3, 2]);
 // crossroads props and the flat room pictures. All original placeholders.
 
 /** The walking armadillo, 14x20, facing down-right ("dr") or up-right ("ur"); left is a flipped copy. */
-function drawArmadillo(facing: 'dr' | 'ur', step: 0 | 1 | 2): Image {
+function drawArmadillo(facing: 'dr' | 'ur', step: 0 | 1 | 2, shell = '#d0d0e0', band = '#8888a8'): Image {
   const img = new Image(14, 20);
   const skin = ramp('#e0b898');
   const edge = hex2('#303048');
@@ -1699,13 +1718,13 @@ function drawArmadillo(facing: 'dr' | 'ur', step: 0 | 1 | 2): Image {
   };
   if (facing === 'ur') drawHead();
   // The shell: banded, in the ball's pale colours, so the two read as one character.
-  blob(img, 6.5, 11.5, 5.6, 5.8, '#d0d0e0', '#303048');
+  blob(img, 6.5, 11.5, 5.6, 5.8, shell, '#303048');
   for (let y = 7; y < 17; y++) {
     if ((y - 7) % 3 !== 2) continue;
     for (let x = 1; x < 13; x++) {
       const [, , , a] = img.get(x, y);
       const inside = Math.hypot((x + 0.5 - 6.5) / 4.6, (y + 0.5 - 11.5) / 4.8) < 1;
-      if (a && inside) img.set(x, y, hex2('#8888a8'));
+      if (a && inside) img.set(x, y, hex2(band));
     }
   }
   if (facing === 'dr') {
@@ -1983,8 +2002,11 @@ function drawRoom(kind: 'food' | 'gear' | 'burrow'): Image {
   return img;
 }
 
-emit('armadillo', sheet((['dr', 'ur'] as const).flatMap((f) => ([0, 1, 2] as const).map((s) => drawArmadillo(f, s)))), 14, 20, ['dr-stand', 'dr-step1', 'dr-step2', 'ur-stand', 'ur-step1', 'ur-step2'], [7, 19]);
-emit('armadillo-left', sheet((['dr', 'ur'] as const).flatMap((f) => ([0, 1, 2] as const).map((s) => flipX(drawArmadillo(f, s))))), 14, 20, ['dl-stand', 'dl-step1', 'dl-step2', 'ul-stand', 'ul-step1', 'ul-step2'], [6, 19]);
+// Round 3 (owner, 2026-11-22): one look per character (placeholder recolours): Rollo pale lavender, Thud slate grey, Pip sandy gold.
+for (const [suffix, shell, band] of [['', '#d0d0e0', '#8888a8'], ['-thud', '#8890a0', '#505868'], ['-pip', '#e8c878', '#b08838']] as const) {
+  emit(`armadillo${suffix}`, sheet((['dr', 'ur'] as const).flatMap((f) => ([0, 1, 2] as const).map((s) => drawArmadillo(f, s, shell, band)))), 14, 20, ['dr-stand', 'dr-step1', 'dr-step2', 'ur-stand', 'ur-step1', 'ur-step2'], [7, 19]);
+  emit(`armadillo${suffix}-left`, sheet((['dr', 'ur'] as const).flatMap((f) => ([0, 1, 2] as const).map((s) => flipX(drawArmadillo(f, s, shell, band))))), 14, 20, ['dl-stand', 'dl-step1', 'dl-step2', 'ul-stand', 'ul-step1', 'ul-step2'], [6, 19]);
+}
 {
   const food = drawFoodHut();
   emit('place-food-hut', food, 64, food.height, ['idle'], [32, food.height - 17]);

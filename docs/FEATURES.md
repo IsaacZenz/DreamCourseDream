@@ -94,7 +94,16 @@ One system serves permanent upgrades, run boosts, gear, abilities, statuses and 
 
 **Default:** the poses are display only and do not change any rule; the flip back up takes about 0.5 s and does not delay your turn. The simulation already tells a knocked ball from a ball moving under your own shot (`knocked` in `src/sim/play.ts`, used by the "only your own action deals damage" rule), so no simulation change is needed. Art and animation in Milestone 9; round 1 of Milestone 8 checks every knock-back sets that flag (slams, charges, blasts, soldier rings).
 
-**Later examples, Milestone 8:** a heavy ball (more damage, less bounce, shorter shots); a light ball (more bounce, an extra shot, less health).
+**Decided (owner, 2026-11-22; round 3 sheet section 2):** two more characters, each bought once in the Burrow for **21 blue stars**, then chosen per run. Names are working names.
+
+| | Rollo | Thud (heavy) | Pip (light) |
+|---|---|---|---|
+| Max health | 5 | 6 | 4 |
+| Max shots | 4 | 4 | 5 |
+| Hit damage | 1 | 2 | 1 |
+| Shot power | 100% | 90% | 105% |
+| Bounce boost | 100% | 80% | 120% |
+| Trait | none | Steady: knock-backs push it half as far | Nimble: star reach +0.5 |
 
 ---
 
@@ -315,10 +324,11 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 **Decided:**
 
 - Three categories: **weapon**, **armour**, **bauble** (renamed from accessory by the owner, 2026-11-15).
-- The ball holds one of each. An upgrade may later allow two of a category.
+- The ball holds one of each. **Owner, 2026-11-22:** a permanent unlock per category (Second Weapon, Armour or Bauble Pocket, **17 blue stars** each) lets it hold two. Both items work. A course pickup with both pockets full replaces the lower rarity (ties: the one held longest); a shop asks which to replace. The Burrow still stores one per category.
 - Rolling over gear of a category already held drops the current item and equips the new one automatically.
 - Gear never needs a button. Weapon effects are automatic and trigger only on contact with an enemy.
 - Gear is lost on death, except gear stored in the Burrow (owner, 2026-11-15; section 11).
+- **Built (round 3, owner 2026-11-22): the Needle family**, weapons that poison on a successful roll: Pin Needle (common, 1 turn), Thistle Needle (uncommon, 2 turns), Venom Needle (rare, 2 turns, hit damage +1), Hex Needle (double rare, 3 turns, hit damage +1). Weapons now have 4 items per rarity from common to double rare, like armour and baubles (70 items in all). With two weapons, each spins its own success wheel with its own slices; the first one's element is used.
 
 **Default:**
 
@@ -416,6 +426,8 @@ Build in Milestone 6.
 - **Owner, 2026-11-21: the food shop sells the acorns plus the existing shop items, renamed as food.** The gear shop sells gear only. Each shop has its own stock and its own reroll price. Names: Apple (heal 2) and Garlic (delay the boss) chosen by the owner; Mushroom Stew, Trail Mix, Chili Pepper, Carrot and Clover Honey for the five stat boosts are working names.
 - **Owner, 2026-11-21 (later the same day): every food except Apple and Garlic lasts 1 to 3 courses**, the longer ones rarer (not as rare as gear), and food is cheaper than the old run-long boosts. Durations: 50% one course, 30% two, 20% three (owner, sheet Q1). Garlic works exactly as Delay the Boss did. No extra art: foods use the existing icons. Code names stay the same. **Food shop 4 offers, gear shop 3**, each with its own reroll for yellow stars. Full table, chances and prices: `docs/plans/milestone-8-round-2a.md` section 4 (waiting for sign-off).
 
+**Built (round 3, owner 2026-11-22): shop variety.** The gear shop marks one of its 3 offers **SALE** (30% off; a reroll may move it) and has a 4th card, the **Grab Bag**: 25 stars for a random gear item rolled one rarity column better than the shop's own odds, once per visit; if it is for a full category you are asked which to replace, and saying no leaves it in the shop at its normal price. The food shop marks one food the **Chef's Special**: it always lasts 3 courses, at its normal price. Numbers in `src/content/run.ts` (`RUN.shop`).
+
 Planned in Milestone 8 round 2 (rules) and 8b (walking up to each shop).
 
 **Built (Milestone 8b, owner sign-off 2026-11-21 with every default): walkable towns.** A town is a place the armadillo walks around (W A S D or the arrow keys, Shift runs). Walking into a door opens that shop or the Burrow as a flat room picture with the same menus; Esc goes back outside the door. Each town also has a fenced practice green (step on the tee: a small fixed course where nothing counts) and a way out (asks first; you cannot come back). Places are data: `src/content/places/*.json` (three towns, one per biome, the crossroads templates and the cache clearing), props in `src/content/places.ts`; format in `src/sim/place.ts`. Adding a prop is an entry plus a placeholder sprite.
@@ -501,11 +513,11 @@ Opus: use the default and say that you did.
 
 | # | Question | Default until answered |
 |---|---|---|
-| F1 | Poison at base damage makes the ball deal 0. Is that right, or should damage never go below 1? | Minimum 0. Poison lasts only 2 turns. |
-| F2 | Does swapped-out gear stay on the ground? | Yes, until the player leaves the course |
-| F3 | Enemy gear drop chance | 10% |
-| F4 | Squad theme share chance | 70% |
+| F1 | Poison at base damage makes the ball deal 0. Is that right, or should damage never go below 1? | **Answered (owner, 2026-11-22): default kept.** Minimum 0. Poison lasts only 2 turns. |
+| F2 | Does swapped-out gear stay on the ground? | **Answered (owner, 2026-11-22): default kept.** Yes, until the player leaves the course |
+| F3 | Enemy gear drop chance | **Answered (owner, 2026-11-22): default kept.** 10% |
+| F4 | Squad theme share chance | **Answered (owner, 2026-11-22): default kept.** 70% |
 | F5 | Which elements exist | Fire, ice, shock |
-| F6 | Can the boss countdown be bought back up in a shop? | Yes, +1, once per shop |
+| F6 | Can the boss countdown be bought back up in a shop? | **Answered (owner, 2026-11-22): default kept.** Yes, +1, once per shop (Garlic) |
 | F7 | Do blue stars found during a run survive death? | **Answered (owner, 2026-11-17): no.** They are carried until deposited, automatically, at a town or on beating a boss; carried blue stars are lost on death or on closing the game outside a town |
 | F8 | Third boss and its gimmick | **Answered (owner, 2026-11-19):** the Brood Queen, hurt only from above |

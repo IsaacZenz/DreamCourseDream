@@ -38,6 +38,9 @@ export interface BotResult {
   readonly moves: readonly BotMove[];
   /** Shots simulated in total, trials included (for speed reports). */
   readonly simulated: number;
+  /** Round 3 (balance pass): yellow stars collected on the course, and the ball's max health. */
+  readonly stars: number;
+  readonly maxHealth: number;
 }
 
 interface Target {
@@ -268,7 +271,7 @@ export function playBot(course: Course, tuning: Tuning, seed: string, hints: Bot
     const won = play.status === 'won';
     const passed = won && reason === '' && play.health >= cfg.minHealthLeft && play.shotNumber <= cfg.maxShots;
     const why = reason || (won && play.health < cfg.minHealthLeft ? 'bot won with too little health' : won ? '' : 'bot lost');
-    return { passed, won, shots: play.shotNumber, health: play.health, reason: passed ? '' : why, moves, simulated };
+    return { passed, won, shots: play.shotNumber, health: play.health, reason: passed ? '' : why, moves, simulated, stars: play.wallet, maxHealth: play.stats.get('maxHealth') };
   };
 
   while (play.status === 'playing') {

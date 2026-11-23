@@ -965,6 +965,30 @@
         7
       ]
     },
+    "ball-thud": {
+      "file": "sprites/ball-thud.png",
+      "frameWidth": 8,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        7
+      ]
+    },
+    "ball-pip": {
+      "file": "sprites/ball-pip.png",
+      "frameWidth": 8,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        7
+      ]
+    },
     "ball-shadow": {
       "file": "sprites/ball-shadow.png",
       "frameWidth": 8,
@@ -1012,6 +1036,18 @@
       "anchor": [
         4,
         7
+      ]
+    },
+    "grab-bag": {
+      "file": "sprites/grab-bag.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
       ]
     },
     "shot-orb": {
@@ -1715,6 +1751,54 @@
     },
     "gear-gong-knob": {
       "file": "sprites/gear-gong-knob.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-pin-needle": {
+      "file": "sprites/gear-pin-needle.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-thistle-needle": {
+      "file": "sprites/gear-thistle-needle.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-venom-needle": {
+      "file": "sprites/gear-venom-needle.png",
+      "frameWidth": 12,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        11
+      ]
+    },
+    "gear-hex-needle": {
+      "file": "sprites/gear-hex-needle.png",
       "frameWidth": 12,
       "frameHeight": 12,
       "frames": [
@@ -3123,6 +3207,74 @@
     },
     "armadillo-left": {
       "file": "sprites/armadillo-left.png",
+      "frameWidth": 14,
+      "frameHeight": 20,
+      "frames": [
+        "dl-stand",
+        "dl-step1",
+        "dl-step2",
+        "ul-stand",
+        "ul-step1",
+        "ul-step2"
+      ],
+      "anchor": [
+        6,
+        19
+      ]
+    },
+    "armadillo-thud": {
+      "file": "sprites/armadillo-thud.png",
+      "frameWidth": 14,
+      "frameHeight": 20,
+      "frames": [
+        "dr-stand",
+        "dr-step1",
+        "dr-step2",
+        "ur-stand",
+        "ur-step1",
+        "ur-step2"
+      ],
+      "anchor": [
+        7,
+        19
+      ]
+    },
+    "armadillo-thud-left": {
+      "file": "sprites/armadillo-thud-left.png",
+      "frameWidth": 14,
+      "frameHeight": 20,
+      "frames": [
+        "dl-stand",
+        "dl-step1",
+        "dl-step2",
+        "ul-stand",
+        "ul-step1",
+        "ul-step2"
+      ],
+      "anchor": [
+        6,
+        19
+      ]
+    },
+    "armadillo-pip": {
+      "file": "sprites/armadillo-pip.png",
+      "frameWidth": 14,
+      "frameHeight": 20,
+      "frames": [
+        "dr-stand",
+        "dr-step1",
+        "dr-step2",
+        "ur-stand",
+        "ur-step1",
+        "ur-step2"
+      ],
+      "anchor": [
+        7,
+        19
+      ]
+    },
+    "armadillo-pip-left": {
+      "file": "sprites/armadillo-pip-left.png",
       "frameWidth": 14,
       "frameHeight": 20,
       "frames": [
