@@ -78,7 +78,7 @@ a mistake, never to renumber.
 
 | Code | Sprite | Name in game | Size | Frames | Made automatically | Status |
 |---|---|---|---|---|---|---|
-| **E1** | `snoozegrub` | Snoozegrub | 18×16 | 1 |  | placeholder |
+| **E1** | `snoozegrub` | Snoozegrub | 18×16 | 1 |  | approved |
 | **E2** | `mudroller` | Mudroller | 18×16 | 1 |  | placeholder |
 | **E3** | `spittlebug` | Spittlebug | 18×18 | 1 |  | placeholder |
 | **E4** | `pouncehopper` | Pouncehopper | 18×16 | 1 |  | placeholder |

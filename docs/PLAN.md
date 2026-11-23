@@ -204,7 +204,7 @@ The owner draws the art; a tool turns photos of the drawings into sprites in one
 - [x] Art List generated from the manifest, with permanent codes (`npm run art:list`: 232 codes in `art/codes.json`, `art/ART-LIST.md`)
 - [x] Pixel Press: sprite sources to PNG and manifest, mirroring, character and theme recolours, style check, placeholders never overwrite approved art (`npm run art:press`, `npm run art:preview`, `tests/art.test.ts`)
 - [x] Contact sheets of every placeholder with its code (replaces printed drawing sheets: the owner draws freehand in a sketchbook) (`art/list/<letter>.png`)
-- [ ] Pilot: three owner drawings taken through the whole loop from the phone (also settles how photos arrive, and whether a photo clean-up tool is worth building)
+- [x] Pilot: three owner drawings taken through the whole loop from the phone (also settles how photos arrive, and whether a photo clean-up tool is worth building) (2026-11-23: a test Rollo, G13 Pin Needle and E1 Snoozegrub in the game; photos arrive as files; a shape-reading tool is worth building for large items)
 - [ ] Tile swatches wrapped onto every slope shape
 
 **Done when:** the owner can send a photo of a drawing from the phone and see it in the game, in style, the same day.
@@ -338,3 +338,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-23 — Pilot item 2: the owner's G13 Pin Needle, version C (poison-coated), approved and pressed into the game: the first owner art in the game. Next: E1.
 - 2026-11-23 — Pilot item 3: the owner's E1 Snoozegrub drawing (square grumpy head, striped three-plate shell, pale body). Two render-downs (A faithful, B one bold dome) and shell-colour options for the grub family in `art/drafts/`. Waiting for the owner's pick.
 - 2026-11-23 — E1 redrawn by the owner with marker colouring to mark parts (colour irrelevant). Two render-downs in `art/drafts/E1-redo-*.sprite`. Waiting for the owner's pick.
+- 2026-11-23 — Pilot done. The owner's E1 Snoozegrub (redo, face squished down, frown lower) approved and pressed into the game, after G13. Three drawings went through the whole loop from the phone. Left in Milestone 8c: tile texture swatches.
