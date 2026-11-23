@@ -17,6 +17,7 @@
     "art:list": "node tools/art-list.ts",
     "art:preview": "node tools/art-preview.ts",
     "art:styles": "node tools/art-style-lab.ts",
+    "art:grass": "node tools/art-grass-lab.ts",
     "gen": "node tools/gen.ts",
     "gen:batch": "node tools/gen-batch.ts",
     "arenas": "node tools/arena-check.ts",
