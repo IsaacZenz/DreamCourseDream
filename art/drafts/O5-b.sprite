@@ -1,0 +1,31 @@
+# Grab Bag from the owner's drawing art/inbox/O5-drawing.jpg (2026-11-23), version B (warmer, darker leather).
+# A leather satchel: flap with a round button, a side pocket with dashed stitching, a dotted question mark, shadow on the right.
+code: O5
+id: grab-bag
+status: draft
+size: 12x12
+outline: ink
+key N tan 3
+key n tan 2
+key m brown 2
+key K brown 2
+key k brown 1
+key j grey 1
+key o gold 4
+key d brown 1
+key i grey 1
+key e grey 0
+key w grey 4
+frame: idle
+............
+....KKKKK...
+...KoKkkkj..
+..KKKkkkkj..
+..NKkkkjinm.
+.NeeeNNNidm.
+.NNNeNNNinm.
+.NNeNNNnidm.
+.NNNNNnnimm.
+.NNeNnnnnmm.
+..nnnnnmmm..
+............
