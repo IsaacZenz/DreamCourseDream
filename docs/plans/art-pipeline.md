@@ -272,3 +272,4 @@ which and how big it is. For animated items it shows every frame.
     items (rooms, buildings, bosses), where it saves the most; for small sprites it is
     only a starting layout.
   - **Owner's edit, 2026-11-23:** the owner picked A (automatic) and asked for the shell 1 pixel thinner and the snout 1 pixel longer with a squared end like B. A's snout already touched the box edge, so the drawing was moved 1 pixel left and the tail tip trimmed 1 pixel to keep the outline inside the 18×24 box (`art/drafts/H6-test-c-from-a.sprite`). Lesson: edits are quick in the text grid, and the box edge needs a free pixel for the outline.
+  - **Owner, 2026-11-23:** the edited A "looks good for the test". Pilot item 1 of 3 done (test only; the final Rollo comes later). Next: G13.
