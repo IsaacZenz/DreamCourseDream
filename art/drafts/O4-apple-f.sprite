@@ -1,0 +1,31 @@
+# Red apple from the owner's drawing art/inbox/O4-apple-drawing.jpg (2026-11-23), version B2 (11x12, pink-lit).
+# Marker = shadow side (right and bottom) with a lighter reflection streak; dotted arc = highlight dots; Y dimple at the top; stem leaning left with a little bud.
+code: O4
+id: heart
+status: draft
+size: 11x12
+anchor: 5 11
+outline: ink
+key 2 red 1
+key 3 red 2
+key p pink 3
+key h pink 4
+key w grey 4
+key r blue 4
+key t brown 2
+key T brown 3
+key l green 3
+key i grey 1
+frame: idle
+...........
+....Tt.l...
+....tt.....
+..p33t333..
+.hpp3i332r.
+.wp3333332.
+.hp3333232.
+.p33333232.
+.333332232.
+..3322222..
+...22222...
+...........
