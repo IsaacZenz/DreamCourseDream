@@ -1,0 +1,36 @@
+# Pilot (owner, 2026-11-23): render-down of art/inbox/E1-drawing.jpg, version A (faithful).
+code: E1
+id: snoozegrub
+status: draft
+size: 18x16
+anchor: 9 14
+outline: ink
+key 2 purple 2
+key 3 purple 3
+key 4 purple 4
+key s purple 1
+key a tan 2
+key b tan 3
+key c tan 4
+key i grey 1
+key e grey 0
+key r blue 4
+key w grey 4
+key p pink 3
+frame: idle
+..................
+..................
+.........4443.....
+........423232....
+....44434232322...
+...423232i32322i..
+.ccccc23i232322i2.
+.cebebi3i232322i2.
+.cbebbii3232322i2.
+.cebebib3b3b2b2bb.
+.cbbbbib3bbbbbbba.
+.ceeebibbbbbbbbba.
+.cebebibbbbbbbbba.
+..aaaaaaaiaaiaaia.
+..................
+..................
