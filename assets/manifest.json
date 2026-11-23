@@ -3228,14 +3228,14 @@
     },
     "heart": {
       "file": "sprites/heart.png",
-      "frameWidth": 9,
-      "frameHeight": 8,
+      "frameWidth": 11,
+      "frameHeight": 12,
       "frames": [
         "idle"
       ],
       "anchor": [
-        4,
-        7
+        5,
+        11
       ]
     },
     "grab-bag": {

@@ -14,7 +14,7 @@ On every course: stars, the apple, the shot orb, acorns, the Wild and the Grab B
 | **O3** | Yellow star | 11×11 | approved |
 | **O24** | Blue star | 11×11 | approved, made from O3 |
 | **O20** | Star marker | 11×11 | approved, made from O3 |
-| **O4** | Apple | 9×8 | approved |
+| **O4** | Apple | 11×12 | approved |
 | **O6** | Shot orb | 9×9 | placeholder |
 | **O25** | Lucky Acorn | 10×11 | placeholder |
 | **O26** | Golden Acorn | 10×11 | placeholder |
