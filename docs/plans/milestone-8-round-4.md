@@ -1,6 +1,6 @@
 # Milestone 8 round 4 design sheet: a fourth region and a new final boss, the centipede
 
-**Status: waiting for the owner's sign-off.** Nothing on this sheet is built until the owner signs it off.
+**Status: signed off by the owner 2026-11-23, all defaults**, with two additions: **Thousandfoot** is the stand-in name for now, and **the centipede's map is always the same** (the Coil Pit; no other arena). The owner will **test the fight by hand** instead of the bot (the bot cannot lead a moving target yet). Built the same day; as-built notes in section 10.
 
 ## 0. Where this fits
 
@@ -205,3 +205,18 @@ Everything else on the sheet uses the defaults written above unless you change i
 5. In phase 2, line a minion up with a spike path and watch it die.
 6. In phase 3, check the head comes up where the circle was marked, and that hitting it does double damage.
 7. Look for the ball ever being hidden behind the near side of the body.
+
+---
+
+## 10. As built (2026-11-23)
+
+Everything in sections 1 to 6 is built with the default numbers. Where the build differs from the sheet, or the sheet did not say:
+
+- **Hand-tested, not bot-tested (owner, 2026-11-23).** `npm run arenas` skips Thousandfoot and says so (`handChecked` in `src/content/bosses.ts`); `npm run arenas -- 20 centipede` still runs the bot if wanted. On 2 seeds it lost both, as expected. `npm run balance` has no region 4 row yet.
+- **Two spikes at once cost 1 health, not 2.** The existing rule (owner, 2026-11-14) gives the ball half a second of immunity after any damage, and every spike in a volley lands at the same moment. Section 5.1 said each spike counts; with the immunity rule only the first does. The same applies to spikes and the head burst on the same turn. Say if you want the volley to hit harder.
+- **Storm Cloak does not stop the centipede's spikes.** It protects from ground spikes; the centipede's spikes are their own kind of damage ("SPIKED").
+- **The body stays as the wall after Thousandfoot is beaten** (greyed out, legs still), so the ball cannot roll off the edge on the way to the exit.
+- **The testing panel's "Boss to phase 2 / 3" buttons now run the real phase change** for every boss, so the plates fall off and the heart and shot orb drop, as in a real fight. Jumping straight to phase 3 gives the 10 weak spots at once.
+- **Messages:** "CLANK! ARMOUR. HIT THE PALE SEGMENTS" on an armour hit; "HIT! -N" on a weak spot or the head; "SPIKES NEXT TURN" the first two times spikes are marked; the leg ring flashes on a sweep. The boss bar has a second line, "NEXT: SPIKES" or "NEXT: SWEEP", below the line where messages appear.
+- **Placeholder art** (`npm run art`): shell domes (dark red armour, pale pink weak spots with a yellow rim, a bone-coloured spine pod on shooters), scuttling legs in the leg ring, a red diamond on each leg-ring tile, the head, a flying spike and falling plates. Sprite ids: `centipede-segment`, `centipede-legs`, `centipede-head`, `centipede-quill`, `centipede-plate`, `danger-tile`.
+- **Drawing:** each segment is two domes. They are drawn 0.8 tiles out from the edge rather than the body's true middle (1 tile), so the domes meet the map edge with no gap; the physics wall is exactly at the edge.
