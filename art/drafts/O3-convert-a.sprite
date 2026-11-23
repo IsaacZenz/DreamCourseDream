@@ -1,0 +1,26 @@
+# Converter draft (keeps the drawing's proportions) from art/inbox/O3-drawing.jpg. Needs a hand finish.
+code: O3
+id: star-yellow
+status: draft
+size: 11x11
+anchor: 6 9
+outline: ink
+key 2 gold 2
+key 3 gold 3
+key 4 gold 4
+key i grey 1
+key e grey 0
+key r blue 4
+key w grey 4
+frame: idle
+...........
+......i....
+......i....
+....iiii4..
+....ii3ii..
+.iiiiii3ii.
+..4ii3ii...
+...ii3i....
+.....i2....
+...........
+...........
