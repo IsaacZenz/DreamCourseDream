@@ -145,7 +145,7 @@ It also adds up a typical region's economy: stars earned up to each town, compar
 
 | Measure | Region 1 | Region 2 | Region 3 |
 |---|---|---|---|
-| Bot wins a course (par kit, full health) | 95% or more | 90% or more | 85% or more |
+| ~~Bot wins a course (par kit, full health)~~ Dropped (owner, 2026-11-23, balance P4) | - | - | - |
 | Health lost per course, on average | 0.5 to 1 | 1 to 1.5 | 1.5 to 2.5 |
 | Shots per course, on average | well under the limit | under the limit | close to the limit on late and hard courses |
 | Stars on reaching a town | enough for 2 common or uncommon items | about 1 rare item | about 1 double rare item |
@@ -241,3 +241,5 @@ Built in the sheet's order: the map, the Needles and shop variety, the character
 - **The practice green** uses the run's character.
 - **The course check's bot** still plays as Rollo with the par kit and one pocket per category, so unlocks only make the game easier for you.
 - **Save version 4.** A version 3 save loads with its gear in the first pocket, no second pockets, no characters bought, and a saved run played as Rollo.
+
+- **Balance pass (owner, 2026-11-23, all proposals approved):** Brood Queen region 3 health 26 (was 20), Stagwarden region 1 health 11 (was 12), Gloamhorn region 2 health 11 (was 12); the first-try win target dropped; course damage unchanged until the owner's playtest. Report: `docs/plans/balance-report.md`.

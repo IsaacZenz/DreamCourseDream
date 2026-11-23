@@ -48,7 +48,7 @@ Gear prices: common 10, uncommon 15, rare 30, double rare 45, special rare 70, l
 
 | Measure | Region 1 | Region 2 | Region 3 |
 |---|---|---|---|
-| Bot wins a course (par kit, full health) | 95% or more | 90% or more | 85% or more |
+| ~~Bot wins a course on the first try~~ (dropped by the owner, 2026-11-23: it measures the bot, not the player) | - | - | - |
 | Health lost per course, on average | 0.5 to 1 | 1 to 1.5 | 1.5 to 2.5 |
 | Shots per course, on average | well under the limit | under the limit | close to the limit on late and hard courses |
 | Stars on reaching a town | enough for 2 common or uncommon items | about 1 rare item | about 1 double rare item |
@@ -75,4 +75,4 @@ _Written by hand after reading the tables above. Nothing here changes until the 
 | P4 | Replace the "first-try win" target | 95 / 90 / 85% | health lost per course, starter bot share, and your playtest | It measures the bot, not the player |
 | P5 | Course damage | as now | no change yet | Decide after you play a run |
 
-After you approve, I make the changes, run `npm run balance` again and show the before and after.
+**Owner, 2026-11-23: all approved (P1 to P5).** Made: Brood Queen 20 -> 26 health in region 3, Stagwarden 12 -> 11 in region 1, Gloamhorn 12 -> 11 in region 2 (`src/content/bosses.ts`). The "first-try win" target is dropped (P4); course damage is unchanged until the owner's playtest (P5).

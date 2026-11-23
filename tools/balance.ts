@@ -235,7 +235,7 @@ function writeReport(rows: readonly Row[], seeds: number, seconds: number): stri
   line();
   line('| Measure | Region 1 | Region 2 | Region 3 |');
   line('|---|---|---|---|');
-  line('| Bot wins a course (par kit, full health) | 95% or more | 90% or more | 85% or more |');
+  line('| ~~Bot wins a course on the first try~~ (dropped by the owner, 2026-11-23: it measures the bot, not the player) | - | - | - |');
   line('| Health lost per course, on average | 0.5 to 1 | 1 to 1.5 | 1.5 to 2.5 |');
   line('| Shots per course, on average | well under the limit | under the limit | close to the limit on late and hard courses |');
   line('| Stars on reaching a town | enough for 2 common or uncommon items | about 1 rare item | about 1 double rare item |');

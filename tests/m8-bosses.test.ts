@@ -132,11 +132,11 @@ describe('three regions, then endless mode (owner, 2026-11-18)', () => {
     beatBoss(run);
     takeBossReward(run, null, generateRunMap('E', 2));
     expect(bossOf(run)).toBe('gloamhorn');
-    expect(bossHealthFor(run)).toBe(12);
+    expect(bossHealthFor(run)).toBe(11);
     beatBoss(run);
     takeBossReward(run, null, generateRunMap('E', 3));
     expect(bossOf(run)).toBe('brood-queen');
-    expect(bossHealthFor(run)).toBe(20);
+    expect(bossHealthFor(run)).toBe(26);
     beatBoss(run);
     expect(run.status).toBe('won');
     expect(run.beatFinal).toBe(true);
