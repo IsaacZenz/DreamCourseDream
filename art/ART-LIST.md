@@ -136,9 +136,9 @@ a mistake, never to renumber.
 | **O22** | `zap-spark` | Zap spark | 12×12 | 1 |  | placeholder |
 | **O23** | `wild` | Wild | 10×10 | 1 |  | placeholder |
 | **O24** | `star-blue` | Blue star | 11×11 | 1 |  | approved, made from O3 |
-| **O25** | `acorn-lucky` | Lucky Acorn | 10×11 | 1 |  | placeholder |
-| **O26** | `acorn-golden` | Golden Acorn | 10×11 | 1 |  | placeholder |
-| **O27** | `acorn-star` | Star Acorn | 10×11 | 1 |  | placeholder |
+| **O25** | `acorn-lucky` | Lucky Acorn | 10×11 | 1 |  | approved |
+| **O26** | `acorn-golden` | Golden Acorn | 10×11 | 1 |  | approved, made from O25 |
+| **O27** | `acorn-star` | Star Acorn | 10×11 | 1 |  | approved, made from O25 |
 | **O28** | `puff` | Puff | 16×14 | 3: 0, 1, 2 |  | placeholder |
 
 ## S — Scenery
