@@ -252,4 +252,4 @@ which and how big it is. For animated items it shows every frame.
   B2 is round, chunky shapes with a bold ink outline, plus a cool rim light, shine, soft
   grass and dotted shadows. Written into `art/STYLE.md`; sprite files got `outline: ink`;
   the three mock-ups were redrawn in B2. The palette is kept as it is (the B2 samples use it).
-- **Hero size chosen (owner, 2026-11-23): Rollo, Thud and Pip are 18×24** (were 14×20), after a size test in the town (`art/drafts/H6-size-test-*.sprite`). Recorded in `art/targets.json`, which the Art List shows in bold and the press enforces. Enemies stay at today's size (Claude's advice: their art should stay close to their 0.6-tile physics body).
+- **Hero size chosen (owner, 2026-11-23): Rollo, Thud and Pip are 18×24** (were 14×20), after a size test in the town (`art/drafts/H6-size-test-*.sprite`). Recorded in `art/targets.json`, which the Art List shows in bold and the press enforces. **Owner, 2026-11-23: enemies keep today's size**, so their art stays close to their 0.6-tile physics body.

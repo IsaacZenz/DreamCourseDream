@@ -95,8 +95,11 @@ more painterly options. In short: *soft shapes, bold ink, a touch of light.*
 ## Sizes
 
 - **Rollo, Thud and Pip are 18×24** (owner, 2026-11-23; the placeholders are 14×20), so
-  the hero's face has room for the B2 eye shine, snout and blush. Everything else keeps
-  today's size unless the owner chooses otherwise.
+  the hero's face has room for the B2 eye shine, snout and blush.
+- **Enemies keep today's sizes** (owner, 2026-11-23), so their art stays close to their
+  physics body. An enemy grows only if a drawing has a detail that cannot fit, and then
+  its body grows too and it is playtested. Everything else keeps today's size unless the
+  owner chooses otherwise.
 - **Keep art close to the physics size.** An enemy's body in the physics is a circle 0.6
   tiles across, about 14 pixels wide on screen; today's 16–22 pixel enemy sprites are a
   little bigger than that, which is fine. Much bigger art would look hit when the ball
