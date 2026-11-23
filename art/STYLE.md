@@ -2,8 +2,25 @@
 
 The rules that make every sprite look like part of one game. The owner designs the
 shapes and choices; these rules, and the Pixel Press that checks them, keep the look
-consistent. Signed off with the art pipeline (owner, 2026-11-23); the palette itself
-is waiting for the owner's look at `art/list/palette.png`.
+consistent. Signed off with the art pipeline (owner, 2026-11-23).
+
+**The house style is "B2" (owner, 2026-11-23):** round, chunky, cute shapes with a bold
+dark outline, plus a little extra light (a cool rim light, shine spots, soft ground). The
+owner chose it from the style lab (`npm run art:styles -- blend`) over softer-outlined,
+more painterly options. In short: *soft shapes, bold ink, a touch of light.*
+
+| Setting | B2 |
+|---|---|
+| Shades per colour | 3: shades 2, 3, 4 of a ramp (bright) |
+| Outline | Dark ink, grey 0, all the way round (`outline: ink`) |
+| Inner lines | Ink lines (grey 1) where one part overlaps another: head over body, segment over segment |
+| Rim light | Cool, blue 4, along the right-hand edges of round shapes |
+| Shine | Near-white spots (grey 4) on glossy round things |
+| Eyes | Big, tall ovals with a shine pixel |
+| Blush | A pink cheek (pink 3) on creatures |
+| Ground | Soft grass: plain, with a few big gentle patches and rare blades |
+| Shadow under things | Dotted (dithered) soft shadow |
+| Size | Today's sprite sizes (bigger allowed where needed, Q5) |
 
 ## Palette
 
@@ -17,16 +34,33 @@ is waiting for the owner's look at `art/list/palette.png`.
 
 ## Light and shading
 
-- Light comes from the **top left**. Shade 4 on top-left edges, shade 3 for the
-  main colour, shade 2 on the lower-right side, shade 1 underneath.
+- Light comes from the **top left**. Objects use **three shades**: shade 4 on the
+  top-left, shade 3 for the main colour, shade 2 on the lower-right and underneath.
+  Shades 0 and 1 are kept for ink lines, tiles, shadows and themes.
 - Keep shading in big, simple areas. Avoid "pillow shading" (dark all round the edge,
   light in the middle): it makes things look flat.
+- **Rim light:** a few blue 4 pixels on the right-hand edge of round shapes, as if a
+  cool light were behind them. Small sprites get one or two pixels at most (a big rim
+  on a 12-pixel item looks like a blue shard).
+- **Shine:** one or two grey 4 pixels on the top-left of glossy round things (shells,
+  acorns, stars). Not on fur, cloth, wood or rock.
 
 ## Outlines
 
-- Game objects (hero, enemies, pickups, props, scenery) have an outline in the
-  **darkest shade of their own colour** (Q3). `outline: auto` in a sprite file adds it.
+- Game objects (hero, enemies, pickups, props, scenery) have a **dark ink outline**
+  (grey 0) all the way round: `outline: ink` in a sprite file adds it. (Owner,
+  2026-11-23, style B2. This replaces the first default, each colour's own darkest
+  shade, Q3.)
+- **Inner lines** in grey 1 where one part overlaps another (head over body, one
+  body segment over the next), drawn on the front part's edge.
 - Tiles and cliff faces have no outline: they join up into ground.
+
+## Faces
+
+- Creatures have **big eyes**: a tall oval of grey 0 with one grey 4 shine pixel at its
+  top-left. Sleeping or squinting eyes are a short curved line.
+- A **pink blush** (pink 3) under the eye on friendly or cute creatures. The owner
+  decides per creature whether villains get it.
 
 ## Contrast with the ground
 
@@ -43,6 +77,13 @@ is waiting for the owner's look at `art/list/palette.png`.
 - No blurry edges (anti-aliasing against the background): the sprite has to look
   right on every ground and theme.
 - No lonely single pixels that do not mean anything ("noise").
+
+## Ground and shadows (for the display and the tiles, not sprite files)
+
+- Soft grass: mostly plain, with a few big gentle darker patches and rare light blades.
+  Busy ground makes sprites hard to see. Built in the tile swatch step.
+- Things standing on the ground get a soft dotted shadow under them, drawn by the game,
+  not inside the sprite (so it follows slopes). Milestone 9.
 
 ## Isometric shapes
 

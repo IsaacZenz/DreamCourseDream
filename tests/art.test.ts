@@ -80,6 +80,13 @@ describe('sprite files', () => {
     expect(g[0]![1]).toMatchObject({ ramp: 'red', shade: 0 });
     expect(g[1]![0]).toMatchObject({ ramp: 'red', shade: 0 });
     expect(g[0]![0]).toBeNull(); // corners stay clear
+    expect(withOutline(s.frames[0]!.grid, true)[0]![1]).toMatchObject({ ramp: 'grey', shade: 0 });
+  });
+
+  it('reads the outline setting: ink (house style), auto or none', () => {
+    const t = (v: string) => parseSprite(SAMPLE.replace('size: 4x3', `size: 4x3\noutline: ${v}`), 't', art.ramps).outline;
+    expect([t('ink'), t('auto'), t('none')]).toEqual(['ink', 'own', 'none']);
+    expect(() => t('thick')).toThrow(/outline is ink, auto/);
   });
 
   it('renders palette colours, flips, swaps ramps and applies themes', () => {

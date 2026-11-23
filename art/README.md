@@ -58,7 +58,7 @@ code: G13
 id: gear-pin-needle
 status: draft
 size: 12x12
-outline: auto
+outline: ink
 key 2 grey 2
 key 3 grey 3
 key 4 grey 4

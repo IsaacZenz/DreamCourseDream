@@ -1,23 +1,24 @@
-# Mock-up for the style check (art pipeline step 1). Not the owner's design.
+# Style mock-up in the house style B2 (owner, 2026-11-23). Not the owner's design.
 code: S8
 id: scenery-mushrooms
 status: draft
 size: 12x8
-outline: auto
+outline: ink
 themes: yes
 key a red 4
 key b red 3
 key c red 2
-key d red 1
+key h grey 4
+key r blue 4
 key w tan 4
-key s tan 3
-key t tan 2
+key s tan 4
+key t tan 3
 frame: idle
 ............
 ..aab.......
-.awbbc......
-.bbbwc...ab.
-.dcccd..abc.
-...st....s..
+.hwbbr......
+.bbbwb...ar.
+.ccccc..abb.
+...st....t..
 ...st....t..
 ............

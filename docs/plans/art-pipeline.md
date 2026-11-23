@@ -213,7 +213,7 @@ which and how big it is. For animated items it shows every frame.
 |---|---|---|
 | Q1 | Permanent codes (letter + number that never change) instead of spreadsheet cell names? | Yes, permanent codes |
 | Q2 | Palette size: about 48 colours, or tighter (32) for a stronger retro look? | About 48 |
-| Q3 | Outline colour: darkest shade of each object's own colour, or one dark colour for everything? | Darkest shade of its own colour |
+| Q3 | Outline colour: darkest shade of each object's own colour, or one dark colour for everything? | ~~Darkest shade of its own colour~~ **Owner, 2026-11-23 (style B2): one dark ink colour for everything** |
 | Q4 | Small items drawn on the pixel grid sheet, freehand for large ones? | ~~Yes~~ **Owner: everything freehand in a sketchbook; Claude renders small items down** (section 4.4) |
 | Q5 | Keep sprite sizes as they are, or allow some to grow when you draw them? | Allowed, Claude checks the game still fits |
 | Q6 | Also make the Art List a phone-friendly page with each placeholder's picture? | Yes, after the pilot |
@@ -246,3 +246,9 @@ which and how big it is. For animated items it shows every frame.
 - **Not built yet:** photo clean-up for large drawings (wait for the pilot to see how
   photos arrive); tile texture swatches (last step); the glow layer is read from sprite
   files but not used until the Milestone 9 lighting.
+- **House style chosen (owner, 2026-11-23): B2.** After asking for a more stylised look,
+  the owner compared six styles, then a series of steps between two of them, in the
+  style lab (`tools/art-style-lab.ts`, `npm run art:styles` and `npm run art:styles -- blend`).
+  B2 is round, chunky shapes with a bold ink outline, plus a cool rim light, shine, soft
+  grass and dotted shadows. Written into `art/STYLE.md`; sprite files got `outline: ink`;
+  the three mock-ups were redrawn in B2. The palette is kept as it is (the B2 samples use it).

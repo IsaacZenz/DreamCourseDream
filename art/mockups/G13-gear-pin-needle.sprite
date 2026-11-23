@@ -1,23 +1,25 @@
-# Mock-up for the style check (art pipeline step 1). Not the owner's design.
+# Style mock-up in the house style B2 (owner, 2026-11-23). Not the owner's design.
 code: G13
 id: gear-pin-needle
 status: draft
 size: 12x12
-outline: auto
+outline: ink
 key 2 grey 2
 key 3 grey 3
 key 4 grey 4
-key r red 3
-key s red 2
+key r blue 4
+key a red 4
+key b red 3
+key c red 2
 frame: idle
 ............
 .........44.
-........4.3.
-........432.
+........4.r.
+........43r.
 .......432..
 ......432...
-.....rss....
-....4rs.....
+.....abc....
+....4bc.....
 ...432......
 ..432.......
 ..32........

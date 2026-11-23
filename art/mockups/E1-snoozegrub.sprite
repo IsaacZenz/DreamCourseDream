@@ -1,30 +1,32 @@
-# Mock-up for the style check (art pipeline step 1). Not the owner's design.
+# Style mock-up in the house style B2 (owner, 2026-11-23). Not the owner's design.
 code: E1
 id: snoozegrub
 status: draft
 size: 18x16
-outline: auto
-key 1 green 1
+outline: ink
 key 2 green 2
 key 3 green 3
 key 4 green 4
-key k grey 0
+key i grey 1
+key r blue 4
+key w grey 4
+key e grey 0
 key p pink 3
-key l brown 1
+key l brown 2
 frame: idle
 ..................
 ..................
 ..................
 ..................
-.......4433.......
-......43333243....
-......333332332...
-..4443333332332...
-.433333233323323..
-.3333332333233232.
-.3kk3332333233232.
-.333pp32333233232.
-.2222222222222222.
-..11111111111111..
-....l...l...l..l..
+..................
+......4444i44.....
+......ww44i443r...
+....4iw4443i43r...
+..4w44i4433i43i4..
+..44443i432i33i4r.
+.44ee33i332i32i3r.
+..33332i322i22i22.
+..33pp2i22i22i222.
+...222.222..ll.ll.
+....ll..ll..ll.ll.
 ..................

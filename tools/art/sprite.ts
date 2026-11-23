@@ -9,7 +9,9 @@
  *   status: draft            draft = preview only; approved = goes into the game
  *   size: 12x12
  *   anchor: 6 11             optional; defaults to the placeholder's anchor
- *   outline: auto            optional; adds the outline around the drawing
+ *   outline: ink             optional; adds the outline around the drawing: ink is the
+ *                            house style (grey 0, owner 2026-11-23, style B2); auto uses
+ *                            each colour's own darkest shade
  *   mirror: -left dr>dl      optional; also makes "<id>-left", renaming frames
  *   variant: armadillo-thud purple>grey tan>brown   optional; a ramp-swapped copy
  *   themes: yes              optional; a ramp-swapped copy for every theme
@@ -53,7 +55,7 @@ export interface SpriteSource {
   readonly width: number;
   readonly height: number;
   readonly anchor: readonly [number, number] | null;
-  readonly outline: boolean;
+  readonly outline: 'none' | 'own' | 'ink';
   readonly mirror: { readonly suffix: string; readonly renames: ReadonlyArray<readonly [string, string]> } | null;
   readonly variants: ReadonlyArray<{ readonly id: string; readonly swaps: Readonly<Record<string, string>> }>;
   readonly themes: boolean;
@@ -168,9 +170,16 @@ export function parseSprite(text: string, path: string, ramps: Ramps): SpriteSou
   const yes = (name: string) => {
     const h = head[name];
     if (!h) return false;
-    if (h.v !== 'yes' && h.v !== 'no' && !(name === 'outline' && (h.v === 'auto' || h.v === 'none'))) fail(h.line, `${name} is yes or no`);
-    return h.v === 'yes' || h.v === 'auto';
+    if (h.v !== 'yes' && h.v !== 'no') fail(h.line, `${name} is yes or no`);
+    return h.v === 'yes';
   };
+  let outline: SpriteSource['outline'] = 'none';
+  if (head.outline) {
+    const v = head.outline.v;
+    if (v === 'ink') outline = 'ink';
+    else if (v === 'auto' || v === 'own') outline = 'own';
+    else if (v !== 'none') fail(head.outline.line, 'outline is ink, auto (own darkest shade) or none');
+  }
   let mirror: SpriteSource['mirror'] = null;
   if (head.mirror) {
     const [suffix, ...pairs] = head.mirror.v.split(/\s+/);
@@ -217,7 +226,7 @@ export function parseSprite(text: string, path: string, ramps: Ramps): SpriteSou
     width,
     height,
     anchor,
-    outline: yes('outline'),
+    outline,
     mirror,
     variants,
     themes: yes('themes'),
@@ -232,9 +241,10 @@ export function readSprite(path: string, ramps: Ramps): SpriteSource {
 
 /**
  * Auto-outline (STYLE.md): every see-through pixel touching the drawing (up,
- * down, left, right) becomes shade 0 of the ramp it touches.
+ * down, left, right) becomes the outline: grey 0 ("ink", the house style) or
+ * shade 0 of the ramp it touches.
  */
-export function withOutline(grid: Frame['grid']): Array<Array<Pixel | null>> {
+export function withOutline(grid: Frame['grid'], ink = false): Array<Array<Pixel | null>> {
   const h = grid.length;
   const w = grid[0]?.length ?? 0;
   return grid.map((row, y) =>
@@ -245,7 +255,7 @@ export function withOutline(grid: Frame['grid']): Array<Array<Pixel | null>> {
         const ny = y + dy;
         if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
         const q = grid[ny]![nx];
-        if (q && q.shade > 0) return { ramp: q.ramp, shade: 0, alpha: 255, glow: false };
+        if (q && (ink ? !(q.ramp === 'grey' && q.shade === 0) : q.shade > 0)) return { ramp: ink ? 'grey' : q.ramp, shade: 0, alpha: 255, glow: false };
       }
       return null;
     }),
@@ -261,7 +271,7 @@ export interface RenderOptions {
 }
 
 export function renderFrame(src: SpriteSource, frame: Frame, ramps: Ramps, opt: RenderOptions = {}): Image {
-  const grid = src.outline ? withOutline(frame.grid) : frame.grid;
+  const grid = src.outline === 'none' ? frame.grid : withOutline(frame.grid, src.outline === 'ink');
   const img = new Image(src.width, src.height);
   grid.forEach((row, y) =>
     row.forEach((p, x) => {
