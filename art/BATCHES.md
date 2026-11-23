@@ -5,9 +5,9 @@ Draw a batch on one sketchbook page if you like, with each code next to its draw
 send one photo. Pictures of today's placeholders: `art/list/batch-<n>.png`.
 Made by `npm run art:list` from `art/batches.json`.
 
-## Batch 1: Pickups (4 of 10 done)
+## Batch 1: Pickups (4 of 9 done)
 
-On every course: stars, the apple, the shot orb, acorns, the Wild and the Grab Bag. Picture: [batch-1.png](list/batch-1.png)
+On every course: stars, the apple, the shot orb, acorns and the Grab Bag. Picture: [batch-1.png](list/batch-1.png)
 
 | Code | Name | Size | Status |
 |---|---|---|---|
@@ -19,18 +19,18 @@ On every course: stars, the apple, the shot orb, acorns, the Wild and the Grab B
 | **O25** | Lucky Acorn | 10×11 | approved |
 | **O26** | Golden Acorn | 10×11 | approved, made from O25 |
 | **O27** | Star Acorn | 10×11 | approved, made from O25 |
-| **O23** | Wild | 10×10 | placeholder |
 | **O5** | Grab bag | 12×12 | placeholder |
 
-## Batch 2: The ball and ability icons (0 of 13 done)
+## Batch 2: The ball and ability icons (0 of 14 done)
 
-The curled-up ball you play as (Rollo, Thud, Pip) and the ten ability icons on the HUD. Picture: [batch-2.png](list/batch-2.png)
+The curled-up ball you play as (Rollo, Thud, Pip) and the ten ability icons on the HUD. With the Wild (O23), the random-ability pickup: drawn as a bright crystal with an exclamation mark (drafts in art/drafts/O23-*), finished together with the ability icons (owner, 2026-11-23). Picture: [batch-2.png](list/batch-2.png)
 
 | Code | Name | Size | Status |
 |---|---|---|---|
 | **H1** | Rollo | 8×8 | placeholder |
 | **H2** | Thud | 8×8 | placeholder |
 | **H3** | Pip | 8×8 | placeholder |
+| **O23** | Wild | 10×10 | placeholder |
 | **I2** | Anchor | 10×10 | placeholder |
 | **I3** | Burner | 10×10 | placeholder |
 | **I4** | Hop | 10×10 | placeholder |

@@ -360,3 +360,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-23 — Owner compared an in-between apple (`art/drafts/O4-apple-g.sprite`) and kept the pink-lit version B2 already in the game.
 - 2026-11-23 — Batch 1: the owner's shot orb (O6), version B in a lighter blue (11×11: raised rim, recessed centre, white plus), approved and in the game.
 - 2026-11-23 — Batch 1: the owner's acorn (O25, version B: wide cap, round nut, clover with a sparkle) approved for all three acorns: Lucky (light brown), Golden (gold nut) and Star (blue nut, gold clover).
+- 2026-11-23 — Owner: the Wild (O23) waits for the ability icons and moves to batch 2, so they are designed as one family; three crystal drafts kept in `art/drafts/O23-*`.

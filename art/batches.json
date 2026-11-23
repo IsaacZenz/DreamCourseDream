@@ -1,15 +1,213 @@
 {
   "note": "Drawing batches (owner, 2026-11-23: small sprites first, large ones on hold). Each batch is a few related items, best drawn on one sketchbook page and sent as one photo, with each code written next to its drawing. npm run art:list makes art/list/batch-<n>.png and the list in art/BATCHES.md.",
   "batches": [
-    { "name": "Pickups", "why": "On every course: stars, the apple, the shot orb, acorns, the Wild and the Grab Bag.", "codes": ["O3", "O24", "O20", "O4", "O6", "O25", "O26", "O27", "O23", "O5"] },
-    { "name": "The ball and ability icons", "why": "The curled-up ball you play as (Rollo, Thud, Pip) and the ten ability icons on the HUD.", "codes": ["H1", "H2", "H3", "I2", "I3", "I4", "I5", "I28", "I29", "I32", "I33", "I34", "I35"] },
-    { "name": "Status and enemy markers", "why": "Little icons over bugs: stunned, burning, poisoned, chilled, shield, the six traits, ranks, the alert and the facing mark.", "codes": ["I6", "I19", "I30", "I31", "I20", "I36", "I37", "I38", "I39", "I40", "I41", "I42", "I43", "I7", "I44"] },
-    { "name": "Gear: weapon families", "why": "Each family is four items from plain to fancy: draw the plain one and how it gets fancier. Needles start from your G13.", "codes": ["G14", "G15", "G16", "G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12"] },
-    { "name": "Gear: armour families", "why": "Linings, guards, hides and grit gear, four of each from plain to fancy.", "codes": ["G23", "G24", "G25", "G26", "G27", "G28", "G29", "G30", "G31", "G32", "G33", "G34", "G40", "G41", "G42", "G43"] },
-    { "name": "Gear: bauble families", "why": "Star, sight, lucky and spinner families, four of each.", "codes": ["G47", "G48", "G49", "G50", "G51", "G52", "G53", "G54", "G55", "G56", "G57", "G58", "G59", "G60", "G61", "G62"] },
-    { "name": "Gear: one-of-a-kind items", "why": "Special and legendary gear with their own looks.", "codes": ["G17", "G18", "G19", "G20", "G21", "G22", "G35", "G36", "G37", "G38", "G39", "G44", "G45", "G46", "G63", "G64", "G65", "G66", "G67", "G68", "G69", "G70"] },
-    { "name": "Map and menu icons", "why": "Map nodes, run upgrades, permanent upgrades in the Burrow, and the cursor.", "codes": ["I8", "I9", "I10", "I11", "I12", "I13", "I14", "I15", "I16", "I17", "I18", "I22", "I23", "I24", "I25", "I26", "I27", "I21"] },
-    { "name": "Small scenery and props", "why": "Things on the ground: tufts, flowers, pebbles, mushrooms, leaves, bones, fireflies, the barrel, the molehill and the spat seed.", "codes": ["S5", "S6", "S7", "S8", "S9", "S10", "S11", "P9", "O10", "O11"] },
-    { "name": "Small bugs and grub marks", "why": "The three smallest bugs, then the ten ability grubs: each is your Snoozegrub in its own colour with a small mark on its shell, so only the mark needs drawing.", "codes": ["E15", "E10", "E5", "E6", "E7", "E8", "E9", "E16", "E17", "E18", "E19", "E20", "E21"] }
+    {
+      "name": "Pickups",
+      "why": "On every course: stars, the apple, the shot orb, acorns and the Grab Bag.",
+      "codes": [
+        "O3",
+        "O24",
+        "O20",
+        "O4",
+        "O6",
+        "O25",
+        "O26",
+        "O27",
+        "O5"
+      ]
+    },
+    {
+      "name": "The ball and ability icons",
+      "why": "The curled-up ball you play as (Rollo, Thud, Pip) and the ten ability icons on the HUD. With the Wild (O23), the random-ability pickup: drawn as a bright crystal with an exclamation mark (drafts in art/drafts/O23-*), finished together with the ability icons (owner, 2026-11-23).",
+      "codes": [
+        "H1",
+        "H2",
+        "H3",
+        "O23",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I28",
+        "I29",
+        "I32",
+        "I33",
+        "I34",
+        "I35"
+      ]
+    },
+    {
+      "name": "Status and enemy markers",
+      "why": "Little icons over bugs: stunned, burning, poisoned, chilled, shield, the six traits, ranks, the alert and the facing mark.",
+      "codes": [
+        "I6",
+        "I19",
+        "I30",
+        "I31",
+        "I20",
+        "I36",
+        "I37",
+        "I38",
+        "I39",
+        "I40",
+        "I41",
+        "I42",
+        "I43",
+        "I7",
+        "I44"
+      ]
+    },
+    {
+      "name": "Gear: weapon families",
+      "why": "Each family is four items from plain to fancy: draw the plain one and how it gets fancier. Needles start from your G13.",
+      "codes": [
+        "G14",
+        "G15",
+        "G16",
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "G5",
+        "G6",
+        "G7",
+        "G8",
+        "G9",
+        "G10",
+        "G11",
+        "G12"
+      ]
+    },
+    {
+      "name": "Gear: armour families",
+      "why": "Linings, guards, hides and grit gear, four of each from plain to fancy.",
+      "codes": [
+        "G23",
+        "G24",
+        "G25",
+        "G26",
+        "G27",
+        "G28",
+        "G29",
+        "G30",
+        "G31",
+        "G32",
+        "G33",
+        "G34",
+        "G40",
+        "G41",
+        "G42",
+        "G43"
+      ]
+    },
+    {
+      "name": "Gear: bauble families",
+      "why": "Star, sight, lucky and spinner families, four of each.",
+      "codes": [
+        "G47",
+        "G48",
+        "G49",
+        "G50",
+        "G51",
+        "G52",
+        "G53",
+        "G54",
+        "G55",
+        "G56",
+        "G57",
+        "G58",
+        "G59",
+        "G60",
+        "G61",
+        "G62"
+      ]
+    },
+    {
+      "name": "Gear: one-of-a-kind items",
+      "why": "Special and legendary gear with their own looks.",
+      "codes": [
+        "G17",
+        "G18",
+        "G19",
+        "G20",
+        "G21",
+        "G22",
+        "G35",
+        "G36",
+        "G37",
+        "G38",
+        "G39",
+        "G44",
+        "G45",
+        "G46",
+        "G63",
+        "G64",
+        "G65",
+        "G66",
+        "G67",
+        "G68",
+        "G69",
+        "G70"
+      ]
+    },
+    {
+      "name": "Map and menu icons",
+      "why": "Map nodes, run upgrades, permanent upgrades in the Burrow, and the cursor.",
+      "codes": [
+        "I8",
+        "I9",
+        "I10",
+        "I11",
+        "I12",
+        "I13",
+        "I14",
+        "I15",
+        "I16",
+        "I17",
+        "I18",
+        "I22",
+        "I23",
+        "I24",
+        "I25",
+        "I26",
+        "I27",
+        "I21"
+      ]
+    },
+    {
+      "name": "Small scenery and props",
+      "why": "Things on the ground: tufts, flowers, pebbles, mushrooms, leaves, bones, fireflies, the barrel, the molehill and the spat seed.",
+      "codes": [
+        "S5",
+        "S6",
+        "S7",
+        "S8",
+        "S9",
+        "S10",
+        "S11",
+        "P9",
+        "O10",
+        "O11"
+      ]
+    },
+    {
+      "name": "Small bugs and grub marks",
+      "why": "The three smallest bugs, then the ten ability grubs: each is your Snoozegrub in its own colour with a small mark on its shell, so only the mark needs drawing.",
+      "codes": [
+        "E15",
+        "E10",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E16",
+        "E17",
+        "E18",
+        "E19",
+        "E20",
+        "E21"
+      ]
+    }
   ]
 }
