@@ -205,6 +205,8 @@ The owner draws the art; a tool turns photos of the drawings into sprites in one
 - [x] Pixel Press: sprite sources to PNG and manifest, mirroring, character and theme recolours, style check, placeholders never overwrite approved art (`npm run art:press`, `npm run art:preview`, `tests/art.test.ts`)
 - [x] Contact sheets of every placeholder with its code (replaces printed drawing sheets: the owner draws freehand in a sketchbook) (`art/list/<letter>.png`)
 - [x] Pilot: three owner drawings taken through the whole loop from the phone (also settles how photos arrive, and whether a photo clean-up tool is worth building) (2026-11-23: a test Rollo, G13 Pin Needle and E1 Snoozegrub in the game; photos arrive as files; a shape-reading tool is worth building for large items)
+- [ ] **Plan gate:** the converter (photo to first-draft sprite), sheet `docs/plans/art-converter.md`. Owner signs it off before building.
+- [ ] Converter built and tested on the pilot photos and one new drawing
 - [ ] Tile swatches wrapped onto every slope shape (2026-11-23: **grass done** as "calm D", designed with the owner in the grass lab and in-game experiments rather than from a drawn swatch; rough, sand and the other surfaces still to do)
 
 **Done when:** the owner can send a photo of a drawing from the phone and see it in the game, in style, the same day.
@@ -344,3 +346,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-23 — Owner: calm the grass and keep today's shade. "Calm D" tried in the game (today's two checker greens, 11 tile designs, 4 gentle meadow levels, no dithering, 65 colours; ground-only greens beyond the 5-shade palette), then undone and kept as `art/experiments/calm-grass.patch`. **Waiting for the owner.**
 - 2026-11-23 — Owner asked for darker texture lines in the grass. Shadow lines (short darker strokes, layouts varied per design, checker and meadow level) tried at 4 and 8 per tile in the game, then undone; added to `art/experiments/calm-grass.patch` (now code only). **Waiting for the owner.**
 - 2026-11-23 — Owner chose 8 shadow lines. Grass variety built: `GRASS_VARIETY` settings, `art/ground.json`, the art script draws 2,250 grass frames (plain ones first), the renderer picks a design and meadow level per tile (`src/render/groundVariety.ts`). Checked in the game on a course, the slopes course, the town and all seven themes. 548 tests pass.
+- 2026-11-23 — Owner asked whether we are set to build the final converter. Design sheet `docs/plans/art-converter.md` written (plan gate). **Waiting for the owner's sign-off.**
