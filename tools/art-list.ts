@@ -167,7 +167,7 @@ Made by \`npm run art:list\` from \`art/batches.json\`.
 
 `;
     batches.forEach((b, n) => {
-      const done = b.codes.filter((c) => statusOf(codes[c]!) === 'approved').length;
+      const done = b.codes.filter((c) => statusOf(codes[c]!).startsWith('approved')).length;
       bmd += `## Batch ${n + 1}: ${b.name} (${done} of ${b.codes.length} done)\n\n${b.why} Picture: [batch-${n + 1}.png](list/batch-${n + 1}.png)\n\n| Code | Name | Size | Status |\n|---|---|---|---|\n`;
       for (const c of b.codes) {
         const id = codes[c]!;

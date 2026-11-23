@@ -5,7 +5,7 @@ Draw a batch on one sketchbook page if you like, with each code next to its draw
 send one photo. Pictures of today's placeholders: `art/list/batch-<n>.png`.
 Made by `npm run art:list` from `art/batches.json`.
 
-## Batch 1: Pickups (4 of 9 done)
+## Batch 1: Pickups (8 of 9 done)
 
 On every course: stars, the apple, the shot orb, acorns and the Grab Bag. Picture: [batch-1.png](list/batch-1.png)
 
