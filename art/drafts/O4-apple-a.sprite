@@ -1,0 +1,24 @@
+# Red apple for the health pickup on courses (owner, 2026-11-23: "should be a red apple on the course"; no drawing), version A (9x8).
+code: O4
+id: heart
+status: draft
+size: 9x8
+anchor: 4 7
+outline: ink
+key 2 red 1
+key 3 red 2
+key 4 pink 3
+key w grey 4
+key r blue 4
+key t brown 2
+key l green 3
+key L green 4
+frame: idle
+.........
+....tLl..
+..44t33..
+.4w43333.
+.4w3333r.
+.4333332.
+..33322..
+.........
