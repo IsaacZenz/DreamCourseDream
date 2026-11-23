@@ -1,0 +1,29 @@
+# The Wild from the owner's drawing art/inbox/O23-drawing.jpg (2026-11-23: "a bright crystal with an exclamation, bright colors"), version B (rainbow facets).
+# Tall diamond crystal; facets lit top-left, shadow right; dark ink exclamation mark (outlined in black in the drawing); a sparkle on the lit edge; ink line from the top tip.
+code: O23
+id: wild
+status: draft
+size: 11x13
+anchor: 5 12
+outline: ink
+key A gold 4
+key B pink 3
+key C blue 4
+key D purple 3
+key w grey 4
+key i grey 1
+key e grey 0
+frame: idle
+...........
+.....A.....
+....AAB....
+...AAeBB...
+..AAAeBBB..
+..wAAeBBB..
+.AAAAeBBBB.
+..CCCCDDD..
+..CCCeDDD..
+...CCDDD...
+....CDD....
+.....D.....
+...........
