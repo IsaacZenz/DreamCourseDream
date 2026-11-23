@@ -36,6 +36,8 @@ export interface SurfaceDef {
    * - shoreSprite: drawn along each edge where this surface meets other ground (frames ne, se, sw, nw).
    */
   readonly checker?: boolean;
+  /** Art pipeline (owner, 2026-11-23): the tile sprite has the grass variety frames (GRASS_VARIETY in scenery.ts). Display only. */
+  readonly grassVariety?: boolean;
   readonly overlayFrames?: number;
   readonly deepOverlaySprite?: string;
   readonly shoreSprite?: string;
@@ -75,7 +77,7 @@ export const DIRECTION_VECTORS: Readonly<Record<Direction, readonly [number, num
 };
 
 const defs: readonly SurfaceDef[] = [
-  { id: 'grass', name: 'Grass', tileSprite: 'tile-grass', faceSprite: 'face-earth', canHoldBall: true, checker: true },
+  { id: 'grass', name: 'Grass', tileSprite: 'tile-grass', faceSprite: 'face-earth', canHoldBall: true, checker: true, grassVariety: true },
   { id: 'rough', name: 'Rough', tileSprite: 'tile-rough', faceSprite: 'face-earth', canHoldBall: true },
   { id: 'sand', name: 'Sand', tileSprite: 'tile-sand', faceSprite: 'face-sand', canHoldBall: true },
   { id: 'ice', name: 'Ice', tileSprite: 'tile-ice', faceSprite: 'face-ice', canHoldBall: true },

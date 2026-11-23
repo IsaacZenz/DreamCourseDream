@@ -31,7 +31,7 @@ a mistake, never to renumber.
 
 | Code | Sprite | Name in game | Size | Frames | Made automatically | Status |
 |---|---|---|---|---|---|---|
-| **T1** | `tile-grass` | Grass | 32×24 | 50 (made from one texture) | themes: bog, thornwood, night, underground, starfall, spooky | placeholder |
+| **T1** | `tile-grass` | Grass | 32×24 | 2250 (made from one texture) | themes: bog, thornwood, night, underground, starfall, spooky | placeholder |
 | **T2** | `tile-rough` | Rough | 32×24 | 25 (made from one texture) | themes: bog, thornwood, night, underground, starfall, spooky | placeholder |
 | **T3** | `tile-sand` | Sand | 32×24 | 25 (made from one texture) | themes: bog, thornwood, night, underground, starfall, spooky | placeholder |
 | **T4** | `tile-ice` | Ice | 32×24 | 25 (made from one texture) | themes: bog, thornwood, night, underground, starfall, spooky | placeholder |

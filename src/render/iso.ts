@@ -17,6 +17,7 @@ import { tileAt, type Course, type Tile } from '../sim/course.ts';
 import { heightAt } from '../sim/tileShape.ts';
 import { ARROW_SPRITE, SURFACES } from '../content/surfaces.ts';
 import { GROUND_BUMPS } from '../content/scenery.ts';
+import { grassFrameSuffix } from './groundVariety.ts';
 
 export const HALF_W = 16;
 export const HALF_H = 8;
@@ -136,7 +137,9 @@ export function buildDrawList(course: Course, opts: DrawOptions = {}): Placement
       const centre = project(x + 0.5, y + 0.5, t.base);
       // Checkerboard (owner, 2026-11-15): every other tile uses the second shade.
       const checker = def.checker && (x + y) % 2 === 1 ? 'b' : '';
-      out.push({ sprite: def.tileSprite, frame: t.shape + checker, ...centre, depth: tileDepth(x, y, 'top'), kind: 'top', tile });
+      // Grass variety (owner, 2026-11-23): a design and a meadow level per tile, picked from its spot.
+      const variety = def.grassVariety ? grassFrameSuffix(x, y) : '';
+      out.push({ sprite: def.tileSprite, frame: t.shape + checker + variety, ...centre, depth: tileDepth(x, y, 'top'), kind: 'top', tile });
       if (t.dir) out.push({ sprite: ARROW_SPRITE, frame: t.dir, ...centre, depth: tileDepth(x, y, 'arrow'), kind: 'arrow', tile });
       // A see-through layer over the ball, so a ball in water shows through it.
       if (def.overlaySprite) {

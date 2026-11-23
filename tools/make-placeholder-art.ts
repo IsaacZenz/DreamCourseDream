@@ -10,11 +10,12 @@
  * Colours live here, in the art tool, not in game code. They are rounded to
  * 15-bit colour (5 bits per channel), like the 16-bit consoles used.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GEAR_LIST, type GearDef } from '../src/content/gear.ts';
 import { UPGRADE_LIST } from '../src/content/run.ts';
+import { GRASS_VARIETY, type GrassDesignKind } from '../src/content/scenery.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../src/content/surfaces.ts';
 import type { Manifest, SpriteEntry } from '../src/render/manifest.ts';
 import { SHAPES, triangles, type ShapeId } from '../src/sim/tileShape.ts';
@@ -1180,7 +1181,113 @@ function overlaySheet(look: string, phases: number): { img: Image; frames: strin
   return { img: sheet(imgs), frames };
 }
 
+// ---------------------------------------------------------------------------
+// Grass variety (art pipeline, owner 2026-11-23, "calm D"): today's two checker
+// greens; each tile one of several designs (GRASS_VARIETY in src/content/scenery.ts)
+// at one of four gentle meadow levels; tufts, soft patches, tiny flowers and shadow
+// lines as small steps of lightness, with no dithering. Colours and strengths are in
+// art/ground.json. The slope lighting and the darker lower rim work as for other tiles.
+
+interface GrassLook {
+  base: [string, string];
+  slope: number[];
+  meadow: Record<string, number>;
+  speck: number;
+  bladeLight: number;
+  bladeDark: number;
+  patchDark: number;
+  patchLight: number;
+  shadowLines: number;
+  shadowLine: number;
+  flowerStem: number;
+  flowers: [string, string];
+}
+
+function grassSheet(): { img: Image; frames: string[] } {
+  const look = (JSON.parse(readFileSync(join(ROOT, 'art/ground.json'), 'utf8')) as { grass: GrassLook }).grass;
+  const base = [hex(look.base[0]), hex(look.base[1])] as const;
+  const flowers = look.flowers.map((h) => c15(hex(h)));
+  const tone = (rgb: RGB, f: number): RGBA =>
+    c15(f <= 1 ? [rgb[0] * f, rgb[1] * f, rgb[2] * f] : [rgb[0] + (255 - rgb[0]) * (f - 1) * 1.6, rgb[1] + (255 - rgb[1]) * (f - 1) * 1.6, rgb[2] + (255 - rgb[2]) * (f - 1) * 1.6]);
+  const draw = (shape: ShapeId, odd: boolean, kind: GrassDesignKind, design: number, meadow: string): Image => {
+    const rel = [...shape].map(Number);
+    const tris = triangles(shape).map((tri) => ({ pts: tri.map((i) => cornerScreen(i, rel[i]!)) as P[], shade: triShade(rel, tri) }));
+    const outline = [0, 1, 2, 3].map((i) => cornerScreen(i, rel[i]!));
+    const img = new Image(TILE_W, TILE_H);
+    // Layouts: each design has its own; shadow lines also change with the checker and the meadow level.
+    const seed = (k: number) => hash(design * 17 + kind.length, k, 99);
+    const lineSeed = (k: number) => hash(design * 31 + kind.length * 7 + (odd ? 3 : 0) + meadow.charCodeAt(0), k, 123);
+    for (let y = 0; y < TILE_H; y++)
+      for (let x = 0; x < TILE_W; x++) {
+        const t = tris.find((tr) => insideTri(x + BIAS_X, y + BIAS_Y, tr.pts[0]!, tr.pts[1]!, tr.pts[2]!));
+        if (!t) continue;
+        let shade = t.shade;
+        if (!insidePoly(x + BIAS_X, y + 1 + BIAS_Y, outline)) shade -= 1;
+        let f = look.slope[Math.max(0, Math.min(4, shade))]! * look.meadow[meadow]!;
+        if (kind === 'plain' && hash(x, y, 5 + design) < 0.01) f *= look.speck;
+        if (kind === 'blades')
+          for (let k = 0; k < 3; k++) {
+            const bx = 6 + Math.floor(seed(20 + k) * 20);
+            const by = 6 + Math.floor(seed(30 + k) * 8);
+            if ((x === bx && y === by) || (x === bx + 2 && y === by + 1)) f *= look.bladeLight;
+            if ((x === bx && y === by + 1) || (x === bx + 2 && y === by + 2)) f *= look.bladeDark;
+          }
+        if (kind === 'dark' || kind === 'light') {
+          const cx = 10 + seed(40) * 12;
+          const cy = 9 + seed(41) * 4;
+          if (((x - cx) / 8) ** 2 + ((y - cy) / 3.5) ** 2 < 1) f *= kind === 'dark' ? look.patchDark : look.patchLight;
+        }
+        // Shadow lines: short darker strokes, | / or a little v.
+        for (let k = 0; k < look.shadowLines; k++) {
+          const lx = 4 + Math.floor(lineSeed(k) * 24);
+          const ly = 6 + Math.floor(lineSeed(k + 50) * 10);
+          const form = Math.floor(lineSeed(k + 100) * 3);
+          const hit =
+            form === 0 ? x === lx && (y === ly || y === ly + 1) : form === 1 ? (x === lx && y === ly + 1) || (x === lx + 1 && y === ly) : (x === lx && y === ly) || (x === lx + 1 && y === ly + 1) || (x === lx + 2 && y === ly);
+          if (hit) f *= look.shadowLine;
+        }
+        let colour: RGBA | null = null;
+        if (kind === 'flowers')
+          for (let k = 0; k < 2; k++) {
+            const fx = 7 + Math.floor(seed(50 + k) * 18);
+            const fy = 6 + Math.floor(seed(60 + k) * 8);
+            if (x === fx && y === fy) colour = flowers[k]!;
+            if (x === fx && y === fy + 1) f *= look.flowerStem;
+          }
+        img.set(x, y, colour ?? tone(base[odd ? 1 : 0], f));
+      }
+    return img;
+  };
+  const imgs: Image[] = [];
+  const frames: string[] = [];
+  // Plain frames first ("<shape>" and "<shape>b"), for anything that does not pick a design (the loading screen strip).
+  for (const odd of [false, true])
+    for (const s of SHAPES) {
+      imgs.push(draw(s, odd, 'plain', 0, 'n'));
+      frames.push(`${s}${odd ? 'b' : ''}`);
+    }
+  for (const level of GRASS_VARIETY.meadowLevels)
+    GRASS_VARIETY.designs.forEach((d, k) => {
+      for (const odd of [false, true])
+        for (const s of SHAPES) {
+          imgs.push(draw(s, odd, d.kind, k, level.id));
+          frames.push(`${s}${odd ? 'b' : ''}~g${k}${level.id}`);
+        }
+    });
+  // A grid, not one long strip, so the image stays a size every graphics card can load.
+  const cols = 32;
+  const img = new Image(cols * TILE_W, Math.ceil(imgs.length / cols) * TILE_H);
+  imgs.forEach((im, i) => img.blit(im, (i % cols) * TILE_W, Math.floor(i / cols) * TILE_H));
+  return { img, frames };
+}
+
 for (const def of SURFACES.values()) {
+  if (def.grassVariety) {
+    const g = grassSheet();
+    emit(def.tileSprite, g.img, TILE_W, TILE_H, g.frames, TILE_ANCHOR);
+    faceIds.add(def.faceSprite);
+    continue;
+  }
   // Checkerboard surfaces get a second frame per shape, "<shape>b".
   const tiles = SHAPES.map((s) => drawTile(def.id, s));
   const names = [...SHAPES];
@@ -2042,3 +2149,4 @@ if (press.pressed.length) console.log(`Owner art: ${press.pressed.length} sprite
 const manifest: Manifest = { version: 1, sprites, tints, themes };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 console.log(`Wrote ${Object.keys(sprites).length} sprites to assets/sprites and assets/manifest.json`);
+

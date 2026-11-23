@@ -96,7 +96,10 @@ describe('manifest', () => {
   it('has every shape for every surface, and both faces', () => {
     for (const s of SURFACES.values()) {
       // Checkerboard surfaces (grass) have a second frame per shape, "<shape>b".
-      expect(manifest.sprites[s.tileSprite]?.frames).toEqual(s.checker ? [...SHAPES, ...SHAPES.map((x) => `${x}b`)] : [...SHAPES]);
+      const plain = s.checker ? [...SHAPES, ...SHAPES.map((x) => `${x}b`)] : [...SHAPES];
+      const frames = manifest.sprites[s.tileSprite]?.frames ?? [];
+      // Grass variety (owner, 2026-11-23) adds design frames after the plain ones (tests/groundVariety.test.ts).
+      expect(s.grassVariety ? frames.slice(0, plain.length) : frames).toEqual(plain);
       expect(manifest.sprites[`${s.faceSprite}-left`]).toBeDefined();
       expect(manifest.sprites[`${s.faceSprite}-right`]).toBeDefined();
     }

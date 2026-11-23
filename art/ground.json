@@ -1,0 +1,17 @@
+{
+  "note": "Ground looks (art pipeline). Grass is 'calm D' (owner, 2026-11-23): today's two checker greens, small steps of lightness for meadow levels and details, no dithering, shadow lines. These are ground-only colours beyond the 5-shade palette (STYLE.md). Factors multiply lightness: below 1 is darker, above 1 lighter. Which design goes on which tile is GRASS_VARIETY in src/content/scenery.ts.",
+  "grass": {
+    "base": ["#4fa83d", "#5cba4a"],
+    "slope": [0.5, 0.68, 0.84, 1, 1.14],
+    "meadow": { "a": 0.9, "b": 0.95, "n": 1, "c": 1.04 },
+    "speck": 1.1,
+    "bladeLight": 1.14,
+    "bladeDark": 0.84,
+    "patchDark": 0.91,
+    "patchLight": 1.05,
+    "shadowLines": 8,
+    "shadowLine": 0.84,
+    "flowerStem": 0.88,
+    "flowers": ["#e8d070", "#e8a0c0"]
+  }
+}

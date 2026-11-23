@@ -80,8 +80,16 @@ more painterly options. In short: *soft shapes, bold ink, a touch of light.*
 
 ## Ground and shadows (for the display and the tiles, not sprite files)
 
-- Soft grass: mostly plain, with a few big gentle darker patches and rare light blades.
-  Busy ground makes sprites hard to see. Built in the tile swatch step.
+- **Grass is "calm D" (owner, 2026-11-23), built:** today's two checker greens (the
+  checkerboard stays, so slopes read), and on top of that, per tile, one of 11 designs
+  (plain, tufts, a soft darker or lighter patch, tiny flowers) at one of four gentle
+  meadow levels that drift across the course, plus 8 short shadow lines per tile.
+  Everything is a small step of lightness: **no dithering** on the ground (it looked
+  busy at game size). These are ground-only greens beyond the 5-shade palette
+  (`art/ground.json`); themes recolour them like any ground. Which design goes where:
+  `GRASS_VARIETY` in `src/content/scenery.ts`.
+- Rough, sand and the other surfaces are still placeholders; they should follow the same
+  rules (calm, small steps, no dithering) when they are done.
 - Things standing on the ground get a soft dotted shadow under them, drawn by the game,
   not inside the sprite (so it follows slopes). Milestone 9.
 
