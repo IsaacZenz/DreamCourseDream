@@ -282,4 +282,4 @@ which and how big it is. For animated items it shows every frame.
   test bench. Learned: a lone pixel gets its own ink outline, so tiny details (fumes)
   turn to noise; a rim-light pixel next to a hole reads as a gem; green poison is a little
   muted on grass but the ink outline keeps it readable.
-
+- **E1 redo (owner, 2026-11-23):** the owner redrew the Snoozegrub with **marker colouring to mark the parts** (the marker's colour is irrelevant; recorded in `art/README.md` and `art/STYLE.md`). New design: a plain dome and a front plate whose scalloped edge hangs over the head like a fringe, drips running down over the pale body, a small back plate, `> <` squeezed eyes and a frown, two segment notches. Rendered with a part map (each part shaded by the B2 rules, ink lines only where the drawing has lines): `art/drafts/E1-redo-a.sprite` and `E1-redo-b.sprite` (bolder drips). Learned: lighting every edge between parts makes noise; light the outer top-left edge only, and add a small shadow under overhangs.

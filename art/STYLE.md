@@ -120,6 +120,15 @@ more painterly options. In short: *soft shapes, bold ink, a touch of light.*
   makes every theme. The owner can draw a special version for one theme; it wins.
 - Character recolours (Thud, Pip) swap ramps too (`variant:` in the sprite file).
 
+## Reading the owner's drawings
+
+- Linework gives the shapes; **marker colouring marks the parts, not the colour**
+  (owner, 2026-11-23). Uncoloured areas are a different part (often the pale body).
+- Thick drawn lines become ink; thin lines become soft lines in the part's own colour.
+- A line is drawn in ink only where the drawing has one: where colour simply ends (drips,
+  a scalloped edge) there is no ink line.
+- Leave one free pixel round the edge of the box for the outline.
+
 ## Originality
 
 - Everything is the owner's own design. No copying or tracing of another game's

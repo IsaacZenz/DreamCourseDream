@@ -7,6 +7,10 @@ Design: `docs/plans/art-pipeline.md`. Rules: `STYLE.md`.
 
 1. Find the item's **code** in `ART-LIST.md` (or on a contact sheet in `list/`).
 2. Draw it in the sketchbook and write the code next to it.
+   - **Marker colouring (owner, 2026-11-23):** colour in areas with a marker to show
+     which parts belong together (the shell, a drip, a plate). The marker's colour does
+     not matter: it shows the design, not the final colour. Say in words if you want a
+     particular colour.
 3. In the Claude app, open **Code**, start a session on this repository, attach the
    photo, and say the code plus anything to keep in mind ("E3, the mouth is the
    important part").
