@@ -119,6 +119,8 @@ more painterly options. In short: *soft shapes, bold ink, a touch of light.*
 
 ## Glow
 
+- **Owner, 2026-11-23: the stars glow** (yellow, blue and the star marker).
+
 - Pixels marked `glow` in the key are light sources (glowmoth, lamps, fireflies). They
   stay bright at night and will feed the Milestone 9 lighting.
 

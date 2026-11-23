@@ -223,6 +223,7 @@ The owner draws the art; a tool turns photos of the drawings into sprites in one
 - [ ] Owner, 2026-11-19: the shop as a food stand with an animated shopkeeper (FEATURES.md section 11)
 - [ ] Owner, 2026-11-19: boss cutscene art for the three main bosses and the endless boss pop-up (FEATURES.md section 5)
 - [ ] Title screen, settings, a short tutorial course, controls help
+- [ ] Owner, 2026-11-23: **stars glow** (yellow, blue and the star marker). Glowing pixels are marked `glow` in a sprite's file in `art/src/` (the stars already are); the lighting should read those marks.
 - [ ] Owner, 2026-11-21: lighting: fireflies (a small cluster of flickering light pixels), ground-level lights and tall lights (on poles or in trees), and dynamic shadows cast by them; a settings menu that can turn lighting and shadows off for performance
 - [ ] Playtest with a few friends; fix what confuses them
 
@@ -350,3 +351,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-23 — Owner asked whether we are set to build the final converter. Design sheet `docs/plans/art-converter.md` written (plan gate). **Waiting for the owner's sign-off.**
 - 2026-11-23 — Converter built (`npm run art:convert`, `jpeg-js` 0.4.4 added for photos; its licence is BSD-3-Clause). It tells ink from marker by darkness, closes outline gaps, leaves out the written code, draws ink only where lines are, and writes drafts, part maps and a reading picture. On the pilot photos the marker-coloured Snoozegrub comes out close to the approved sprite; the no-marker needle and test Rollo need a hand finish. 556 tests pass.
 - 2026-11-23 — Owner: hold off on large items (buildings, rooms, bosses); start with all the small sprites. Ten batches of related small sprites (148 items: pickups; the ball and ability icons; status and enemy markers; four gear groups; map and menu icons; small scenery; small bugs and grub marks) in `art/batches.json`, listed in `art/BATCHES.md` with a picture per batch. The converter gained `--crop`, so a page of several drawings can be one photo.
+- 2026-11-23 — Batch 1: the owner's star (O3, version D: four faceted points and four single-pixel corner points) approved for all stars: the yellow star, the blue star (same design in blue) and the star marker, from one drawing. The owner noted the stars should glow: recorded for Milestone 9 and marked `glow` in the star's file.

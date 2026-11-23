@@ -35,7 +35,10 @@ writeFileSync(
 const sources = listSources(loadArt(ROOT));
 const statusOf = (id: string) => {
   const s = sources.find((x) => x.id === id);
-  return s ? (s.status === 'approved' ? 'approved' : 'drawn (draft)') : 'placeholder';
+  if (s) return s.status === 'approved' ? 'approved' : 'drawn (draft)';
+  // A recolour of another drawing (variant: lines), like the blue star from the yellow one.
+  const from = sources.find((x) => x.variants.some((v) => v.id === id));
+  return from ? `${from.status === 'approved' ? 'approved' : 'drawn (draft)'}, made from ${from.code}` : 'placeholder';
 };
 const human = (id: string) => id.replace(/^(gear|icon|node|upgrade|perm|place|room|town|scenery|trait|rank|tile|face)-/, '').replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
 const mirrors = new Map<string, string[]>();

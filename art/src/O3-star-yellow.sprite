@@ -1,0 +1,26 @@
+# Stars (owner, 2026-11-23): version D of art/inbox/O3-drawing.jpg, a four-point compass
+# star with faceted points and four single-pixel corner points. One drawing for all stars:
+# the yellow star, the blue star (same design in blue) and the star marker.
+# Stars glow (owner, 2026-11-23): every star pixel is marked glow for the Milestone 9 lighting.
+code: O3
+id: star-yellow
+status: approved
+size: 11x11
+outline: ink
+variant: star-blue gold>blue
+variant: star-marker
+key a gold 2 glow
+key b gold 3 glow
+key c gold 4 glow
+frame: idle
+...........
+.....c.....
+..c..ca..b.
+....cca....
+...cccab...
+.cccccaaaa.
+...bbbaa...
+....bba....
+..b..ba..a.
+.....a.....
+...........

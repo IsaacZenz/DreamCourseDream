@@ -114,7 +114,7 @@ a mistake, never to renumber.
 |---|---|---|---|---|---|---|
 | **O1** | `splash` | Splash | 16×12 | 4: 0, 1, 2, 3 |  | placeholder |
 | **O2** | `exit` | Exit | 16×10 | 2: closed, open |  | placeholder |
-| **O3** | `star-yellow` | Yellow star | 11×11 | 1 |  | placeholder |
+| **O3** | `star-yellow` | Yellow star | 11×11 | 1 |  | approved |
 | **O4** | `heart` | Apple | 9×8 | 1 |  | placeholder |
 | **O5** | `grab-bag` | Grab bag | 12×12 | 1 |  | placeholder |
 | **O6** | `shot-orb` | Shot orb | 9×9 | 1 |  | placeholder |
@@ -131,11 +131,11 @@ a mistake, never to renumber.
 | **O17** | `rail-post` | Rail post | 3×8 | 1 |  | placeholder |
 | **O18** | `rail-bar` | Rail bar | 16×12 | 4: x, y, d1, d2 |  | placeholder |
 | **O19** | `flag-pole` | Flag pole | 14×30 | 2: raised, lowered |  | placeholder |
-| **O20** | `star-marker` | Star marker | 11×11 | 1 |  | placeholder |
+| **O20** | `star-marker` | Star marker | 11×11 | 1 |  | approved, made from O3 |
 | **O21** | `thunder-cloud` | Thunder cloud | 30×22 | 2: idle, flash |  | placeholder |
 | **O22** | `zap-spark` | Zap spark | 12×12 | 1 |  | placeholder |
 | **O23** | `wild` | Wild | 10×10 | 1 |  | placeholder |
-| **O24** | `star-blue` | Blue star | 11×11 | 1 |  | placeholder |
+| **O24** | `star-blue` | Blue star | 11×11 | 1 |  | approved, made from O3 |
 | **O25** | `acorn-lucky` | Lucky Acorn | 10×11 | 1 |  | placeholder |
 | **O26** | `acorn-golden` | Golden Acorn | 10×11 | 1 |  | placeholder |
 | **O27** | `acorn-star` | Star Acorn | 10×11 | 1 |  | placeholder |
