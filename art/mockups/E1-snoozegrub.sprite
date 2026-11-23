@@ -1,0 +1,30 @@
+# Mock-up for the style check (art pipeline step 1). Not the owner's design.
+code: E1
+id: snoozegrub
+status: draft
+size: 18x16
+outline: auto
+key 1 green 1
+key 2 green 2
+key 3 green 3
+key 4 green 4
+key k grey 0
+key p pink 3
+key l brown 1
+frame: idle
+..................
+..................
+..................
+..................
+.......4433.......
+......43333243....
+......333332332...
+..4443333332332...
+.433333233323323..
+.3333332333233232.
+.3kk3332333233232.
+.333pp32333233232.
+.2222222222222222.
+..11111111111111..
+....l...l...l..l..
+..................

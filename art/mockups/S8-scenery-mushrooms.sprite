@@ -1,0 +1,23 @@
+# Mock-up for the style check (art pipeline step 1). Not the owner's design.
+code: S8
+id: scenery-mushrooms
+status: draft
+size: 12x8
+outline: auto
+themes: yes
+key a red 4
+key b red 3
+key c red 2
+key d red 1
+key w tan 4
+key s tan 3
+key t tan 2
+frame: idle
+............
+..aab.......
+.awbbc......
+.bbbwc...ab.
+.dcccd..abc.
+...st....s..
+...st....t..
+............
