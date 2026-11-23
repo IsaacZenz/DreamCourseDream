@@ -16,8 +16,9 @@ Design: `docs/plans/art-pipeline.md`. Rules: `STYLE.md`.
    important part").
    - If there is no attach button: upload the photo to `art/inbox/` with the GitHub
      app (Add file → Upload files) and tell Claude its name.
-4. Claude renders it down. For small sprites you get two or three versions, A, B and C,
-   side by side, to pick from or mix.
+4. Claude runs the converter (`npm run art:convert -- <photo> <code>`) for a first draft,
+   then finishes it by hand. For small sprites you get two or three versions, A, B and C,
+   side by side, to pick from or mix. Marker colouring makes the first draft much closer.
 5. Claude sends a preview, then an in-game screenshot. Say yes or what to change.
 6. On yes, the sprite file moves to `src/` with `status: approved` and goes into the game.
 
@@ -46,6 +47,11 @@ Gives new sprites codes and remakes the Art List, the contact sheets and the pal
 npm run art:preview -- E3
 ```
 Preview one sprite file, or several side by side: `npm run art:preview -- art/drafts/E3-a.sprite art/drafts/E3-b.sprite`.
+
+```bash
+npm run art:convert -- art/inbox/E1-drawing-2.jpg E1
+```
+Turn a photo into first-draft sprite files in `art/drafts/` (`<code>-convert-a.sprite`, and `-b` stretched to fill the box when the drawing's shape differs), with a part map and a picture of what was read. Options: `--colours coloured=green,plain=grey`, `--paint x,y=grey` (colour the part at a spot of the photo), `--keep x,y` (bring back a stroke left out as writing), `--ignore x0,y0,x1,y1`, `--size WxH`. Settings: `art/convert.json`.
 
 ```bash
 npm run art:press

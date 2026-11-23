@@ -1,0 +1,27 @@
+{
+  "note": "Settings for the converter (npm run art:convert; docs/plans/art-converter.md). Sizes are in pixels of the working copy of the photo unless said otherwise.",
+  "workSize": 500,
+  "paperBlur": 0.08,
+  "lineDarkness": 0.42,
+  "markerSaturation": 0.15,
+  "keepMargin": 0.06,
+  "minRegion": 20,
+  "minMark": 15,
+  "strokeAspect": 2.2,
+  "minStroke": 25,
+  "filled": 0.45,
+  "markHits": 2,
+  "strokeHits": 3,
+  "rimMax": 2,
+  "shapeMismatch": 0.15,
+  "colours": {
+    "coloured": "purple",
+    "plain": "tan"
+  },
+  "closeGaps": 0.05,
+  "markerDarkness": 0.75,
+  "lineInk": 5,
+  "markerSmooth": 0.04,
+  "markerShare": 0.35,
+  "minPart": 3
+}

@@ -1,6 +1,6 @@
 # The converter: from a photo of a drawing to a first-draft sprite
 
-**Status: draft, waiting for the owner's review (plan gate). Nothing on this sheet is built yet.**
+**Status: signed off by the owner 2026-11-23 (all defaults); built the same day. See "As built" at the end.**
 
 Part of Milestone 8c (art pipeline). The owner asked (2026-11-23) to build "the final
 pixel art converter tool". Everything after the converter already exists: sprite files,
@@ -54,7 +54,7 @@ can move a part's edge and re-shade, instead of repainting pixels.
   art tools. Unit-tested with small synthetic drawings (a square with a line through it,
   a coloured area, a dot) so it does not need photos to test.
 - Reading JPEG photos (phone photos are JPEG) needs a small decoder. **Default:** add the
-  `jpeg-js` package (pure JavaScript, MIT licence, development only, never shipped in
+  `jpeg-js` package (pure JavaScript, BSD-3-Clause licence, development only, never shipped in
   the game). PNG photos are already readable.
 - Settings (how dark a line must be, how big a dot is, the rim and shine limits) in one
   file, `art/convert.json`, so they can be tuned without code changes.
@@ -78,4 +78,41 @@ one larger item (for example the gear shop or a boss).
 
 ## Sign-off
 
-- [ ] Owner signed off this sheet (date, changes):
+- [x] Owner signed off this sheet, 2026-11-23: "signed off, build the converter" (all defaults: C1 draft plus hand finish, C2 jpeg-js, C3 colours in words, C4 converter first).
+
+## As built (2026-11-23)
+
+- `npm run art:convert -- <photo> <code>`, code in `tools/art/convert.ts` and
+  `tools/art-convert.ts`, settings in `art/convert.json`, tests in
+  `tests/art-convert.test.ts` (made-up drawings, no photos needed).
+- `jpeg-js` 0.4.4 added as a development package. Its licence is **BSD-3-Clause**, not
+  MIT as this sheet first said; it also allows commercial use, and it is never shipped
+  in the game.
+- Extras added while testing on the pilot photos:
+  - **Ink and marker told apart by darkness:** ink is darker than 42% of the paper,
+    marker between that and 75%. At first the marker was read as thick lines.
+  - **The paper level is measured from bright pixels only,** so big marker areas do
+    not drag it down.
+  - **Gaps in the outline are closed** before deciding what is inside, so a hand-drawn
+    gap does not make a part vanish.
+  - **Marker is decided over a small neighbourhood,** because marker strokes are streaky.
+  - **Ink is drawn exactly where interior lines are** (the "ink only where you drew a
+    line" rule). A line falling between two pixels goes to the pixel with more of it.
+  - **The written code is left out,** including a thin letter beside other letters (the
+    "1" in "G13"). A short curly stroke can look like a letter: bring it back with `--keep`.
+  - **`--paint x,y=ramp`** colours the part at a spot of the photo, for drawings without
+    marker or with several colours.
+  - Each run also writes `art/drafts/<code>-convert-reading.png`, showing what was read
+    (parts, marker, ink, marks, open strokes), and a part map beside each draft.
+- **Results on the pilot photos:**
+  - **E1 Snoozegrub (marker):** the stretched draft is close to the approved sprite,
+    straight from the photo.
+  - **G13 Pin Needle (12×12, no marker):** a starting layout; the drop and drips need
+    the hand finish.
+  - **H6 test Rollo (no marker, thin bands):** the silhouette and shell come through;
+    the head needs a real hand finish.
+  - **Lesson:** marker colouring makes the converter far more accurate; small icons stay
+    mostly hand work.
+- **Still to do for "done when":** one new drawing from the owner taken through the
+  converter.
+

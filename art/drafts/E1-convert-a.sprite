@@ -1,0 +1,34 @@
+# Converter draft (keeps the drawing's proportions) from art/inbox/E1-drawing-2.jpg. Needs a hand finish.
+code: E1
+id: snoozegrub
+status: draft
+size: 18x16
+anchor: 6 15
+outline: ink
+key 2 purple 2
+key 3 purple 3
+key 4 purple 4
+key a tan 2
+key b tan 3
+key c tan 4
+key i grey 1
+key e grey 0
+key r blue 4
+key w grey 4
+frame: idle
+..................
+..................
+..................
+..................
+.....i444i4i......
+...i4w333333ir....
+...iiiii33333i....
+..ii333333333iir..
+..43iiii33333i3i..
+.iiiiii3i333333ii.
+.i3333333i33333ii.
+.ceeaeeaaiaaaaabi.
+.ceeeeebbbbbbibia.
+.cbeaeebbiibiia...
+.iaaaaiaiiia......
+..................
