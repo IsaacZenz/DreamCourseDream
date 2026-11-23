@@ -20,7 +20,7 @@ more painterly options. In short: *soft shapes, bold ink, a touch of light.*
 | Blush | A pink cheek (pink 3) on creatures |
 | Ground | Soft grass: plain, with a few big gentle patches and rare blades |
 | Shadow under things | Dotted (dithered) soft shadow |
-| Size | Today's sprite sizes (bigger allowed where needed, Q5) |
+| Size | Today's sprite sizes, except the hero: **Rollo, Thud and Pip are 18×24** (owner, 2026-11-23). Chosen sizes are in `art/targets.json` |
 
 ## Palette
 
@@ -94,6 +94,14 @@ more painterly options. In short: *soft shapes, bold ink, a touch of light.*
 
 ## Sizes
 
+- **Rollo, Thud and Pip are 18×24** (owner, 2026-11-23; the placeholders are 14×20), so
+  the hero's face has room for the B2 eye shine, snout and blush. Everything else keeps
+  today's size unless the owner chooses otherwise.
+- **Keep art close to the physics size.** An enemy's body in the physics is a circle 0.6
+  tiles across, about 14 pixels wide on screen; today's 16–22 pixel enemy sprites are a
+  little bigger than that, which is fine. Much bigger art would look hit when the ball
+  passes by without touching. Growing an enemy's art a lot means growing its body too
+  (a game change, not just art).
 - Sizes are in `art/ART-LIST.md`. Drawings can be any size in the sketchbook; Claude
   renders them down. A sprite may grow if it needs to (Q5); the press then asks for a
   new anchor, and Claude checks the game still lines up.

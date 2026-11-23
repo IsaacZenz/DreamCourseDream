@@ -2,12 +2,12 @@
  * Art pipeline (docs/plans/art-pipeline.md): the sprite file format, the press,
  * the permanent codes and the style check on every approved sprite in the game.
  */
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Manifest, SpriteEntry } from '../src/render/manifest.ts';
 import { madeFrom } from '../tools/art/groups.ts';
-import { codeProblem, listSources, loadArt, outputsOf, pressApproved, readCodes } from '../tools/art/press.ts';
+import { codeProblem, listSources, loadArt, outputsOf, pressApproved, readCodes, readTargets } from '../tools/art/press.ts';
 import { allowedColours, parseSprite, renderFrame, SpriteError, withOutline, type SpriteSource } from '../tools/art/sprite.ts';
 import { decodePng, encodePng, Image } from '../tools/png.ts';
 
@@ -195,4 +195,23 @@ describe('style check on approved art in the game (STYLE.md)', () => {
 
 it('art folders exist for the owner to use', () => {
   for (const d of ['art/src', 'art/drafts', 'art/inbox', 'art/list']) expect(readdirSync(join(ROOT, d))).toBeDefined();
+});
+
+describe('chosen sizes (art/targets.json)', () => {
+  it('Rollo, Thud and Pip are 18x24 (owner, 2026-11-23), and every target names a real sprite', () => {
+    const t = readTargets(ROOT);
+    for (const id of ['armadillo', 'armadillo-thud', 'armadillo-pip']) expect(t[id]).toBe('18x24');
+    for (const id of Object.keys(t)) expect(manifest.sprites[id], id).toBeDefined();
+  });
+  it('the press refuses an approved sprite at a size other than the chosen one', () => {
+    const sprites: Record<string, SpriteEntry> = { ...manifest.sprites };
+    const src = readFileSync(join(ROOT, 'art/drafts/H6-size-test-14x20.sprite'), 'utf8').replace('status: draft', 'status: approved');
+    const tmp = join(ROOT, 'art/src/H6-armadillo.sprite');
+    writeFileSync(tmp, src);
+    try {
+      expect(pressApproved(sprites, art, false).errors.join()).toMatch(/owner chose 18x24 for armadillo/);
+    } finally {
+      rmSync(tmp);
+    }
+  });
 });

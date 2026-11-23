@@ -21,6 +21,14 @@ export function readCodes(root: string): Readonly<Record<string, string>> {
   return existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as { codes: Record<string, string> }).codes : {};
 }
 
+/** Sizes the owner chose that differ from the placeholders (art/targets.json): sprite id to "WxH". */
+export function readTargets(root: string): Readonly<Record<string, string>> {
+  const path = join(root, 'art/targets.json');
+  if (!existsSync(path)) return {};
+  const sizes = (JSON.parse(readFileSync(path, 'utf8')) as { sizes: Record<string, { size: string }> }).sizes;
+  return Object.fromEntries(Object.entries(sizes).map(([id, v]) => [id, v.size]));
+}
+
 /** A sprite file's code must be the one the Art List gives its sprite. */
 export function codeProblem(src: SpriteSource, codes: Readonly<Record<string, string>>): string | null {
   const owner = codes[src.code];
@@ -131,6 +139,11 @@ export function pressApproved(sprites: Record<string, SpriteEntry>, art: ArtFile
     const names = src.frames.map((f) => f.name);
     if (!src.framesChange && names.join(',') !== old.frames.join(',')) {
       errors.push(`${src.path}: frames are [${names.join(', ')}] but the game expects [${old.frames.join(', ')}]. Rename them, or add "frames-change: yes" if the game code is being changed to match.`);
+      continue;
+    }
+    const target = readTargets(art.root)[src.id];
+    if (target && target !== `${src.width}x${src.height}`) {
+      errors.push(`${src.path}: the owner chose ${target} for ${src.id} (art/targets.json), but this file is ${src.width}x${src.height}`);
       continue;
     }
     const sameSize = old.frameWidth === src.width && old.frameHeight === src.height;

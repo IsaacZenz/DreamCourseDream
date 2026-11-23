@@ -1,0 +1,8 @@
+{
+  "note": "Sizes the owner has chosen that differ from today's placeholders (Q5). The Art List shows these; the press checks a pressed sprite against them.",
+  "sizes": {
+    "armadillo": { "size": "18x24", "decided": "owner, 2026-11-23" },
+    "armadillo-thud": { "size": "18x24", "decided": "owner, 2026-11-23" },
+    "armadillo-pip": { "size": "18x24", "decided": "owner, 2026-11-23" }
+  }
+}
