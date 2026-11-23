@@ -46,7 +46,7 @@ import {
   RAIL,
 } from '../content/objects.ts';
 import { BOSS_TIER, RULES } from '../content/rules.ts';
-import { BOSSES, type BossDef, type BossPhase } from '../content/bosses.ts';
+import { BOSSES, type BossDef, type BossPhase, type CoilRules } from '../content/bosses.ts';
 import { STATUSES } from '../content/statuses.ts';
 import { DIRECTION_VECTORS, SURFACES, type Direction } from '../content/surfaces.ts';
 import { STEPS_PER_SECOND, surfacePhysics, type Tuning } from '../content/tuning.ts';
@@ -178,6 +178,38 @@ export interface EnemyState {
   /** The Brood Queen: where her next acid globs land, and her next soldier ring. */
   globMarks: { x: number; y: number }[];
   ringMark: { x: number; y: number; r: number } | null;
+  /** Round 4: the centipede's body round the arena edge, or null for every other enemy. */
+  coil: CoilState | null;
+}
+
+/** A straight line across the arena (a spike's path), in grid coordinates. */
+export interface CoilLine {
+  readonly x0: number;
+  readonly y0: number;
+  readonly x1: number;
+  readonly y1: number;
+}
+
+/**
+ * Round 4 (sheet docs/plans/milestone-8-round-4.md): the centipede. The body
+ * is a closed ring of segments along the map edge; `offset` is how far it has
+ * moved along the edge (tiles), so segment k covers the edge from
+ * offset + k × length to offset + (k + 1) × length, going round the corners.
+ */
+export interface CoilState {
+  readonly segments: number;
+  offset: number;
+  /** 1: the way the edge is measured (along x first), -1: the other way. */
+  dir: 1 | -1;
+  /** Unarmoured segment numbers (they only ever grow). */
+  weak: number[];
+  /** Segments with a spine pod that mark and fire spikes. */
+  shooters: number[];
+  /** Spike paths marked on the last off turn, to fire on the next turn. */
+  spikeMarks: CoilLine[];
+  /** Phase 3: the head. down, marked (circle shown), up (can be hit), sunk (resting a turn). */
+  head: 'down' | 'marked' | 'up' | 'sunk';
+  headMark: { x: number; y: number; r: number } | null;
 }
 
 /** An Explosive enemy's blast waiting for its fuse (Milestone 8 sheet section 5.1a). */
@@ -321,7 +353,7 @@ export type PlayEvent =
   | { kind: 'shotOrb' }
   | { kind: 'hit'; enemy: string; damage: number; blocked: boolean }
   | { kind: 'defeat'; enemy: string; stars: number }
-  | { kind: 'damage'; amount: number; cause: 'spikes' | 'sunk' | 'out' | 'enemy' | 'seed' | 'zap' | 'slam' | 'burn' | 'blast' | 'charge' | 'bite' | 'ring' }
+  | { kind: 'damage'; amount: number; cause: 'spikes' | 'sunk' | 'out' | 'enemy' | 'seed' | 'zap' | 'slam' | 'burn' | 'blast' | 'charge' | 'bite' | 'ring' | 'quill' | 'sweep' | 'burst' }
   | { kind: 'exitOpen' }
   | { kind: 'recover' }
   | { kind: 'enemyTurn' }
@@ -434,7 +466,22 @@ export type PlayEvent =
   | { kind: 'shellOpen'; enemy: string }
   /** The Brood Queen: a soldier ring marked round the ball, and landing. */
   | { kind: 'ringMark'; enemy: string; x: number; y: number; r: number }
-  | { kind: 'ring'; enemy: string; x: number; y: number; r: number; hit: boolean };
+  | { kind: 'ring'; enemy: string; x: number; y: number; r: number; hit: boolean }
+  // Round 4: the centipede.
+  /** Spike paths marked for the next turn. */
+  | { kind: 'spikeMark'; enemy: string; lines: CoilLine[] }
+  /** A spike flew along a line (`marked` false: the head's unwarned spike); `hit` if the ball was on it. */
+  | { kind: 'spike'; enemy: string; line: CoilLine; hit: boolean; marked: boolean }
+  /** The leg sweep round the edge; `hit` if the ball was in the leg ring. */
+  | { kind: 'sweep'; enemy: string; hit: boolean }
+  /** A minion killed by the centipede's own attack. */
+  | { kind: 'crushed'; enemy: string; by: 'spike' | 'sweep' | 'head' }
+  /** Phase 3: the circle where the head will burst up, the head bursting up, and sinking again. */
+  | { kind: 'headMark'; enemy: string; x: number; y: number; r: number }
+  | { kind: 'headUp'; enemy: string; x: number; y: number; r: number; hit: boolean }
+  | { kind: 'headDown'; enemy: string }
+  /** Shell plates fell off these segments (phase change). */
+  | { kind: 'plates'; enemy: string; segments: number[] };
 
 /** What a success roll is for: the word shown on the wheel's filled slices. */
 export type RollEffect = 'burn' | 'poison' | 'stun' | 'zap' | 'heal' | 'knock' | 'echo';
@@ -928,7 +975,10 @@ function newEnemy(play: PlayState, opts: PlayOptions, def: EnemyDef, o: CourseOb
     shellOpenShot: -1,
     globMarks: [],
     ringMark: null,
+    coil: null,
   };
+  const coilDef = boss ? BOSSES.get((def.behaviour as { boss: string }).boss) : undefined;
+  if (coilDef?.gimmick?.kind === 'coil') e.coil = newCoil(play, coilDef, coilDef.gimmick);
   setElement(e, x.element ?? def.element);
   if (x.spot) {
     const sp = SPOTS[x.spot];
@@ -1020,6 +1070,14 @@ function collectGear(play: PlayState): void {
   }
 }
 
+/** Testing aid (the U panel): drop a boss's health and run its phase change (round 4: so the centipede's plates fall too). */
+export function debugBossHealth(play: PlayState, e: EnemyState, n: number): void {
+  if (e.defeated) return;
+  e.health = Math.max(1, Math.min(n, e.health));
+  e.slamMark = null;
+  bossPhaseCheck(play, e);
+}
+
 /** Testing aid (the U panel): finish the course at once, as if the ball had dropped into the exit. */
 export function debugWin(play: PlayState): void {
   if (play.status !== 'playing') return;
@@ -1066,7 +1124,12 @@ function hasStatus(list: readonly StatusState[], id: string): boolean {
 
 /** An enemy standing still on the course (not rolling, not underground, not defeated). */
 function standing(e: EnemyState): boolean {
-  return !e.defeated && !e.body && !e.burrowed;
+  return !e.defeated && !e.body && !hidden(e);
+}
+
+/** Under the ground: a Mole in its hill, or the centipede's head while it is down (round 4). */
+function hidden(e: EnemyState): boolean {
+  return e.burrowed || (!!e.coil && e.coil.head !== 'up');
 }
 
 /**
@@ -1113,6 +1176,8 @@ function obstaclesOf(play: PlayState): Obstacle[] {
     const bounce = gim?.kind === 'shell' && !shellIsOpen(play, e) ? gim.closedBounce : e.def.bounce;
     out.push({ id: e.uid, x: e.x, y: e.y, base: e.z, height: e.def.height, shape: e.def.shape, bounce, vx: e.vx, vy: e.vy, knock });
   }
+  // The body stays as the wall after it is beaten, so the ball cannot roll off the edge.
+  for (const e of play.enemies) if (e.coil) coilObstacles(play, e, e.coil, out);
   for (const f of play.flags) {
     if (f.raised && f.solid) out.push({ id: f.uid, x: f.x, y: f.y, base: f.z, height: f.def.height, shape: f.def.shape, bounce: f.def.bounce });
   }
@@ -1284,6 +1349,7 @@ export function wait(play: PlayState, n: number): void {
 
 function moveThings(play: PlayState): void {
   for (const e of play.enemies) {
+    if (e.coil && !e.defeated) moveCoil(play, e, e.coil);
     if (e.defeated || !e.path || e.def.behaviour.kind !== 'patrol') continue;
     const px = e.x;
     const py = e.y;
@@ -1614,8 +1680,15 @@ function onBallContact(play: PlayState, o: Obstacle, s: ShotState): ContactResul
     if (burning) return 'passFree';
     return Math.hypot(s.ball.vx, s.ball.vy) >= play.tuning.poleThroughSpeed ? 'passPole' : 'bounce';
   }
+  if (o.id.startsWith('coil:')) {
+    // Round 4: the centipede's body. Only an unarmoured segment can be hurt.
+    const boss = play.enemies.find((x) => x.coil && !x.defeated);
+    if (!boss?.coil) return 'bounce';
+    const seg = Number(o.id.split(':')[1]);
+    return hitEnemy(play, boss, s, boss.coil.weak.includes(seg) ? 'weak' : 'armour');
+  }
   const e = enemyByUid(play, o.id);
-  if (e) return hitEnemy(play, e, s);
+  if (e) return hitEnemy(play, e, s, e.coil ? 'head' : undefined);
   const b = play.breakables.find((x) => x.uid === o.id);
   if (b) return hitBreakable(play, b, s);
   // Owner, 2026-11-21: a closed gate is sharp on top. Clearing it is the risk: touch it in the air and it hurts.
@@ -1645,11 +1718,17 @@ function hitStats(play: PlayState, s: ShotState): { base: number; element: Abili
 }
 
 /** The ball hits an enemy (FEATURES.md section 2). Returns what the ball does next. */
-function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
-  if (e.defeated) return 'pass';
+function hitEnemy(play: PlayState, e: EnemyState, s: ShotState, part?: 'weak' | 'armour' | 'head'): ContactResult {
+  if (e.defeated) return part ? 'bounce' : 'pass';
   // Owner, 2026-11-14: the ball only damages an enemy during the player's own action (a shot).
   // A ball that was knocked while standing still does no damage and sets off no hit trigger.
   let counted = !play.knocked && play.clock - e.lastHitClock >= steps(RULES.hitCooldown);
+  // Round 4: the centipede's armoured segments block every hit (a clank).
+  if (counted && part === 'armour') {
+    counted = false;
+    e.lastHitClock = play.clock;
+    play.log.push({ kind: 'hit', enemy: e.uid, damage: 0, blocked: true });
+  }
   // Milestone 7: a boss takes only so many hits per shot.
   const bossDef = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss) : undefined;
   // Gloamhorn (Milestone 8): its closed shell blocks every hit.
@@ -1698,6 +1777,8 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
       if (echo) play.log.push({ kind: 'echo' });
     }
     let damage = res.damage * (echo ? 2 : 1);
+    // Round 4: the centipede's head is its weak spot: a hit on it does double.
+    if (part === 'head' && bossDef?.gimmick?.kind === 'coil') damage *= bossDef.gimmick.head.damageMul;
     // Chilled (Milestone 8): the next hit that does damage does double, and ends the chill.
     const chill = damage > 0 ? e.statuses.find((st) => STATUSES.get(st.id)?.nextHitDouble) : undefined;
     if (chill) {
@@ -1718,6 +1799,7 @@ function hitEnemy(play: PlayState, e: EnemyState, s: ShotState): ContactResult {
       respond(play, e, 'hit');
     }
   }
+  if (e.defeated && part) return 'bounce';
   if (e.defeated) {
     // Wrecking Shell: defeats never slow the ball.
     if (gearFx(play, 'rollThrough').length) return 'passFree';
@@ -1819,7 +1901,7 @@ function weaponEffects(play: PlayState, e: EnemyState, s: ShotState): void {
     let best: EnemyState | null = null;
     let bestD = fx.range;
     for (const o of play.enemies) {
-      if (o === e || o.defeated || o.burrowed) continue;
+      if (o === e || o.defeated || hidden(o)) continue;
       const d = Math.hypot(o.x - e.x, o.y - e.y);
       if (d <= bestD) {
         best = o;
@@ -1917,7 +1999,7 @@ function defeat(play: PlayState, e: EnemyState): void {
   if (hasStatus(e.statuses, 'burning')) {
     for (const fx of gearFx(play, 'burst')) {
       play.log.push({ kind: 'burst', enemy: e.uid });
-      for (const o of play.enemies) if (o !== e && !o.defeated && !o.burrowed && Math.hypot(o.x - e.x, o.y - e.y) <= fx.radius) hurtEnemy(play, o, fx.damage);
+      for (const o of play.enemies) if (o !== e && !o.defeated && !hidden(o) && Math.hypot(o.x - e.x, o.y - e.y) <= fx.radius) hurtEnemy(play, o, fx.damage);
     }
   }
   if (e.def.behaviour.kind === 'boss') bossDefeated(play, e);
@@ -2006,7 +2088,7 @@ function goOff(play: PlayState, bl: BlastState): void {
     s.restSteps = 0;
   }
   for (const o of play.enemies) {
-    if (o.defeated || o.burrowed || isBoss(o) || Math.hypot(o.x - bl.x, o.y - bl.y) > R.radius) continue;
+    if (o.defeated || hidden(o) || isBoss(o) || Math.hypot(o.x - bl.x, o.y - bl.y) > R.radius) continue;
     if (o.health > 1) {
       const dmg = Math.min(R.damage, o.health - 1);
       o.health -= dmg;
@@ -2140,6 +2222,7 @@ function bossPhaseCheck(play: PlayState, e: EnemyState): void {
   e.globMarks = [];
   e.windup = null;
   e.chargeAt = null;
+  if (e.coil && def.gimmick?.kind === 'coil') coilPhase(play, e, e.coil, def, def.gimmick);
   play.log.push({ kind: 'phase', enemy: e.uid, phase });
   for (const id of def.shed) dropPickup(play, id, e.x, e.y, `${e.uid}:shed${phase}:${id}`);
 }
@@ -2153,6 +2236,10 @@ function bossAction(play: PlayState, e: EnemyState): void {
   if (!def) return;
   const phase = def.phases[e.phase]!;
   e.bossTurns++;
+  if (e.coil && def.gimmick?.kind === 'coil') {
+    coilAction(play, e, e.coil, def, def.gimmick, phase);
+    return;
+  }
   if (e.slamMark) landSlam(play, e, def);
   if (play.status !== 'playing') return;
   // The Brood Queen: last turn's globs and ring land first.
@@ -2299,6 +2386,342 @@ function summon(play: PlayState, boss: EnemyState, def: BossDef, phase: BossPhas
   play.enemies.push(newEnemy(play, { seed: play.seed, enemyModifiers: play.enemyModifiers }, edef, o, uid, cx, cy, heightAt(play.course, cx, cy), true));
   play.log.push({ kind: 'summon', boss: boss.uid, enemy: uid, x: cx, y: cy });
   play.world.obstacles = obstaclesOf(play);
+}
+
+// ---------------------------------------------------------------------------
+// The centipede (round 4; sheet docs/plans/milestone-8-round-4.md)
+
+/** The length of the map edge the body runs along, in tiles. */
+export function coilEdgeLength(course: Course): number {
+  return 2 * (course.width + course.height);
+}
+
+/**
+ * A point on the map edge, `u` tiles along it (going along y = 0 first, then
+ * x = width, then y = height backwards, then x = 0), with the outward normal.
+ */
+export function coilEdgePoint(course: Course, u: number): { x: number; y: number; nx: number; ny: number } {
+  const W = course.width;
+  const H = course.height;
+  const P = 2 * (W + H);
+  const m = ((u % P) + P) % P;
+  if (m < W) return { x: m, y: 0, nx: 0, ny: -1 };
+  if (m < W + H) return { x: W, y: m - W, nx: 1, ny: 0 };
+  if (m < 2 * W + H) return { x: W - (m - W - H), y: H, nx: 0, ny: 1 };
+  return { x: 0, y: H - (m - 2 * W - H), nx: -1, ny: 0 };
+}
+
+/** How far along the edge the nearest edge point to (x, y) is. */
+export function coilEdgeCoord(course: Course, x: number, y: number): number {
+  const W = course.width;
+  const H = course.height;
+  const cx = Math.min(W, Math.max(0, x));
+  const cy = Math.min(H, Math.max(0, y));
+  const d = [y, W - x, H - y, x];
+  const i = d.indexOf(Math.min(...d));
+  return i === 0 ? cx : i === 1 ? W + cy : i === 2 ? W + H + (W - cx) : 2 * W + H + (H - cy);
+}
+
+/** Each segment's length along the edge (the edge divided evenly). */
+export function coilSegmentLength(course: Course, coil: CoilState): number {
+  return coilEdgeLength(course) / coil.segments;
+}
+
+/** Which segment covers the edge at `u` now. */
+export function coilSegmentAt(course: Course, coil: CoilState, u: number): number {
+  const P = coilEdgeLength(course);
+  const len = P / coil.segments;
+  const m = (((u - coil.offset) % P) + P) % P;
+  return Math.min(coil.segments - 1, Math.floor(m / len));
+}
+
+/** Where segment k starts on the edge now (tiles along it). */
+export function coilSegmentStart(course: Course, coil: CoilState, k: number): number {
+  return coil.offset + k * coilSegmentLength(course, coil);
+}
+
+/** The next enemy turn of the centipede: an off turn (marks spikes, may sweep) or a fire turn. */
+export function coilNextTurn(e: EnemyState): 'sweep' | 'spikes' {
+  return (e.bossTurns + 1) % 2 === 1 ? 'sweep' : 'spikes';
+}
+
+/** Is (x, y) in the leg ring (within `reach` of the edge)? */
+export function inLegRing(course: Course, x: number, y: number, reach: number): boolean {
+  return x < reach || y < reach || x > course.width - reach || y > course.height - reach;
+}
+
+function coilRulesOf(e: EnemyState): CoilRules | undefined {
+  const g = e.def.behaviour.kind === 'boss' ? BOSSES.get(e.def.behaviour.boss)?.gimmick : undefined;
+  return g?.kind === 'coil' ? g : undefined;
+}
+
+/** Add weak spots until there are `target`: each new one as far as it can be from the others (so they stay spread out). */
+function growWeak(weak: number[], target: number, n: number, start: number): number[] {
+  const out = [...weak];
+  if (!out.length && target > 0) for (let i = 0; i < target; i++) out.push((start + Math.round((i * n) / target)) % n);
+  while (out.length < Math.min(target, n)) {
+    let best = -1;
+    let bestD = -1;
+    for (let k = 0; k < n; k++) {
+      if (out.includes(k)) continue;
+      const d = Math.min(...out.map((w) => Math.min(Math.abs(w - k), n - Math.abs(w - k))));
+      if (d > bestD) {
+        bestD = d;
+        best = k;
+      }
+    }
+    out.push(best);
+  }
+  return [...new Set(out)];
+}
+
+/** Shooter segments: spread evenly between, never on a weak spot. */
+function placeShooters(n: number, count: number, weak: readonly number[], start: number): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) {
+    let k = (start + Math.round(((i + 0.5) * n) / count)) % n;
+    for (let tries = 0; tries < n && (weak.includes(k) || out.includes(k)); tries++) k = (k + 1) % n;
+    out.push(k);
+  }
+  return out;
+}
+
+function newCoil(play: PlayState, def: BossDef, rules: CoilRules): CoilState {
+  const segments = Math.max(4, Math.round(coilEdgeLength(play.course) / rules.segmentLength));
+  const first = def.phases[0]!.coil ?? { weak: 3, shooters: 2, speed: 1, head: false };
+  const start = Math.min(segments - 1, Math.floor(play.rng.float(0, segments)));
+  const weak = growWeak([], first.weak, segments, start);
+  return { segments, offset: 0, dir: 1, weak, shooters: placeShooters(segments, first.shooters, weak, start), spikeMarks: [], head: 'down', headMark: null };
+}
+
+/** The body never stops (owner): it slides along the edge at its phase's speed, also while the player aims. */
+function moveCoil(play: PlayState, e: EnemyState, coil: CoilState): void {
+  const def = bossDefOf(play, e);
+  const speed = def?.phases[e.phase]?.coil?.speed ?? 0;
+  const P = coilEdgeLength(play.course);
+  coil.offset = (((coil.offset + coil.dir * speed * DT) % P) + P) % P;
+}
+
+/** The body as solid pieces along the edge, one or two per segment (a segment going round a corner is two). */
+function coilObstacles(play: PlayState, e: EnemyState, coil: CoilState, out: Obstacle[]): void {
+  const rules = coilRulesOf(e);
+  if (!rules) return;
+  const c = play.course;
+  const W = c.width;
+  const H = c.height;
+  const P = coilEdgeLength(c);
+  const len = P / coil.segments;
+  const corners = [0, W, W + H, 2 * W + H, P];
+  const r = 0.25;
+  for (let k = 0; k < coil.segments; k++) {
+    const a = coil.offset + k * len;
+    const b = a + len;
+    let u0 = a;
+    let piece = 0;
+    while (u0 < b - 1e-9 && piece < 4) {
+      const m = ((u0 % P) + P) % P;
+      const next = u0 - m + corners.find((x) => x > m + 1e-9)!;
+      const u1 = Math.min(b, next);
+      const p0 = coilEdgePoint(c, u0);
+      const p1raw = coilEdgePoint(c, u1 - 1e-9);
+      const mid = coilEdgePoint(c, (u0 + u1) / 2);
+      // The piece ends exactly on the corner when it reaches it.
+      const p1 = u1 === next ? { x: Math.round(p1raw.x), y: Math.round(p1raw.y) } : p1raw;
+      const base = heightAt(c, Math.min(W - 0.01, Math.max(0.01, mid.x)), Math.min(H - 0.01, Math.max(0.01, mid.y)));
+      out.push({
+        id: `coil:${k}:${piece}`,
+        x: p0.x + mid.nx * r,
+        y: p0.y + mid.ny * r,
+        base: base - 1,
+        height: rules.bodyHeight + 1,
+        shape: { kind: 'seg', ax: 0, ay: 0, bx: p1.x - p0.x, by: p1.y - p0.y, r },
+        bounce: coil.weak.includes(k) ? rules.weakBounce : rules.armourBounce,
+      });
+      u0 = u1;
+      piece++;
+    }
+  }
+}
+
+/** A new phase: shell plates fall off more segments, the shooters move, and (Default) the body turns round. */
+function coilPhase(play: PlayState, e: EnemyState, coil: CoilState, def: BossDef, rules: CoilRules): void {
+  const pc = def.phases[e.phase]?.coil;
+  if (!pc) return;
+  const before = coil.weak;
+  coil.weak = growWeak(before, pc.weak, coil.segments, before[0] ?? 0);
+  const fell = coil.weak.filter((k) => !before.includes(k));
+  coil.shooters = placeShooters(coil.segments, pc.shooters, coil.weak, coil.weak[0] ?? 0);
+  coil.spikeMarks = [];
+  if (coil.head === 'marked') {
+    coil.head = 'down';
+    coil.headMark = null;
+  }
+  if (rules.reverseOnPhase) coil.dir = coil.dir === 1 ? -1 : 1;
+  if (fell.length) play.log.push({ kind: 'plates', enemy: e.uid, segments: fell });
+}
+
+/** A line from a point on (or in) the arena in a direction, to where it leaves the map. */
+function lineAcross(course: Course, x: number, y: number, dx: number, dy: number): CoilLine {
+  const l = Math.hypot(dx, dy) || 1;
+  const ux = dx / l;
+  const uy = dy / l;
+  const tx = ux > 1e-9 ? (course.width - x) / ux : ux < -1e-9 ? -x / ux : Infinity;
+  const ty = uy > 1e-9 ? (course.height - y) / uy : uy < -1e-9 ? -y / uy : Infinity;
+  const t = Math.min(tx, ty);
+  return { x0: x, y0: y, x1: x + ux * t, y1: y + uy * t };
+}
+
+/** Distance from a point to a line piece. */
+function distToLine(px: number, py: number, l: CoilLine): number {
+  const dx = l.x1 - l.x0;
+  const dy = l.y1 - l.y0;
+  const len2 = dx * dx + dy * dy || 1;
+  const t = Math.max(0, Math.min(1, ((px - l.x0) * dx + (py - l.y0) * dy) / len2));
+  return Math.hypot(px - (l.x0 + dx * t), py - (l.y0 + dy * t));
+}
+
+/** Owner: the centipede's attacks kill its own minions (and any other bug) outright. */
+function crush(play: PlayState, boss: EnemyState, test: (o: EnemyState) => boolean, by: 'spike' | 'sweep' | 'head'): void {
+  for (const o of play.enemies) {
+    if (o === boss || o.defeated || hidden(o) || !test(o)) continue;
+    play.log.push({ kind: 'crushed', enemy: o.uid, by });
+    o.health = 0;
+    defeat(play, o);
+  }
+}
+
+/** Throw the resting ball (a knock, not a shot). */
+function throwBall(play: PlayState, vx: number, vy: number, vz: number): void {
+  const s = ensureBallMoving(play);
+  const k = play.stats.get('knockBack');
+  s.ball.vx = vx * k;
+  s.ball.vy = vy * k;
+  if (vz > 0) {
+    s.ball.vz = vz;
+    s.ball.grounded = false;
+    s.ball.z += 0.001;
+  }
+  s.restSteps = 0;
+}
+
+/** A spike flies along a line: it hurts the ball on it and kills every minion on it. */
+function fireSpike(play: PlayState, e: EnemyState, rules: CoilRules, line: CoilLine, marked: boolean): void {
+  const b = ballNow(play);
+  const g = groundAt(play.course, b.x, b.y);
+  const hit = !!g && b.z <= g.h + 0.6 && distToLine(b.x, b.y, line) <= rules.spike.hitWidth;
+  play.log.push({ kind: 'spike', enemy: e.uid, line, hit, marked });
+  crush(play, e, (o) => distToLine(o.x, o.y, line) <= rules.spike.hitWidth + enemyRadius(o), 'spike');
+  if (!hit) return;
+  damageBall(play, rules.spike.damage, 'quill', e);
+  if (play.status !== 'playing') return;
+  const l = Math.hypot(line.x1 - line.x0, line.y1 - line.y0) || 1;
+  throwBall(play, ((line.x1 - line.x0) / l) * rules.spike.knockSpeed, ((line.y1 - line.y0) / l) * rules.spike.knockSpeed, 0);
+}
+
+/** The leg sweep (owner): only when the ball rests in the leg ring, on an off turn. It also kills minions in the ring. */
+function sweep(play: PlayState, e: EnemyState, rules: CoilRules): void {
+  const c = play.course;
+  const b = ballNow(play);
+  const reach = rules.legReach;
+  if (!inLegRing(c, b.x, b.y, reach)) return;
+  play.log.push({ kind: 'sweep', enemy: e.uid, hit: true });
+  crush(play, e, (o) => inLegRing(c, o.x, o.y, reach), 'sweep');
+  damageBall(play, rules.sweep.damage, 'sweep', e);
+  if (play.status !== 'playing') return;
+  // Pushed in, out of the ring.
+  let nx = b.x < reach ? 1 : b.x > c.width - reach ? -1 : 0;
+  let ny = b.y < reach ? 1 : b.y > c.height - reach ? -1 : 0;
+  const l = Math.hypot(nx, ny) || 1;
+  nx /= l;
+  ny /= l;
+  const v = rollSpeedFor(play.tuning, rules.sweep.push);
+  throwBall(play, nx * v, ny * v, 0);
+}
+
+/** Phase 3: the head bursts up in its marked circle. */
+function burstHead(play: PlayState, e: EnemyState, coil: CoilState, rules: CoilRules): void {
+  const m = coil.headMark;
+  if (!m) return;
+  coil.head = 'up';
+  e.x = m.x;
+  e.y = m.y;
+  e.z = heightAt(play.course, m.x, m.y);
+  const b = ballNow(play);
+  const g = groundAt(play.course, b.x, b.y);
+  const d = Math.hypot(b.x - m.x, b.y - m.y);
+  const hit = !!g && b.z <= g.h + 0.6 && d <= m.r;
+  play.log.push({ kind: 'headUp', enemy: e.uid, x: m.x, y: m.y, r: m.r, hit });
+  crush(play, e, (o) => Math.hypot(o.x - m.x, o.y - m.y) <= m.r, 'head');
+  if (hit) {
+    // Out of the head's way first, then thrown away from the middle.
+    const a = d > 1e-3 ? Math.atan2(b.y - m.y, b.x - m.x) : play.rng.float(0, Math.PI * 2);
+    const clear = enemyRadius(e) + play.tuning.ballRadius + 0.05;
+    if (!play.shot && d < clear) {
+      play.ball = { ...play.ball, x: m.x + Math.cos(a) * clear, y: m.y + Math.sin(a) * clear };
+    }
+    damageBall(play, rules.head.damage, 'burst', e);
+    if (play.status === 'playing') throwBall(play, Math.cos(a) * rules.head.knockSpeed, Math.sin(a) * rules.head.knockSpeed, rules.head.knockHop);
+  }
+  play.world.obstacles = obstaclesOf(play);
+}
+
+/**
+ * One centipede turn (owner's two-turn rhythm). Off turns: the head (if up)
+ * fires one unwarned spike and sinks; the leg sweep if the ball rests in the
+ * leg ring; mark the next spike paths; phase 3 marks the head's circle;
+ * summons. Fire turns: the marked spikes fly; the head bursts up.
+ */
+function coilAction(play: PlayState, e: EnemyState, coil: CoilState, def: BossDef, rules: CoilRules, phase: BossPhase): void {
+  const c = play.course;
+  const pc = phase.coil;
+  const off = e.bossTurns % 2 === 1;
+  if (!off) {
+    for (const line of coil.spikeMarks.splice(0)) {
+      fireSpike(play, e, rules, line, true);
+      if (play.status !== 'playing') return;
+    }
+    if (coil.head === 'marked') burstHead(play, e, coil, rules);
+    else if (coil.head === 'sunk') coil.head = 'down';
+    return;
+  }
+  if (coil.head === 'up') {
+    const a = play.rng.float(0, Math.PI * 2);
+    fireSpike(play, e, rules, lineAcross(c, e.x, e.y, Math.cos(a), Math.sin(a)), false);
+    coil.head = 'sunk';
+    coil.headMark = null;
+    play.log.push({ kind: 'headDown', enemy: e.uid });
+    play.world.obstacles = obstaclesOf(play);
+    if (play.status !== 'playing') return;
+  }
+  sweep(play, e, rules);
+  if (play.status !== 'playing') return;
+  // Mark the next spike paths from where the shooters are now. The first one goes through the ball's spot.
+  const b = ballNow(play);
+  const len = coilSegmentLength(c, coil);
+  coil.spikeMarks = coil.shooters.map((k, i) => {
+    const p = coilEdgePoint(c, coilSegmentStart(c, coil, k) + len / 2);
+    let tx = i === 0 ? b.x : c.width / 2 + play.rng.float(-4.5, 4.5);
+    let ty = i === 0 ? b.y : c.height / 2 + play.rng.float(-4.5, 4.5);
+    if (Math.hypot(tx - p.x, ty - p.y) < 0.5) {
+      tx = p.x - p.nx;
+      ty = p.y - p.ny;
+    }
+    return lineAcross(c, p.x, p.y, tx - p.x, ty - p.y);
+  });
+  play.log.push({ kind: 'spikeMark', enemy: e.uid, lines: [...coil.spikeMarks] });
+  if (pc?.head && coil.head === 'down') {
+    const hr = enemyRadius(e);
+    const lo = rules.legReach + hr;
+    coil.headMark = {
+      x: Math.min(c.width - lo, Math.max(lo, b.x)),
+      y: Math.min(c.height - lo, Math.max(lo, b.y)),
+      r: rules.head.markRadius,
+    };
+    coil.head = 'marked';
+    play.log.push({ kind: 'headMark', enemy: e.uid, ...coil.headMark });
+  }
+  const alive = play.enemies.filter((m) => m.minion && !m.defeated).length;
+  if (alive < phase.maxMinions && phase.pool.length) summon(play, e, def, phase);
 }
 
 /** The boss is beaten: its minions vanish and the exit opens. */
@@ -2707,7 +3130,7 @@ function updateFlags(play: PlayState): void {
   // An enemy entering a raised flag's tile lowers it: the star is lost again.
   for (const e of play.enemies) {
     // A floating Glowmoth flies over flags without touching them.
-    if (e.defeated || e.burrowed || floatOf(e) > 0) continue;
+    if (e.defeated || hidden(e) || floatOf(e) > 0) continue;
     const key = tileKeyOf(e.x, e.y);
     if (key === e.tileKey) continue;
     e.tileKey = key;
@@ -2898,7 +3321,7 @@ function stepAura(play: PlayState, s: ShotState): void {
   const fx = ABILITIES.get('static')!.effect;
   if (fx.kind !== 'static') return;
   for (const e of play.enemies) {
-    if (e.defeated || e.burrowed || a.zapped.includes(e.uid)) continue;
+    if (e.defeated || hidden(e) || a.zapped.includes(e.uid)) continue;
     if (Math.hypot(e.x - b.x, e.y - b.y) > fx.radius + enemyRadius(e) || Math.abs(e.z - b.z) > 1.2) continue;
     a.zapped.push(e.uid);
     play.log.push({ kind: 'staticZap', enemy: e.uid });
@@ -2970,7 +3393,7 @@ function anchorEffects(play: PlayState, x: number, y: number): void {
   const fx = ABILITIES.get('anchor')!.effect;
   const radius = fx.kind === 'anchor' ? fx.stunRadius : 1;
   for (const e of play.enemies) {
-    if (e.defeated || e.burrowed) continue;
+    if (e.defeated || hidden(e)) continue;
     if (Math.hypot(e.x - x, e.y - y) <= radius) applyEnemyStatus(play, e, 'stunned');
   }
 }

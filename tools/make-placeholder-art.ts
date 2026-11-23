@@ -1658,6 +1658,96 @@ function drawFacingMark(): Image {
   return img;
 }
 
+// Round 4 (owner, 2026-11-23): the centipede, Thousandfoot. Placeholders: a ring of shell domes round the arena,
+// pale soft weak spots, spine-pod shooters, scuttling legs, and a big head for phase 3.
+function drawCoilSegment(kind: 'armour' | 'weak' | 'shooter'): Image {
+  const img = new Image(40, 30);
+  const base = kind === 'weak' ? '#f0a8b8' : '#7a2c3c';
+  blob(img, 20, 18, 19, 11, base, kind === 'weak' ? '#f8f0a0' : '#200810');
+  if (kind === 'weak') {
+    // Soft and bare: a few darker spots, a bright rim so it reads from far away.
+    for (const [x, y] of [[13, 16], [20, 14], [27, 17], [17, 21], [24, 22]] as P[]) img.set(x, y, hex2('#c06078'));
+  } else {
+    // Shell bands across the dome.
+    const band = hex2('#401018');
+    for (const bx of [12, 20, 28]) for (let y = 9; y < 27; y++) if (img.get(bx, y)[3] > 0 && Math.abs(y - 18) < 9) img.set(bx, y, band);
+  }
+  if (kind === 'shooter') {
+    // A spine pod on top: bone-coloured spines.
+    blob(img, 20, 9, 7, 5, '#e8d8a8', '#403018');
+    const spine = hex2('#f8f0d0');
+    for (const [x, y] of [[16, 2], [16, 3], [20, 0], [20, 1], [20, 2], [24, 2], [24, 3]] as P[]) img.set(x, y, spine);
+  }
+  return img;
+}
+
+function drawCoilLegs(step: number): Image {
+  const img = new Image(24, 10);
+  const leg = hex2('#5a1c28');
+  const tip = hex2('#e8d8a8');
+  for (let k = 0; k < 4; k++) {
+    const x0 = 3 + k * 6;
+    const up = (k + step) % 2 === 0 ? 0 : 2;
+    for (let i = 0; i < 6; i++) img.set(x0 + (i > 2 ? 1 : 0), 1 + up + i, leg);
+    img.set(x0 + 1, 7 + up > 9 ? 9 : 7 + up, tip);
+  }
+  return img;
+}
+
+function drawCoilHead(phase: number): Image {
+  const img = new Image(48, 44);
+  blob(img, 24, 28, 22, 15, '#7a2c3c', '#200810');
+  // The soft brow: its weak spot (the whole head counts double).
+  blob(img, 24, 21, 10, 6, '#f0a8b8', '#f8f0a0');
+  eyes(img, [[15, 26], [16, 26], [32, 26], [33, 26]], phase === 2 ? '#f84020' : '#f8e050');
+  // Mandibles.
+  const jaw = hex2('#e8d8a8');
+  for (let k = 0; k < 7; k++) {
+    img.set(14 + Math.floor(k / 2), 36 + k - (k > 4 ? (k - 4) * 2 : 0), jaw);
+    img.set(33 - Math.floor(k / 2), 36 + k - (k > 4 ? (k - 4) * 2 : 0), jaw);
+  }
+  // Feelers.
+  const feeler = hex2('#c05060');
+  for (let k = 0; k < 9; k++) {
+    img.set(18 - k, 14 - Math.floor(k / 2) + phase, feeler);
+    img.set(29 + k, 14 - Math.floor(k / 2) + phase, feeler);
+  }
+  return img;
+}
+
+function drawQuill(): Image {
+  const img = new Image(16, 5);
+  rows(img, 0, 0, ['ooooo..........', 'o44444oooo.....', 'o4444444444oooo', 'o44444oooo.....', 'ooooo..........'], '#e8d8a8', {}, '#403018');
+  return img;
+}
+
+function drawPlate(): Image {
+  const img = new Image(12, 8);
+  blob(img, 6, 4, 6, 4, '#7a2c3c', '#200810');
+  return img;
+}
+
+function drawDangerTile(): Image {
+  // A faint red diamond over a tile of the leg ring (where the sweep reaches).
+  const img = new Image(32, 16);
+  const fill = c15(hex('#f83030'), 100);
+  const edge = c15(hex('#ff6050'), 200);
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 32; x++) {
+      const d = Math.abs(x + 0.5 - 16) / 16 + Math.abs(y + 0.5 - 8) / 8;
+      if (d > 1) continue;
+      img.set(x, y, d > 0.9 ? edge : fill);
+    }
+  }
+  return img;
+}
+
+emit('centipede-segment', sheet((['armour', 'weak', 'shooter'] as const).map(drawCoilSegment)), 40, 30, ['armour', 'weak', 'shooter'], [20, 24]);
+emit('centipede-legs', sheet([0, 1].map(drawCoilLegs)), 24, 10, ['a', 'b'], [12, 8]);
+emit('centipede-head', sheet([0, 1, 2].map(drawCoilHead)), 48, 44, ['phase1', 'phase2', 'phase3'], [24, 38]);
+emit('centipede-quill', drawQuill(), 16, 5, ['idle'], [8, 2]);
+emit('centipede-plate', drawPlate(), 12, 8, ['idle'], [6, 4]);
+emit('danger-tile', drawDangerTile(), 32, 16, ['idle'], [16, 8]);
 emit('skitter-ant', drawSkitterAnt(), 16, 12, ['idle'], [8, 10]);
 emit('bristlecrawler', drawBristlecrawler(), 22, 14, ['idle'], [11, 12]);
 emit('glowmoth', drawGlowmoth(), 20, 14, ['idle'], [10, 12]);

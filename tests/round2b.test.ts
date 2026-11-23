@@ -473,7 +473,7 @@ describe('round 2c', () => {
     const { ARENAS } = await import('../src/content/arenas');
     for (const a of ARENAS.values()) {
       const d = a.data as { exit: [number, number]; objects: { id: string; at: [number, number] }[] };
-      const boss = d.objects.find((o) => ['stagwarden', 'gloamhorn', 'brood-queen'].includes(o.id))!;
+      const boss = d.objects.find((o) => ['stagwarden', 'gloamhorn', 'brood-queen', 'centipede'].includes(o.id))!;
       expect(d.exit).toEqual(boss.at);
       expect(parseCourse(a.data).ok).toBe(true);
     }

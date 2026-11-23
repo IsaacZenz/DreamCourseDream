@@ -31,6 +31,15 @@ import {
   type Preview,
   floatOf,
   shellIsOpen,
+  coilEdgeLength,
+  coilEdgePoint,
+  coilNextTurn,
+  coilSegmentLength,
+  coilSegmentStart,
+  inLegRing,
+  debugBossHealth,
+  type CoilLine,
+  type EnemyState,
 } from '../sim/play';
 import { STATUSES } from '../content/statuses';
 import { RANKS, TRAITS, TRAIT_RULES } from '../content/enemyMods';
@@ -770,9 +779,8 @@ export class CourseScene extends Phaser.Scene {
     const boss = this.runMode ? this.play.enemies.find((e) => isBoss(e)) : undefined;
     const setHealth = (n: number) => () => {
       if (!boss || boss.defeated) return;
-      boss.health = Math.min(n, boss.health);
-      boss.phase = Math.max(boss.phase, n <= boss.stats.get('health') / 3 ? 2 : n <= (boss.stats.get('health') * 2) / 3 ? 1 : 0);
-      boss.slamMark = null;
+      debugBossHealth(this.play, boss, n);
+      this.showEvents(drainLog(this.play));
     };
     p.setProgress(
       boss
@@ -1121,6 +1129,120 @@ export class CourseScene extends Phaser.Scene {
     return tileDepth(tx, ty, 'ball') + (x - tx + (y - ty) - 1) * 0.4;
   }
 
+  /** Round 4: the leg ring flashes after a sweep until this time. */
+  private sweepFlashUntil = 0;
+  private spikeMarksShown = 0;
+
+  /**
+   * Round 4: the middle of the centipede's body next to edge point `u`: one
+   * tile out from the edge (the body is 2 tiles wide), rounding the corners.
+   */
+  private coilCentre(u: number, out: number): { x: number; y: number; ex: number; ey: number; nx: number; ny: number } {
+    const c = this.play.course;
+    const W = c.width;
+    const H = c.height;
+    const P = coilEdgeLength(c);
+    const pt = coilEdgePoint(c, u);
+    const m = ((u % P) + P) % P;
+    const corners = [0, W, W + H, 2 * W + H, P];
+    const cn = corners.find((x) => x > m + 1e-9)!;
+    const cp = [...corners].reverse().find((x) => x <= m + 1e-9)!;
+    let nx = pt.nx;
+    let ny = pt.ny;
+    let mag = 1;
+    const blend = (d: number, at: number) => {
+      if (d >= 1) return;
+      const o = coilEdgePoint(c, at);
+      const t = 1 - d;
+      nx += o.nx * t;
+      ny += o.ny * t;
+      mag = 1 + (Math.SQRT2 - 1) * t;
+    };
+    blend(cn - m, cn + 0.001);
+    blend(m - cp, cp - 0.001);
+    const l = Math.hypot(nx, ny) || 1;
+    nx /= l;
+    ny /= l;
+    return { x: pt.x + nx * mag * out, y: pt.y + ny * mag * out, ex: pt.x, ey: pt.y, nx: pt.nx, ny: pt.ny };
+  }
+
+  /**
+   * Round 4: draw the centipede's body (shell domes round the outside of the
+   * edge), its legs in the leg ring, and the faint red leg ring. The two near
+   * sides turn see-through when the ball is behind them (sheet section 3).
+   */
+  private drawCoil(e: EnemyState, show: (uid: string, sprite: string, x: number, y: number, z: number, opts?: { frame?: string; lift?: number; depth?: number; alpha?: number; tint?: number; dx?: number }) => void): void {
+    const coil = e.coil!;
+    const play = this.play;
+    const c = play.course;
+    const W = c.width;
+    const H = c.height;
+    const def = BOSSES.get(e.def.behaviour.kind === 'boss' ? e.def.behaviour.boss : '');
+    const rules = def?.gimmick?.kind === 'coil' ? def.gimmick : null;
+    if (!rules) return;
+    const now = this.time.now;
+    const ball = ballNow(play);
+    const len = coilSegmentLength(c, coil);
+    const groundZ = (x: number, y: number) => groundAt(c, Math.min(W - 0.01, Math.max(0.01, x)), Math.min(H - 0.01, Math.max(0.01, y)))?.h ?? 0;
+    for (let k = 0; k < coil.segments; k++) {
+      const start = coilSegmentStart(c, coil, k);
+      const weak = coil.weak.includes(k);
+      const shooter = coil.shooters.includes(k);
+      for (const j of [0.25, 0.75]) {
+        const u = start + len * j;
+        // Drawn a little in from the body's true middle so the domes meet the map edge (the sprite's round sides leave a gap otherwise).
+        const ctr = this.coilCentre(u, rules.bodyWidth * 0.4);
+        const z = groundZ(ctr.ex, ctr.ey);
+        const near = ctr.x > W - 0.01 || ctr.y > H - 0.01;
+        const behind = near && Math.hypot(ball.x - ctr.ex, ball.y - ctr.ey) < 3.2;
+        const frame = weak ? 'weak' : shooter && j === 0.25 ? 'shooter' : 'armour';
+        show(`${e.uid}:seg:${k}:${j}`, 'centipede-segment', ctr.x, ctr.y, z, { frame, alpha: behind ? 0.35 : 1, ...(e.defeated && { tint: 0x808080 }) });
+        // Legs: one tile in, in the leg ring, scuttling.
+        const lx = ctr.ex - ctr.nx * 0.5;
+        const ly = ctr.ey - ctr.ny * 0.5;
+        const step = e.defeated ? 0 : (Math.floor(now / 110) + k * 2 + (j > 0.5 ? 1 : 0)) % 2;
+        show(`${e.uid}:legs:${k}:${j}`, 'centipede-legs', lx, ly, groundZ(lx, ly), { frame: step ? 'b' : 'a', depth: this.standingDepth(lx, ly) - 0.3, alpha: e.defeated ? 0.6 : 1 });
+      }
+    }
+    if (e.defeated) return;
+    // The leg ring: where the sweep reaches. Brighter when the next turn is a sweep turn and the ball is in it.
+    const warn = !play.shot && coilNextTurn(e) === 'sweep' && inLegRing(c, ball.x, ball.y, rules.legReach);
+    const flash = now < this.sweepFlashUntil;
+    const alpha = flash ? 1 : warn ? 0.6 + 0.4 * Math.abs(Math.sin(now / 160)) : 0.6;
+    for (let ty = 0; ty < H; ty++) {
+      for (let tx = 0; tx < W; tx++) {
+        if (!inLegRing(c, tx + 0.5, ty + 0.5, rules.legReach)) continue;
+        show(`${e.uid}:ring:${tx},${ty}`, 'danger-tile', tx + 0.5, ty + 0.5, groundZ(tx + 0.5, ty + 0.5), { depth: tileDepth(tx, ty, 'arrow'), alpha });
+      }
+    }
+  }
+
+  /** Round 4: a spike flying along its line. */
+  private flySpike(line: CoilLine): void {
+    const c = this.play.course;
+    const z = (x: number, y: number) => (groundAt(c, Math.min(c.width - 0.01, Math.max(0.01, x)), Math.min(c.height - 0.01, Math.max(0.01, y)))?.h ?? 0) / STEP_HEIGHT;
+    const a = project(line.x0, line.y0, z(line.x0, line.y0));
+    const b = project(line.x1, line.y1, z(line.x1, line.y1));
+    const img = this.makeSprite('centipede-quill');
+    img.setPosition(a.x, a.y - 8).setRotation(Math.atan2(b.y - a.y, b.x - a.x)).setDepth(OVERLAY_DEPTH - 25);
+    this.tweens.add({ targets: img, x: b.x, y: b.y - 8, duration: 380, onComplete: () => img.destroy() });
+  }
+
+  /** Round 4: shell plates fall off these segments. */
+  private dropPlates(uid: string, segments: readonly number[]): void {
+    const e = this.play.enemies.find((x) => x.uid === uid);
+    if (!e?.coil) return;
+    const c = this.play.course;
+    const len = coilSegmentLength(c, e.coil);
+    for (const k of segments) {
+      const ctr = this.coilCentre(coilSegmentStart(c, e.coil, k) + len / 2, 1);
+      const p = project(ctr.x, ctr.y, 0);
+      const img = this.makeSprite('centipede-plate');
+      img.setPosition(p.x, p.y - 18).setDepth(OVERLAY_DEPTH - 26);
+      this.tweens.add({ targets: img, y: p.y + 6, alpha: 0, angle: 90, duration: 900, onComplete: () => img.destroy() });
+    }
+  }
+
   /** Make the sprites for course objects match the simulation: new things appear, gone ones are hidden. */
   private syncObjects(): void {
     const play = this.play;
@@ -1167,6 +1289,11 @@ export class CourseScene extends Phaser.Scene {
       else show(b.uid, b.def.sprite, b.x, b.y, b.z);
     }
     for (const e of play.enemies) {
+      // Round 4: the centipede's body round the edge (it stays as the wall once beaten). Its head is drawn only while it is up.
+      if (e.coil) {
+        this.drawCoil(e, show);
+        if (e.defeated || e.coil.head !== 'up') continue;
+      }
       if (e.defeated) continue;
       if (e.burrowed) {
         // Set off: the hill shakes for the moment before the Mole pops out.
@@ -1611,7 +1738,7 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage('+1 SHOT', GOOD);
           break;
         case 'damage': {
-          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED', burn: 'BURNING', blast: 'BLAST', charge: 'CHARGED', bite: 'BITTEN', ring: 'SOLDIER ANTS' }[e.cause];
+          const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED', burn: 'BURNING', blast: 'BLAST', charge: 'CHARGED', bite: 'BITTEN', ring: 'SOLDIER ANTS', quill: 'SPIKED', sweep: 'SWEPT BY THE LEGS', burst: 'THE HEAD BURST UP' }[e.cause];
           this.queueMessage(`${what}! -${e.amount} HEALTH`, BAD);
           break;
         }
@@ -1775,10 +1902,46 @@ export class CourseScene extends Phaser.Scene {
           this.cameras.main.shake(180, 0.006);
           break;
         case 'summon':
-          this.queueMessage(`THE WARDEN CALLS A ${this.nameOf(e.enemy)}!`, GUIDE_WARN);
+          this.queueMessage(`${this.nameOf(e.boss)} CALLS A ${this.nameOf(e.enemy)}!`, GUIDE_WARN);
           break;
         case 'phase':
-          this.queueMessage(`THE WARDEN SHEDS A PLATE! PHASE ${e.phase + 1}`, 0xf8e048);
+          if (this.play.enemies.find((x) => x.uid === e.enemy)?.coil) this.queueMessage(`PLATES FALL OFF: MORE WEAK SPOTS! PHASE ${e.phase + 1}`, 0xf8e048);
+          else this.queueMessage(`${this.nameOf(e.enemy)} SHEDS A PLATE! PHASE ${e.phase + 1}`, 0xf8e048);
+          break;
+        // Round 4: the centipede.
+        case 'hit': {
+          const boss = this.play.enemies.find((x) => x.uid === e.enemy);
+          if (!boss?.coil) break;
+          if (e.blocked) this.showMessage('CLANK! ARMOUR. HIT THE PALE SEGMENTS', UI_DIM, 900);
+          else if (e.damage > 0) this.queueMessage(`HIT! -${e.damage}`, GOOD);
+          break;
+        }
+        case 'spikeMark':
+          if (this.spikeMarksShown++ < 2) this.queueMessage('SPIKES NEXT TURN: GET OFF THE RED LINES!', GUIDE_WARN);
+          break;
+        case 'spike':
+          this.flySpike(e.line);
+          break;
+        case 'sweep':
+          this.sweepFlashUntil = this.time.now + 500;
+          this.cameras.main.shake(160, 0.004);
+          break;
+        case 'crushed':
+          this.puff(e.enemy);
+          this.queueMessage(`${this.nameOf(e.enemy)} WAS CRUSHED!`, GOOD);
+          break;
+        case 'headMark':
+          this.queueMessage('THE GROUND RUMBLES: GET OUT OF THE RED RING!', BAD);
+          break;
+        case 'headUp':
+          this.cameras.main.shake(260, 0.008);
+          this.queueMessage('THE HEAD IS UP! HIT IT FOR DOUBLE DAMAGE', GOOD);
+          break;
+        case 'headDown':
+          this.queueMessage('THE HEAD SINKS BACK DOWN', UI_DIM);
+          break;
+        case 'plates':
+          this.dropPlates(e.enemy, e.segments);
           break;
         case 'vanish':
           this.puff(e.enemy);
@@ -1866,7 +2029,8 @@ export class CourseScene extends Phaser.Scene {
     const boss = this.play.enemies.find((e) => isBoss(e));
     if (!boss) return;
     const full = boss.stats.get('health');
-    const key = `${boss.health},${boss.defeated},${boss.phase}`;
+    const next = boss.coil && !boss.defeated ? coilNextTurn(boss) : null;
+    const key = `${boss.health},${boss.defeated},${boss.phase},${next}`;
     if (key !== this.bossKey) {
       this.bossKey = key;
       this.bossHud?.destroy();
@@ -1883,6 +2047,12 @@ export class CourseScene extends Phaser.Scene {
       for (const f of [2 / 3, 1 / 3]) g.fillRect(3 + Math.round((w - 6) * f), 9, 1, 5);
       c.add(g);
       c.add(pixelText(this, manifest, w - 30, 2, `${boss.health}/${full}`, { color: UI_TEXT }));
+      // Round 4: what the centipede does on its next turn, so the player can plan where to stop.
+      if (next) {
+        // Below the line where messages pop up (y 46), so the two never cover each other.
+        c.add(this.add.rectangle(0, 25, w, 9, UI_BG, 0.9).setOrigin(0, 0));
+        c.add(pixelText(this, manifest, 3, 26, next === 'sweep' ? 'NEXT: SWEEP (KEEP OUT OF THE RED RING)' : 'NEXT: SPIKES (KEEP OFF THE RED LINES)', { color: GUIDE_WARN }));
+      }
       this.bossHud = c;
     }
     // The slam ring on the ground: an ellipse in screen space round the marked spot.
@@ -2028,6 +2198,27 @@ export class CourseScene extends Phaser.Scene {
     };
     for (const e of play.enemies) {
       if (e.defeated) continue;
+      if (e.coil) {
+        // Round 4: the marked spike paths (dashed red lines along the ground) and the head's circle.
+        for (const l of e.coil.spikeMarks) {
+          const zOf = (x: number, y: number) => (groundAt(play.course, Math.min(play.course.width - 0.01, Math.max(0.01, x)), Math.min(play.course.height - 0.01, Math.max(0.01, y)))?.h ?? 0) / STEP_HEIGHT;
+          const steps = Math.max(1, Math.round(Math.hypot(l.x1 - l.x0, l.y1 - l.y0) * 2));
+          g.lineStyle(3, SLAM_RING, pulse);
+          for (let i = 0; i < steps; i += 2) {
+            const t0 = i / steps;
+            const t1 = Math.min(1, (i + 1) / steps);
+            const ax = l.x0 + (l.x1 - l.x0) * t0;
+            const ay = l.y0 + (l.y1 - l.y0) * t0;
+            const bx = l.x0 + (l.x1 - l.x0) * t1;
+            const by = l.y0 + (l.y1 - l.y0) * t1;
+            const a = project(ax, ay, zOf(ax, ay));
+            const b = project(bx, by, zOf(bx, by));
+            g.lineBetween(a.x, a.y, b.x, b.y);
+          }
+        }
+        // The circle shows only while it is a warning; once the head is up it has done its damage.
+        if (e.coil.headMark && e.coil.head === 'marked') ring(e.coil.headMark.x, e.coil.headMark.y, e.coil.headMark.r, SLAM_RING, 0.18);
+      }
       if (e.slamMark && !isBoss(e)) ring(e.slamMark.x, e.slamMark.y, e.slamMark.r, PUFF_RING);
       if (e.ringMark) ring(e.ringMark.x, e.ringMark.y, e.ringMark.r, SOLDIER_RING);
       if (e.windup) {

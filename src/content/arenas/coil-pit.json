@@ -1,0 +1,77 @@
+{
+  "format": 3,
+  "name": "Arena: The Coil Pit",
+  "legend": {
+    "g": "grass"
+  },
+  "tiles": [
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2"
+  ],
+  "start": [
+    7,
+    11
+  ],
+  "exit": [
+    7,
+    7
+  ],
+  "quota": 0,
+  "objects": [
+    {
+      "id": "centipede",
+      "at": [
+        7,
+        7
+      ]
+    }
+  ],
+  "spawns": [
+    [
+      4,
+      4
+    ],
+    [
+      7,
+      4
+    ],
+    [
+      10,
+      4
+    ],
+    [
+      4,
+      7
+    ],
+    [
+      10,
+      7
+    ],
+    [
+      4,
+      10
+    ],
+    [
+      10,
+      10
+    ],
+    [
+      7,
+      10
+    ]
+  ],
+  "rails": []
+}
