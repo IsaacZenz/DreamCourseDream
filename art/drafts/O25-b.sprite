@@ -1,0 +1,31 @@
+# Acorns from the owner's drawing art/inbox/O25-acorn-drawing.jpg (2026-11-23), version B (clover with a sparkle).
+# Wide flat cap, thick stem leaning left, round nut tapering to a point, shadow on the right, a four-leaf clover with sparkle on the upper left.
+code: O25
+id: acorn-lucky
+status: draft
+size: 10x11
+outline: ink
+variant: acorn-golden tan>gold
+variant: acorn-star tan>blue green>gold
+key K brown 3
+key k brown 2
+key j brown 1
+key T brown 2
+key N tan 4
+key n tan 3
+key m tan 2
+key g green 3
+key G green 4
+key w grey 4
+frame: idle
+..........
+...TT.....
+.KKKKTkkk.
+.jkkkkjjj.
+..Ngwnnm..
+.NgGgnnmm.
+.NNgnnmmm.
+.NNnnnmmm.
+..Nnnnmm..
+....nm....
+..........
