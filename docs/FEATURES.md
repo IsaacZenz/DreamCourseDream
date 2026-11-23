@@ -211,11 +211,12 @@ id, name, sprite id, health, phases (each with a health threshold, an attack pat
 |---|---|---|
 | The Warden | None. Three phases: slow slams, then summons, then both faster. Placeholder boss for every region until Milestone 8 (owner, 2026-11-17). | 7 |
 | Second boss | Shield that only drops after it attacks: **Gloamhorn**, a rhinoceros beetle whose wing cases open after it charges | 8 |
-| Third and final boss | **Owner, 2026-11-19: the Brood Queen**, a giant queen ant and the bugs' leader; only hits from above (on her back) count, her sides bite | 8 |
+| Third boss (was the final boss until 2026-11-23) | **Owner, 2026-11-19: the Brood Queen**, a giant queen ant; only hits from above (on her back) count, her sides bite | 8 |
+| Fourth and final boss | **Owner, 2026-11-23: a giant centipede** (name to pick; default Thousandfoot). Its body wraps the whole arena edge and never stops moving; only unarmoured segments can be hurt (3, then more as shell plates fall off each phase); marked spikes shot across the arena (2, 3, 4 by phase); a leg sweep if the ball rests next to the body, on the turns between spikes; summons from phase 2; its spikes, sweep and head hurt its own minions; in phase 3 the head bursts up in a marked circle, can be hit for one shot, fires one unmarked spike and sinks. Numbers and details in `docs/plans/milestone-8-round-4.md` (waiting for sign-off) | 8 round 4 |
 
 **Decided (owner, 2026-11-17):**
 
-- **Boss randomizer:** each region's boss is a seeded pick from that region's boss pool. New bosses are added to the pools as data. **Owner, 2026-11-19:** for now each pool holds one boss: region 1 the Stagwarden, region 2 Gloamhorn, region 3 the Brood Queen.
+- **Boss randomizer:** each region's boss is a seeded pick from that region's boss pool. New bosses are added to the pools as data. **Owner, 2026-11-19:** for now each pool holds one boss: region 1 the Stagwarden, region 2 Gloamhorn, region 3 the Brood Queen. **Owner, 2026-11-23:** region 4 holds the centipede; endless regions (5 and on) use every boss.
 - **Arenas:** five hand-picked arenas, each with its own gimmick or theme (Milestone 7: Bumper Ring, Sinkhole Bowl, Ice Rink, The Moat, Storm Steps). The same arena is never used twice in a row, also across runs.
 - **Boss wheel:** success rolls (section 8) against a boss use a 20-slice wheel instead of 10, with the same number of slices filled, so bosses are always harder to affect.
 - Summoned minions leave no flag pole (default kept).
@@ -500,7 +501,8 @@ Build in Milestone 3.
 
 **Default.**
 
-- **Regions:** three, each with its own biome, enemy pool, hazard mix and boss. ~~The run ends after the third boss. Reaching the end unlocks an endless mode.~~ **Decided (owner, 2026-11-18): after the third boss the run goes on into endless mode.** Each new region scales the same way as the first three (size, threat and toughness as separate dials) and its boss is a seeded pick from the boss randomizer (all bosses, never the same as the last region). **Owner, 2026-11-18: course size caps at region 3's size; threat, toughness, boss health and everything else keep growing each region.** Built in Milestone 8 round 1; numbers in `docs/plans/milestone-8.md` section 10a.
+- **Decided (owner, 2026-11-23): four regions, then endless.** Region 4 uses the Starfall theme and ends with the centipede, the new final boss; beating it wins the run. Endless mode starts at region 5. Sheet `docs/plans/milestone-8-round-4.md`.
+- **Regions:** ~~three~~ four (owner, 2026-11-23), each with its own biome, enemy pool, hazard mix and boss. ~~The run ends after the third boss. Reaching the end unlocks an endless mode.~~ **Decided (owner, 2026-11-18): after the third boss the run goes on into endless mode.** Each new region scales the same way as the first three (size, threat and toughness as separate dials) and its boss is a seeded pick from the boss randomizer (all bosses, never the same as the last region). **Owner, 2026-11-18: course size caps at region 3's size; threat, toughness, boss health and everything else keep growing each region.** Built in Milestone 8 round 1; numbers in `docs/plans/milestone-8.md` section 10a.
 - **Course modifiers** (Milestone 8, optional): a course may roll one rule change, such as wind, low gravity, or darkness that shortens the guide. Each is a set of modifiers and has a budget cost. **Built in round 2b (owner, 2026-11-21):** wind (cost 2), low gravity (60%, in the air; cost 1), darkness (half guide; cost 2); 0% of courses in region 1, 20% in region 2, 30% in region 3 and endless; never on boss fights.
 - **Biomes (round 2b):** Meadow (region 1, unchanged), Bog (region 2), Thornwood (region 3); endless regions take them in turn.
 - **Unlocks:** new content enters the pool through blue star unlocks (section 10) and by beating each boss for the first time.

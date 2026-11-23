@@ -182,7 +182,9 @@ After playing the first generator, the owner asked for larger, more open, much m
 - [x] Owner, 2026-11-19: the map shows only the path taken and the next 1 to 3 choices, with a testing switch to show the whole map (round 3)
 - [x] Owner, 2026-11-18: endless mode after the third region: each new region scales the same way, bosses from the boss randomizer (round 1)
 
-**Done when:** three regions and a final boss are playable and the owner judges the difficulty curve fair.
+- [ ] Owner, 2026-11-23 (round 4): **four regions, then endless.** Region 4 in the Starfall theme with a new final boss, a giant centipede (moving weak spots, marked spikes, a leg sweep, summons that its own attacks kill, a head in phase 3). Plan gate: sheet `docs/plans/milestone-8-round-4.md`, waiting for the owner's sign-off
+
+**Done when:** ~~three~~ four regions (owner, 2026-11-23) and a final boss are playable and the owner judges the difficulty curve fair.
 
 ## Milestone 8b — Walkable towns and crossroads (owner, 2026-11-21)
 
@@ -313,3 +315,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-22 — Owner signed off the round 3 sheet: second pockets 17 blue stars each, Thud and Pip 21 each, everything else the defaults (Needle family, Sale, Grab Bag, Chef's Special, map shows only the next choices, balance targets, build order). Every remaining open question (DESIGN 2, 3, 5, 6, 7, 10; FEATURES F1 to F4, F6) keeps its default. Recorded in the sheet, FEATURES.md and DESIGN.md.
 - 2026-11-22 — Milestone 8 round 3 built: the map shows only the next choices (U-panel "Show the whole map"); the Needle poison family; Sale, Grab Bag and Chef's Special; Thud and Pip (21 blue stars; Steady is a new knockBack stat at 0.65); three second gear pockets (17 blue stars; save version 4); `npm run balance` and `docs/plans/balance-report.md` (540 courses and boss fights). 520 tests pass. **Waiting for the owner:** balance proposals P1 to P5, then the owner's playtest to judge the curve fair (the milestone's done-when).
 - 2026-11-23 — Owner approved balance proposals P1 to P5: boss health Stagwarden 11 (region 1), Gloamhorn 11 (region 2), Brood Queen 26 (region 3); the first-try win target dropped; course damage unchanged until the owner's playtest. Round 3 merged. Milestone 8 is done when the owner judges the curve fair after a playtest.
+- 2026-11-23 — Owner decided: four regions, then endless; region 4 uses the Starfall theme and a new final boss, a giant centipede (owner's mechanics recorded). Round 4 design sheet `docs/plans/milestone-8-round-4.md` written; nothing built yet. **Waiting for the owner:** sign-off and the centipede's name.
