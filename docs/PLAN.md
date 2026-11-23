@@ -199,11 +199,11 @@ After playing the first generator, the owner asked for larger, more open, much m
 
 The owner draws the art; a tool turns photos of the drawings into sprites in one consistent style, usable from the phone. Tool only: no rules or content change.
 
-- [ ] **Plan gate:** design sheet `docs/plans/art-pipeline.md` (Art List with permanent codes, style guide and palette, sprite source format, Pixel Press tool, drawing sheets, phone workflow, pilot). Owner signs it off before building.
+- [x] **Plan gate:** design sheet `docs/plans/art-pipeline.md` (Art List with permanent codes, style guide and palette, sprite source format, Pixel Press tool, drawing sheets, phone workflow, pilot). Owner signs it off before building. (Signed off 2026-11-23, all defaults except Q4: everything drawn freehand in a sketchbook, Claude renders small items down.)
 - [ ] Style guide and palette approved by the owner
 - [ ] Art List generated from the manifest, with permanent codes
 - [ ] Pixel Press: sprite sources to PNG and manifest, mirroring, character and theme recolours, style check, placeholders never overwrite approved art
-- [ ] Printable drawing sheets
+- [ ] Contact sheets of every placeholder with its code (replaces printed drawing sheets: the owner draws freehand in a sketchbook)
 - [ ] Pilot: three owner drawings taken through the whole loop from the phone
 - [ ] Tile swatches wrapped onto every slope shape
 

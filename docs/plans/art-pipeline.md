@@ -1,6 +1,6 @@
 # Art pipeline: from the owner's drawings to game sprites
 
-**Status: draft, waiting for the owner's review (plan gate). Nothing on this sheet is built yet.**
+**Status: signed off by the owner, 2026-11-23, with one change (Q4: everything is drawn freehand in a sketchbook; Claude renders small items down to pixels). Being built.**
 
 The owner asked (2026-11-23) for a way to design the game's art themselves, by
 drawing on paper, photographing the drawing on a phone, and having it turned into
@@ -36,10 +36,10 @@ fireflies, glowing bugs) with dynamic shadows, and several variants per theme.
 
 1. **Pick an item from the Art List** (section 3). Each item has a code such as
    `G14` and a box size.
-2. **Print or copy its drawing sheet** (section 5): a page with the code, the
-   name, a short description, and a box at the right shape. Small items get a grid
-   where one square is one pixel.
-3. **Draw it.** Write the code in the corner of the page. Optional: write colour
+2. **Look up its size** on the Art List (the contact sheet shows the placeholder
+   enlarged, so you know what you are replacing).
+3. **Draw it in the sketchbook**, freehand, any size (owner, 2026-11-23). Write the
+   code next to the drawing. Optional: write colour
    words on regions ("shell: dark red", "eyes: glow").
 4. **Photograph it in the Claude app on the phone** and send it in a Claude Code
    session on this repository, with a message like "G14, keep the handle thin".
@@ -153,20 +153,28 @@ Two steps, honest about what each does well:
    drawing's character (eyes, shape of the shell), applies the style rules, and
    lists any guesses it made for the owner to check.
 
-For tiny sprites (gear, icons, 12×12 and smaller) shrinking a freehand drawing does
-not work: a 12×12 icon has only 144 pixels, and every one is a decision. So small
-items are drawn **on the pixel grid sheet**, one square per pixel, and the
-translation is then almost exact. Freehand linework is best for anything about
-32 px or larger.
+**Small items (owner, 2026-11-23): freehand in the sketchbook, Claude renders them
+down.** Shrinking a drawing to 12×12 by maths turns it to mush: a 12×12 icon has
+only 144 pixels, and every one is a decision. So for anything about 24 px or smaller:
 
-## 5. Drawing sheets
+1. Claude lists the drawing's **key features** (for example: "curved hook at the
+   top, three stripes, a round eye") and which ones must survive at that size.
+2. Claude makes **two or three render-downs** that keep different things (one
+   faithful to the outline, one that exaggerates the most recognisable feature,
+   one simplified for readability), as sprite files.
+3. `npm run art:preview` shows them side by side at 1× (true size) and enlarged,
+   next to the placeholder. The owner picks one, or mixes ("A's body, B's eyes").
+4. If a feature cannot fit, Claude says so and suggests a fix (drop it, make it a
+   single pixel, or grow the sprite, Q5).
 
-`npm run art:sheets` makes printable pages (PDF and PNG, so they also open on the
-phone): per item, the code in big letters, the name, its description, the box at
-the right proportions with the ground line and anchor marked, and for small items
-a pixel grid. Several small items share a page. For animated items the sheet has a
-strip of frame boxes (for example, the armadillo's curl: stand, crouch, half-curl,
-ball).
+Larger items use the same steps with one render-down instead of three.
+
+## 5. Contact sheets (replaces printed drawing sheets, owner 2026-11-23)
+
+The owner draws in a sketchbook, so nothing needs printing. Instead `npm run art:list`
+also makes one picture per group (`art/list/<letter>.png`): every placeholder
+enlarged with its code under it, so on the phone it is easy to see which code is
+which and how big it is. For animated items it shows every frame.
 
 ## 6. How this fits the coming milestones
 
@@ -193,7 +201,7 @@ ball).
    page and a mock-up of three existing placeholders redrawn in it.
 2. Art List generator and permanent codes.
 3. Sprite source format, Pixel Press, style check, placeholder skip rule.
-4. Drawing sheet generator.
+4. Contact sheets (the owner draws freehand, so no printed sheets).
 5. **Pilot:** the owner draws three items (one gear icon, one enemy, one larger
    scenery or place item) and runs the whole loop from the phone. Fix whatever is
    awkward.
@@ -206,11 +214,11 @@ ball).
 | Q1 | Permanent codes (letter + number that never change) instead of spreadsheet cell names? | Yes, permanent codes |
 | Q2 | Palette size: about 48 colours, or tighter (32) for a stronger retro look? | About 48 |
 | Q3 | Outline colour: darkest shade of each object's own colour, or one dark colour for everything? | Darkest shade of its own colour |
-| Q4 | Small items drawn on the pixel grid sheet, freehand for large ones? | Yes |
+| Q4 | Small items drawn on the pixel grid sheet, freehand for large ones? | ~~Yes~~ **Owner: everything freehand in a sketchbook; Claude renders small items down** (section 4.4) |
 | Q5 | Keep sprite sizes as they are, or allow some to grow when you draw them? | Allowed, Claude checks the game still fits |
 | Q6 | Also make the Art List a phone-friendly page with each placeholder's picture? | Yes, after the pilot |
 | Q7 | When to build this: now (before the Milestone 8 playtest is finished) or after? | Now; it touches no game rules |
 
 ## Sign-off
 
-- [ ] Owner signed off this sheet (date, changes):
+- [x] Owner signed off this sheet, 2026-11-23: "everything is good", all defaults (Q1 permanent codes, Q2 about 48 colours, Q3 own darkest shade, Q5 sizes may grow, Q6 phone page after the pilot, Q7 build now), except Q4: everything is drawn freehand in a sketchbook and Claude does the render-down for small items.
