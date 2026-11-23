@@ -6,7 +6,9 @@
  * style is a set of settings: how many shades, outline kind, rim light, shine,
  * dithering, eye style, blush, ground texture. Nothing here goes into the game.
  *
- * Run with: npm run art:styles   (writes art/previews/style-lab-*.png)
+ * Run with: npm run art:styles             (the first six styles, A to F)
+ *           npm run art:styles -- blend    (owner, 2026-11-23: B shapes with a little of C's light)
+ * Writes art/previews/style-lab-<set>-items.png and -scenes.png.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -44,13 +46,13 @@ export interface Style {
   readonly dither: boolean;
   readonly eyes: 'dot' | 'big';
   readonly blush: boolean;
-  readonly grass: 'checker' | 'flat' | 'textured';
+  readonly grass: 'checker' | 'flat' | 'soft' | 'textured';
   readonly shadow: 'none' | 'solid' | 'dither';
   /** Sprite size compared with today's placeholders. */
   readonly scale: number;
 }
 
-const STYLES: Style[] = [
+const FIRST: Style[] = [
   { name: 'A NOW', note: 'TODAY: 4 SHADES, OWN OUTLINE', levels: [1, 2, 3, 4], contrast: 1, outline: 'own', innerLines: false, rim: null, shine: false, dither: false, eyes: 'dot', blush: false, grass: 'checker', shadow: 'none', scale: 1 },
   { name: 'B SOFT', note: 'ROUND, 3 BRIGHT SHADES, BIG EYES', levels: [2, 3, 4], contrast: 0.8, outline: 'ink', innerLines: true, rim: null, shine: true, dither: false, eyes: 'big', blush: true, grass: 'flat', shadow: 'solid', scale: 1 },
   { name: 'C GLOW', note: '5 SHADES, SOFT OUTLINE, COOL RIM', levels: [0, 1, 2, 3, 4], contrast: 1, outline: 'selective', innerLines: false, rim: { ramp: 'blue', shade: 4 }, shine: true, dither: false, eyes: 'dot', blush: false, grass: 'textured', shadow: 'dither', scale: 1 },
@@ -58,6 +60,21 @@ const STYLES: Style[] = [
   { name: 'E MIX', note: 'B SHAPES + C LIGHT', levels: [1, 2, 3, 4], contrast: 1.1, outline: 'selective', innerLines: true, rim: { ramp: 'blue', shade: 4 }, shine: true, dither: false, eyes: 'big', blush: true, grass: 'textured', shadow: 'dither', scale: 1 },
   { name: 'F MIX BIG', note: 'E AT 1.5X SIZE', levels: [0, 1, 2, 3, 4], contrast: 1.1, outline: 'selective', innerLines: true, rim: { ramp: 'blue', shade: 4 }, shine: true, dither: true, eyes: 'big', blush: true, grass: 'textured', shadow: 'dither', scale: 1.5 },
 ];
+
+// Owner, 2026-11-23: "B shapes with C light, a little more like B and less like C".
+// Steps from pure B towards E, adding one piece of C's lighting at a time.
+const B = FIRST[1]!;
+const BLEND: Style[] = [
+  { ...B, name: 'B', note: 'SOFT, AS BEFORE' },
+  { ...B, name: 'B1', note: 'B + COOL RIM LIGHT', rim: { ramp: 'blue', shade: 4 } },
+  { ...B, name: 'B2', note: 'B1 + SOFT GRASS, SOFT SHADOW', rim: { ramp: 'blue', shade: 4 }, grass: 'soft', shadow: 'dither' },
+  { ...B, name: 'B3', note: 'B2 + A 4TH, DARKER SHADE', levels: [1, 2, 3, 4], contrast: 0.9, rim: { ramp: 'blue', shade: 4 }, grass: 'soft', shadow: 'dither' },
+  { ...B, name: 'B4', note: 'B3 + SOFTER OUTLINE ON THE LIT SIDE', levels: [1, 2, 3, 4], contrast: 0.9, outline: 'selective', rim: { ramp: 'blue', shade: 4 }, grass: 'soft', shadow: 'dither' },
+  { ...FIRST[4]!, name: 'E', note: 'MIX FROM LAST TIME, FOR COMPARISON' },
+];
+const SETS: Record<string, Style[]> = { first: FIRST, blend: BLEND };
+const SET = process.argv[2] ?? 'first';
+const STYLES = SETS[SET] ?? FIRST;
 
 // ---------------------------------------------------------------------------
 // Shapes, in placeholder-sized pixel units
@@ -312,6 +329,11 @@ function ground(w: number, h: number, st: Style, ox = 0, oy = 0): Image {
         c = n < 0.3 && (gx + gy) % 2 === 0 ? col('green', 2) : col('green', 3);
         if (hash(gx, gy, 5) < 0.018) c = col('green', 4);
         else if (hash(gx, gy - 1, 5) < 0.018) c = col('green', 2);
+      } else if (st.grass === 'soft') {
+        // Plain grass with a few large, gentle patches and rare blades.
+        const n = hash(Math.floor((gx + gy * 2) / 14), Math.floor((gx - gy * 2 + 400) / 14), 3);
+        if (n < 0.22 && (gx + gy) % 2 === 0) c = col('green', 2);
+        if (hash(gx, gy, 5) < 0.01) c = col('green', 4);
       } else if (hash(gx, gy, 9) < 0.02) c = col('green', 4);
       img.set(x, y, c);
     }
@@ -394,6 +416,6 @@ STYLES.forEach((st, k) => {
 });
 
 mkdirSync(join(ROOT, 'art/previews'), { recursive: true });
-writeFileSync(join(ROOT, 'art/previews/style-lab-items.png'), encodePng(sheet));
-writeFileSync(join(ROOT, 'art/previews/style-lab-scenes.png'), encodePng(scenes));
-console.log('Wrote art/previews/style-lab-items.png and style-lab-scenes.png');
+writeFileSync(join(ROOT, `art/previews/style-lab-${SET}-items.png`), encodePng(sheet));
+writeFileSync(join(ROOT, `art/previews/style-lab-${SET}-scenes.png`), encodePng(scenes));
+console.log(`Wrote art/previews/style-lab-${SET}-items.png and -scenes.png`);
