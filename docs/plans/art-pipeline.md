@@ -222,3 +222,27 @@ which and how big it is. For animated items it shows every frame.
 ## Sign-off
 
 - [x] Owner signed off this sheet, 2026-11-23: "everything is good", all defaults (Q1 permanent codes, Q2 about 48 colours, Q3 own darkest shade, Q5 sizes may grow, Q6 phone page after the pilot, Q7 build now), except Q4: everything is drawn freehand in a sketchbook and Claude does the render-down for small items.
+
+## As built (2026-11-23)
+
+- **Art List:** `npm run art:list` writes `art/codes.json` (232 permanent codes: T 29,
+  H 8, E 21, B 3, O 28, S 11, G 70, I 45, P 17), `art/ART-LIST.md` and contact sheets
+  `art/list/<letter>.png`, plus `art/list/palette.png`. Flipped copies (`-left`) get no
+  code of their own; Thud and Pip have their own codes and can be recolours of Rollo.
+- **Sprite files:** format at the top of `tools/art/sprite.ts`; finished ones in
+  `art/src/`, render-down choices in `art/drafts/`, Claude's style mock-ups in
+  `art/mockups/` (E1 Snoozegrub, G13 Pin Needle, S8 Mushrooms; never pressed).
+- **Press:** `npm run art:press`; `npm run art` runs it last. Checks the code against the
+  Art List, the frame names against the game's, and asks for a new anchor when a
+  sprite changes size. A themed press replaces the placeholder's theme recolours.
+- **Preview:** `npm run art:preview -- <files or codes>`: true size and 3× on grass and
+  dark, enlarged, every copy made automatically, and the sprite in the game now.
+- **Style check:** `tests/art.test.ts` checks every approved sprite's colours,
+  transparency and size, and that every sprite has a code.
+- **Checked in the game:** the mock-up Snoozegrub pressed in showed correctly on the
+  test bench with no code change, then was removed (placeholders back, assets unchanged).
+- **Learned:** a mostly green enemy blends into the grass. Proposed rule in
+  `art/STYLE.md` (contrast with the ground), waiting for the owner.
+- **Not built yet:** photo clean-up for large drawings (wait for the pilot to see how
+  photos arrive); tile texture swatches (last step); the glow layer is read from sprite
+  files but not used until the Milestone 9 lighting.
