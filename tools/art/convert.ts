@@ -80,14 +80,32 @@ export function photoFromRgba(data: Uint8Array, w: number, h: number, size: numb
   return { w: W, h: H, grey, sat };
 }
 
-export function readPhoto(path: string, size: number): Photo {
+/** Cut out part of an RGBA image: `crop` is x0, y0, x1, y1 as fractions of it. */
+export function cropRgba(data: Uint8Array, w: number, h: number, crop: readonly number[]): { data: Uint8Array; w: number; h: number } {
+  const x0 = Math.max(0, Math.floor(crop[0]! * w));
+  const y0 = Math.max(0, Math.floor(crop[1]! * h));
+  const x1 = Math.min(w, Math.ceil(crop[2]! * w));
+  const y1 = Math.min(h, Math.ceil(crop[3]! * h));
+  const cw = Math.max(1, x1 - x0);
+  const ch = Math.max(1, y1 - y0);
+  const out = new Uint8Array(cw * ch * 4);
+  for (let y = 0; y < ch; y++) out.set(data.subarray(((y0 + y) * w + x0) * 4, ((y0 + y) * w + x0 + cw) * 4), y * cw * 4);
+  return { data: out, w: cw, h: ch };
+}
+
+/** Read a JPEG or PNG photo. With `crop` (fractions x0, y0, x1, y1), only that part: one drawing on a page of several. */
+export function readPhoto(path: string, size: number, crop?: readonly number[]): Photo {
   const bytes = readFileSync(path);
+  let img: { data: Uint8Array; w: number; h: number };
   if (/\.png$/i.test(path)) {
-    const img = decodePng(bytes);
-    return photoFromRgba(img.data, img.width, img.height, size);
+    const p = decodePng(bytes);
+    img = { data: p.data, w: p.width, h: p.height };
+  } else {
+    const j = jpeg.decode(bytes, { useTArray: true, formatAsRGBA: true, maxMemoryUsageInMB: 1024 });
+    img = { data: j.data, w: j.width, h: j.height };
   }
-  const img = jpeg.decode(bytes, { useTArray: true, formatAsRGBA: true, maxMemoryUsageInMB: 1024 });
-  return photoFromRgba(img.data, img.width, img.height, size);
+  if (crop) img = cropRgba(img.data, img.w, img.h, crop);
+  return photoFromRgba(img.data, img.w, img.h, size);
 }
 
 // ---------------------------------------------------------------------------

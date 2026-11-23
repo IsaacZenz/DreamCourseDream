@@ -8,6 +8,8 @@
  *
  * --colours   the ramp for marker-coloured parts and for plain parts (default in art/convert.json)
  * --size WxH  the box size, if not the Art List's (or art/targets.json's)
+ * --crop      use only this part of the photo (fractions: x0,y0,x1,y1): one drawing on a page
+ *             of several. The other options' fractions are then of the cropped part.
  * --ignore    leave out everything in a box of the photo (fractions: x0,y0,x1,y1)
  * --keep      bring back a stroke that was left out (fractions: x,y)
  * --paint     give the part at a spot of the photo a colour ramp (fractions: x,y=ramp), for
@@ -36,7 +38,7 @@ const flag = (name: string) => {
 };
 const [photoPath, code] = args.filter((a, i) => !a.startsWith('--') && !args[i - 1]?.startsWith('--'));
 if (!photoPath || !code) {
-  console.error('Usage: npm run art:convert -- <photo> <code> [--colours coloured=purple,plain=tan] [--size WxH] [--ignore x0,y0,x1,y1] [--keep x,y]');
+  console.error('Usage: npm run art:convert -- <photo> <code> [--crop x0,y0,x1,y1] [--colours coloured=purple,plain=tan] [--paint x,y=ramp] [--size WxH] [--ignore x0,y0,x1,y1] [--keep x,y]');
   process.exit(1);
 }
 const settings = JSON.parse(readFileSync(join(ROOT, 'art/convert.json'), 'utf8')) as ConvertSettings;
@@ -56,7 +58,8 @@ for (const pair of (flag('colours')[0] ?? '').split(',').filter(Boolean)) {
 }
 const nums = (s: string) => s.split(',').map(Number);
 
-const photo = readPhoto(photoPath, settings.workSize);
+const crop = flag('crop')[0];
+const photo = readPhoto(photoPath, settings.workSize, crop ? nums(crop) : undefined);
 const reading = readDrawing(photo, settings, flag('ignore').map(nums), flag('keep').map(nums));
 // --paint x,y=ramp: the part under that spot of the photo takes that ramp.
 const painted = new Map<string, string>();

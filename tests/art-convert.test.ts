@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import jpeg from 'jpeg-js';
 import { describe, expect, it } from 'vitest';
-import { b2Key, fits, partMap, partText, photoFromRgba, readDrawing, shadeB2, type ConvertSettings } from '../tools/art/convert.ts';
+import { b2Key, cropRgba, fits, partMap, partText, photoFromRgba, readDrawing, shadeB2, type ConvertSettings } from '../tools/art/convert.ts';
 import { loadArt } from '../tools/art/press.ts';
 import { parseSprite } from '../tools/art/sprite.ts';
 
@@ -110,5 +110,19 @@ describe('shading in B2', () => {
     shadeB2(grid, settings, (p) => (p.endsWith('c') ? 'green' : p.startsWith('1') ? 'grey' : 'tan'), ramps);
     expect(new Set(ramps).size).toBe(ramps.length);
     expect(b2Key(ramps).filter((k) => /^key [2-4a-cf-h] /.test(k))).toHaveLength(ramps.length * 3);
+  });
+});
+
+describe('a page of several drawings', () => {
+  it('--crop reads only one drawing: the right half of a page with two', () => {
+    const one = drawing();
+    const page = new Uint8Array(400 * 200 * 4);
+    for (let y = 0; y < 200; y++) {
+      page.set(one.subarray(y * 800, y * 800 + 800), y * 1600);
+      page.set(one.subarray(y * 800, y * 800 + 800), y * 1600 + 800);
+    }
+    const c = cropRgba(page, 400, 200, [0.5, 0, 1, 1]);
+    expect([c.w, c.h]).toEqual([200, 200]);
+    expect(readDrawing(photoFromRgba(c.data, c.w, c.h, 200), settings).regions).toHaveLength(2);
   });
 });

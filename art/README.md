@@ -5,7 +5,7 @@ Design: `docs/plans/art-pipeline.md`. Rules: `STYLE.md`.
 
 ## The loop (from the phone)
 
-1. Find the item's **code** in `ART-LIST.md` (or on a contact sheet in `list/`).
+1. Find the item's **code** in `ART-LIST.md` (or on a contact sheet in `list/`). For small sprites, work through the batches in `BATCHES.md` (small first, owner 2026-11-23); you can draw a whole batch on one page and send one photo.
 2. Draw it in the sketchbook and write the code next to it.
    - **Marker colouring (owner, 2026-11-23):** colour in areas with a marker to show
      which parts belong together (the shell, a drip, a plate). The marker's colour does

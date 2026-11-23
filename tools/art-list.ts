@@ -149,3 +149,51 @@ console.log(`Art List: ${Object.keys(codes).length} codes (${Object.keys(codes).
   });
   writeFileSync(join(ROOT, 'art/list/palette.png'), encodePng(img));
 }
+
+// Drawing batches (owner, 2026-11-23: small sprites first): art/BATCHES.md and art/list/batch-<n>.png.
+{
+  const path = join(ROOT, 'art/batches.json');
+  if (existsSync(path)) {
+    const { batches } = JSON.parse(readFileSync(path, 'utf8')) as { batches: Array<{ name: string; why: string; codes: string[] }> };
+    let bmd = `# Drawing batches
+
+Small sprites first (owner, 2026-11-23); large ones (buildings, rooms, bosses) are on hold.
+Draw a batch on one sketchbook page if you like, with each code next to its drawing, and
+send one photo. Pictures of today's placeholders: \`art/list/batch-<n>.png\`.
+Made by \`npm run art:list\` from \`art/batches.json\`.
+
+`;
+    batches.forEach((b, n) => {
+      const done = b.codes.filter((c) => statusOf(codes[c]!) === 'approved').length;
+      bmd += `## Batch ${n + 1}: ${b.name} (${done} of ${b.codes.length} done)\n\n${b.why} Picture: [batch-${n + 1}.png](list/batch-${n + 1}.png)\n\n| Code | Name | Size | Status |\n|---|---|---|---|\n`;
+      for (const c of b.codes) {
+        const id = codes[c]!;
+        const e = manifest.sprites[id]!;
+        bmd += `| **${c}** | ${content.names.get(id) ?? human(id)} | ${e.frameWidth}×${e.frameHeight} | ${statusOf(id)} |\n`;
+      }
+      bmd += '\n';
+      // The batch's picture: each placeholder enlarged, with its code.
+      const items = b.codes.map((code) => {
+        const e = manifest.sprites[codes[code]!]!;
+        const s = Math.max(4, sheetScale(e.frameWidth, e.frameHeight));
+        return { code, e, s, w: Math.max(e.frameWidth * s, textWidth(font, code, 3)), h: e.frameHeight * s + 26 };
+      });
+      const layout = flow(
+        items.map((i) => [i.w, i.h] as const),
+        700,
+        16,
+      );
+      const img = new Image(700, layout.height);
+      fillRect(img, 0, 0, img.width, img.height, bg);
+      items.forEach((it, k) => {
+        const [x, y] = layout.pos[k]!;
+        const pic = decodePng(readFileSync(join(ROOT, 'assets', it.e.file)));
+        checker(img, x, y, it.e.frameWidth * it.s, it.e.frameHeight * it.s, Math.max(2, it.s * 2), [58, 58, 74, 255], [50, 50, 64, 255]);
+        blitScaled(img, pic, x, y, it.s, 0, 0, it.e.frameWidth, it.e.frameHeight);
+        drawText(img, font, x, y + it.e.frameHeight * it.s + 6, it.code, 3, label);
+      });
+      writeFileSync(join(ROOT, `art/list/batch-${n + 1}.png`), encodePng(img));
+    });
+    writeFileSync(join(ROOT, 'art/BATCHES.md'), bmd);
+  }
+}
