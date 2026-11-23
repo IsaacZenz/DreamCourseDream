@@ -1,0 +1,22 @@
+# Bubble heart (owner, 2026-11-23: "a bubble heart in the style we created", no drawing), version A at 9x8, approved. The pickup stays a heart although the game calls it the Apple.
+code: O4
+id: heart
+status: approved
+size: 9x8
+anchor: 4 7
+outline: ink
+key 2 red 1
+key 3 red 2
+key 4 pink 3
+key h pink 4
+key w grey 4
+key r blue 4
+frame: idle
+.........
+..44.33..
+.4w44333.
+.4wh333r.
+..44332..
+...332...
+....2....
+.........
