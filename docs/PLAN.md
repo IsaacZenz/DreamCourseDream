@@ -195,6 +195,20 @@ After playing the first generator, the owner asked for larger, more open, much m
 
 **Done when:** the owner can play a run moving between courses only by walking.
 
+## Milestone 8c — Art pipeline (owner, 2026-11-23)
+
+The owner draws the art; a tool turns photos of the drawings into sprites in one consistent style, usable from the phone. Tool only: no rules or content change.
+
+- [ ] **Plan gate:** design sheet `docs/plans/art-pipeline.md` (Art List with permanent codes, style guide and palette, sprite source format, Pixel Press tool, drawing sheets, phone workflow, pilot). Owner signs it off before building.
+- [ ] Style guide and palette approved by the owner
+- [ ] Art List generated from the manifest, with permanent codes
+- [ ] Pixel Press: sprite sources to PNG and manifest, mirroring, character and theme recolours, style check, placeholders never overwrite approved art
+- [ ] Printable drawing sheets
+- [ ] Pilot: three owner drawings taken through the whole loop from the phone
+- [ ] Tile swatches wrapped onto every slope shape
+
+**Done when:** the owner can send a photo of a drawing from the phone and see it in the game, in style, the same day.
+
 ## Milestone 9 — Skin, sound and sharing
 
 - [ ] Theme, character and title chosen with the owner
@@ -313,3 +327,4 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-22 — Owner signed off the round 3 sheet: second pockets 17 blue stars each, Thud and Pip 21 each, everything else the defaults (Needle family, Sale, Grab Bag, Chef's Special, map shows only the next choices, balance targets, build order). Every remaining open question (DESIGN 2, 3, 5, 6, 7, 10; FEATURES F1 to F4, F6) keeps its default. Recorded in the sheet, FEATURES.md and DESIGN.md.
 - 2026-11-22 — Milestone 8 round 3 built: the map shows only the next choices (U-panel "Show the whole map"); the Needle poison family; Sale, Grab Bag and Chef's Special; Thud and Pip (21 blue stars; Steady is a new knockBack stat at 0.65); three second gear pockets (17 blue stars; save version 4); `npm run balance` and `docs/plans/balance-report.md` (540 courses and boss fights). 520 tests pass. **Waiting for the owner:** balance proposals P1 to P5, then the owner's playtest to judge the curve fair (the milestone's done-when).
 - 2026-11-23 — Owner approved balance proposals P1 to P5: boss health Stagwarden 11 (region 1), Gloamhorn 11 (region 2), Brood Queen 26 (region 3); the first-try win target dropped; course damage unchanged until the owner's playtest. Round 3 merged. Milestone 8 is done when the owner judges the curve fair after a playtest.
+- 2026-11-23 — Owner asked for an art pipeline (draw on paper, photo from the phone, game-ready pixel art in one style). Draft sheet `docs/plans/art-pipeline.md` written and added as Milestone 8c; waiting for the owner's review.
