@@ -37,6 +37,10 @@ import {
   coilSegmentLength,
   coilSegmentStart,
   inLegRing,
+  coilCorners,
+  coilRectOf,
+  coilSoft,
+  type CoilRect,
   debugBossHealth,
   type CoilLine,
   type EnemyState,
@@ -1143,17 +1147,15 @@ export class CourseScene extends Phaser.Scene {
   private spikeMarksShown = 0;
 
   /**
-   * Round 4: the middle of the centipede's body next to edge point `u`: one
-   * tile out from the edge (the body is 2 tiles wide), rounding the corners.
+   * Round 4: a point `out` tiles out from the centipede's edge at edge point
+   * `u` (on its rectangle `r`, which shrinks when the coil tightens), rounding
+   * the corners.
    */
-  private coilCentre(u: number, out: number): { x: number; y: number; ex: number; ey: number; nx: number; ny: number } {
-    const c = this.play.course;
-    const W = c.width;
-    const H = c.height;
-    const P = coilEdgeLength(c);
-    const pt = coilEdgePoint(c, u);
+  private coilCentre(r: CoilRect, u: number, out: number): { x: number; y: number; ex: number; ey: number; nx: number; ny: number } {
+    const P = coilEdgeLength(r);
+    const pt = coilEdgePoint(r, u);
     const m = ((u % P) + P) % P;
-    const corners = [0, W, W + H, 2 * W + H, P];
+    const corners = coilCorners(r);
     const cn = corners.find((x) => x > m + 1e-9)!;
     const cp = [...corners].reverse().find((x) => x <= m + 1e-9)!;
     let nx = pt.nx;
@@ -1161,7 +1163,7 @@ export class CourseScene extends Phaser.Scene {
     let mag = 1;
     const blend = (d: number, at: number) => {
       if (d >= 1) return;
-      const o = coilEdgePoint(c, at);
+      const o = coilEdgePoint(r, at);
       const t = 1 - d;
       nx += o.nx * t;
       ny += o.ny * t;
@@ -1192,19 +1194,22 @@ export class CourseScene extends Phaser.Scene {
     const now = this.time.now;
     const ball = ballNow(play);
     const len = coilSegmentLength(c, coil);
+    const rect = coilRectOf(c, coil);
     const groundZ = (x: number, y: number) => groundAt(c, Math.min(W - 0.01, Math.max(0.01, x)), Math.min(H - 0.01, Math.max(0.01, y)))?.h ?? 0;
     for (let k = 0; k < coil.segments; k++) {
       const start = coilSegmentStart(c, coil, k);
       const weak = coil.weak.includes(k);
+      const scabbed = weak && !coilSoft(coil, k);
       const shooter = coil.shooters.includes(k);
       for (const j of [0.25, 0.75]) {
         const u = start + len * j;
         // Drawn a little in from the body's true middle so the domes meet the map edge (the sprite's round sides leave a gap otherwise).
-        const ctr = this.coilCentre(u, rules.bodyWidth * 0.4);
+        const ctr = this.coilCentre(rect, u, rules.bodyWidth * 0.4);
         const z = groundZ(ctr.ex, ctr.ey);
-        const near = ctr.x > W - 0.01 || ctr.y > H - 0.01;
-        const behind = near && Math.hypot(ball.x - ctr.ex, ball.y - ctr.ey) < 3.2;
-        const frame = weak ? 'weak' : shooter && j === 0.25 ? 'shooter' : 'armour';
+        const near = ctr.x > rect.x1 - 0.01 || ctr.y > rect.y1 - 0.01;
+        const behind = near && Math.hypot(ball.x - ctr.ex, ball.y - ctr.ey) < 3.8;
+        // Owner, 2026-11-24: a weak spot that was just hit shows its new shell (a scab) until it wears off.
+        const frame = scabbed ? 'scab' : weak ? 'weak' : shooter && j === 0.25 ? 'shooter' : 'armour';
         show(`${e.uid}:seg:${k}:${j}`, 'centipede-segment', ctr.x, ctr.y, z, { frame, alpha: behind ? 0.35 : 1, ...(e.defeated && { tint: 0x808080 }) });
         // Legs: one tile in, in the leg ring, scuttling.
         const lx = ctr.ex - ctr.nx * 0.5;
@@ -1215,15 +1220,19 @@ export class CourseScene extends Phaser.Scene {
     }
     if (e.defeated) return;
     // The leg ring: where the sweep reaches. Brighter when the next turn is a sweep turn and the ball is in it.
-    const warn = !play.shot && coilNextTurn(e) === 'sweep' && inLegRing(c, ball.x, ball.y, rules.legReach);
+    const warn = !play.shot && coilNextTurn(e) === 'sweep' && inLegRing(rect, ball.x, ball.y, rules.legReach);
     const flash = now < this.sweepFlashUntil;
     const alpha = flash ? 1 : warn ? 0.6 + 0.4 * Math.abs(Math.sin(now / 160)) : 0.6;
     for (let ty = 0; ty < H; ty++) {
       for (let tx = 0; tx < W; tx++) {
-        if (!inLegRing(c, tx + 0.5, ty + 0.5, rules.legReach)) continue;
+        // Tiles under the body once the coil tightens are not part of the ring.
+        if (tx + 0.5 < rect.x0 || ty + 0.5 < rect.y0 || tx + 0.5 > rect.x1 || ty + 0.5 > rect.y1) continue;
+        if (!inLegRing(rect, tx + 0.5, ty + 0.5, rules.legReach)) continue;
         show(`${e.uid}:ring:${tx},${ty}`, 'danger-tile', tx + 0.5, ty + 0.5, groundZ(tx + 0.5, ty + 0.5), { depth: tileDepth(tx, ty, 'arrow'), alpha });
       }
     }
+    // Owner, 2026-11-24: spikes stuck in the ground; they fade on their last turn.
+    for (const q of coil.quills) show(q.uid, 'centipede-quill-stuck', q.x, q.y, groundZ(q.x, q.y), { alpha: q.turnsLeft <= 1 ? 0.55 + 0.25 * Math.abs(Math.sin(now / 150)) : 1 });
   }
 
   /** Round 4: a spike flying along its line. */
@@ -1244,7 +1253,7 @@ export class CourseScene extends Phaser.Scene {
     const c = this.play.course;
     const len = coilSegmentLength(c, e.coil);
     for (const k of segments) {
-      const ctr = this.coilCentre(coilSegmentStart(c, e.coil, k) + len / 2, 1);
+      const ctr = this.coilCentre(coilRectOf(c, e.coil), coilSegmentStart(c, e.coil, k) + len / 2, 1);
       const p = project(ctr.x, ctr.y, 0);
       const img = this.makeSprite('centipede-plate');
       img.setPosition(p.x, p.y - 18).setDepth(OVERLAY_DEPTH - 26);
@@ -1930,6 +1939,16 @@ export class CourseScene extends Phaser.Scene {
           break;
         case 'spike':
           this.flySpike(e.line);
+          break;
+        case 'quillHit':
+          this.showMessage('OUCH! A STUCK SPIKE', BAD, 900);
+          break;
+        case 'scab':
+          this.queueMessage('THAT SPOT SCABS OVER FOR 2 TURNS: FIND ANOTHER', GUIDE_WARN);
+          break;
+        case 'tighten':
+          this.cameras.main.shake(500, 0.01);
+          this.queueMessage('THE COIL TIGHTENS! THE WALLS CLOSE IN', BAD, 2600);
           break;
         case 'sweep':
           this.sweepFlashUntil = this.time.now + 500;

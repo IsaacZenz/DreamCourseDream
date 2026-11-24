@@ -34,7 +34,16 @@ export interface BossPhase {
    * segments, body speed in tiles a second, and whether the head comes up.
    * Weak spots only ever grow: plates that fell off stay off.
    */
-  readonly coil?: { readonly weak: number; readonly shooters: number; readonly speed: number; readonly head: boolean };
+  readonly coil?: {
+    readonly weak: number;
+    readonly shooters: number;
+    readonly speed: number;
+    readonly head: boolean;
+    /** Owner, 2026-11-24: how many tiles in from the map edge the body has squeezed (phase 3: 1, the coil tightens). */
+    readonly inset: number;
+    /** Owner, 2026-11-24: the legs sweep on every off turn, not only when the ball rests in the leg ring. */
+    readonly sweepAlways: boolean;
+  };
 }
 
 /**
@@ -60,6 +69,14 @@ export interface CoilRules {
   readonly head: { readonly markRadius: number; readonly damage: number; readonly knockSpeed: number; readonly knockHop: number; readonly damageMul: number };
   /** The body turns round at each phase change. */
   readonly reverseOnPhase: boolean;
+  /**
+   * Owner, 2026-11-24: a fired spike sticks in the ground at the far end of
+   * its line (`inFromEdge` tiles in from the wall) for `turns` of the
+   * centipede's turns. Rolling into it hurts.
+   */
+  readonly quill: { readonly turns: number; readonly damage: number; readonly radius: number; readonly height: number; readonly inFromEdge: number };
+  /** Owner, 2026-11-24: a weak spot that was just hit grows its shell back for this many of the centipede's turns. */
+  readonly scabTurns: number;
 }
 
 /**
@@ -223,6 +240,8 @@ const defs: readonly BossDef[] = [
       sweep: { damage: 1, push: 1.5 },
       head: { markRadius: 2.5, damage: 1, knockSpeed: 7, knockHop: 2, damageMul: 2 },
       reverseOnPhase: true,
+      quill: { turns: 2, damage: 1, radius: 0.2, height: 0.8, inFromEdge: 1.5 },
+      scabTurns: 2,
     },
     // Owner, 2026-11-23: always the same map.
     arenas: ['coil-pit'],
@@ -230,16 +249,17 @@ const defs: readonly BossDef[] = [
     health: [20, 24, 28, 32],
     phases: [
       // 1: 3 weak spots, 2 spikes, no summons.
-      { above: 2 / 3, slamRadius: null, maxMinions: 0, pool: [], coil: { weak: 3, shooters: 2, speed: 1, head: false } },
+      { above: 2 / 3, slamRadius: null, maxMinions: 0, pool: [], coil: { weak: 3, shooters: 2, speed: 1, head: false, inset: 0, sweepAlways: false } },
       // 2: 6 weak spots, 3 spikes, summons. Skitter Ant 40%, Bristlecrawler 30%, a grub 30%.
-      { above: 1 / 3, slamRadius: null, maxMinions: 2, pool: [{ id: 'skitter-ant', weight: 40 }, { id: 'bristlecrawler', weight: 30 }, ...each(GRUBS, 30 / GRUBS.length)], coil: { weak: 6, shooters: 3, speed: 1.25, head: false } },
-      // 3: 10 weak spots, 4 spikes, the head. Trapjaw 30%, Stinkpuff 30%, Pouncehopper 20%, a grub 20%.
+      { above: 1 / 3, slamRadius: null, maxMinions: 2, pool: [{ id: 'skitter-ant', weight: 40 }, { id: 'bristlecrawler', weight: 30 }, ...each(GRUBS, 30 / GRUBS.length)], coil: { weak: 6, shooters: 3, speed: 1.25, head: false, inset: 0, sweepAlways: false } },
+      // 3: 10 weak spots, 4 spikes, the head, the coil tightens. Trapjaw 30%, Stinkpuff 30%, Pouncehopper 20%, a grub 20%.
       {
         above: 0,
         slamRadius: null,
         maxMinions: 3,
         pool: [{ id: 'trapjaw', weight: 30 }, { id: 'stinkpuff', weight: 30 }, { id: 'pouncehopper', weight: 20 }, ...each(GRUBS, 20 / GRUBS.length)],
-        coil: { weak: 10, shooters: 4, speed: 1.5, head: true },
+        // Owner, 2026-11-24: the coil tightens by a tile and the legs sweep every off turn.
+        coil: { weak: 10, shooters: 4, speed: 1.5, head: true, inset: 1, sweepAlways: true },
       },
     ],
     slam: NO_SLAM,

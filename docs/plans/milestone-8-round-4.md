@@ -228,3 +228,13 @@ The owner played it on the test page and found it **too easy**. Owner decisions:
 - **Corner spikes:** a symmetrical L of spike tiles in each corner of the Coil Pit (20 tiles), set one tile in from the edge, so the outer ring (the leg ring) is still a clear path all the way round.
 - **The body is 3 tiles wide** (was 2). It still hangs over the edge; the map stays 15 by 15 and the wall is still exactly at the edge. Bigger placeholder domes.
 - **Bug fixed: the red spike lines and the head's circle did not show** on any course after the first one in a session. The scene is reused for every course, and the drawing for marks was kept from the destroyed old course. This also hid the Brood Queen's soldier rings, Stinkpuff rings and the Warden's slam ring after the first course. Found by entering the fight twice in a row; my earlier check only ever entered once.
+
+## 12. Harder: owner's picks from the suggestions (2026-11-24)
+
+The owner picked 2, 3, 4 and 7 from the list offered. Built the same day; numbers are starting values in `src/content/bosses.ts`.
+
+- **Stuck spikes (2).** A fired spike still flies the whole way across (the owner's design), then sticks in the ground at the far end of its line, 1.5 tiles in from the wall (just inside the red leg ring), for **2** of the centipede's turns. Rolling into one: **1 damage** and a bounce. It fades on its last turn. The unwarned head spike sticks too. The head bursting up throws aside stuck spikes in its way; when the coil tightens, spikes under the body are buried.
+- **The coil tightens in phase 3 (3).** The body moves **1 tile** in (the arena becomes 13 by 13). Minions under it are crushed, a ball there is pushed in (also mid-shot), and the leg ring, spike paths and the head's circle all follow the new edge.
+- **Scabs (4).** A weak spot that takes damage grows a crusty brown shell for **2** of the centipede's turns: armour for your next shot, soft again the shot after. Message: "THAT SPOT SCABS OVER FOR 2 TURNS".
+- **Phase 3 sweeps every off turn (7)**, ball in the ring or not. It still only hurts a ball in the ring; it crushes any minion there.
+- **Corner spikes moved one tile further in (2 tiles from the edge).** With the coil tightened, spikes one tile in would have sat inside the new leg ring, hidden under the body and blocking the path. Two tiles in, the outside is a clear path (2 tiles wide) in phases 1 and 2, and in phase 3 the spikes sit right against the leg ring, still visible.

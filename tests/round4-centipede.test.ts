@@ -8,7 +8,7 @@ import { BOSSES } from '../src/content/bosses';
 import { DEFAULT_TUNING } from '../src/content/tuning';
 import type { ShotCommand } from '../src/sim/ball';
 import { parseCourse } from '../src/sim/course';
-import { coilEdgeCoord, coilNextTurn, coilSegmentAt, createPlay, drainLog, runShot, takeShot, wait, type EnemyState, type PlayEvent, type PlayState } from '../src/sim/play';
+import { coilEdgeCoord, coilNextTurn, coilRectOf, coilSegmentAt, coilSoft, createPlay, debugBossHealth, drainLog, runShot, takeShot, wait, type EnemyState, type PlayEvent, type PlayState } from '../src/sim/play';
 
 const T = DEFAULT_TUNING;
 const shot = (over: Partial<ShotCommand> = {}): ShotCommand => ({ angle: 0, power: 0.5, type: 'ground', topSpin: 0, sideSpin: 0, ...over });
@@ -37,7 +37,7 @@ describe('the Coil Pit', () => {
     expect([p.course.width, p.course.height]).toEqual([15, 15]);
     expect(boss(p).coil!.segments).toBe(30);
   });
-  it('has spikes in the corners (owner, 2026-11-24), symmetrical, one tile in, so the outer ring is a clear path all the way round', () => {
+  it('has spikes in the corners (owner, 2026-11-24), symmetrical, two tiles in, so the outside is a clear path all the way round', () => {
     const c = pit().course;
     const spiky = (x: number, y: number) => c.tiles[y * c.width + x]?.surface === 'spikes';
     let n = 0;
@@ -46,7 +46,8 @@ describe('the Coil Pit', () => {
         if (!spiky(x, y)) continue;
         n++;
         expect(spiky(c.width - 1 - x, y) && spiky(x, c.height - 1 - y)).toBe(true);
-        expect(x > 0 && y > 0 && x < c.width - 1 && y < c.height - 1).toBe(true);
+        // Two tiles in (owner, 2026-11-24): a clear path round the outside, still clear of the leg ring once the coil tightens.
+        expect(x > 1 && y > 1 && x < c.width - 2 && y < c.height - 2).toBe(true);
       }
     }
     expect(n).toBe(20);
@@ -95,7 +96,7 @@ describe('the moving body and its weak spots (owner)', () => {
   it('which segment is at a spot changes as the body moves', () => {
     const p = pit();
     const c = boss(p).coil!;
-    const u = coilEdgeCoord(p.course, 7.5, 15);
+    const u = coilEdgeCoord(coilRectOf(p.course, c), 7.5, 15);
     const a = coilSegmentAt(p.course, c, u);
     wait(p, 120 * 3);
     expect(coilSegmentAt(p.course, c, u)).not.toBe(a);
@@ -202,7 +203,9 @@ describe('phase 3: the head (owner)', () => {
     const h = p.health;
     log = turnAt(p, 7.5, 7.5);
     expect(log.some((e) => e.kind === 'headUp' && e.hit)).toBe(true);
-    expect(p.health).toBe(h - 1);
+    // The spike aimed at the ball may land first (then the half-second immunity soaks up the burst); either way it hurts.
+    expect(log.some((e) => e.kind === 'damage' && (e.cause === 'burst' || e.cause === 'quill'))).toBe(true);
+    expect(p.health).toBeLessThanOrEqual(h - 1);
     expect(b.coil!.head).toBe('up');
     // A shot into the head: double damage.
     const before = b.health;
@@ -238,5 +241,71 @@ describe('determinism', () => {
       return JSON.stringify([b.health, b.coil, p.health, p.ball.x.toFixed(6), p.ball.y.toFixed(6)]);
     };
     expect(run()).toBe(run());
+  });
+});
+
+describe('harder after the first playtest (owner, 2026-11-24)', () => {
+  it('a fired spike sticks in the ground near the far wall, hurts a ball that rolls into it, and is gone after 2 of the centipede turns', () => {
+    const p = pit('q');
+    const b = boss(p);
+    turnAt(p, 7.5, 9.5);
+    const log = turnAt(p, 3.5, 7.5);
+    const stuck = log.filter((e) => e.kind === 'spike' && e.stuck);
+    expect(stuck.length).toBeGreaterThan(0);
+    expect(b.coil!.quills.length).toBe(stuck.length);
+    const rect = coilRectOf(p.course, b.coil!);
+    for (const q of b.coil!.quills) {
+      // Just inside the leg ring: the outer path stays clear.
+      expect(q.x >= rect.x0 + 1 && q.y >= rect.y0 + 1 && q.x <= rect.x1 - 1 && q.y <= rect.y1 - 1).toBe(true);
+      expect(p.world.obstacles.some((o) => o.id === q.uid)).toBe(true);
+    }
+    // Roll into one.
+    const q = b.coil!.quills[0]!;
+    p.ball = { ...p.ball, x: q.x - 1.2, y: q.y };
+    p.restSpot = { ...p.ball };
+    const h = p.health;
+    takeShot(p, shot({ angle: 0, power: 0.35 }));
+    runShot(p);
+    const log2 = drainLog(p);
+    expect(log2.some((e) => e.kind === 'quillHit')).toBe(true);
+    expect(p.health).toBeLessThan(h);
+    // Two of the centipede's turns after it landed, it is gone.
+    turnAt(p, 7.5, 7.5);
+    expect(b.coil!.quills.some((x) => x.uid === q.uid)).toBe(false);
+  });
+  it('a weak spot that was hit scabs over: armoured for the next shot, soft again the shot after', () => {
+    const p = pit('sc');
+    const b = boss(p);
+    b.coil!.weak = Array.from({ length: 30 }, (_, k) => k);
+    takeShot(p, shot({ angle: Math.PI / 2, power: 1 }));
+    runShot(p);
+    const log = drainLog(p);
+    const sc = log.find((e) => e.kind === 'scab');
+    expect(sc).toBeTruthy();
+    const k = sc && sc.kind === 'scab' ? sc.segment : -1;
+    expect(coilSoft(b.coil!, k)).toBe(false);
+    turnAt(p, 7.5, 7.5);
+    expect(coilSoft(b.coil!, k)).toBe(true);
+  });
+  it('phase 3: the coil tightens a tile in, pushing the ball in, and the legs sweep every off turn', () => {
+    const p = pit('t');
+    const b = boss(p);
+    p.ball = { ...p.ball, x: 0.4, y: 7.5 };
+    p.restSpot = { ...p.ball };
+    debugBossHealth(p, b, 10);
+    const log = drainLog(p);
+    expect(b.phase).toBe(2);
+    expect(log.some((e) => e.kind === 'tighten')).toBe(true);
+    expect(b.coil!.inset).toBe(1);
+    expect(p.ball.x).toBeGreaterThan(1);
+    // The wall is now a tile in.
+    const rect = coilRectOf(p.course, b.coil!);
+    expect(rect).toEqual({ x0: 1, y0: 1, x1: 14, y1: 14 });
+    // Off turn with the ball far from the ring: the legs still sweep (no damage).
+    const h = p.health;
+    const log2 = turnAt(p, 7.5, 7.5);
+    const sw = log2.find((e) => e.kind === 'sweep');
+    expect(sw && sw.kind === 'sweep' && sw.hit).toBe(false);
+    expect(p.health).toBe(h);
   });
 });

@@ -2816,11 +2816,24 @@
       "frames": [
         "armour",
         "weak",
-        "shooter"
+        "shooter",
+        "scab"
       ],
       "anchor": [
         28,
         34
+      ]
+    },
+    "centipede-quill-stuck": {
+      "file": "sprites/centipede-quill-stuck.png",
+      "frameWidth": 7,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        14
       ]
     },
     "centipede-legs": {

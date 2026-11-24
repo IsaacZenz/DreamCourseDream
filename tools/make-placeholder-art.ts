@@ -1660,12 +1660,15 @@ function drawFacingMark(): Image {
 
 // Round 4 (owner, 2026-11-23): the centipede, Thousandfoot. Placeholders: a ring of shell domes round the arena,
 // pale soft weak spots, spine-pod shooters, scuttling legs, and a big head for phase 3.
-function drawCoilSegment(kind: 'armour' | 'weak' | 'shooter'): Image {
+function drawCoilSegment(kind: 'armour' | 'weak' | 'shooter' | 'scab'): Image {
   // Owner, 2026-11-24: the body is 3 tiles wide (was 2), so the domes are bigger.
   const img = new Image(56, 42);
-  const base = kind === 'weak' ? '#f0a8b8' : '#7a2c3c';
+  // Owner, 2026-11-24: a scab is a weak spot that was just hit, its shell grown back for a while: crusty brown, no bright rim.
+  const base = kind === 'weak' ? '#f0a8b8' : kind === 'scab' ? '#8a5a48' : '#7a2c3c';
   blob(img, 28, 26, 27, 15, base, kind === 'weak' ? '#f8f0a0' : '#200810');
-  if (kind === 'weak') {
+  if (kind === 'scab') {
+    for (const [x, y] of [[16, 22], [17, 22], [24, 19], [25, 20], [33, 23], [34, 24], [21, 30], [30, 31], [39, 27], [27, 26]] as P[]) img.set(x, y, hex2('#4a2818'));
+  } else if (kind === 'weak') {
     // Soft and bare: a few darker spots, a bright rim so it reads from far away.
     for (const [x, y] of [[18, 23], [28, 20], [38, 24], [23, 30], [34, 31], [29, 27]] as P[]) img.set(x, y, hex2('#c06078'));
   } else {
@@ -1722,6 +1725,13 @@ function drawQuill(): Image {
   return img;
 }
 
+function drawStuckQuill(): Image {
+  // Owner, 2026-11-24: a fired spike stuck point-down in the ground.
+  const img = new Image(7, 16);
+  rows(img, 0, 0, ['...o...', '..o4o..', '..o4o..', '..o4o..', '.o444o.', '.o444o.', '.o444o.', '.o444o.', '.o444o.', '..o4o..', '..o4o..', '..o4o..', '...o...', '..ooo..', '.o222o.', 'ooooooo'], '#e8d8a8', {}, '#403018');
+  return img;
+}
+
 function drawPlate(): Image {
   const img = new Image(12, 8);
   blob(img, 6, 4, 6, 4, '#7a2c3c', '#200810');
@@ -1743,7 +1753,8 @@ function drawDangerTile(): Image {
   return img;
 }
 
-emit('centipede-segment', sheet((['armour', 'weak', 'shooter'] as const).map(drawCoilSegment)), 56, 42, ['armour', 'weak', 'shooter'], [28, 34]);
+emit('centipede-segment', sheet((['armour', 'weak', 'shooter', 'scab'] as const).map(drawCoilSegment)), 56, 42, ['armour', 'weak', 'shooter', 'scab'], [28, 34]);
+emit('centipede-quill-stuck', drawStuckQuill(), 7, 16, ['idle'], [3, 14]);
 emit('centipede-legs', sheet([0, 1].map(drawCoilLegs)), 24, 10, ['a', 'b'], [12, 8]);
 emit('centipede-head', sheet([0, 1, 2].map(drawCoilHead)), 48, 44, ['phase1', 'phase2', 'phase3'], [24, 38]);
 emit('centipede-quill', drawQuill(), 16, 5, ['idle'], [8, 2]);
