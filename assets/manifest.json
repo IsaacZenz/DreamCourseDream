@@ -2811,16 +2811,16 @@
     },
     "centipede-segment": {
       "file": "sprites/centipede-segment.png",
-      "frameWidth": 40,
-      "frameHeight": 30,
+      "frameWidth": 56,
+      "frameHeight": 42,
       "frames": [
         "armour",
         "weak",
         "shooter"
       ],
       "anchor": [
-        20,
-        24
+        28,
+        34
       ]
     },
     "centipede-legs": {

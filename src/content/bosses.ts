@@ -213,7 +213,8 @@ const defs: readonly BossDef[] = [
     gimmick: {
       kind: 'coil',
       segmentLength: 2,
-      bodyWidth: 2,
+      // Owner, 2026-11-24: 3 tiles wide (was 2). It hangs over the edge; the map stays 15 by 15.
+      bodyWidth: 3,
       bodyHeight: 3,
       armourBounce: 0.7,
       weakBounce: 0.4,

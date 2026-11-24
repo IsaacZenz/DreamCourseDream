@@ -37,6 +37,20 @@ describe('the Coil Pit', () => {
     expect([p.course.width, p.course.height]).toEqual([15, 15]);
     expect(boss(p).coil!.segments).toBe(30);
   });
+  it('has spikes in the corners (owner, 2026-11-24), symmetrical, one tile in, so the outer ring is a clear path all the way round', () => {
+    const c = pit().course;
+    const spiky = (x: number, y: number) => c.tiles[y * c.width + x]?.surface === 'spikes';
+    let n = 0;
+    for (let y = 0; y < c.height; y++) {
+      for (let x = 0; x < c.width; x++) {
+        if (!spiky(x, y)) continue;
+        n++;
+        expect(spiky(c.width - 1 - x, y) && spiky(x, c.height - 1 - y)).toBe(true);
+        expect(x > 0 && y > 0 && x < c.width - 1 && y < c.height - 1).toBe(true);
+      }
+    }
+    expect(n).toBe(20);
+  });
   it('the body is the wall: a hard shot at the edge bounces back instead of falling off', () => {
     const p = pit();
     takeShot(p, shot({ angle: Math.PI / 2, power: 1 }));

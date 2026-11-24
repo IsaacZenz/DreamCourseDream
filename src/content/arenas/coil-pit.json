@@ -2,10 +2,14 @@
   "format": 3,
   "name": "Arena: The Coil Pit",
   "legend": {
-    "g": "grass"
+    "g": "grass",
+    "x": "spikes"
   },
   "tiles": [
     "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 x2 x2 x2 g2 g2 g2 g2 g2 g2 g2 x2 x2 x2 g2",
+    "g2 x2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 x2 g2",
+    "g2 x2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 x2 g2",
     "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
     "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
     "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
@@ -13,12 +17,9 @@
     "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
     "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
     "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
-    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
-    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
-    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
-    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
-    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
-    "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2",
+    "g2 x2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 x2 g2",
+    "g2 x2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 x2 g2",
+    "g2 x2 x2 x2 g2 g2 g2 g2 g2 g2 g2 x2 x2 x2 g2",
     "g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 g2"
   ],
   "start": [

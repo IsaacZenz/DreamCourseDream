@@ -451,6 +451,15 @@ export class CourseScene extends Phaser.Scene {
     this.message = null;
     this.endScreen = null;
     this.statusKey = '';
+    // Phaser reuses this scene object for every course, and the old course's drawings are destroyed with it.
+    // Found 2026-11-24: these were kept, so from the second course on the warning marks (spike lines, the
+    // centipede's circle, soldier and puff rings, the slam ring) were drawn on destroyed objects and never showed.
+    this.marksGfx = null;
+    this.slamGfx = null;
+    this.bossHud = null;
+    this.bossKey = '';
+    this.spikeMarksShown = 0;
+    this.sweepFlashUntil = 0;
     this.objectImgs = new Map();
     this.shadowImg = this.makeSprite('ball-shadow');
     this.ballImg = this.makeSprite(this.play.character.sprite);

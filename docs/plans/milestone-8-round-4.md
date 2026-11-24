@@ -220,3 +220,11 @@ Everything in sections 1 to 6 is built with the default numbers. Where the build
 - **Messages:** "CLANK! ARMOUR. HIT THE PALE SEGMENTS" on an armour hit; "HIT! -N" on a weak spot or the head; "SPIKES NEXT TURN" the first two times spikes are marked; the leg ring flashes on a sweep. The boss bar has a second line, "NEXT: SPIKES" or "NEXT: SWEEP", below the line where messages appear.
 - **Placeholder art** (`npm run art`): shell domes (dark red armour, pale pink weak spots with a yellow rim, a bone-coloured spine pod on shooters), scuttling legs in the leg ring, a red diamond on each leg-ring tile, the head, a flying spike and falling plates. Sprite ids: `centipede-segment`, `centipede-legs`, `centipede-head`, `centipede-quill`, `centipede-plate`, `danger-tile`.
 - **Drawing:** each segment is two domes. They are drawn 0.8 tiles out from the edge rather than the body's true middle (1 tile), so the domes meet the map edge with no gap; the physics wall is exactly at the edge.
+
+## 11. Changes after the owner's first playtest (2026-11-24)
+
+The owner played it on the test page and found it **too easy**. Owner decisions:
+
+- **Corner spikes:** a symmetrical L of spike tiles in each corner of the Coil Pit (20 tiles), set one tile in from the edge, so the outer ring (the leg ring) is still a clear path all the way round.
+- **The body is 3 tiles wide** (was 2). It still hangs over the edge; the map stays 15 by 15 and the wall is still exactly at the edge. Bigger placeholder domes.
+- **Bug fixed: the red spike lines and the head's circle did not show** on any course after the first one in a session. The scene is reused for every course, and the drawing for marks was kept from the destroyed old course. This also hid the Brood Queen's soldier rings, Stinkpuff rings and the Warden's slam ring after the first course. Found by entering the fight twice in a row; my earlier check only ever entered once.
