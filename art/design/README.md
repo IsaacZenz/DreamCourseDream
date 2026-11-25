@@ -12,3 +12,14 @@ them, then scale them down. Files here are design sheets, never pressed into the
 | `src/` | The scripts that draw them (parts in 18x24 design units, rendered at any scale): run from `src/`, e.g. `python3 rollo4.py out.sprite 5` (v3 and v4 use `sdf.py`) |
 
 Preview: `npm run art:preview -- art/design/<file>`.
+
+## Royal Rollo (owner, 2026-11-25)
+
+- **Reference:** `art/inbox/H6-rollo-sheet.png`, a character sheet (idle, walk, roll) of the
+  owner's own design, rendered for the owner with an image tool. The owner confirmed it is
+  their own design (2026-11-25). It is a design reference only: no pixels from it go into
+  the game; the game sprites are redrawn in B2.
+- `royal/colour-schemes.png`: the sheet recoloured in five palette schemes; the owner
+  chose **Royal** (gold hood; purple trousers, sleeve, bands and ear insides; tan skin).
+- `royal/redraw-v1*.png`: a clean redraw from smooth shapes in Royal and B2 (`src/royal.py`);
+  the owner asked to simplify the detail and keep the shapes.
