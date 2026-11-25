@@ -24,3 +24,6 @@ Preview: `npm run art:preview -- art/design/<file>`.
 - `royal/redraw-v1*.png`: a clean redraw from smooth shapes in Royal and B2 (`src/royal.py`);
   the owner asked to simplify the detail and keep the shapes.
 - `royal/armour-v1.png`: owner, 2026-11-25: "the shell is more like a suit of armour". Back and tail drawn as overlapping plates (lit top edge, ink at the overlap, purple cloth in the gaps); the hood as polished metal with a darker trim (`src/royal-armour.py`).
+- **More references (2026-11-25):** `art/inbox/H6-rollo-sheet-simple.png` (a chunky, simpler version) and `art/inbox/H6-rollo-sheet-2.png` (a refined version), both the owner's own design rendered with an image tool, "to better match the vision". Design references only, like the first sheet.
+- `royal/sheet2-royal.png`: the refined sheet recoloured to Royal (teal to purple; background darkened so the purple reads).
+- `royal/simple-royal.png`: the simple sheet's real pixels recovered (`src/gridfit.py`: big figure 26x32, idle frame 20x22) and recoloured to Royal with B2 shading and one-pixel inner lines (`src/royalmap2.py`). The 20x22 idle frame is close to the 18x24 game size.
