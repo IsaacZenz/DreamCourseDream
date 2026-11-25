@@ -23,3 +23,4 @@ Preview: `npm run art:preview -- art/design/<file>`.
   chose **Royal** (gold hood; purple trousers, sleeve, bands and ear insides; tan skin).
 - `royal/redraw-v1*.png`: a clean redraw from smooth shapes in Royal and B2 (`src/royal.py`);
   the owner asked to simplify the detail and keep the shapes.
+- `royal/armour-v1.png`: owner, 2026-11-25: "the shell is more like a suit of armour". Back and tail drawn as overlapping plates (lit top edge, ink at the overlap, purple cloth in the gaps); the hood as polished metal with a darker trim (`src/royal-armour.py`).
