@@ -12,7 +12,7 @@
  *
  * The overhang strip is a placeholder in B1B grass colours, until real art arrives.
  */
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FACE_W, faceMask, type FaceFrameName, type FaceSide } from '../src/render/faceShapes.ts';
@@ -156,8 +156,20 @@ function overhang(side: FaceSide): Image {
   return img;
 }
 
+/**
+ * Production wall art (2026-11-26) now lives in art/drawn/. This tool only
+ * made the first stand-ins, so it never overwrites an existing file unless
+ * run with --force (npm run art:b1b -- --force).
+ */
+const FORCE = process.argv.includes('--force');
+let skipped = 0;
 function write(id: string, img: Image): void {
-  writeFileSync(join(OUT, `${id}.png`), encodePng(img));
+  const file = join(OUT, `${id}.png`);
+  if (existsSync(file) && !FORCE) {
+    skipped++;
+    return;
+  }
+  writeFileSync(file, encodePng(img));
 }
 
 mkdirSync(OUT, { recursive: true });
@@ -168,7 +180,8 @@ for (const side of SIDES) {
   write(`wall-earth-overhang-${side}`, overhang(side));
 }
 // The approved B1B grass and the B1B default (v1) earth faces, as drawn art.
-copyFileSync(join(SRC, 'tile-grass.png'), join(OUT, 'tile-grass.png'));
-copyFileSync(join(SRC, 'face-earth-left.png'), join(OUT, 'face-earth-left.png'));
-copyFileSync(join(SRC, 'face-earth-right.png'), join(OUT, 'face-earth-right.png'));
-console.log('Wrote wall textures, grass and earth faces to art/drawn/');
+for (const f of ['tile-grass.png', 'face-earth-left.png', 'face-earth-right.png']) {
+  if (existsSync(join(OUT, f)) && !FORCE) skipped++;
+  else copyFileSync(join(SRC, f), join(OUT, f));
+}
+console.log(skipped ? `Left ${skipped} existing files in art/drawn/ alone (use --force to rebuild the B1B stand-ins).` : 'Wrote wall textures, grass and earth faces to art/drawn/');

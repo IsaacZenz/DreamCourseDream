@@ -3617,7 +3617,7 @@
     "wall-sheet-left": {
       "file": "sprites/wall-sheet-left.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -3634,21 +3634,21 @@
         0
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "wall-sheet-right": {
       "file": "sprites/wall-sheet-right.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -3665,15 +3665,15 @@
         8
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "tile-grass@bog": {
@@ -4748,7 +4748,7 @@
     "wall-sheet-left@bog": {
       "file": "sprites/wall-sheet-left@bog.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -4765,21 +4765,21 @@
         0
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "wall-sheet-right@bog": {
       "file": "sprites/wall-sheet-right@bog.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -4796,15 +4796,15 @@
         8
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "tile-grass@thornwood": {
@@ -5879,7 +5879,7 @@
     "wall-sheet-left@thornwood": {
       "file": "sprites/wall-sheet-left@thornwood.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -5896,21 +5896,21 @@
         0
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "wall-sheet-right@thornwood": {
       "file": "sprites/wall-sheet-right@thornwood.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -5927,15 +5927,15 @@
         8
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "tile-grass@night": {
@@ -7010,7 +7010,7 @@
     "wall-sheet-left@night": {
       "file": "sprites/wall-sheet-left@night.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -7027,21 +7027,21 @@
         0
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "wall-sheet-right@night": {
       "file": "sprites/wall-sheet-right@night.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -7058,15 +7058,15 @@
         8
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "tile-grass@underground": {
@@ -8141,7 +8141,7 @@
     "wall-sheet-left@underground": {
       "file": "sprites/wall-sheet-left@underground.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -8158,21 +8158,21 @@
         0
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "wall-sheet-right@underground": {
       "file": "sprites/wall-sheet-right@underground.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -8189,15 +8189,15 @@
         8
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "tile-grass@starfall": {
@@ -9272,7 +9272,7 @@
     "wall-sheet-left@starfall": {
       "file": "sprites/wall-sheet-left@starfall.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -9289,21 +9289,21 @@
         0
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "wall-sheet-right@starfall": {
       "file": "sprites/wall-sheet-right@starfall.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -9320,15 +9320,15 @@
         8
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "tile-grass@spooky": {
@@ -10403,7 +10403,7 @@
     "wall-sheet-left@spooky": {
       "file": "sprites/wall-sheet-left@spooky.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -10420,21 +10420,21 @@
         0
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     },
     "wall-sheet-right@spooky": {
       "file": "sprites/wall-sheet-right@spooky.png",
       "frameWidth": 16,
-      "frameHeight": 48,
+      "frameHeight": 128,
       "frames": [
         "wall-earth-overhang",
         "wall-earth-rocks-large-1",
@@ -10451,15 +10451,15 @@
         8
       ],
       "heights": [
-        3,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48,
-        48
+        5,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
       ]
     }
   },
