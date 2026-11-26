@@ -23,7 +23,7 @@ import { ACORN_LIST, ACORNS, ACORN_SHOP_WEIGHT, FOOD, FOOD_LIST, FOODS, acornWei
 import { BOSSES, BOSS_IDS, bossHealthIn } from '../content/bosses.ts';
 import type { JourneySize } from '../content/gen.ts';
 import { ENDLESS_MIX_STEP, REGION_MIXES, type EnemyMix } from '../content/enemyMods.ts';
-import { ENDLESS, LAST_REGION, REGIONS, REGION_BOSSES, botShotsFor, type RegionDef } from '../content/run.ts';
+import { BOT_BOOST, ENDLESS, LAST_REGION, REGIONS, REGION_BOSSES, botShotsFor, type RegionDef } from '../content/run.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
 import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
 import { buyUpgrade, permanentModifiers, type Profile } from './profile.ts';
@@ -357,6 +357,11 @@ export function botLoadoutOf(run: RunState, mod: CourseMod | null = run.current?
   const modifiers: Modifier[] = regionDef(run).par.map((p) => ({ stat: p.stat, op: 'add', amount: p.amount, source: { kind: 'region', id: `par${run.region}` }, duration: { kind: 'run' } }));
   // Owner, 2026-11-19 (round 1, option C): from region three on, the bot also wears the region's best gear.
   const pg = regionDef(run).parGear;
+  // Owner, 2026-11-23: after the run's first course, the bot also has Vitality and Stamina at their top level.
+  if (run.totals.courses >= BOT_BOOST.afterCourses) {
+    const levels = Object.fromEntries(BOT_BOOST.maxedUpgrades.map((id) => [id, PERMANENT_UPGRADES.get(id)?.costs.length ?? 0]));
+    modifiers.push(...permanentModifiers(levels));
+  }
   return { ability: null, gear: pg ? { ...pg } : { ...NO_GEAR }, modifiers, courseMod: mod };
 }
 

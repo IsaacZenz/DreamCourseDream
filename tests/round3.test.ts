@@ -264,12 +264,12 @@ import { equipGear, wheelFor } from '../src/sim/play';
 describe('Round 3: second gear pockets', () => {
   const empty = (): Slots => ({ weapon: null, armour: null, bauble: null });
 
-  it('three unlocks at 17 blue stars each, bought once', () => {
-    expect(POCKET_UNLOCKS.map((u) => [u.category, u.cost])).toEqual([['weapon', 17], ['armour', 17], ['bauble', 17]]);
+  it('three unlocks at 30 blue stars each, bought once (owner, 2026-11-23; was 17)', () => {
+    expect(POCKET_UNLOCKS.map((u) => [u.category, u.cost])).toEqual([['weapon', 30], ['armour', 30], ['bauble', 30]]);
     const p = newProfile();
-    p.stash = 16;
+    p.stash = 29;
     expect(cannotBuyPocket(p, 'weapon')).toBe('NOT ENOUGH BLUE STARS');
-    p.stash = 17;
+    p.stash = 30;
     expect(buyPocket(p, 'weapon')).toBeNull();
     expect(p.pockets).toEqual(['weapon']);
     expect(p.stash).toBe(0);

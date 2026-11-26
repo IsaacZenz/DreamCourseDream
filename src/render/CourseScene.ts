@@ -74,6 +74,7 @@ import { frameIndex, themedSprite, type Manifest } from './manifest';
 import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
 import { pixelText } from './pixelText';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
+import { COURSE_INTRO } from '../content/places';
 import { goRun, walking } from './nav';
 import practiceGreen from '../content/courses/practice-green.json';
 import type { Loadout } from '../sim/play';
@@ -345,6 +346,10 @@ export class CourseScene extends Phaser.Scene {
   }
 
   create(): void {
+    // A restart during the opening zoom must not leave input switched off.
+    this.intro = false;
+    this.input.enabled = true;
+    if (this.input.keyboard) this.input.keyboard.enabled = true;
     manifest = shared.manifest;
     tuning = getTuning();
     if (this.runMode) this.seed = session.run!.current!.courseSeed;
@@ -508,6 +513,35 @@ export class CourseScene extends Phaser.Scene {
       if (!bot) this.watching = false;
     } else this.watching = false;
     if (this.thumb) this.thumbView(course);
+    else this.startIntro();
+  }
+
+  /** Owner, 2026-11-23: true while the course opens zoomed in on the ball; no input and no play until it ends. */
+  private intro = false;
+
+  /**
+   * The opening zoom: close in on the ball (the walking camera's zoom), hold,
+   * then zoom out to the normal view. The HUD is hidden meanwhile (it would be
+   * scaled with the camera), and the round begins when the zoom ends.
+   */
+  private startIntro(): void {
+    const cam = this.cameras.main;
+    this.intro = true;
+    this.input.enabled = false;
+    if (this.input.keyboard) this.input.keyboard.enabled = false;
+    const hud = this.children.list.filter((o) => (o as unknown as { scrollFactorX?: number }).scrollFactorX === 0) as unknown as { setVisible: (v: boolean) => void; visible: boolean }[];
+    const hidden = hud.filter((o) => o.visible);
+    for (const o of hidden) o.setVisible(false);
+    cam.setZoom(COURSE_INTRO.zoom);
+    this.time.delayedCall(COURSE_INTRO.holdMs, () => cam.zoomTo(1, COURSE_INTRO.zoomMs, 'Sine.easeInOut'));
+    this.time.delayedCall(COURSE_INTRO.holdMs + COURSE_INTRO.zoomMs, () => {
+      cam.setZoom(1);
+      for (const o of hidden) o.setVisible(true);
+      this.intro = false;
+      this.input.enabled = true;
+      if (this.input.keyboard) this.input.keyboard.enabled = true;
+      this.centreOnBall();
+    });
   }
 
   /**
@@ -912,8 +946,16 @@ export class CourseScene extends Phaser.Scene {
 
   override update(_time: number, deltaMs: number): void {
     this.syncScenery();
-    this.botTurn();
     this.drawDarkness();
+    // Owner, 2026-11-23: the round waits for the opening zoom.
+    if (this.intro) {
+      if (this.course) {
+        this.animateTiles();
+        this.syncObjects();
+      }
+      return;
+    }
+    this.botTurn();
     const k = this.keys;
     const step = (PAN_SPEED * deltaMs) / 1000;
     // Camera pan moved to I/J/K/L: the arrows and WASD aim (owner, 2026-11-14).

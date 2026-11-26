@@ -54,9 +54,10 @@ export interface PocketUnlockDef {
   readonly desc: string;
 }
 export const POCKET_UNLOCKS: readonly PocketUnlockDef[] = [
-  { category: 'weapon', name: 'Second Weapon Pocket', cost: 17, desc: 'Hold two weapons' },
-  { category: 'armour', name: 'Second Armour Pocket', cost: 17, desc: 'Hold two pieces of armour' },
-  { category: 'bauble', name: 'Second Bauble Pocket', cost: 17, desc: 'Hold two baubles' },
+  // Owner, 2026-11-23: 30 blue stars each (was 17).
+  { category: 'weapon', name: 'Second Weapon Pocket', cost: 30, desc: 'Hold two weapons' },
+  { category: 'armour', name: 'Second Armour Pocket', cost: 30, desc: 'Hold two pieces of armour' },
+  { category: 'bauble', name: 'Second Bauble Pocket', cost: 30, desc: 'Hold two baubles' },
 ];
 
 /** Owner, 2026-11-17: each starting ability is bought separately, once. */
