@@ -199,6 +199,7 @@ After playing the first generator, the owner asked for larger, more open, much m
 
 ## Milestone 9 — Skin, sound and sharing
 
+- [ ] **Plan gate:** design sheet `docs/plans/milestone-9.md` (name and setting, how the art and sound are made, rounds 9a menus and sound, 9b art, 9c lighting, tutorial and playtest). Owner signs it off before building.
 - [ ] Theme, character and title chosen with the owner
 - [ ] Final pixel art replaces placeholders through the manifest only
 - [ ] Several art variants per theme for each larger advancement (owner, 2026-11-14)
@@ -323,3 +324,5 @@ Controller support; desktop packaging; open-world mode; daily seed. (Endless mod
 - 2026-11-24 — Owner picked four ways to make Thousandfoot harder: stuck spikes, scabs, the coil tightening in phase 3, and phase 3 sweeps every off turn. Built; corner spikes moved to 2 tiles in so they stay visible and clear of the leg ring once the coil tightens. 537 tests pass. Published to the test page.
 - 2026-11-26 — Owner change: the hero stands up on the course while the ball is still and rolls into a ball for shots, knocks and hits; the ball sprite is 12 px (was 8). Display only (`src/render/CourseScene.ts`, placeholder art); the simulation and hitbox are unchanged.
 - 2026-11-26 — Owner: the opening zoom out takes 1.2 s (was 0.8 s).
+- 2026-11-25 — Milestone 9 design sheet written: `docs/plans/milestone-9.md`. It covers the name and setting (a web search found *Dillo's Dilemma*, a 2025 game with a ball-rolling armadillo, so names should avoid "Dillo"), art drawn as code with hand-drawn replacements possible, generated sounds and composed music, and three rounds (9a menus and sound, 9b art, 9c lighting, tutorial and playtest). Eleven questions; the game's name has no default. **Waiting for the owner's sign-off**; nothing built yet.
+- 2026-11-26 — Owner: B1B Meadow terrain (grass and earth faces, made with ChatGPT) swapped into the test build. Then, at the owner's request, **organic wall textures** built ahead of the Milestone 9 sheet: wall geometry kept, tall textures sampled per band (no 4-pixel repeat), seeded weighted variants (plain 25 / sparse 40 / moderate 25 / large 10), separate soil, rock, detail and overhang layers, a shared atlas so walls stay one draw. `art/drawn/` holds finished art and always wins over the placeholder script (B1B grass, earth faces and the B1B-built wall textures are there). New wall test course (`?course=walls`, `&walls=debug` tints by rock kind), U-panel switches for organic walls and the overhang. Branch first merged round 4 (`claude/vigilant-franklin-u509xz`), which the live test build was built from. 16 new tests (553 in total). Handoff for the art director: `docs/handoff-wall-textures.md`.

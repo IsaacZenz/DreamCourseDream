@@ -3614,6 +3614,68 @@
         0
       ]
     },
+    "wall-sheet-left": {
+      "file": "sprites/wall-sheet-left.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    "wall-sheet-right": {
+      "file": "sprites/wall-sheet-right.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        8
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
     "tile-grass@bog": {
       "file": "sprites/tile-grass@bog.png",
       "frameWidth": 32,
@@ -4681,6 +4743,68 @@
       "anchor": [
         7,
         18
+      ]
+    },
+    "wall-sheet-left@bog": {
+      "file": "sprites/wall-sheet-left@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    "wall-sheet-right@bog": {
+      "file": "sprites/wall-sheet-right@bog.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        8
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
     "tile-grass@thornwood": {
@@ -5752,6 +5876,68 @@
         18
       ]
     },
+    "wall-sheet-left@thornwood": {
+      "file": "sprites/wall-sheet-left@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    "wall-sheet-right@thornwood": {
+      "file": "sprites/wall-sheet-right@thornwood.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        8
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
     "tile-grass@night": {
       "file": "sprites/tile-grass@night.png",
       "frameWidth": 32,
@@ -6819,6 +7005,68 @@
       "anchor": [
         7,
         18
+      ]
+    },
+    "wall-sheet-left@night": {
+      "file": "sprites/wall-sheet-left@night.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    "wall-sheet-right@night": {
+      "file": "sprites/wall-sheet-right@night.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        8
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
     "tile-grass@underground": {
@@ -7890,6 +8138,68 @@
         18
       ]
     },
+    "wall-sheet-left@underground": {
+      "file": "sprites/wall-sheet-left@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    "wall-sheet-right@underground": {
+      "file": "sprites/wall-sheet-right@underground.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        8
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
     "tile-grass@starfall": {
       "file": "sprites/tile-grass@starfall.png",
       "frameWidth": 32,
@@ -8959,6 +9269,68 @@
         18
       ]
     },
+    "wall-sheet-left@starfall": {
+      "file": "sprites/wall-sheet-left@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    "wall-sheet-right@starfall": {
+      "file": "sprites/wall-sheet-right@starfall.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        8
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
     "tile-grass@spooky": {
       "file": "sprites/tile-grass@spooky.png",
       "frameWidth": 32,
@@ -10026,6 +10398,68 @@
       "anchor": [
         7,
         18
+      ]
+    },
+    "wall-sheet-left@spooky": {
+      "file": "sprites/wall-sheet-left@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    "wall-sheet-right@spooky": {
+      "file": "sprites/wall-sheet-right@spooky.png",
+      "frameWidth": 16,
+      "frameHeight": 48,
+      "frames": [
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
+      ],
+      "anchor": [
+        0,
+        8
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     }
   },

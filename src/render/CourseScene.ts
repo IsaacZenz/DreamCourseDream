@@ -69,6 +69,7 @@ import { BOSSES } from '../content/bosses';
 import { BLUE_STARS } from '../content/progress';
 import { LAST_REGION } from '../content/run';
 import { gearBoxes, getPanel, getTuning, preloadAssets, shared } from './shared';
+import { WallPainter } from './wallAtlas';
 import { buildDrawList, bumpTopDepth, courseBounds, groundBump, pickTile, project, tileDepth, type Placement } from './iso';
 import { frameIndex, themedSprite, type Manifest } from './manifest';
 import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
@@ -413,7 +414,7 @@ export class CourseScene extends Phaser.Scene {
     // Round 2b: the region's theme (or the U panel's pick, or ?theme= / ?region= on a test course).
     this.theme = this.pickTheme();
     this.cameras.main.setBackgroundColor(manifest.themes?.[this.theme]?.sky ?? '#1d2b53');
-    for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
+    this.drawGround(course);
 
     panel = getPanel();
     // Round 2b: picking a theme in the U panel shows this course again in it.
@@ -991,7 +992,19 @@ export class CourseScene extends Phaser.Scene {
     for (const img of this.tileImgs) img.destroy();
     this.tileImgs = [];
     this.animated = [];
-    for (const p of buildDrawList(this.play.course)) if (p.kind !== 'exit') this.place(p);
+    this.drawGround(this.play.course);
+  }
+
+  /** Owner, 2026-11-26: paints the walls with organic textures (null when switched off in the U panel). */
+  private walls: WallPainter | null = null;
+
+  /** Draw every tile, face and overlay of the ground. */
+  private drawGround(course: Course): void {
+    // The same course always gets the same walls: generated and run courses by their seed, hand-built ones by name.
+    const seed = this.runMode || this.isGenerated ? this.seed : course.name;
+    this.walls = getPanel().organicWalls ? new WallPainter(this, manifest, { seed, theme: this.theme === 'day' ? null : this.theme, overhang: getPanel().wallOverhang }) : null;
+    for (const p of buildDrawList(course)) if (p.kind !== 'exit') this.place(p);
+    this.walls?.flush();
   }
 
   /** Round 2b: the visual theme on this course ("day" is the plain sprites). */
@@ -1016,10 +1029,14 @@ export class CourseScene extends Phaser.Scene {
     const id = this.sprite(p.sprite);
     const entry = manifest.sprites[id];
     if (!entry) throw new Error(`Sprite "${id}" is not in the asset manifest.`);
+    // Organic walls: the same band, at the same place and depth, painted from the wall textures.
+    const wall = this.walls?.frameFor(p);
     const img = this.add
-      .image(p.x, p.y, id, frameIndex(entry, p.frame))
+      .image(p.x, p.y, wall?.texture ?? id, wall?.frame ?? frameIndex(entry, p.frame))
       .setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight)
       .setDepth(p.depth);
+    const tint = this.walls?.debugTint(p);
+    if (tint) img.setTint(tint);
     this.tileImgs.push(img);
     // Owner, 2026-11-21: ground bumps, for looks only.
     const t = p.kind === 'top' && panel?.groundBumps !== false ? tileAt(this.course!, p.tile.x, p.tile.y) : null;

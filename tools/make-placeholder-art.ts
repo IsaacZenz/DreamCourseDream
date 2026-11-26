@@ -10,7 +10,7 @@
  * Colours live here, in the art tool, not in game code. They are rounded to
  * 15-bit colour (5 bits per channel), like the 16-bit consoles used.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GEAR_LIST, type GearDef } from '../src/content/gear.ts';
@@ -18,7 +18,8 @@ import { UPGRADE_LIST } from '../src/content/run.ts';
 import { DIRECTIONS, SURFACES, type Direction } from '../src/content/surfaces.ts';
 import type { Manifest, SpriteEntry } from '../src/render/manifest.ts';
 import { SHAPES, triangles, type ShapeId } from '../src/sim/tileShape.ts';
-import { Image, encodePng, type RGBA } from './png.ts';
+import { FACE_FRAMES, FACE_H, LEFT_SHAPES, RIGHT_SHAPES } from '../src/render/faceShapes.ts';
+import { Image, decodePng, encodePng, type RGBA } from './png.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'assets');
@@ -283,68 +284,7 @@ function drawWarpRing(img: Image): void {
 // capA when the first corner is higher, capB when the second is).
 // Left faces run sw → se; right faces run se → ne.
 
-/** Face frames are tall enough for the two-step cap. */
-const FACE_H = 8 + 2 * S;
-const FACE_FRAMES = ['full', 'capA', 'capB', 'capA2', 'capB2'];
-const LEFT_SHAPES: Record<string, P[]> = {
-  full: [
-    [0, 0],
-    [16, 8],
-    [16, 8 + S],
-    [0, S],
-  ],
-  capA: [
-    [0, 0],
-    [16, 8 + S],
-    [0, S],
-  ],
-  capB: [
-    [0, S],
-    [16, 8],
-    [16, 8 + S],
-  ],
-  // Above a steep edge (the two corners two steps apart).
-  capA2: [
-    [0, 0],
-    [16, 8 + 2 * S],
-    [0, 2 * S],
-  ],
-  capB2: [
-    [0, 2 * S],
-    [16, 8],
-    [16, 8 + 2 * S],
-  ],
-};
-const RIGHT_SHAPES: Record<string, P[]> = {
-  full: [
-    [0, 8],
-    [16, 0],
-    [16, S],
-    [0, 8 + S],
-  ],
-  capA: [
-    [0, 8],
-    [16, S],
-    [0, 8 + S],
-  ],
-  capB: [
-    [0, 8 + S],
-    [16, 0],
-    [16, S],
-  ],
-  capA2: [
-    [0, 8],
-    [16, 2 * S],
-    [0, 8 + 2 * S],
-  ],
-  capB2: [
-    [0, 8 + 2 * S],
-    [16, 0],
-    [16, 2 * S],
-  ],
-};
-
-function drawFace(base: string, poly: P[], shade: number): Image {
+function drawFace(base: string, poly: readonly P[], shade: number): Image {
   const shades = ramp(base);
   const img = new Image(16, FACE_H);
   for (let y = 0; y < FACE_H; y++) {
@@ -1113,14 +1053,15 @@ function sheet(frames: Image[]): Image {
 
 const sprites: Record<string, SpriteEntry> = {};
 /** Every sprite's image, kept for the theme sets made at the end (round 2b). */
-const images = new Map<string, { img: Image; frameWidth: number; frameHeight: number; frames: string[]; anchor: P }>();
+const images = new Map<string, { img: Image; frameWidth: number; frameHeight: number; frames: string[]; anchor: P; heights?: number[] }>();
 
-function emit(id: string, img: Image, frameWidth: number, frameHeight: number, frames: string[], anchor: P): void {
+function emit(id: string, img: Image, frameWidth: number, frameHeight: number, frames: string[], anchor: P, heights?: number[]): void {
   const file = `sprites/${id}.png`;
   mkdirSync(join(OUT, 'sprites'), { recursive: true });
   writeFileSync(join(OUT, file), encodePng(img));
   sprites[id] = { file, frameWidth, frameHeight, frames, anchor };
-  images.set(id, { img, frameWidth, frameHeight, frames, anchor });
+  images.set(id, { img, frameWidth, frameHeight, frames, anchor, ...(heights && { heights }) });
+  if (heights) sprites[id] = { ...sprites[id]!, heights };
 }
 
 // ---------------------------------------------------------------------------
@@ -1148,7 +1089,7 @@ const THEMES: Record<string, { sky: string; recolour: Recolour }> = {
 };
 
 /** Which sprites a theme recolours. */
-const themed = (id: string) => /^(tile-|face-|scenery-)/.test(id) || ['water-shore', 'rock', 'stump', 'dead-tree', 'low-wall', 'drawbridge-up'].includes(id);
+const themed = (id: string) => /^(tile-|face-|scenery-|wall-)/.test(id) || ['water-shore', 'rock', 'stump', 'dead-tree', 'low-wall', 'drawbridge-up'].includes(id);
 
 function recolourImage(src: Image, f: Recolour): Image {
   const out = new Image(src.width, src.height);
@@ -1166,7 +1107,7 @@ function emitThemes(): Record<string, { sky: string }> {
   for (const [theme, t] of Object.entries(THEMES)) {
     for (const [id, e] of [...images]) {
       if (!themed(id) || id.includes('@')) continue;
-      emit(`${id}@${theme}`, recolourImage(e.img, t.recolour), e.frameWidth, e.frameHeight, e.frames, e.anchor);
+      emit(`${id}@${theme}`, recolourImage(e.img, t.recolour), e.frameWidth, e.frameHeight, e.frames, e.anchor, e.heights);
     }
   }
   return Object.fromEntries([['day', { sky: '#1d2b53' }], ...Object.entries(THEMES).map(([k, t]) => [k, { sky: t.sky }])]);
@@ -1209,8 +1150,8 @@ emit('splash', sheet([0, 1, 2, 3].map(drawSplash)), 16, 12, ['0', '1', '2', '3']
 for (const id of faceIds) {
   const base = FACE_LOOKS[id];
   if (!base) throw new Error(`No placeholder colour for face "${id}". Add one to FACE_LOOKS.`);
-  emit(`${id}-left`, sheet(FACE_FRAMES.map((f) => drawFace(base, LEFT_SHAPES[f]!, 3))), 16, FACE_H, FACE_FRAMES, [0, 0]);
-  emit(`${id}-right`, sheet(FACE_FRAMES.map((f) => drawFace(base, RIGHT_SHAPES[f]!, 1))), 16, FACE_H, FACE_FRAMES, [0, 8]);
+  emit(`${id}-left`, sheet(FACE_FRAMES.map((f) => drawFace(base, LEFT_SHAPES[f], 3))), 16, FACE_H, [...FACE_FRAMES], [0, 0]);
+  emit(`${id}-right`, sheet(FACE_FRAMES.map((f) => drawFace(base, RIGHT_SHAPES[f], 1))), 16, FACE_H, [...FACE_FRAMES], [0, 8]);
 }
 emit('arrow', sheet(DIRECTIONS.map(drawArrow)), 32, 16, [...DIRECTIONS], [16, 8]);
 // Owner, 2026-11-26: 12x12, in each character's shell and band colours (as their standing armadillo).
@@ -2141,7 +2082,70 @@ emit('font', font.img, 4, 6, font.frames, [0, 0]);
 
 // Milestone 8 (sheet section 3): the tint of an enemy with an element, set here so the final art can change it.
 const tints = { fire: '#ff9060', ice: '#a0d8ff', shock: '#fff070' };
+/**
+ * Drawn art (owner, 2026-11-26): finished art in art/drawn/ wins over the
+ * generated placeholders, so running this script never overwrites it.
+ *
+ * - art/drawn/<id>.png replaces the generated sprite <id>. It must be the same
+ *   size; the frames and anchor stay as generated.
+ * - A sprite the script does not generate needs art/drawn/<id>.json next to
+ *   it: { "frameWidth", "frameHeight", "frames": [...], "anchor": [x, y] }.
+ * - Themed sprites (tiles, faces, scenery, walls...) get their theme versions
+ *   by recolouring the drawn art, like the placeholders. A drawn
+ *   art/drawn/<id>@<theme>.png replaces that one theme version instead.
+ */
+const DRAWN = join(ROOT, 'art', 'drawn');
+const drawnFiles = existsSync(DRAWN) ? readdirSync(DRAWN).filter((f) => f.endsWith('.png')).sort() : [];
+function applyDrawn(file: string): void {
+  const id = file.slice(0, -4);
+  const img = decodePng(readFileSync(join(DRAWN, file)), `art/drawn/${file}`);
+  const metaFile = join(DRAWN, `${id}.json`);
+  const old = images.get(id);
+  if (old) {
+    if (old.img.width !== img.width || old.img.height !== img.height) {
+      throw new Error(`art/drawn/${file} is ${img.width}x${img.height}, but the sprite "${id}" is ${old.img.width}x${old.img.height}. Make it the same size, or change the generator.`);
+    }
+    emit(id, img, old.frameWidth, old.frameHeight, old.frames, old.anchor);
+    return;
+  }
+  if (id.includes('@')) throw new Error(`art/drawn/${file}: there is no sprite "${id}" to replace.`);
+  if (!existsSync(metaFile)) throw new Error(`art/drawn/${file} is a new sprite, so it needs art/drawn/${id}.json with frameWidth, frameHeight, frames and anchor.`);
+  const meta = JSON.parse(readFileSync(metaFile, 'utf8')) as { frameWidth: number; frameHeight: number; frames: string[]; anchor: [number, number] };
+  const cols = img.width / meta.frameWidth;
+  const rows = img.height / meta.frameHeight;
+  if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols * rows < meta.frames.length) {
+    throw new Error(`art/drawn/${file} (${img.width}x${img.height}) does not hold ${meta.frames.length} frames of ${meta.frameWidth}x${meta.frameHeight}.`);
+  }
+  emit(id, img, meta.frameWidth, meta.frameHeight, meta.frames, meta.anchor);
+}
+/**
+ * Organic wall textures (owner, 2026-11-26) arrive as one drawn file per
+ * texture and side: art/drawn/wall-<material>-<name>-<side>.png (16 wide, any
+ * height). They are packed into one sheet per side, "wall-sheet-<side>", one
+ * 16-pixel column per texture, the frame named by the texture id without its
+ * side (e.g. "wall-earth-soil-1"), with each texture's real height in
+ * `heights`. One sheet per side and theme keeps the number of files small.
+ */
+const WALL_FILE = /^(wall-.+)-(left|right)\.png$/u;
+function packWalls(): void {
+  for (const side of ['left', 'right'] as const) {
+    const parts = drawnFiles
+      .map((f) => WALL_FILE.exec(f))
+      .filter((m): m is RegExpExecArray => !!m && m[2] === side)
+      .map((m) => ({ id: m[1]!, img: decodePng(readFileSync(join(DRAWN, m[0])), `art/drawn/${m[0]}`) }));
+    if (!parts.length) continue;
+    for (const p of parts) if (p.img.width !== 16) throw new Error(`art/drawn/${p.id}-${side}.png must be 16 pixels wide (it is ${p.img.width}).`);
+    const h = Math.max(...parts.map((p) => p.img.height));
+    const sheetImg = new Image(16 * parts.length, h);
+    parts.forEach((p, i) => sheetImg.blit(p.img, i * 16, 0));
+    emit(`wall-sheet-${side}`, sheetImg, 16, h, parts.map((p) => p.id), side === 'left' ? [0, 0] : [0, 8], parts.map((p) => p.img.height));
+  }
+}
+packWalls();
+for (const f of drawnFiles) if (!f.includes('@') && !WALL_FILE.test(f)) applyDrawn(f);
+
 const themes = emitThemes();
+for (const f of drawnFiles) if (f.includes('@')) applyDrawn(f);
 const manifest: Manifest = { version: 1, sprites, tints, themes };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-console.log(`Wrote ${Object.keys(sprites).length} sprites to assets/sprites and assets/manifest.json`);
+console.log(`Wrote ${Object.keys(sprites).length} sprites to assets/sprites and assets/manifest.json (${drawnFiles.length} from art/drawn)`);

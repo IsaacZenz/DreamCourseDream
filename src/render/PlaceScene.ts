@@ -20,6 +20,7 @@ import { addUpgrade, bossOf, characterOf, choices, debugVisit, courseJobFor, cou
 import { courseModLabel } from './courseModView';
 import { BagMenu } from './bagMenu';
 import { prefetch } from './genQueue';
+import { WallPainter } from './wallAtlas';
 import { buildDrawList, bumpTopDepth, courseBounds, groundBump, project, tileDepth } from './iso';
 import { frameIndex, themedSprite } from './manifest';
 import { NODE_NAME, nodeInfo } from './MapScene';
@@ -287,10 +288,19 @@ export class PlaceScene extends Phaser.Scene {
     this.sceneryAnims = [];
     this.bigProps = [];
     const g = this.place.ground;
+    // Owner, 2026-11-26: organic wall textures, the same every time this place is shown in this run.
+    const run = session.run;
+    const walls = getPanel().organicWalls
+      ? new WallPainter(this, m, { seed: `${run?.seed ?? ''}|${g.name}|${run?.region ?? 0}|${run?.path.length ?? 0}`, theme: this.theme === 'day' ? null : this.theme, overhang: getPanel().wallOverhang })
+      : null;
     for (const p of buildDrawList(g)) {
       if (p.kind === 'exit') continue;
       const id = this.sprite(p.sprite);
       const img = this.image(p.sprite, p.frame, p.x, p.y, p.depth);
+      const wall = walls?.frameFor(p);
+      if (wall) img.setTexture(wall.texture, wall.frame);
+      const tint = walls?.debugTint(p);
+      if (tint) img.setTint(tint);
       const entry = m.sprites[id]!;
       // Owner, 2026-11-21: ground bumps, for looks only.
       const t = p.kind === 'top' && getPanel().groundBumps ? tileAt(g, p.tile.x, p.tile.y) : null;
@@ -302,6 +312,7 @@ export class PlaceScene extends Phaser.Scene {
       }
       if (entry.frames.includes(`${p.frame}~1`)) this.animatedTiles.push({ img, frame: p.frame, frames: entry.frames, id });
     }
+    walls?.flush();
     // Fences: guard rails, drawn as on a course.
     for (const line of g.rails) {
       const tiles = railTileList(line);

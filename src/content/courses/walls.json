@@ -1,0 +1,31 @@
+{
+  "format": 3,
+  "name": "Test: organic walls",
+  "legend": {
+    "g": "grass",
+    "s": "sand"
+  },
+  "start": [
+    11,
+    11
+  ],
+  "exit": [
+    9,
+    11
+  ],
+  "quota": 0,
+  "tiles": [
+    "g8 g8 g8 g8 g8 g8 gc gc gc gc gc gc",
+    "g8 g8 g8 g8 g8 g8 gc gc gc gc gc gc",
+    "g8 g8 g8 g8 g8 g8 gc gc gc gc gc gc",
+    "g8 g8 g8 g8 g8 g8 g0 g0 gccaa gccaa g0 g0",
+    "g8 g8 g8 g8 g8 g8 g0 g0 gaa88 gaa88 g0 g0",
+    "g0 g0 g0 g0 g8877 g0 g0 g0 g8866 g8866 g0 g0",
+    "g0 g0 g0 g0 g7766 g0 g0 g0 g6644 g6644 g0 g0",
+    "g0 s4 s4 g0 g6655 g0 g0 g0 g4422 g4422 g0 g0",
+    "g0 g0 g0 g0 g5544 g0 g0 g0 g2200 g2200 g0 g0",
+    "g0 g0 g0 g0 g4433 g0 g0 g0 g0 g0 g5 g5",
+    "g0 g2 g0 g4 g3322 g0 g6 g3 g0 g0 g5 g0",
+    "g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0 g0"
+  ]
+}
