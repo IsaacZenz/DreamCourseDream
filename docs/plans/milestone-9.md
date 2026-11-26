@@ -108,6 +108,8 @@ This milestone is too big for one go, so like Milestone 8 it's built in rounds. 
 
 **Default: this order.** You can swap 9a and 9b if you'd rather see the art first.
 
+**Changed (owner, 2026-11-26):** round **9L, light and atmosphere** (`docs/plans/milestone-9-light.md`) comes first, before 9a. Round 9c keeps the tutorial and the playtest.
+
 ## 5. Round 9a: menus and sound
 
 ### 5.1 Title screen
@@ -265,6 +267,8 @@ Thud and Pip use the same frames, redrawn: Thud bulkier with a darker shell, Pip
 ## 7. Round 9c: light and first steps
 
 ### 7.1 Lighting and shadows (owner, 2026-11-21)
+
+**Replaced (owner, 2026-11-26):** lighting moves to the first round and grows into round 9L, light and atmosphere, with its own sheet: `docs/plans/milestone-9-light.md`. The notes below are kept for history.
 
 - **Dark themes:** night, underground, spooky and Starfall (Default) are drawn darker, with light around light sources. The day, bog and thornwood themes stay bright and keep the simple shadow under each thing.
 - **Light sources**, all scenery entries in `src/content/scenery.ts`:
