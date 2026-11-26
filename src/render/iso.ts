@@ -43,6 +43,31 @@ export interface Placement {
   /** What this is, for tests and debugging. */
   kind: 'face' | 'top' | 'arrow' | 'exit' | 'shadow' | 'ball' | 'overlay';
   tile: { x: number; y: number };
+  /**
+   * Faces only (owner, 2026-11-26, organic walls): which edge and band this is,
+   * so the wall texture system can paint it. The position, frame and depth above
+   * are unchanged; a scene without wall textures just draws `sprite`.
+   */
+  wall?: FaceWallInfo;
+}
+
+/** Where a face band sits in its edge (see walls.ts). */
+export interface FaceWallInfo {
+  /** The face material, e.g. "face-earth" (the sprite without its "-left"/"-right"). */
+  readonly material: string;
+  readonly side: 'left' | 'right';
+  /** Rows from the edge's top anchor down to this band's anchor: 4 per height step. */
+  readonly depth: number;
+  /** The frame of the edge's top band. */
+  readonly topFrame: FaceFrame;
+}
+
+/** The wall info for each band of one edge (the last band is the top one). */
+function edgeWall(material: string, side: 'left' | 'right', bands: readonly FaceBand[]): FaceWallInfo[] {
+  if (!bands.length) return [];
+  const topBand = bands[bands.length - 1]!;
+  const r = topBand.k + topBand.size;
+  return bands.map((b) => ({ material, side, depth: (r - (b.k + b.size)) * STEP_PX, topFrame: topBand.frame }));
 }
 
 /** Depth slots inside one tile. Each diagonal gets DEPTH_PER_DIAGONAL units. */
@@ -122,16 +147,20 @@ export function buildDrawList(course: Course, opts: DrawOptions = {}): Placement
 
       // Lower-left face: edge sw → se, neighbour below-left is (x, y + 1) whose nw, ne match.
       const left = tileAt(course, x, y + 1);
-      for (const band of faceBands(sw, se, left?.corners[0] ?? FLOOR_HEIGHT, left?.corners[1] ?? FLOOR_HEIGHT)) {
+      const leftBands = faceBands(sw, se, left?.corners[0] ?? FLOOR_HEIGHT, left?.corners[1] ?? FLOOR_HEIGHT);
+      const leftWall = edgeWall(def.faceSprite, 'left', leftBands);
+      leftBands.forEach((band, i) => {
         const p = project(x, y + 1, band.k + band.size);
-        out.push({ sprite: `${def.faceSprite}-left`, frame: band.frame, ...p, depth: tileDepth(x, y, 'face'), kind: 'face', tile });
-      }
+        out.push({ sprite: `${def.faceSprite}-left`, frame: band.frame, ...p, depth: tileDepth(x, y, 'face'), kind: 'face', tile, wall: leftWall[i]! });
+      });
       // Lower-right face: edge se → ne, neighbour below-right is (x + 1, y) whose sw, nw match.
       const right = tileAt(course, x + 1, y);
-      for (const band of faceBands(se, ne, right?.corners[3] ?? FLOOR_HEIGHT, right?.corners[0] ?? FLOOR_HEIGHT)) {
+      const rightBands = faceBands(se, ne, right?.corners[3] ?? FLOOR_HEIGHT, right?.corners[0] ?? FLOOR_HEIGHT);
+      const rightWall = edgeWall(def.faceSprite, 'right', rightBands);
+      rightBands.forEach((band, i) => {
         const p = project(x + 1, y + 1, band.k + band.size);
-        out.push({ sprite: `${def.faceSprite}-right`, frame: band.frame, ...p, depth: tileDepth(x, y, 'face'), kind: 'face', tile });
-      }
+        out.push({ sprite: `${def.faceSprite}-right`, frame: band.frame, ...p, depth: tileDepth(x, y, 'face'), kind: 'face', tile, wall: rightWall[i]! });
+      });
 
       const centre = project(x + 0.5, y + 0.5, t.base);
       // Checkerboard (owner, 2026-11-15): every other tile uses the second shade.

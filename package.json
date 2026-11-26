@@ -16,7 +16,8 @@
     "gen": "node tools/gen.ts",
     "gen:batch": "node tools/gen-batch.ts",
     "arenas": "node tools/arena-check.ts",
-    "balance": "node tools/balance.ts"
+    "balance": "node tools/balance.ts",
+    "art:b1b": "node tools/walls-from-b1b.ts"
   },
   "dependencies": {
     "phaser": "4.2.1"

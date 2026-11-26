@@ -99,6 +99,10 @@ export class TuningPanel {
   useMapScreen = false;
   /** Owner, 2026-11-21: draw flat grass, rough and sand tiles slightly raised at random (looks only). */
   groundBumps = true;
+  /** Owner, 2026-11-26: organic wall textures (off: the old repeating face sprites, for comparing). */
+  organicWalls = true;
+  /** Owner, 2026-11-26: the grass overhang along the top of organic walls. */
+  wallOverhang = true;
   /** Round 3: draw every map node (off: only the path taken and the next choices). */
   wholeMap = false;
   private botButton: HTMLButtonElement | null = null;
@@ -162,12 +166,22 @@ export class TuningPanel {
       bumps.textContent = `Ground bumps: ${this.groundBumps ? 'ON' : 'off'}`;
       this.onTheme?.();
     });
+    const walls = this.button('Organic walls: ON', () => {
+      this.organicWalls = !this.organicWalls;
+      walls.textContent = `Organic walls: ${this.organicWalls ? 'ON' : 'off'}`;
+      this.onTheme?.();
+    });
+    const overhang = this.button('Wall overhang: ON', () => {
+      this.wallOverhang = !this.wallOverhang;
+      overhang.textContent = `Wall overhang: ${this.wallOverhang ? 'ON' : 'off'}`;
+      this.onTheme?.();
+    });
     const whole = this.button('Show the whole map: off', () => {
       this.wholeMap = !this.wholeMap;
       whole.textContent = `Show the whole map: ${this.wholeMap ? 'ON' : 'off'}`;
       this.onMap?.();
     });
-    head.append(copy, reset, scenery, theme, bot, mapScreen, bumps, whole);
+    head.append(copy, reset, scenery, theme, bot, mapScreen, bumps, walls, overhang, whole);
     this.root.appendChild(head);
     this.benchBox = document.createElement('div');
     this.benchBox.className = 'bench';

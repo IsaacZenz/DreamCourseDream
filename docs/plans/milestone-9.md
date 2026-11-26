@@ -212,7 +212,7 @@ The night, underground and spooky themes reuse their region's tune with a darker
 - Sprite sources in `tools/art/`, one file per group (hero, bugs, bosses, tiles, props, pickups, icons, places, cutscenes). Each sprite is a grid of letters plus a palette, and can have several frames.
 - **Themes are palettes.** A theme swaps colours (and, where needed, a few whole sprites, such as dead trees in spooky), through the theme sets the manifest already has.
 - **Variants (owner, 2026-11-14): Default 3 variants** of each ground tile and each common scenery piece per theme, picked from the tile's spot like the ground bumps. Display only.
-- The "hand-drawn wins" folder from section 2.
+- The "hand-drawn wins" folder from section 2. **Built early (owner, 2026-11-26) as `art/drawn/`, together with organic wall textures; see DESIGN.md section 12.**
 
 ### 6.2 The armadillo (FEATURES.md section 3; poses decided by the owner, 2026-11-19)
 

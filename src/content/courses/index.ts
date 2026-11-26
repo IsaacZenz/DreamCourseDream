@@ -7,6 +7,7 @@ import flatWalls from './flat-walls.json';
 import slopesSurfaces from './slopes-surfaces.json';
 import courseRules from './course-rules.json';
 import enemiesAbilities from './enemies-abilities.json';
+import walls from './walls.json';
 import { BENCH_ID, benchCourse } from './testBench.ts';
 
 export const GENERATED_ID = 'generated';
@@ -25,4 +26,6 @@ export const TEST_COURSES: readonly CourseFile[] = [
   { id: BENCH_ID, data: benchCourse('snoozegrub') },
   // A generated course (key 6): made by src/gen/ from the seed and budget.
   { id: GENERATED_ID, data: null },
+  // Owner, 2026-11-26: organic wall textures, on walls of every height and on sloped tops (?course=walls).
+  { id: 'walls', data: walls },
 ];
