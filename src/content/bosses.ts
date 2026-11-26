@@ -29,14 +29,67 @@ export interface BossPhase {
   readonly ring?: { readonly radius: number; readonly damage: number; readonly status: string };
   /** With both globs and a ring: one or the other, in turn. */
   readonly alternate?: boolean;
+  /**
+   * Round 4 (the centipede, Thousandfoot): unarmoured segments, shooter
+   * segments, body speed in tiles a second, and whether the head comes up.
+   * Weak spots only ever grow: plates that fell off stay off.
+   */
+  readonly coil?: {
+    readonly weak: number;
+    readonly shooters: number;
+    readonly speed: number;
+    readonly head: boolean;
+    /** Owner, 2026-11-24: how many tiles in from the map edge the body has squeezed (phase 3: 1, the coil tightens). */
+    readonly inset: number;
+    /** Owner, 2026-11-24: the legs sweep on every off turn, not only when the ball rests in the leg ring. */
+    readonly sweepAlways: boolean;
+  };
+}
+
+/**
+ * Round 4 (sheet docs/plans/milestone-8-round-4.md, owner 2026-11-23): the
+ * centipede's body wraps the arena edge. Every number is a starting value.
+ */
+export interface CoilRules {
+  /** Segment length along the map edge, in tiles (a 15 by 15 arena's 60-tile edge holds 30). */
+  readonly segmentLength: number;
+  /** How far the body reaches out over the edge (for looks) and its height (high enough that a lofted ball cannot clear it). */
+  readonly bodyWidth: number;
+  readonly bodyHeight: number;
+  /** Bounce off an armoured segment, and off a soft weak spot. */
+  readonly armourBounce: number;
+  readonly weakBounce: number;
+  /** The leg ring: tiles in from the edge that the sweep reaches. */
+  readonly legReach: number;
+  /** Shooting spikes: damage to the ball, how close to the line counts, the little knock along the line. */
+  readonly spike: { readonly damage: number; readonly hitWidth: number; readonly knockSpeed: number };
+  /** The leg sweep: damage, and how far the ball is pushed in, out of the ring (tiles). */
+  readonly sweep: { readonly damage: number; readonly push: number };
+  /** Phase 3 head: the marked circle, its damage and throw, and hits on the head do this many times the damage. */
+  readonly head: { readonly markRadius: number; readonly damage: number; readonly knockSpeed: number; readonly knockHop: number; readonly damageMul: number };
+  /** The body turns round at each phase change. */
+  readonly reverseOnPhase: boolean;
+  /**
+   * Owner, 2026-11-24: a fired spike sticks in the ground at the far end of
+   * its line (`inFromEdge` tiles in from the wall) for `turns` of the
+   * centipede's turns. Rolling into it hurts.
+   */
+  readonly quill: { readonly turns: number; readonly damage: number; readonly radius: number; readonly height: number; readonly inFromEdge: number };
+  /** Owner, 2026-11-24: a weak spot that was just hit grows its shell back for this many of the centipede's turns. */
+  readonly scabTurns: number;
 }
 
 /**
  * A boss's gimmick (FEATURES.md section 5).
  * - shell (Gloamhorn): every hit is blocked while the shell is closed; it opens after a charge, for the player's next shot.
  * - crown (the Brood Queen): only hits from above count; a ball hitting her side is bitten.
+ * - coil (the centipede, round 4): only its unarmoured segments (and its head in phase 3) can be hurt.
  */
-export type BossGimmick = null | { readonly kind: 'shell'; readonly closedBounce: number; readonly openHits: number } | { readonly kind: 'crown'; readonly biteDamage: number };
+export type BossGimmick =
+  | null
+  | { readonly kind: 'shell'; readonly closedBounce: number; readonly openHits: number }
+  | { readonly kind: 'crown'; readonly biteDamage: number }
+  | ({ readonly kind: 'coil' } & CoilRules);
 
 export interface BossDef {
   readonly id: string;
@@ -46,8 +99,11 @@ export interface BossDef {
   readonly gimmick: BossGimmick;
   /** The arena layout set: one is picked at random, never the one used in the last boss fight (owner, 2026-11-17). */
   readonly arenas: readonly string[];
-  /** Health in regions 1, 2 and 3. Endless regions add `ENDLESS_BOSS_GROWTH` of the region 3 health per region. */
-  readonly health: readonly [number, number, number];
+  /**
+   * Health in regions 1, 2, 3 (and 4 for a boss that lists it). Regions past
+   * the list add `ENDLESS_BOSS_GROWTH` of the last listed health per region.
+   */
+  readonly health: readonly number[];
   readonly phases: readonly BossPhase[];
   /** A slam marks a ring round the resting ball; it lands on the next enemy turn. */
   readonly slam: { readonly damage: number; readonly knockSpeed: number; readonly knockHop: number };
@@ -67,9 +123,15 @@ export interface BossDef {
    * a dozen hits in one shot.
    */
   readonly hitsPerShot: number;
+  /**
+   * Round 4 (owner, 2026-11-23): this boss's arena is checked by hand, not by
+   * the bot (`npm run arenas` skips it unless it is named). The bot cannot yet
+   * lead a moving target.
+   */
+  readonly handChecked?: boolean;
 }
 
-/** Endless mode (sheet section 10a): each region after the third adds this share of the boss's region 3 health (the Stagwarden: +6). */
+/** Endless mode (sheet section 10a): each region past a boss's health list adds this share of its last listed health (the Stagwarden: +6 a region after region 3). */
 export const ENDLESS_BOSS_GROWTH = 0.25;
 
 const GRUBS = ['leadgrub', 'embergrub', 'hopgrub', 'whirlgrub'];
@@ -159,6 +221,54 @@ const defs: readonly BossDef[] = [
     spawnClear: 1,
     hitsPerShot: 1,
   },
+  {
+    // Round 4 (owner, 2026-11-23): the final boss, a giant centipede wrapped round the whole arena.
+    // Thousandfoot is a stand-in name (owner, 2026-11-23).
+    id: 'centipede',
+    name: 'Thousandfoot',
+    title: 'The ring with no end',
+    gimmick: {
+      kind: 'coil',
+      segmentLength: 2,
+      // Owner, 2026-11-24: 3 tiles wide (was 2). It hangs over the edge; the map stays 15 by 15.
+      bodyWidth: 3,
+      bodyHeight: 3,
+      armourBounce: 0.7,
+      weakBounce: 0.4,
+      legReach: 1,
+      spike: { damage: 1, hitWidth: 0.45, knockSpeed: 3 },
+      sweep: { damage: 1, push: 1.5 },
+      head: { markRadius: 2.5, damage: 1, knockSpeed: 7, knockHop: 2, damageMul: 2 },
+      reverseOnPhase: true,
+      quill: { turns: 2, damage: 1, radius: 0.2, height: 0.8, inFromEdge: 1.5 },
+      scabTurns: 2,
+    },
+    // Owner, 2026-11-23: always the same map.
+    arenas: ['coil-pit'],
+    // Region 4 is where it lives (32). The earlier numbers are only for the testing menu's boss fights.
+    health: [20, 24, 28, 32],
+    phases: [
+      // 1: 3 weak spots, 2 spikes, no summons.
+      { above: 2 / 3, slamRadius: null, maxMinions: 0, pool: [], coil: { weak: 3, shooters: 2, speed: 1, head: false, inset: 0, sweepAlways: false } },
+      // 2: 6 weak spots, 3 spikes, summons. Skitter Ant 40%, Bristlecrawler 30%, a grub 30%.
+      { above: 1 / 3, slamRadius: null, maxMinions: 2, pool: [{ id: 'skitter-ant', weight: 40 }, { id: 'bristlecrawler', weight: 30 }, ...each(GRUBS, 30 / GRUBS.length)], coil: { weak: 6, shooters: 3, speed: 1.25, head: false, inset: 0, sweepAlways: false } },
+      // 3: 10 weak spots, 4 spikes, the head, the coil tightens. Trapjaw 30%, Stinkpuff 30%, Pouncehopper 20%, a grub 20%.
+      {
+        above: 0,
+        slamRadius: null,
+        maxMinions: 3,
+        pool: [{ id: 'trapjaw', weight: 30 }, { id: 'stinkpuff', weight: 30 }, { id: 'pouncehopper', weight: 20 }, ...each(GRUBS, 20 / GRUBS.length)],
+        // Owner, 2026-11-24: the coil tightens by a tile and the legs sweep every off turn.
+        coil: { weak: 10, shooters: 4, speed: 1.5, head: true, inset: 1, sweepAlways: true },
+      },
+    ],
+    slam: NO_SLAM,
+    shed: ['heart', 'shot-orb'],
+    minionsLeaveFlag: false,
+    spawnClear: 1,
+    hitsPerShot: 1,
+    handChecked: true,
+  },
 ];
 
 export const BOSSES: ReadonlyMap<string, BossDef> = new Map(defs.map((d) => [d.id, d]));
@@ -166,6 +276,7 @@ export const BOSS_IDS: readonly string[] = defs.map((d) => d.id);
 
 /** A boss's health in a region; endless regions keep growing (sheet section 10a). */
 export function bossHealthIn(def: BossDef, region: number): number {
-  if (region <= 3) return def.health[Math.max(1, region) - 1]!;
-  return Math.round(def.health[2] * (1 + ENDLESS_BOSS_GROWTH * (region - 3)));
+  const n = def.health.length;
+  if (region <= n) return def.health[Math.max(1, region) - 1]!;
+  return Math.round(def.health[n - 1]! * (1 + ENDLESS_BOSS_GROWTH * (region - n)));
 }

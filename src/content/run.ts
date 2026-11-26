@@ -206,12 +206,21 @@ export const REGIONS: readonly RegionDef[] = [
 /**
  * Beating this region's boss (the final boss) wins the run (Milestone 8).
  * Owner, 2026-11-18: the run may then carry on into endless mode.
+ * Owner, 2026-11-23 (round 4): four regions, then endless (was three).
  */
-export const LAST_REGION = 3;
+export const LAST_REGION = 4;
+
+/**
+ * Round 4 (owner, 2026-11-23): regions past the table above that are not yet
+ * endless keep the endless numbers (region 4 is what "endless region 4" was)
+ * but have their own boss pool. Region 4: the centipede only.
+ */
+export const REGION_BOSSES: Readonly<Record<number, readonly string[]>> = { 4: ['centipede'] };
 
 /**
  * Endless mode (owner, 2026-11-18; sheet section 10a): each region after the
- * third takes region three's numbers plus one step per region. Course size
+ * third takes region three's numbers plus one step per region (round 4: region
+ * 4 is no longer endless, but keeps these numbers, so regions 5 and on are unchanged). Course size
  * stays at region three's (owner: course size caps at region 3; everything
  * else keeps growing).
  */
