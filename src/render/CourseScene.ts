@@ -351,6 +351,7 @@ export class CourseScene extends Phaser.Scene {
   create(): void {
     // A restart during the opening zoom must not leave input switched off.
     this.intro = false;
+    this.dropIn = null;
     this.input.enabled = true;
     if (this.input.keyboard) this.input.keyboard.enabled = true;
     manifest = shared.manifest;
@@ -537,15 +538,77 @@ export class CourseScene extends Phaser.Scene {
     const hidden = hud.filter((o) => o.visible);
     for (const o of hidden) o.setVisible(false);
     cam.setZoom(COURSE_INTRO.zoom);
-    this.time.delayedCall(COURSE_INTRO.holdMs, () => cam.zoomTo(1, COURSE_INTRO.zoomMs, 'Sine.easeInOut'));
-    this.time.delayedCall(COURSE_INTRO.holdMs + COURSE_INTRO.zoomMs, () => {
-      cam.setZoom(1);
-      for (const o of hidden) o.setVisible(true);
-      this.intro = false;
-      this.input.enabled = true;
-      if (this.input.keyboard) this.input.keyboard.enabled = true;
-      this.centreOnBall();
-    });
+    // Owner, 2026-11-26: the hero drops in from the sky first; the zoom out starts once it is on its feet.
+    this.dropIn = {
+      start: -1,
+      landed: () => {
+        cam.zoomTo(1, COURSE_INTRO.zoomMs, 'Sine.easeInOut');
+        this.time.delayedCall(COURSE_INTRO.zoomMs, () => {
+          cam.setZoom(1);
+          for (const o of hidden) o.setVisible(true);
+          this.intro = false;
+          this.input.enabled = true;
+          if (this.input.keyboard) this.input.keyboard.enabled = true;
+          this.centreOnBall();
+        });
+      },
+    };
+    this.ballImg.setVisible(false);
+    this.shadowImg.setVisible(false);
+  }
+
+  /** Owner, 2026-11-26: the drop from the sky at the start of a course (start -1: on the next frame; null: done). */
+  private dropIn: { start: number; landed: () => void } | null = null;
+
+  /**
+   * The drop: the ball falls from above the top of the screen onto the start,
+   * squashes, makes one small bounce, and the hero stands up. Display only.
+   */
+  private drawDropIn(): void {
+    const d = this.dropIn!;
+    if (d.start < 0) d.start = this.time.now;
+    const t = this.time.now - d.start;
+    const { fallMs, bounceMs, bouncePx, standMs } = COURSE_INTRO;
+    const b = this.play.ball;
+    const p = project(b.x, b.y, b.z / STEP_HEIGHT);
+    p.y -= this.bumpAt(b.x, b.y, b.z);
+    // Start a whole (zoomed) screen above the ball, so it comes in from out of sight.
+    const fromPx = VIEW_HEIGHT / COURSE_INTRO.zoom;
+    let lift: number;
+    let curled = true;
+    if (t < fallMs) lift = fromPx * (1 - Phaser.Math.Easing.Quadratic.In(t / fallMs));
+    else if (t < fallMs + bounceMs) lift = bouncePx * Math.sin((Math.PI * (t - fallMs)) / bounceMs);
+    else {
+      lift = 0;
+      curled = false;
+    }
+    const facing = this.aimFacing();
+    const frame = curled ? 'drop-in-ball' : `drop-in-${facing}`;
+    if (frame !== this.ballFrame) {
+      const first = this.ballFrame === '';
+      this.ballFrame = frame;
+      const walk = this.play.character.walkSprite;
+      const id = curled ? this.play.character.sprite : facing[1] === 'l' ? `${walk}-left` : walk;
+      const e = manifest.sprites[id]!;
+      this.ballImg.setTexture(id, curled ? 0 : frameIndex(e, `${facing}-stand`));
+      this.ballImg.setOrigin(e.anchor[0] / e.frameWidth, e.anchor[1] / e.frameHeight);
+      if (!curled && !first) this.tweens.add({ targets: this.ballImg, scaleX: { from: 1.2, to: 1 }, scaleY: { from: 0.8, to: 1 }, duration: 140, ease: 'Sine.easeOut' });
+    }
+    // A squash where the ball hits the ground.
+    const squash = t >= fallMs && t < fallMs + 70;
+    if (curled) this.ballImg.setScale(squash ? 1.25 : 1, squash ? 0.75 : 1);
+    this.ballImg.setVisible(true).setAlpha(1).setPosition(Math.round(p.x), Math.round(p.y - lift)).setDepth(this.standingDepth(b.x, b.y));
+    // The shadow grows as the ball comes down.
+    const near = Math.max(0, 1 - lift / fromPx);
+    const sp = project(b.x, b.y, (groundAt(this.course!, b.x, b.y)?.h ?? b.z) / STEP_HEIGHT);
+    sp.y -= this.bumpAt(b.x, b.y);
+    this.shadowImg.setVisible(true).setPosition(Math.round(sp.x), Math.round(sp.y)).setScale(0.3 + 0.7 * near).setAlpha(0.3 + 0.7 * near).setDepth(tileDepth(Math.floor(b.x), Math.floor(b.y), 'shadow'));
+    if (t >= fallMs + bounceMs + standMs) {
+      this.dropIn = null;
+      this.ballFrame = '';
+      this.shadowImg.setScale(1).setAlpha(1);
+      d.landed();
+    }
   }
 
   /**
@@ -761,6 +824,8 @@ export class CourseScene extends Phaser.Scene {
     if (!this.runMode || this.runReported || !run || run.status !== 'course') return;
     this.runReported = true;
     const p = this.play;
+    // Owner, 2026-11-26: only coming from a won course does the hero pop up through the crossroads hatch.
+    session.arriveByHatch = p.status === 'won';
     settleFood(p);
     finishCourse(run, { won: p.status === 'won', lostBy: p.lostBy, health: p.health, wallet: p.wallet, ability: p.ability, gear: p.gear, gear2: p.gear2, blueStars: p.blueStars, foods: p.foods });
     session.course = null;
@@ -953,6 +1018,7 @@ export class CourseScene extends Phaser.Scene {
     this.drawDarkness();
     // Owner, 2026-11-23: the round waits for the opening zoom.
     if (this.intro) {
+      if (this.dropIn && this.course) this.drawDropIn();
       if (this.course) {
         this.animateTiles();
         this.syncObjects();

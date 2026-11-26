@@ -39,8 +39,18 @@ export const WALK = {
 export const COURSE_INTRO = {
   /** Starting zoom: the same as walking, so the change from a place to a course feels continuous. */
   zoom: WALK.cameraZoom,
-  /** Time held at the close zoom before zooming out (ms). */
-  holdMs: 400,
+  /**
+   * Owner, 2026-11-26: the hero drops in from the sky as a ball (replaces the
+   * plain 400 ms hold). It falls from above the top of the screen onto the
+   * start, makes one small bounce, stands up, and then the zoom out starts.
+   */
+  /** The fall from out of sight onto the start (ms). */
+  fallMs: 520,
+  /** The small bounce after landing: time in the air (ms) and height (screen pixels). */
+  bounceMs: 200,
+  bouncePx: 4,
+  /** Standing on its feet before the zoom out starts (ms). */
+  standMs: 300,
   /** Time the zoom out takes (ms). Owner, 2026-11-26: 1200 (was 800, felt too fast). */
   zoomMs: 1200,
 } as const;

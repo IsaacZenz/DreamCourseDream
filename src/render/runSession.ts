@@ -42,7 +42,13 @@ export const session: {
   broken: readonly string[];
   /** Milestone 8b: the boss's introduction card was shown at the boss gate, so the fight does not show it again. */
   skipBossIntro: boolean;
-} = { run: null, course: null, pending: null, profile: loaded.data.profile, burrow: loaded.data.burrow, saved: loaded.data.run, broken: loaded.broken, skipBossIntro: false };
+  /**
+   * Owner, 2026-11-26: a course was just won, so the hero arrives at the next
+   * crossroads up through its hatch. Arriving from a town, a cache or the start
+   * of a run, it simply stands there as before.
+   */
+  arriveByHatch: boolean;
+} = { run: null, course: null, pending: null, profile: loaded.data.profile, burrow: loaded.data.burrow, saved: loaded.data.run, broken: loaded.broken, skipBossIntro: false, arriveByHatch: false };
 
 /** A short random seed. The display may use Math.random; the simulation never does. */
 export function newRunSeed(): string {

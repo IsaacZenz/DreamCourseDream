@@ -195,9 +195,11 @@ export class PlaceScene extends Phaser.Scene {
     this.hatchImg = null;
     this.drawWorld();
     this.spawn();
-    // Owner, 2026-11-26: at the crossroads the hero pops up out of the hatch on the start tile.
+    // Owner, 2026-11-26: at the crossroads the hero pops up out of the hatch on the start tile,
+    // but only straight after a won course; from a town, a cache or the run's start it just stands there.
     // The clock starts on the first frame (the scene's clock is not running yet here).
-    this.arrival = this.hatchImg ? -1 : null;
+    this.arrival = this.hatchImg && session.arriveByHatch ? -1 : null;
+    session.arriveByHatch = false;
     this.drawTopBar(run);
     this.drawHelp();
     this.bag = new BagMenu(this, () => this.bag.draw(run));
