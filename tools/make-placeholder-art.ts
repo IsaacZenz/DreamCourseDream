@@ -375,21 +375,69 @@ function drawShadow(): Image {
   return img;
 }
 
-function drawExit(open: boolean): Image {
-  const img = new Image(16, 10);
-  const rim = hex2('#d8d0b8');
-  const hole = hex2('#101018');
-  const lid = ramp('#8a8fa0');
-  const glow = hex2('#f8f080');
-  for (let y = 0; y < 10; y++) {
-    for (let x = 0; x < 16; x++) {
-      const r = Math.hypot((x + 0.5 - 8) / 7, (y + 0.5 - 5) / 3.5);
-      if (r >= 1) continue;
-      if (r > 0.78) img.set(x, y, rim);
-      else if (open) img.set(x, y, r < 0.35 ? glow : hole);
-      else img.set(x, y, Math.abs(x + 0.5 - 8) < 1 || Math.abs(y + 0.5 - 5) < 1 ? lid[1]! : lid[3]!);
+/**
+ * Owner, 2026-11-26: the exit is a metal blast-door hatch, flat on the ground.
+ * A ring of lights runs round its rim: dark while locked, green once the quota
+ * is met (two frames, so the lights can chase). The two doors slide apart to
+ * the sides (gap in pixels each way); fully open shows the dark shaft.
+ */
+const HATCH_W = 26;
+const HATCH_H = 15;
+function drawHatch(lights: 'off' | 'a' | 'b', gap: number): Image {
+  const img = new Image(HATCH_W, HATCH_H);
+  const cx = 13;
+  const cy = 7;
+  const rx = 12.5;
+  const ry = 6.5;
+  const rim = ramp('#9098a8');
+  const door = ramp('#6c7484');
+  const stripe = hex2('#e8c030');
+  const dark = hex2('#181820');
+  const shaft = ramp('#283038');
+  const lampOff = hex2('#3a4038');
+  const lampOn = hex2('#70f870');
+  const lampDim = hex2('#30a040');
+  const edge = hex2('#202030');
+  // Diamond distance: 1 on the outer edge.
+  const d = (x: number, y: number) => Math.abs((x + 0.5 - cx) / rx) + Math.abs((y + 0.5 - cy) / ry);
+  // The lamps: the four corners and the middle of each side.
+  const lamps: [number, number][] = [
+    [cx - 11, cy], [cx + 10, cy], [cx - 1, cy - 6], [cx, cy - 6], [cx - 1, cy + 5], [cx, cy + 5],
+    [cx - 6, cy - 3], [cx + 5, cy - 3], [cx - 6, cy + 3], [cx + 5, cy + 3],
+  ];
+  for (let y = 0; y < HATCH_H; y++) {
+    for (let x = 0; x < HATCH_W; x++) {
+      const r = d(x, y);
+      if (r > 1) {
+        // A one-pixel side under the lower edges, so the plate sits on the ground.
+        if (d(x, y - 1) <= 1 && y > cy) img.set(x, y, rim[0]!);
+        continue;
+      }
+      if (r > 0.9) img.set(x, y, edge);
+      else if (r > 0.68) img.set(x, y, rim[(x + 0.5 - cx) / rx - (y + 0.5 - cy) / ry < -0.2 ? 4 : 2]!);
+      else {
+        // Inside: two doors meeting at the middle, slid apart by `gap` each way.
+        const lx = x + 0.5 - cx;
+        const left = lx < 0;
+        const doorX = left ? lx + gap : lx - gap;
+        const onDoor = left ? doorX < 0 : doorX >= 0;
+        if (!onDoor) {
+          // The open shaft: darker towards the bottom, lighter near the top rim.
+          img.set(x, y, y < cy - 2 ? shaft[2]! : y < cy + 1 ? shaft[1]! : dark);
+          continue;
+        }
+        // Door edge at the seam gets hazard stripes; a few rivets.
+        const fromSeam = Math.abs(doorX);
+        if (fromSeam < 1.5) img.set(x, y, (x + y) % 2 ? stripe : dark);
+        else if (r > 0.6 && (x + y) % 3 === 0) img.set(x, y, door[4]!);
+        else img.set(x, y, door[left ? 3 : 2]!);
+      }
     }
   }
+  lamps.forEach(([lx, ly], i) => {
+    const on = lights === 'off' ? false : lights === 'a' ? i % 2 === 0 : i % 2 === 1;
+    img.set(lx, ly, lights === 'off' ? lampOff : on ? lampOn : lampDim);
+  });
   return img;
 }
 
@@ -1159,7 +1207,9 @@ emit('ball', drawBall('#d0d0e0', '#8888a8'), 12, 12, ['idle'], [6, 11]);
 emit('ball-thud', drawBall('#8890a0', '#505868'), 12, 12, ['idle'], [6, 11]);
 emit('ball-pip', drawBall('#e8c878', '#b08838'), 12, 12, ['idle'], [6, 11]);
 emit('ball-shadow', drawShadow(), 12, 5, ['idle'], [6, 2]);
-emit('exit', sheet([drawExit(false), drawExit(true)]), 16, 10, ['closed', 'open'], [8, 5]);
+// Owner, 2026-11-26: the blast-door hatch. closed = locked (lights off); lit-a / lit-b = open for the ball (green lights chase);
+// opening-1, opening-2 and open = the doors sliding apart.
+emit('exit', sheet([drawHatch('off', 0), drawHatch('a', 0), drawHatch('b', 0), drawHatch('a', 2), drawHatch('a', 4), drawHatch('a', 9)]), HATCH_W, HATCH_H, ['closed', 'lit-a', 'lit-b', 'opening-1', 'opening-2', 'open'], [13, 7]);
 emit('star-yellow', drawStar('#f8d030'), 11, 11, ['idle'], [5, 10]);
 emit('heart', drawHeart(), 9, 8, ['idle'], [4, 7]);
 emit('grab-bag', drawGrabBag(), 12, 12, ['idle'], [6, 11]);

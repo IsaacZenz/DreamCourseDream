@@ -4,7 +4,7 @@ import { UPGRADE_LIST } from '../content/run';
 import { FOOD } from '../content/consumables';
 import { OBJECTS, RAIL } from '../content/objects';
 import { GROUND_BUMPS, SCENERY } from '../content/scenery';
-import { PROPS, WALK, type PlaceKind, type TriggerKind } from '../content/places';
+import { HATCH, PROPS, WALK, type PlaceKind, type TriggerKind } from '../content/places';
 import { townFor } from '../content/places/index';
 import { themeForRegion } from '../content/biomes';
 import { BOSSES } from '../content/bosses';
@@ -117,6 +117,11 @@ export class PlaceScene extends Phaser.Scene {
   private world!: Phaser.GameObjects.Container;
   private hero!: Phaser.GameObjects.Image;
   private heroShadow!: Phaser.GameObjects.Image;
+  /** Owner, 2026-11-26: the hatch on the crossroads start tile, and when the hero's pop-out through it began (-1: on the next frame; null: done). */
+  private hatchImg: Phaser.GameObjects.Image | null = null;
+  private arrival: number | null = null;
+  /** The hero's spot on the ground on screen: the camera follows this, so it does not bob with the pop-out. */
+  private heroGround = { x: 0, y: 0 };
   private bigProps: BigProp[] = [];
   private theme = 'day';
   private accumulator = 0;
@@ -187,8 +192,12 @@ export class PlaceScene extends Phaser.Scene {
     this.hint = null;
     this.hintText = '';
     this.message = null;
+    this.hatchImg = null;
     this.drawWorld();
     this.spawn();
+    // Owner, 2026-11-26: at the crossroads the hero pops up out of the hatch on the start tile.
+    // The clock starts on the first frame (the scene's clock is not running yet here).
+    this.arrival = this.hatchImg ? -1 : null;
     this.drawTopBar(run);
     this.drawHelp();
     this.bag = new BagMenu(this, () => this.bag.draw(run));
@@ -359,7 +368,11 @@ export class PlaceScene extends Phaser.Scene {
       if (fp?.kind === 'box' && fp.hx >= 0.5) {
         const img = this.image(def.sprite, frame, q.x, q.y, this.standingDepth(p.x + fp.hx - 0.05, p.y + fp.hy - 0.05), !!def.themed);
         this.bigProps.push({ img, minX: p.x - fp.hx, maxX: p.x + fp.hx, minY: p.y - fp.hy, maxY: p.y + fp.hy });
-      } else if (p.id === 'tee-mat') this.image(def.sprite, frame, q.x, q.y, tileDepth(Math.floor(p.x), Math.floor(p.y), 'arrow'), false);
+      } else if (p.id === 'tee-mat' || p.id === 'arrival-hatch') {
+        // Flat on the ground, walked over.
+        const img = this.image(def.sprite, p.id === 'arrival-hatch' ? 'closed' : frame, q.x, q.y, tileDepth(Math.floor(p.x), Math.floor(p.y), 'arrow'), false);
+        if (p.id === 'arrival-hatch') this.hatchImg = img;
+      }
       else this.image(def.sprite, frame, q.x, q.y, this.standingDepth(p.x, p.y), !!def.themed);
     }
     // Owner, 2026-11-22: each path's destination icon floats out in space just past its end, between the posts.
@@ -404,6 +417,7 @@ export class PlaceScene extends Phaser.Scene {
   }
 
   private drawHero(): void {
+    if (this.arrival !== null && this.drawArrival()) return;
     const w = this.walker;
     const h = walkHeight(this.place, w.x, w.y) ?? 0;
     const p = project(w.x, w.y, h);
@@ -416,7 +430,8 @@ export class PlaceScene extends Phaser.Scene {
     this.hero.setTexture(id, frameIndex(entry, `${w.facing}-${walkFrame(w)}`));
     this.hero.setOrigin(entry.anchor[0] / entry.frameWidth, entry.anchor[1] / entry.frameHeight);
     this.hero.setPosition(Math.round(p.x), Math.round(p.y));
-    this.heroShadow.setPosition(Math.round(p.x), Math.round(p.y));
+    this.heroGround = { x: Math.round(p.x), y: Math.round(p.y) };
+    this.heroShadow.setPosition(Math.round(p.x), Math.round(p.y)).setVisible(true);
     // In front of or behind each building by which side of its footprint the armadillo is on.
     let depth = this.standingDepth(w.x, w.y);
     const r = 0.15;
@@ -428,6 +443,70 @@ export class PlaceScene extends Phaser.Scene {
     }
     this.hero.setDepth(depth);
     this.heroShadow.setDepth(depth - 0.01);
+  }
+
+  /**
+   * Owner, 2026-11-26: the pop-out. The hatch opens, the ball shoots up out of
+   * the shaft, the doors shut under it while the hero uncurls, and it lands on
+   * its feet on the closed hatch. False once it has finished (walking starts).
+   */
+  private drawArrival(): boolean {
+    const hatch = this.hatchImg!;
+    const entry = shared.manifest.sprites.exit!;
+    if (this.arrival! < 0) this.arrival = this.time.now;
+    const t = this.time.now - this.arrival!;
+    const tPop = HATCH.openMs;
+    const tTurn = tPop + HATCH.popMs;
+    const tLand = tTurn + HATCH.turnMs;
+    const tEnd = tLand + HATCH.landMs;
+    const w = this.walker;
+    if (t >= tEnd) {
+      this.arrival = null;
+      hatch.setFrame(frameIndex(entry, 'closed'));
+      this.hero.setCrop().setScale(1);
+      // A little squash on landing.
+      this.tweens.add({ targets: this.hero, scaleX: { from: 1.25, to: 1 }, scaleY: { from: 0.75, to: 1 }, duration: 140, ease: 'Sine.easeOut' });
+      return false;
+    }
+    const opening = ['opening-1', 'opening-2', 'open'];
+    let hatchFrame: string;
+    let lift: number; // screen pixels above the hatch (negative: still down the shaft)
+    let curled = true;
+    if (t < tPop) {
+      hatchFrame = opening[Math.min(2, Math.floor((t / HATCH.openMs) * 3))]!;
+      lift = -14;
+    } else if (t < tTurn) {
+      hatchFrame = 'open';
+      lift = -14 + (HATCH.popPx + 14) * Phaser.Math.Easing.Sine.Out((t - tPop) / HATCH.popMs);
+    } else if (t < tLand) {
+      const k = (t - tTurn) / HATCH.turnMs;
+      hatchFrame = [...opening].reverse()[Math.min(2, Math.floor(k * 3))]!;
+      lift = HATCH.popPx;
+      curled = k < 0.5;
+    } else {
+      hatchFrame = 'closed';
+      lift = HATCH.popPx * (1 - Phaser.Math.Easing.Quadratic.In((t - tLand) / HATCH.landMs));
+      curled = false;
+    }
+    hatch.setFrame(frameIndex(entry, hatchFrame));
+    const h = walkHeight(this.place, w.x, w.y) ?? 0;
+    const p = project(w.x, w.y, h);
+    const under = getPanel().groundBumps ? tileAt(this.place.ground, Math.floor(w.x), Math.floor(w.y)) : null;
+    if (under) p.y -= groundBump(under);
+    const id = curled ? characterOf(session.run?.character).sprite : w.facing[1] === 'l' ? `${this.walkSprite()}-left` : this.walkSprite();
+    const e = shared.manifest.sprites[id]!;
+    this.hero.setTexture(id, curled ? 0 : frameIndex(e, `${w.facing}-stand`));
+    this.hero.setOrigin(e.anchor[0] / e.frameWidth, e.anchor[1] / e.frameHeight);
+    this.hero.setPosition(Math.round(p.x), Math.round(p.y - lift));
+    this.heroGround = { x: Math.round(p.x), y: Math.round(p.y) };
+    // Below the hatch's surface the ball is out of sight: show only the part above it.
+    if (lift < 0) this.hero.setCrop(0, 0, e.frameWidth, Math.max(0, e.anchor[1] + lift));
+    else this.hero.setCrop();
+    this.heroShadow.setPosition(Math.round(p.x), Math.round(p.y)).setVisible(lift > 0);
+    const depth = this.standingDepth(w.x, w.y);
+    this.hero.setDepth(depth);
+    this.heroShadow.setDepth(depth - 0.01);
+    return true;
   }
 
   // -------------------------------------------------------------------------
@@ -450,8 +529,8 @@ export class PlaceScene extends Phaser.Scene {
       cam.setScroll(Math.round(bw / 2 - VIEW_WIDTH / 2), Math.round(bh / 2 - VIEW_HEIGHT / 2));
       return;
     }
-    const tx = (this.hero.x + this.origin.x) * scale - VIEW_WIDTH / 2;
-    const ty = (this.hero.y + this.origin.y) * scale - VIEW_HEIGHT / 2 + 10;
+    const tx = (this.heroGround.x + this.origin.x) * scale - VIEW_WIDTH / 2;
+    const ty = (this.heroGround.y + this.origin.y) * scale - VIEW_HEIGHT / 2 + 10;
     const dead = 10;
     if (snap) {
       this.camX = tx;
@@ -484,7 +563,7 @@ export class PlaceScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     if (!this.walker) return;
     this.animate();
-    const busy = !!this.modal || this.bag?.open || this.overview;
+    const busy = !!this.modal || this.bag?.open || this.overview || this.arrival !== null;
     if (!busy) {
       const k = this.keys;
       const input = {

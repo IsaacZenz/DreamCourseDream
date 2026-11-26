@@ -88,6 +88,9 @@ export function buildCrossroads(spec: CrossroadsSpec): Crossroads {
     }
   });
 
+  // Owner, 2026-11-26: the hero arrives up through a hatch on the start tile.
+  raw.props.push({ id: 'arrival-hatch', at: [g.start[0] + 0.5, g.start[1] + 0.5] });
+
   // Scatter: blockers away from paths and props; scenery on grass.
   const nearPath = (x: number, y: number) => {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (surface(x + dx, y + dy) === 'p') return true;

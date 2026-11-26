@@ -75,7 +75,7 @@ import { frameIndex, themedSprite, type Manifest } from './manifest';
 import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
 import { pixelText } from './pixelText';
 import { VIEW_HEIGHT, VIEW_WIDTH } from './config';
-import { COURSE_INTRO } from '../content/places';
+import { COURSE_INTRO, HATCH } from '../content/places';
 import { goRun, walking } from './nav';
 import practiceGreen from '../content/courses/practice-green.json';
 import type { Loadout } from '../sim/play';
@@ -295,6 +295,8 @@ export class CourseScene extends Phaser.Scene {
   /** Course objects on screen, by their uid in the simulation. */
   private objectImgs = new Map<string, Phaser.GameObjects.Image>();
   private exitImg: Phaser.GameObjects.Image | null = null;
+  /** Owner, 2026-11-26: the drop through the hatch at the end of a won course (null: not started). */
+  private hatchDrop: { start: number; from: { x: number; y: number }; done: boolean } | null = null;
   private animated: { img: Phaser.GameObjects.Image; frame: string; entry: Manifest['sprites'][string] }[] = [];
   private animPhase = -1;
   private overview = false;
@@ -479,6 +481,7 @@ export class CourseScene extends Phaser.Scene {
     this.shadowImg = this.makeSprite('ball-shadow');
     this.ballImg = this.makeSprite(this.play.character.sprite);
     this.exitImg = this.makeSprite('exit', 'closed');
+    this.hatchDrop = null;
     this.guide = this.add.graphics().setDepth(OVERLAY_DEPTH - 1);
     this.debugDyn = this.add.graphics().setDepth(OVERLAY_DEPTH - 2);
     this.syncObjects();
@@ -1449,8 +1452,10 @@ export class CourseScene extends Phaser.Scene {
       const p = project(c.exit.x + 0.5, c.exit.y + 0.5, (t?.h ?? 0) / STEP_HEIGHT);
       p.y -= this.bumpAt(c.exit.x + 0.5, c.exit.y + 0.5);
       const entry = manifest.sprites.exit!;
+      // Owner, 2026-11-26: a locked hatch has its lights off; once open for the ball, the green lights chase round the rim.
+      const lit = Math.floor(this.time.now / HATCH.lightMs) % 2 ? 'lit-b' : 'lit-a';
       this.exitImg
-        .setTexture('exit', frameIndex(entry, play.exitOpen ? 'open' : 'closed'))
+        .setTexture('exit', frameIndex(entry, this.hatchDrop ? this.hatchFrame() : play.exitOpen ? lit : 'closed'))
         .setPosition(Math.round(p.x), Math.round(p.y))
         .setDepth(tileDepth(c.exit.x, c.exit.y, 'exit'));
     }
@@ -1471,6 +1476,7 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private drawBall(b: BallState): void {
+    if (this.hatchDrop) return this.drawHatchDrop();
     const course = this.course!;
     const tx = Math.floor(b.x);
     const ty = Math.floor(b.y);
@@ -1780,7 +1786,7 @@ export class CourseScene extends Phaser.Scene {
     }
     if (this.phase === 'flight' && canShoot(this.play)) {
       this.endShot();
-    } else if (this.play.status !== 'playing' && !this.endScreen) {
+    } else if (this.play.status !== 'playing' && !this.endScreen && !this.hatchDrop) {
       this.endShot();
     }
 
@@ -1819,7 +1825,102 @@ export class CourseScene extends Phaser.Scene {
     this.drawBall(this.play.ball);
     if (this.play.status === 'playing') this.centreOnBall();
     this.drawShotHud();
-    if (this.play.status !== 'playing') this.showEndScreen();
+    if (this.play.status !== 'playing') {
+      if (this.startHatchDrop()) return;
+      this.showEndScreen();
+    }
+  }
+
+  /** The middle of the exit hatch on screen. */
+  private exitScreen(): { x: number; y: number } {
+    const c = this.play.course;
+    const t = groundAt(c, c.exit.x + 0.5, c.exit.y + 0.5);
+    const p = project(c.exit.x + 0.5, c.exit.y + 0.5, (t?.h ?? 0) / STEP_HEIGHT);
+    p.y -= this.bumpAt(c.exit.x + 0.5, c.exit.y + 0.5);
+    return p;
+  }
+
+  /**
+   * Owner, 2026-11-26: the ball dropped into the exit: the hero jumps straight
+   * up, pops into a ball as the doors open, falls through and the doors shut;
+   * then the course-complete card shows. Display only: the course is already won,
+   * and the run hears the result at once. False when it does not apply (lost,
+   * or won some other way, like the U panel's finish button).
+   */
+  private startHatchDrop(): boolean {
+    const c = this.play.course;
+    const b = this.play.ball;
+    if (this.play.status !== 'won' || !this.exitImg || Math.hypot(b.x - c.exit.x - 0.5, b.y - c.exit.y - 0.5) > 1) return false;
+    this.reportRun();
+    this.hatchDrop = { start: this.time.now, from: { ...this.ballScreen }, done: false };
+    this.time.delayedCall(HATCH.jumpMs + HATCH.hangMs + HATCH.dropMs + HATCH.closeMs, () => {
+      if (!this.hatchDrop || this.endScreen) return;
+      this.hatchDrop.done = true;
+      this.showEndScreen();
+    });
+    return true;
+  }
+
+  /** The hatch's frame during the drop. */
+  private hatchFrame(): string {
+    const d = this.hatchDrop!;
+    const t = this.time.now - d.start;
+    const opening = ['opening-1', 'opening-2', 'open'];
+    const tHang = HATCH.jumpMs;
+    const tDrop = tHang + HATCH.hangMs;
+    const tClose = tDrop + HATCH.dropMs;
+    if (d.done || t >= tClose + HATCH.closeMs) return 'lit-a';
+    if (t < tHang) return 'lit-a';
+    if (t < tDrop) return opening[Math.min(2, Math.floor(((t - tHang) / HATCH.hangMs) * 3))]!;
+    if (t < tClose) return 'open';
+    return [...opening].reverse()[Math.min(2, Math.floor(((t - tClose) / HATCH.closeMs) * 3))]!;
+  }
+
+  /** The hero during the drop through the hatch. */
+  private drawHatchDrop(): void {
+    const d = this.hatchDrop!;
+    const t = this.time.now - d.start;
+    const tHang = HATCH.jumpMs;
+    const tDrop = tHang + HATCH.hangMs;
+    const tClose = tDrop + HATCH.dropMs;
+    const to = this.exitScreen();
+    this.shadowImg.setVisible(false);
+    if (d.done || t >= tClose) {
+      this.ballImg.setVisible(false);
+      return;
+    }
+    let x = to.x;
+    let y = to.y;
+    let lift: number;
+    let curled = true;
+    if (t < tHang) {
+      // Straight up, standing, drifting onto the middle of the hatch.
+      const k = t / HATCH.jumpMs;
+      x = d.from.x + (to.x - d.from.x) * k;
+      y = d.from.y + (to.y - d.from.y) * k;
+      lift = HATCH.jumpPx * Phaser.Math.Easing.Sine.Out(k);
+      curled = false;
+    } else if (t < tDrop) {
+      lift = HATCH.jumpPx;
+    } else {
+      lift = HATCH.jumpPx - (HATCH.jumpPx + 14) * Phaser.Math.Easing.Quadratic.In((t - tDrop) / HATCH.dropMs);
+    }
+    const frame = curled ? 'drop-ball' : 'drop-stand';
+    const id = curled ? this.play.character.sprite : this.play.character.walkSprite;
+    const e = manifest.sprites[id]!;
+    if (frame !== this.ballFrame) {
+      this.ballFrame = frame;
+      this.ballImg.setTexture(id, curled ? 0 : frameIndex(e, 'dr-stand'));
+      this.ballImg.setOrigin(e.anchor[0] / e.frameWidth, e.anchor[1] / e.frameHeight);
+      // The pop into a ball.
+      if (curled) this.tweens.add({ targets: this.ballImg, scaleX: { from: 1.4, to: 1 }, scaleY: { from: 1.4, to: 1 }, duration: 160, ease: 'Back.easeOut' });
+    }
+    this.ballImg.setVisible(true).setAlpha(1).setPosition(Math.round(x), Math.round(y - lift));
+    // Below the hatch's surface the ball is out of sight down the shaft: show only the part above it.
+    if (lift < 0) this.ballImg.setCrop(0, 0, e.frameWidth, Math.max(0, e.anchor[1] + lift));
+    else this.ballImg.setCrop();
+    const c = this.play.course;
+    this.ballImg.setDepth(this.standingDepth(c.exit.x + 0.5, c.exit.y + 0.5));
   }
 
   /** Turn what the rules report into short messages. */

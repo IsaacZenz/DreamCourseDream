@@ -45,6 +45,37 @@ export const COURSE_INTRO = {
   zoomMs: 1200,
 } as const;
 
+/**
+ * Owner, 2026-11-26: the blast-door hatch. Finishing a course, the hero jumps
+ * straight up off the hatch, pops into a ball as the doors open, drops
+ * through and the doors shut. Arriving at the crossroads, a hatch there opens,
+ * the ball pops up out of it, the doors shut under it and the hero lands on
+ * them, standing. Display only: the course is already won when this plays.
+ * Times in ms, heights in screen pixels (before the camera zoom).
+ */
+export const HATCH = {
+  /** Course: the jump straight up, standing. */
+  jumpMs: 280,
+  jumpPx: 26,
+  /** Course: at the top, the hero curls into a ball while the doors slide open. */
+  hangMs: 220,
+  /** Course: the fall through the open hatch, out of sight. */
+  dropMs: 320,
+  /** Course: the doors close again; then the course-complete card shows. */
+  closeMs: 260,
+  /** Crossroads: the doors open before the ball pops out. */
+  openMs: 260,
+  /** Crossroads: the ball shoots up out of the shaft. */
+  popMs: 320,
+  popPx: 30,
+  /** Crossroads: at the top the hero uncurls while the doors close. */
+  turnMs: 200,
+  /** Crossroads: the fall onto the closed hatch, landing on its feet. */
+  landMs: 260,
+  /** How fast the green lights chase round the rim. */
+  lightMs: 260,
+} as const;
+
 /** Ground the armadillo walks on. Water, spikes and pads block it. */
 export const WALKABLE_SURFACES: ReadonlySet<string> = new Set(['grass', 'rough', 'sand', 'ice', 'bridge', 'path']);
 
@@ -73,6 +104,8 @@ export const PROP_LIST: readonly PropDef[] = [
   // Owner, 2026-11-22: a post on each side of a path's far end, marking the way into the next course.
   { id: 'path-post', name: 'Path post', sprite: 'place-path-post', footprint: { kind: 'round', r: 0.1 } },
   { id: 'tee-mat', name: 'Tee mat', sprite: 'place-tee-mat', footprint: null },
+  // Owner, 2026-11-26: the hatch the hero pops out of at the crossroads (flat, walked over).
+  { id: 'arrival-hatch', name: 'Arrival hatch', sprite: 'exit', footprint: null },
 ];
 
 export const PROPS: ReadonlyMap<string, PropDef> = new Map(PROP_LIST.map((p) => [p.id, p]));

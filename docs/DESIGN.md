@@ -139,6 +139,8 @@ The final tuning values are the defaults in `src/content/tuning.ts` as merged wi
 
 **Default:** the exit's position is visible from the start, shown closed.
 
+**Decided (owner, 2026-11-26): the exit is a metal blast-door hatch.** Locked, its doors are shut and the ring of lights round its rim is dark. When the quota is met (or the boss falls) the lights turn green and chase round the rim; the doors stay shut. When the ball drops in, the hero jumps straight up off the hatch, pops into a ball as the doors slide open, falls through, and the doors close; then the course-complete card shows. Arriving at the crossroads, a hatch on the start tile opens, the ball pops up out of it, the doors close under it, and the hero lands on its feet on the closed hatch. The crossroads start is one tile up the path from the middle of the map (was near the bottom corner). Display only: the simulation's exit rules are unchanged. Timings in `HATCH` (`src/content/places.ts`).
+
 ### As built in Milestone 3 (Default unless marked; waiting for the owner to play)
 
 - **Exit:** an open exit catches the ball when it rolls within 0.4 tiles of the hole's centre at under 7 tiles per second (`exitRadius`, `exitMaxSpeed`). Faster, it rolls over the hole, like a golf ball lipping out. A closed exit is just ground.

@@ -1003,15 +1003,19 @@
     },
     "exit": {
       "file": "sprites/exit.png",
-      "frameWidth": 16,
-      "frameHeight": 10,
+      "frameWidth": 26,
+      "frameHeight": 15,
       "frames": [
         "closed",
+        "lit-a",
+        "lit-b",
+        "opening-1",
+        "opening-2",
         "open"
       ],
       "anchor": [
-        8,
-        5
+        13,
+        7
       ]
     },
     "star-yellow": {
