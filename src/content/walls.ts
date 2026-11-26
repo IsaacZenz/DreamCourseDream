@@ -3,9 +3,10 @@
  * material uses, and how often. Data only; the painting is in
  * src/render/walls.ts.
  *
- * Sprite ids are written without their side: "wall-earth-soil-1" means the
- * sprites "wall-earth-soil-1-left" and "wall-earth-soil-1-right" in the asset
- * manifest. A material with no entry here (sand, ice, metal...) keeps its
+ * Texture ids are written without their side: "wall-earth-soil-1" is drawn
+ * as art/drawn/wall-earth-soil-1-left.png and -right.png, which the art script
+ * packs into the sheets "wall-sheet-left" and "wall-sheet-right" (one frame
+ * per texture, see the manifest's `heights`). A material with no entry here (sand, ice, metal...) keeps its
  * old repeating face sprites.
  *
  * Each edge of each tile picks once, from the course seed, the tile and the

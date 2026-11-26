@@ -156,19 +156,16 @@ function overhang(side: FaceSide): Image {
   return img;
 }
 
-function write(id: string, img: Image, meta: object | null): void {
+function write(id: string, img: Image): void {
   writeFileSync(join(OUT, `${id}.png`), encodePng(img));
-  if (meta) writeFileSync(join(OUT, `${id}.json`), JSON.stringify(meta, null, 2) + '\n');
 }
 
 mkdirSync(OUT, { recursive: true });
-const anchor = (side: FaceSide) => (side === 'left' ? [0, 0] : [0, 8]);
 for (const side of SIDES) {
-  const meta = (h: number) => ({ frameWidth: 16, frameHeight: h, frames: ['0'], anchor: anchor(side) });
-  write(`wall-earth-soil-1-${side}`, soil(side, 1), meta(H));
-  write(`wall-earth-soil-2-${side}`, soil(side, 2), meta(H));
-  for (const [name, layout] of Object.entries(ROCKS)) write(`wall-earth-rocks-${name}-${side}`, rocks(side, layout), meta(H));
-  write(`wall-earth-overhang-${side}`, overhang(side), meta(3));
+  write(`wall-earth-soil-1-${side}`, soil(side, 1));
+  write(`wall-earth-soil-2-${side}`, soil(side, 2));
+  for (const [name, layout] of Object.entries(ROCKS)) write(`wall-earth-rocks-${name}-${side}`, rocks(side, layout));
+  write(`wall-earth-overhang-${side}`, overhang(side));
 }
 // The approved B1B grass and the B1B default (v1) earth faces, as drawn art.
 copyFileSync(join(SRC, 'tile-grass.png'), join(OUT, 'tile-grass.png'));

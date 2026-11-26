@@ -16,6 +16,12 @@ export interface SpriteEntry {
   readonly frames: readonly string[];
   /** Pixel inside a frame that is placed on the sprite's world position. */
   readonly anchor: readonly [number, number];
+  /**
+   * Owner, 2026-11-26 (organic walls): a wall texture sheet holds one texture
+   * per frame (a 16-pixel column each); this is how many rows of each frame
+   * the texture really uses, from the top. Absent: every frame is full height.
+   */
+  readonly heights?: readonly number[];
 }
 
 export interface Manifest {

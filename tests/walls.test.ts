@@ -212,16 +212,19 @@ describe('wall art in the manifest', () => {
   const ids = [...style.soil, ...style.rocks, ...style.details].map((v) => v.sprite).filter((s): s is string => !!s);
   if (style.overhang) ids.push(style.overhang);
 
-  it('has every wall texture for both sides and every theme, 16 pixels wide, one frame', () => {
-    for (const id of ids) {
-      for (const side of SIDES) {
-        for (const theme of THEMES) {
-          const name = theme === 'day' ? `${id}-${side}` : `${id}-${side}@${theme}`;
-          const e = manifest.sprites[name];
-          expect(e, name).toBeDefined();
-          expect(e!.frameWidth).toBe(16);
-          expect(e!.frames).toHaveLength(1);
-        }
+  it('packs every wall texture into one sheet per side and theme, 16 pixels per texture, with its real height', () => {
+    for (const side of SIDES) {
+      for (const theme of THEMES) {
+        const name = theme === 'day' ? `wall-sheet-${side}` : `wall-sheet-${side}@${theme}`;
+        const e = manifest.sprites[name];
+        expect(e, name).toBeDefined();
+        expect(e!.frameWidth).toBe(16);
+        expect(e!.heights).toHaveLength(e!.frames.length);
+        for (const id of ids) expect(e!.frames, `${name} has ${id}`).toContain(id);
+        e!.frames.forEach((f, i) => {
+          const drawn = decodePng(readFileSync(`art/drawn/${f}-${side}.png`));
+          expect(e!.heights![i]).toBe(drawn.height);
+        });
       }
     }
   });
@@ -229,9 +232,20 @@ describe('wall art in the manifest', () => {
   it('has fully opaque soil textures', () => {
     for (const v of style.soil) {
       for (const side of SIDES) {
-        const img = decodePng(readFileSync(`assets/sprites/${v.sprite}-${side}.png`));
+        const img = decodePng(readFileSync(`art/drawn/${v.sprite}-${side}.png`));
         for (let i = 3; i < img.data.length; i += 4) expect(img.data[i]).toBe(255);
       }
+    }
+  });
+
+  it('puts each texture in the sheet exactly as drawn', () => {
+    for (const side of SIDES) {
+      const e = manifest.sprites[`wall-sheet-${side}`]!;
+      const sheet = decodePng(readFileSync(`assets/${e.file}`));
+      e.frames.forEach((f, i) => {
+        const drawn = decodePng(readFileSync(`art/drawn/${f}-${side}.png`));
+        for (let y = 0; y < drawn.height; y++) for (let x = 0; x < 16; x++) expect(sheet.get(i * 16 + x, y)).toEqual(drawn.get(x, y));
+      });
     }
   });
 });

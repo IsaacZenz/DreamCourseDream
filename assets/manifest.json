@@ -3614,220 +3614,66 @@
         0
       ]
     },
-    "wall-earth-overhang-left": {
-      "file": "sprites/wall-earth-overhang-left.png",
+    "wall-sheet-left": {
+      "file": "sprites/wall-sheet-left.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
-    "wall-earth-overhang-right": {
-      "file": "sprites/wall-earth-overhang-right.png",
+    "wall-sheet-right": {
+      "file": "sprites/wall-sheet-right.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         8
-      ]
-    },
-    "wall-earth-rocks-large-1-left": {
-      "file": "sprites/wall-earth-rocks-large-1-left.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
       ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-large-1-right": {
-      "file": "sprites/wall-earth-rocks-large-1-right.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-1-left": {
-      "file": "sprites/wall-earth-rocks-moderate-1-left.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-1-right": {
-      "file": "sprites/wall-earth-rocks-moderate-1-right.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-2-left": {
-      "file": "sprites/wall-earth-rocks-moderate-2-left.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-2-right": {
-      "file": "sprites/wall-earth-rocks-moderate-2-right.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-1-left": {
-      "file": "sprites/wall-earth-rocks-sparse-1-left.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-1-right": {
-      "file": "sprites/wall-earth-rocks-sparse-1-right.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-2-left": {
-      "file": "sprites/wall-earth-rocks-sparse-2-left.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-2-right": {
-      "file": "sprites/wall-earth-rocks-sparse-2-right.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-3-left": {
-      "file": "sprites/wall-earth-rocks-sparse-3-left.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-3-right": {
-      "file": "sprites/wall-earth-rocks-sparse-3-right.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-1-left": {
-      "file": "sprites/wall-earth-soil-1-left.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-1-right": {
-      "file": "sprites/wall-earth-soil-1-right.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-2-left": {
-      "file": "sprites/wall-earth-soil-2-left.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-2-right": {
-      "file": "sprites/wall-earth-soil-2-right.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
     "tile-grass@bog": {
@@ -4899,220 +4745,66 @@
         18
       ]
     },
-    "wall-earth-overhang-left@bog": {
-      "file": "sprites/wall-earth-overhang-left@bog.png",
+    "wall-sheet-left@bog": {
+      "file": "sprites/wall-sheet-left@bog.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
-    "wall-earth-overhang-right@bog": {
-      "file": "sprites/wall-earth-overhang-right@bog.png",
+    "wall-sheet-right@bog": {
+      "file": "sprites/wall-sheet-right@bog.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         8
-      ]
-    },
-    "wall-earth-rocks-large-1-left@bog": {
-      "file": "sprites/wall-earth-rocks-large-1-left@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
       ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-large-1-right@bog": {
-      "file": "sprites/wall-earth-rocks-large-1-right@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-1-left@bog": {
-      "file": "sprites/wall-earth-rocks-moderate-1-left@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-1-right@bog": {
-      "file": "sprites/wall-earth-rocks-moderate-1-right@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-2-left@bog": {
-      "file": "sprites/wall-earth-rocks-moderate-2-left@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-2-right@bog": {
-      "file": "sprites/wall-earth-rocks-moderate-2-right@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-1-left@bog": {
-      "file": "sprites/wall-earth-rocks-sparse-1-left@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-1-right@bog": {
-      "file": "sprites/wall-earth-rocks-sparse-1-right@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-2-left@bog": {
-      "file": "sprites/wall-earth-rocks-sparse-2-left@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-2-right@bog": {
-      "file": "sprites/wall-earth-rocks-sparse-2-right@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-3-left@bog": {
-      "file": "sprites/wall-earth-rocks-sparse-3-left@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-3-right@bog": {
-      "file": "sprites/wall-earth-rocks-sparse-3-right@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-1-left@bog": {
-      "file": "sprites/wall-earth-soil-1-left@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-1-right@bog": {
-      "file": "sprites/wall-earth-soil-1-right@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-2-left@bog": {
-      "file": "sprites/wall-earth-soil-2-left@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-2-right@bog": {
-      "file": "sprites/wall-earth-soil-2-right@bog.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
     "tile-grass@thornwood": {
@@ -6184,220 +5876,66 @@
         18
       ]
     },
-    "wall-earth-overhang-left@thornwood": {
-      "file": "sprites/wall-earth-overhang-left@thornwood.png",
+    "wall-sheet-left@thornwood": {
+      "file": "sprites/wall-sheet-left@thornwood.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
-    "wall-earth-overhang-right@thornwood": {
-      "file": "sprites/wall-earth-overhang-right@thornwood.png",
+    "wall-sheet-right@thornwood": {
+      "file": "sprites/wall-sheet-right@thornwood.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         8
-      ]
-    },
-    "wall-earth-rocks-large-1-left@thornwood": {
-      "file": "sprites/wall-earth-rocks-large-1-left@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
       ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-large-1-right@thornwood": {
-      "file": "sprites/wall-earth-rocks-large-1-right@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-1-left@thornwood": {
-      "file": "sprites/wall-earth-rocks-moderate-1-left@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-1-right@thornwood": {
-      "file": "sprites/wall-earth-rocks-moderate-1-right@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-2-left@thornwood": {
-      "file": "sprites/wall-earth-rocks-moderate-2-left@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-2-right@thornwood": {
-      "file": "sprites/wall-earth-rocks-moderate-2-right@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-1-left@thornwood": {
-      "file": "sprites/wall-earth-rocks-sparse-1-left@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-1-right@thornwood": {
-      "file": "sprites/wall-earth-rocks-sparse-1-right@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-2-left@thornwood": {
-      "file": "sprites/wall-earth-rocks-sparse-2-left@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-2-right@thornwood": {
-      "file": "sprites/wall-earth-rocks-sparse-2-right@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-3-left@thornwood": {
-      "file": "sprites/wall-earth-rocks-sparse-3-left@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-3-right@thornwood": {
-      "file": "sprites/wall-earth-rocks-sparse-3-right@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-1-left@thornwood": {
-      "file": "sprites/wall-earth-soil-1-left@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-1-right@thornwood": {
-      "file": "sprites/wall-earth-soil-1-right@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-2-left@thornwood": {
-      "file": "sprites/wall-earth-soil-2-left@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-2-right@thornwood": {
-      "file": "sprites/wall-earth-soil-2-right@thornwood.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
     "tile-grass@night": {
@@ -7469,220 +7007,66 @@
         18
       ]
     },
-    "wall-earth-overhang-left@night": {
-      "file": "sprites/wall-earth-overhang-left@night.png",
+    "wall-sheet-left@night": {
+      "file": "sprites/wall-sheet-left@night.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
-    "wall-earth-overhang-right@night": {
-      "file": "sprites/wall-earth-overhang-right@night.png",
+    "wall-sheet-right@night": {
+      "file": "sprites/wall-sheet-right@night.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         8
-      ]
-    },
-    "wall-earth-rocks-large-1-left@night": {
-      "file": "sprites/wall-earth-rocks-large-1-left@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
       ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-large-1-right@night": {
-      "file": "sprites/wall-earth-rocks-large-1-right@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-1-left@night": {
-      "file": "sprites/wall-earth-rocks-moderate-1-left@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-1-right@night": {
-      "file": "sprites/wall-earth-rocks-moderate-1-right@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-2-left@night": {
-      "file": "sprites/wall-earth-rocks-moderate-2-left@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-2-right@night": {
-      "file": "sprites/wall-earth-rocks-moderate-2-right@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-1-left@night": {
-      "file": "sprites/wall-earth-rocks-sparse-1-left@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-1-right@night": {
-      "file": "sprites/wall-earth-rocks-sparse-1-right@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-2-left@night": {
-      "file": "sprites/wall-earth-rocks-sparse-2-left@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-2-right@night": {
-      "file": "sprites/wall-earth-rocks-sparse-2-right@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-3-left@night": {
-      "file": "sprites/wall-earth-rocks-sparse-3-left@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-3-right@night": {
-      "file": "sprites/wall-earth-rocks-sparse-3-right@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-1-left@night": {
-      "file": "sprites/wall-earth-soil-1-left@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-1-right@night": {
-      "file": "sprites/wall-earth-soil-1-right@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-2-left@night": {
-      "file": "sprites/wall-earth-soil-2-left@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-2-right@night": {
-      "file": "sprites/wall-earth-soil-2-right@night.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
     "tile-grass@underground": {
@@ -8754,220 +8138,66 @@
         18
       ]
     },
-    "wall-earth-overhang-left@underground": {
-      "file": "sprites/wall-earth-overhang-left@underground.png",
+    "wall-sheet-left@underground": {
+      "file": "sprites/wall-sheet-left@underground.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
-    "wall-earth-overhang-right@underground": {
-      "file": "sprites/wall-earth-overhang-right@underground.png",
+    "wall-sheet-right@underground": {
+      "file": "sprites/wall-sheet-right@underground.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         8
-      ]
-    },
-    "wall-earth-rocks-large-1-left@underground": {
-      "file": "sprites/wall-earth-rocks-large-1-left@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
       ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-large-1-right@underground": {
-      "file": "sprites/wall-earth-rocks-large-1-right@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-1-left@underground": {
-      "file": "sprites/wall-earth-rocks-moderate-1-left@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-1-right@underground": {
-      "file": "sprites/wall-earth-rocks-moderate-1-right@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-2-left@underground": {
-      "file": "sprites/wall-earth-rocks-moderate-2-left@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-2-right@underground": {
-      "file": "sprites/wall-earth-rocks-moderate-2-right@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-1-left@underground": {
-      "file": "sprites/wall-earth-rocks-sparse-1-left@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-1-right@underground": {
-      "file": "sprites/wall-earth-rocks-sparse-1-right@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-2-left@underground": {
-      "file": "sprites/wall-earth-rocks-sparse-2-left@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-2-right@underground": {
-      "file": "sprites/wall-earth-rocks-sparse-2-right@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-3-left@underground": {
-      "file": "sprites/wall-earth-rocks-sparse-3-left@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-3-right@underground": {
-      "file": "sprites/wall-earth-rocks-sparse-3-right@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-1-left@underground": {
-      "file": "sprites/wall-earth-soil-1-left@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-1-right@underground": {
-      "file": "sprites/wall-earth-soil-1-right@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-2-left@underground": {
-      "file": "sprites/wall-earth-soil-2-left@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-2-right@underground": {
-      "file": "sprites/wall-earth-soil-2-right@underground.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
     "tile-grass@starfall": {
@@ -10039,220 +9269,66 @@
         18
       ]
     },
-    "wall-earth-overhang-left@starfall": {
-      "file": "sprites/wall-earth-overhang-left@starfall.png",
+    "wall-sheet-left@starfall": {
+      "file": "sprites/wall-sheet-left@starfall.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
-    "wall-earth-overhang-right@starfall": {
-      "file": "sprites/wall-earth-overhang-right@starfall.png",
+    "wall-sheet-right@starfall": {
+      "file": "sprites/wall-sheet-right@starfall.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         8
-      ]
-    },
-    "wall-earth-rocks-large-1-left@starfall": {
-      "file": "sprites/wall-earth-rocks-large-1-left@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
       ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-large-1-right@starfall": {
-      "file": "sprites/wall-earth-rocks-large-1-right@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-1-left@starfall": {
-      "file": "sprites/wall-earth-rocks-moderate-1-left@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-1-right@starfall": {
-      "file": "sprites/wall-earth-rocks-moderate-1-right@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-2-left@starfall": {
-      "file": "sprites/wall-earth-rocks-moderate-2-left@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-2-right@starfall": {
-      "file": "sprites/wall-earth-rocks-moderate-2-right@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-1-left@starfall": {
-      "file": "sprites/wall-earth-rocks-sparse-1-left@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-1-right@starfall": {
-      "file": "sprites/wall-earth-rocks-sparse-1-right@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-2-left@starfall": {
-      "file": "sprites/wall-earth-rocks-sparse-2-left@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-2-right@starfall": {
-      "file": "sprites/wall-earth-rocks-sparse-2-right@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-3-left@starfall": {
-      "file": "sprites/wall-earth-rocks-sparse-3-left@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-3-right@starfall": {
-      "file": "sprites/wall-earth-rocks-sparse-3-right@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-1-left@starfall": {
-      "file": "sprites/wall-earth-soil-1-left@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-1-right@starfall": {
-      "file": "sprites/wall-earth-soil-1-right@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-2-left@starfall": {
-      "file": "sprites/wall-earth-soil-2-left@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-2-right@starfall": {
-      "file": "sprites/wall-earth-soil-2-right@starfall.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
     "tile-grass@spooky": {
@@ -11324,220 +10400,66 @@
         18
       ]
     },
-    "wall-earth-overhang-left@spooky": {
-      "file": "sprites/wall-earth-overhang-left@spooky.png",
+    "wall-sheet-left@spooky": {
+      "file": "sprites/wall-sheet-left@spooky.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         0
+      ],
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     },
-    "wall-earth-overhang-right@spooky": {
-      "file": "sprites/wall-earth-overhang-right@spooky.png",
+    "wall-sheet-right@spooky": {
+      "file": "sprites/wall-sheet-right@spooky.png",
       "frameWidth": 16,
-      "frameHeight": 3,
+      "frameHeight": 48,
       "frames": [
-        "0"
+        "wall-earth-overhang",
+        "wall-earth-rocks-large-1",
+        "wall-earth-rocks-moderate-1",
+        "wall-earth-rocks-moderate-2",
+        "wall-earth-rocks-sparse-1",
+        "wall-earth-rocks-sparse-2",
+        "wall-earth-rocks-sparse-3",
+        "wall-earth-soil-1",
+        "wall-earth-soil-2"
       ],
       "anchor": [
         0,
         8
-      ]
-    },
-    "wall-earth-rocks-large-1-left@spooky": {
-      "file": "sprites/wall-earth-rocks-large-1-left@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
       ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-large-1-right@spooky": {
-      "file": "sprites/wall-earth-rocks-large-1-right@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-1-left@spooky": {
-      "file": "sprites/wall-earth-rocks-moderate-1-left@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-1-right@spooky": {
-      "file": "sprites/wall-earth-rocks-moderate-1-right@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-moderate-2-left@spooky": {
-      "file": "sprites/wall-earth-rocks-moderate-2-left@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-moderate-2-right@spooky": {
-      "file": "sprites/wall-earth-rocks-moderate-2-right@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-1-left@spooky": {
-      "file": "sprites/wall-earth-rocks-sparse-1-left@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-1-right@spooky": {
-      "file": "sprites/wall-earth-rocks-sparse-1-right@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-2-left@spooky": {
-      "file": "sprites/wall-earth-rocks-sparse-2-left@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-2-right@spooky": {
-      "file": "sprites/wall-earth-rocks-sparse-2-right@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-rocks-sparse-3-left@spooky": {
-      "file": "sprites/wall-earth-rocks-sparse-3-left@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-rocks-sparse-3-right@spooky": {
-      "file": "sprites/wall-earth-rocks-sparse-3-right@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-1-left@spooky": {
-      "file": "sprites/wall-earth-soil-1-left@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-1-right@spooky": {
-      "file": "sprites/wall-earth-soil-1-right@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
-      ]
-    },
-    "wall-earth-soil-2-left@spooky": {
-      "file": "sprites/wall-earth-soil-2-left@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        0
-      ]
-    },
-    "wall-earth-soil-2-right@spooky": {
-      "file": "sprites/wall-earth-soil-2-right@spooky.png",
-      "frameWidth": 16,
-      "frameHeight": 48,
-      "frames": [
-        "0"
-      ],
-      "anchor": [
-        0,
-        8
+      "heights": [
+        3,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48
       ]
     }
   },

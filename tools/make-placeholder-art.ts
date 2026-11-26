@@ -1053,14 +1053,15 @@ function sheet(frames: Image[]): Image {
 
 const sprites: Record<string, SpriteEntry> = {};
 /** Every sprite's image, kept for the theme sets made at the end (round 2b). */
-const images = new Map<string, { img: Image; frameWidth: number; frameHeight: number; frames: string[]; anchor: P }>();
+const images = new Map<string, { img: Image; frameWidth: number; frameHeight: number; frames: string[]; anchor: P; heights?: number[] }>();
 
-function emit(id: string, img: Image, frameWidth: number, frameHeight: number, frames: string[], anchor: P): void {
+function emit(id: string, img: Image, frameWidth: number, frameHeight: number, frames: string[], anchor: P, heights?: number[]): void {
   const file = `sprites/${id}.png`;
   mkdirSync(join(OUT, 'sprites'), { recursive: true });
   writeFileSync(join(OUT, file), encodePng(img));
   sprites[id] = { file, frameWidth, frameHeight, frames, anchor };
-  images.set(id, { img, frameWidth, frameHeight, frames, anchor });
+  images.set(id, { img, frameWidth, frameHeight, frames, anchor, ...(heights && { heights }) });
+  if (heights) sprites[id] = { ...sprites[id]!, heights };
 }
 
 // ---------------------------------------------------------------------------
@@ -1106,7 +1107,7 @@ function emitThemes(): Record<string, { sky: string }> {
   for (const [theme, t] of Object.entries(THEMES)) {
     for (const [id, e] of [...images]) {
       if (!themed(id) || id.includes('@')) continue;
-      emit(`${id}@${theme}`, recolourImage(e.img, t.recolour), e.frameWidth, e.frameHeight, e.frames, e.anchor);
+      emit(`${id}@${theme}`, recolourImage(e.img, t.recolour), e.frameWidth, e.frameHeight, e.frames, e.anchor, e.heights);
     }
   }
   return Object.fromEntries([['day', { sky: '#1d2b53' }], ...Object.entries(THEMES).map(([k, t]) => [k, { sky: t.sky }])]);
@@ -2117,7 +2118,31 @@ function applyDrawn(file: string): void {
   }
   emit(id, img, meta.frameWidth, meta.frameHeight, meta.frames, meta.anchor);
 }
-for (const f of drawnFiles) if (!f.includes('@')) applyDrawn(f);
+/**
+ * Organic wall textures (owner, 2026-11-26) arrive as one drawn file per
+ * texture and side: art/drawn/wall-<material>-<name>-<side>.png (16 wide, any
+ * height). They are packed into one sheet per side, "wall-sheet-<side>", one
+ * 16-pixel column per texture, the frame named by the texture id without its
+ * side (e.g. "wall-earth-soil-1"), with each texture's real height in
+ * `heights`. One sheet per side and theme keeps the number of files small.
+ */
+const WALL_FILE = /^(wall-.+)-(left|right)\.png$/u;
+function packWalls(): void {
+  for (const side of ['left', 'right'] as const) {
+    const parts = drawnFiles
+      .map((f) => WALL_FILE.exec(f))
+      .filter((m): m is RegExpExecArray => !!m && m[2] === side)
+      .map((m) => ({ id: m[1]!, img: decodePng(readFileSync(join(DRAWN, m[0])), `art/drawn/${m[0]}`) }));
+    if (!parts.length) continue;
+    for (const p of parts) if (p.img.width !== 16) throw new Error(`art/drawn/${p.id}-${side}.png must be 16 pixels wide (it is ${p.img.width}).`);
+    const h = Math.max(...parts.map((p) => p.img.height));
+    const sheetImg = new Image(16 * parts.length, h);
+    parts.forEach((p, i) => sheetImg.blit(p.img, i * 16, 0));
+    emit(`wall-sheet-${side}`, sheetImg, 16, h, parts.map((p) => p.id), side === 'left' ? [0, 0] : [0, 8], parts.map((p) => p.img.height));
+  }
+}
+packWalls();
+for (const f of drawnFiles) if (!f.includes('@') && !WALL_FILE.test(f)) applyDrawn(f);
 
 const themes = emitThemes();
 for (const f of drawnFiles) if (f.includes('@')) applyDrawn(f);

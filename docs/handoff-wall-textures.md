@@ -103,31 +103,26 @@ The edge's first corner is sw for left faces and se for right faces.
 
 ## 5. The manifest and delivery format
 
-**[BUILT]** Each texture is **one frame named `"0"`**. Its manifest entry looks like this:
+**How to deliver:** one PNG per texture and side, named by its id: for example `wall-earth-rocks-large-2-left.png`. That's all: **no JSON is needed**, because the width (16) is fixed and the height is read from the image. The developer puts the files in `art/drawn/` and runs `npm run art`. Files in `art/drawn/` always win over generated placeholders, so they're never overwritten.
+
+**[BUILT] How they appear in the game's manifest:** the art script packs every wall texture of one side into **one sheet**, `wall-sheet-left` or `wall-sheet-right`. Each texture becomes one 16-pixel column, and the frame is named by the texture id without its side. `heights` records each texture's real height; a shorter texture leaves the rest of its column transparent:
 
 ```json
-"wall-earth-rocks-large-1-left": {
-  "file": "sprites/wall-earth-rocks-large-1-left.png",
+"wall-sheet-left": {
+  "file": "sprites/wall-sheet-left.png",
   "frameWidth": 16,
   "frameHeight": 48,
-  "frames": ["0"],
-  "anchor": [0, 0]
+  "frames": ["wall-earth-overhang", "wall-earth-rocks-large-1", "...", "wall-earth-soil-2"],
+  "anchor": [0, 0],
+  "heights": [3, 48, 48, 48, 48, 48, 48, 48, 48]
 }
 ```
 
-The anchor is `[0, 0]` for left and `[0, 8]` for right. It's informational: textures are never drawn directly.
+The frame order is alphabetical by id, and it doesn't matter: the game looks frames up by name. The anchor is `[0, 0]` for left and `[0, 8]` for right; it's informational, because textures are never drawn directly. One sheet per side per theme keeps the file count low (the test-build host allows about 500 files).
 
-**How to deliver:** for each texture, send `<id>.png` plus `<id>.json`:
+**Themes:** the game has 7 looks (day, bog, thornwood, starfall, night, underground, spooky). Theme versions of each sheet are made automatically by recolouring your day art. A hand-made theme version replaces the whole sheet for that theme: `wall-sheet-<side>@<theme>.png`. Ask the developer before making these.
 
-```json
-{ "frameWidth": 16, "frameHeight": 48, "frames": ["0"], "anchor": [0, 0] }
-```
-
-The developer puts them in `art/drawn/` and runs `npm run art`. Files in `art/drawn/` always win over generated placeholders, so they're never overwritten.
-
-**Themes:** the game has 7 looks (day, bog, thornwood, starfall, night, underground, spooky). Theme versions are made automatically by recolouring your day art. To hand-make a theme version, send `<id>@<theme>.png`, for example `wall-earth-soil-1-left@bog.png`.
-
-**Adding variants is data only.** For example, a fourth sparse texture or a roots layer is a new line in `src/content/walls.ts` with its weight. Tell us the ids you deliver.
+**Adding variants is data only.** For example, a fourth sparse texture or a roots layer is a new file plus one line in `src/content/walls.ts` with its weight. Tell us the ids you deliver.
 
 ## 6. Lighting and colour
 
@@ -144,7 +139,7 @@ The developer puts them in `art/drawn/` and runs `npm run art`. Files in `art/dr
 - The rocks are B1B's own rock pixels, lifted out of the variants v1 to v6 and placed at varied heights.
 - The overhang is a **placeholder** in B1B grass greens.
 
-They're in `current-textures/`. **They're limited by B1B's 4-pixel bands: no rock is taller than 4 pixels, so there are no real "large formations".** That's the main thing new art should fix.
+They're in `current-textures/` (the same files as `art/drawn/` in the repository). **They're limited by B1B's 4-pixel bands: no rock is taller than 4 pixels, so there are no real "large formations".** That's the main thing new art should fix.
 
 ## 8. What we need from you [ASK]
 

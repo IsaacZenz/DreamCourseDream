@@ -40,8 +40,8 @@ function resetAtlas(scene: Phaser.Scene): void {
   cells.clear();
 }
 
-/** The pixels of a loaded sprite's image (its first frame's whole sheet). */
-function pixelsOf(scene: Phaser.Scene, id: string): Pixels | null {
+/** The pixels of a loaded sprite's whole image. */
+function sheetPixels(scene: Phaser.Scene, id: string): Pixels | null {
   const cached = pixelCache.get(id);
   if (cached) return cached;
   if (!scene.textures.exists(id)) return null;
@@ -51,9 +51,30 @@ function pixelsOf(scene: Phaser.Scene, id: string): Pixels | null {
   canvas.height = src.height;
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(src, 0, 0);
-  const data = ctx.getImageData(0, 0, src.width, src.height).data;
-  const px = { width: src.width, height: src.height, data };
+  const px = { width: src.width, height: src.height, data: ctx.getImageData(0, 0, src.width, src.height).data };
   pixelCache.set(id, px);
+  return px;
+}
+
+/**
+ * One wall texture: a "<sheet>#<frame>" key (see WallPainter.resolve), cut
+ * out of its sheet at its real height.
+ */
+function texturePixels(scene: Phaser.Scene, manifest: Manifest, key: string): Pixels | null {
+  const cached = pixelCache.get(key);
+  if (cached) return cached;
+  const [sheet, frame] = key.split('#') as [string, string];
+  const entry = manifest.sprites[sheet];
+  const whole = sheetPixels(scene, sheet);
+  if (!entry || !whole) return null;
+  const i = entry.frames.indexOf(frame);
+  if (i < 0) return null;
+  const w = entry.frameWidth;
+  const h = entry.heights?.[i] ?? entry.frameHeight;
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) data.set(whole.data.subarray((y * whole.width + i * w) * 4, (y * whole.width + i * w + w) * 4), y * w * 4);
+  const px = { width: w, height: h, data };
+  pixelCache.set(key, px);
   return px;
 }
 
@@ -105,11 +126,11 @@ export class WallPainter {
     if (pages.length > MAX_PAGES) resetAtlas(scene);
   }
 
+  /** A texture id as "<sheet>#<frame>" for this side and theme, or null if the art is missing. */
   private resolve(id: string | null, side: string): string | null {
     if (!id) return null;
-    const sided = `${id}-${side}`;
-    const t = themedSprite(this.manifest, sided, this.opts.theme);
-    return this.manifest.sprites[t] ? t : null;
+    const sheet = themedSprite(this.manifest, `wall-sheet-${side}`, this.opts.theme);
+    return this.manifest.sprites[sheet]?.frames.includes(id) ? `${sheet}#${id}` : null;
   }
 
   /** The look of one edge, with sprite ids resolved for side and theme (null: this material has no wall style, or its art is missing). */
@@ -154,7 +175,7 @@ export class WallPainter {
     if (p.kind !== 'face' || !p.wall) return null;
     const look = this.lookFor(p);
     if (!look) return null;
-    const get = (id: string | null) => (id ? pixelsOf(this.scene, id) : null);
+    const get = (id: string | null) => (id ? texturePixels(this.scene, this.manifest, id) : null);
     const soil = get(look.soil);
     if (!soil) return null;
     const layers = { soil, rocks: get(look.rocks), detail: get(look.detail), overhang: get(look.overhang) };
