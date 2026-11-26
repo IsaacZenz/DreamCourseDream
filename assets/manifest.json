@@ -2809,6 +2809,96 @@
         6
       ]
     },
+    "centipede-segment": {
+      "file": "sprites/centipede-segment.png",
+      "frameWidth": 56,
+      "frameHeight": 42,
+      "frames": [
+        "armour",
+        "weak",
+        "shooter",
+        "scab"
+      ],
+      "anchor": [
+        28,
+        34
+      ]
+    },
+    "centipede-quill-stuck": {
+      "file": "sprites/centipede-quill-stuck.png",
+      "frameWidth": 7,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        3,
+        14
+      ]
+    },
+    "centipede-legs": {
+      "file": "sprites/centipede-legs.png",
+      "frameWidth": 24,
+      "frameHeight": 10,
+      "frames": [
+        "a",
+        "b"
+      ],
+      "anchor": [
+        12,
+        8
+      ]
+    },
+    "centipede-head": {
+      "file": "sprites/centipede-head.png",
+      "frameWidth": 48,
+      "frameHeight": 44,
+      "frames": [
+        "phase1",
+        "phase2",
+        "phase3"
+      ],
+      "anchor": [
+        24,
+        38
+      ]
+    },
+    "centipede-quill": {
+      "file": "sprites/centipede-quill.png",
+      "frameWidth": 16,
+      "frameHeight": 5,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        8,
+        2
+      ]
+    },
+    "centipede-plate": {
+      "file": "sprites/centipede-plate.png",
+      "frameWidth": 12,
+      "frameHeight": 8,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        4
+      ]
+    },
+    "danger-tile": {
+      "file": "sprites/danger-tile.png",
+      "frameWidth": 32,
+      "frameHeight": 16,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        16,
+        8
+      ]
+    },
     "skitter-ant": {
       "file": "sprites/skitter-ant.png",
       "frameWidth": 16,
