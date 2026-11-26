@@ -26,7 +26,7 @@ Earth walls are painted in **four layers**, in this order:
 | # | Layer | Alpha | How often |
 |---|---|---|---|
 | 1 | Soil | opaque | every earth wall; one of the soil textures |
-| 2 | Embedded rocks | see-through | **[OWNER]** plain soil (no rocks) 25%, sparse 40%, moderate 25%, large formations 10% |
+| 2 | Embedded rocks | see-through | **[OWNER]** plain soil (no rocks) 25%, sparse 30%, moderate 25%, large formations 20% (large raised from 10%, sparse lowered from 40%, owner 2026-11-26) |
 | 3 | Details (roots, moss) | see-through | supported, no art yet ([ASK], optional) |
 | 4 | Grass overhang | see-through | along the **top edge only**; follows sloped tops; never repeats down the wall |
 

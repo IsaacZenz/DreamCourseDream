@@ -90,7 +90,7 @@ describe('picking a look', () => {
     expect(differs((i) => pickWallLook(style, 1, 3, i, 'right'))).toBe(true);
   });
 
-  it('uses the owner\'s rock shares: plain 25%, sparse 40%, moderate 25%, large 10%', () => {
+  it('uses the owner\'s rock shares (EARTH_ROCK_SHARES: plain 25%, sparse 30%, moderate 25%, large 20%)', () => {
     const counts = { plain: 0, sparse: 0, moderate: 0, large: 0 };
     let n = 0;
     for (let y = 0; y < 100; y++) {
