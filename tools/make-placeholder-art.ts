@@ -507,6 +507,40 @@ function drawFireflies(frame: number): Image {
   return img;
 }
 
+/** Round 9L: glow mushrooms, two pale caps that light the ground (not recoloured by themes: they glow). */
+function drawGlowMushroom(): Image {
+  const img = new Image(12, 10);
+  const caps: [number, number, number][] = [[3, 4, 2], [8, 3, 3]];
+  for (const [cx, cy, r] of caps) {
+    for (let y = cy + 1; y < 9; y++) img.set(cx, y, hex2('#d8e8e8'));
+    for (let y = cy - r; y <= cy; y++) for (let x = cx - r; x <= cx + r; x++) if (Math.hypot((x - cx) / (r + 0.5), (y - cy) / (r * 0.8 + 0.5)) < 1) img.set(x, y, hex2(y === cy ? '#40a8c0' : y < cy - r / 2 ? '#c0f8f8' : '#70e0f0'));
+  }
+  return img;
+}
+
+/** Round 9L: a small lantern standing on the ground: an iron frame round warm glass. */
+function drawGroundLantern(): Image {
+  const img = new Image(8, 12);
+  const iron = hex2('#303040');
+  for (let x = 2; x < 6; x++) img.set(x, 0, iron);
+  img.set(3, 1, iron);
+  img.set(4, 1, iron);
+  for (let y = 2; y < 10; y++) for (let x = 1; x < 7; x++) img.set(x, y, x === 1 || x === 6 || y === 2 || y === 9 ? iron : hex2(y < 5 ? '#fff4b0' : '#f8b848'));
+  for (let x = 0; x < 8; x++) img.set(x, 10, iron);
+  return img;
+}
+
+/** Round 9L: a lantern hanging from a dead tree's branch, on a short cord (its anchor is the top of the cord). */
+function drawTreeLantern(): Image {
+  const img = new Image(6, 10);
+  const iron = hex2('#303040');
+  img.set(2, 0, hex2('#5a4a3a'));
+  img.set(2, 1, hex2('#5a4a3a'));
+  for (let x = 1; x < 5; x++) img.set(x, 2, iron);
+  for (let y = 3; y < 9; y++) for (let x = 0; x < 5; x++) img.set(x, y, x === 0 || x === 4 || y === 8 ? iron : hex2(y < 5 ? '#fff0a0' : '#f8a040'));
+  return img;
+}
+
 /** Round 2a scenery (sheet section 2.6): small props for looks only. */
 function drawScenery(kind: string): Image {
   const img = new Image(12, 8);
@@ -1103,14 +1137,42 @@ function recolourImage(src: Image, f: Recolour): Image {
   return out;
 }
 
-function emitThemes(): Record<string, { sky: string }> {
+/**
+ * Round 9L (owner, 2026-11-26): each theme's ambient light, the colour the
+ * light map starts from (white = the art as drawn; darker = a darker course).
+ * Starting values from the sheet's section 2.1; tune them in the light lab.
+ */
+const AMBIENT: Record<string, string> = {
+  day: '#fff8ec',
+  bog: '#c8d8c0',
+  thornwood: '#c8c098',
+  starfall: '#7c68a8',
+  night: '#5c6aa0',
+  underground: '#56565e',
+  spooky: '#5e5878',
+};
+
+/** Round 9L: each light's colour (src/content/atmosphere.ts lists the lights). "darkness" lights the Darkness course modifier. */
+const LIGHT_COLOURS: Record<string, string> = {
+  fireflies: '#d8f070',
+  'glow-mushroom': '#60e0f0',
+  'ground-lantern': '#ffa848',
+  'lamp-post': '#ffe080',
+  'tree-lantern': '#ff9840',
+  exit: '#fff0a0',
+  hero: '#e8e8ff',
+  glowmoth: '#f8e8a0',
+  darkness: '#262630',
+};
+
+function emitThemes(): Record<string, { sky: string; ambient: string }> {
   for (const [theme, t] of Object.entries(THEMES)) {
     for (const [id, e] of [...images]) {
       if (!themed(id) || id.includes('@')) continue;
       emit(`${id}@${theme}`, recolourImage(e.img, t.recolour), e.frameWidth, e.frameHeight, e.frames, e.anchor, e.heights);
     }
   }
-  return Object.fromEntries([['day', { sky: '#1d2b53' }], ...Object.entries(THEMES).map(([k, t]) => [k, { sky: t.sky }])]);
+  return Object.fromEntries([['day', { sky: '#1d2b53', ambient: AMBIENT.day! }], ...Object.entries(THEMES).map(([k, t]) => [k, { sky: t.sky, ambient: AMBIENT[k] ?? '#ffffff' }])]);
 }
 
 const faceIds = new Set<string>();
@@ -1173,6 +1235,10 @@ emit('linked-gate', sheet([drawLinkedGate(true), drawLinkedGate(false)]), 32, 26
 emit('drawbridge-up', drawDrawbridgeUp(), 32, 28, ['idle'], [16, 22]);
 for (const k of ['tuft', 'flowers', 'pebbles', 'mushrooms', 'leaves', 'bones']) emit(`scenery-${k}`, drawScenery(k), 12, 8, ['idle'], [6, 6]);
 emit('scenery-fireflies', sheet([0, 1, 2, 3].map(drawFireflies)), 14, 12, ['0', '1', '2', '3'], [7, 18]);
+// Round 9L (owner, 2026-11-26): light props. Named light-* so themes don't recolour them (they glow).
+emit('light-mushroom', drawGlowMushroom(), 12, 10, ['idle'], [6, 8]);
+emit('light-lantern', drawGroundLantern(), 8, 12, ['idle'], [4, 10]);
+emit('light-tree-lantern', drawTreeLantern(), 6, 10, ['idle'], [2, 0]);
 emit('snoozegrub', drawMossback(), 18, 16, ['idle'], [9, 14]);
 // Milestone 4
 emit('mudroller', drawTrundler(), 18, 16, ['idle'], [9, 14]);
@@ -2146,6 +2212,6 @@ for (const f of drawnFiles) if (!f.includes('@') && !WALL_FILE.test(f)) applyDra
 
 const themes = emitThemes();
 for (const f of drawnFiles) if (f.includes('@')) applyDrawn(f);
-const manifest: Manifest = { version: 1, sprites, tints, themes };
+const manifest: Manifest = { version: 1, sprites, tints, themes, lights: LIGHT_COLOURS };
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 console.log(`Wrote ${Object.keys(sprites).length} sprites to assets/sprites and assets/manifest.json (${drawnFiles.length} from art/drawn)`);

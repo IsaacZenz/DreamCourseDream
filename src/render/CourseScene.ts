@@ -70,6 +70,7 @@ import { BLUE_STARS } from '../content/progress';
 import { LAST_REGION } from '../content/run';
 import { gearBoxes, getPanel, getTuning, preloadAssets, shared } from './shared';
 import { WallPainter } from './wallAtlas';
+import { CourseLights } from './atmosphere/courseLights';
 import { buildDrawList, bumpTopDepth, courseBounds, groundBump, pickTile, project, tileDepth, type Placement } from './iso';
 import { frameIndex, themedSprite, type Manifest } from './manifest';
 import { THEMES, biomeForRegion, themeForRegion } from '../content/biomes';
@@ -409,6 +410,7 @@ export class CourseScene extends Phaser.Scene {
     this.animated = [];
     this.animPhase = -1;
     this.overview = false;
+    this.atmo = null;
     this.hiddenHud = [];
     this.tileImgs = [];
     // Round 2b: the region's theme (or the U panel's pick, or ?theme= / ?region= on a test course).
@@ -417,6 +419,7 @@ export class CourseScene extends Phaser.Scene {
     this.drawGround(course);
 
     panel = getPanel();
+    panel.setLightTheme(this.theme);
     // Round 2b: picking a theme in the U panel shows this course again in it.
     panel.onTheme = () => (this.runMode ? this.scene.restart({ run: true }) : this.practiceMode ? this.scene.restart({ practice: true }) : this.restartCourse());
 
@@ -484,6 +487,7 @@ export class CourseScene extends Phaser.Scene {
     this.syncObjects();
     this.drawRails(course);
     this.drawScenery(course);
+    this.setupLights(course);
     this.accumulator = 0;
     this.boostQueued = false;
     this.abilityQueued = false;
@@ -597,6 +601,43 @@ export class CourseScene extends Phaser.Scene {
     });
     this.syncScenery();
   }
+  /**
+   * Round 9L (owner, 2026-11-26): the course's light: placed lamps and
+   * mushrooms, the hero's light, the glowing exit, glowing enemies and
+   * fireflies, over the theme's ambient colour. Off in the U panel: none.
+   */
+  private atmo: CourseLights | null = null;
+  private setupLights(course: Course): void {
+    this.atmo = null;
+    if (!(panel?.lighting ?? true)) return;
+    const seed = this.runMode || this.isGenerated ? this.seed : course.name;
+    this.atmo = new CourseLights(
+      {
+        scene: this,
+        manifest,
+        groundPx: (x, y) => {
+          const p = project(x, y, (groundAt(course, x, y)?.h ?? 0) / STEP_HEIGHT);
+          p.y -= this.bumpAt(x, y);
+          return p;
+        },
+        makeSprite: (id) => this.makeSprite(id),
+        standingDepth: (x, y) => this.standingDepth(x, y),
+        depth: OVERLAY_DEPTH - 40,
+      },
+      course,
+      this.theme,
+      String(seed),
+      this.play.courseMod?.id === 'darkness',
+      getPanel().lightLab,
+    );
+  }
+  private drawLights(): void {
+    if (!this.atmo || !this.play) return;
+    const b = ballNow(this.play);
+    const glowing = this.play.enemies.filter((e) => !e.defeated && !e.burrowed).map((e) => ({ x: e.x, y: e.y, sprite: e.def.sprite }));
+    this.atmo.update(this.time.now, b, glowing);
+  }
+
   private syncScenery(): void {
     const show = panel?.showScenery ?? true;
     for (const img of this.sceneryImgs) if (img.visible !== show) img.setVisible(show);
@@ -614,7 +655,8 @@ export class CourseScene extends Phaser.Scene {
    */
   private darkness: Phaser.GameObjects.Image | null = null;
   private drawDarkness(): void {
-    if (this.play?.courseMod?.id !== 'darkness') {
+    // Round 9L: with the lighting on, the light map draws the darkness (the hero's light instead of this fade).
+    if (this.play?.courseMod?.id !== 'darkness' || this.atmo) {
       this.darkness?.setVisible(false);
       return;
     }
@@ -948,6 +990,7 @@ export class CourseScene extends Phaser.Scene {
   override update(_time: number, deltaMs: number): void {
     this.syncScenery();
     this.drawDarkness();
+    this.drawLights();
     // Owner, 2026-11-23: the round waits for the opening zoom.
     if (this.intro) {
       if (this.course) {

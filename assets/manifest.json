@@ -1235,6 +1235,42 @@
         18
       ]
     },
+    "light-mushroom": {
+      "file": "sprites/light-mushroom.png",
+      "frameWidth": 12,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        6,
+        8
+      ]
+    },
+    "light-lantern": {
+      "file": "sprites/light-lantern.png",
+      "frameWidth": 8,
+      "frameHeight": 12,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        4,
+        10
+      ]
+    },
+    "light-tree-lantern": {
+      "file": "sprites/light-tree-lantern.png",
+      "frameWidth": 6,
+      "frameHeight": 10,
+      "frames": [
+        "idle"
+      ],
+      "anchor": [
+        2,
+        0
+      ]
+    },
     "snoozegrub": {
       "file": "sprites/snoozegrub.png",
       "frameWidth": 18,
@@ -10470,25 +10506,43 @@
   },
   "themes": {
     "day": {
-      "sky": "#1d2b53"
+      "sky": "#1d2b53",
+      "ambient": "#fff8ec"
     },
     "bog": {
-      "sky": "#2a3a2c"
+      "sky": "#2a3a2c",
+      "ambient": "#c8d8c0"
     },
     "thornwood": {
-      "sky": "#3a2c40"
+      "sky": "#3a2c40",
+      "ambient": "#c8c098"
     },
     "night": {
-      "sky": "#0a0c22"
+      "sky": "#0a0c22",
+      "ambient": "#5c6aa0"
     },
     "underground": {
-      "sky": "#1c1610"
+      "sky": "#1c1610",
+      "ambient": "#56565e"
     },
     "starfall": {
-      "sky": "#1c0c30"
+      "sky": "#1c0c30",
+      "ambient": "#7c68a8"
     },
     "spooky": {
-      "sky": "#2a2a36"
+      "sky": "#2a2a36",
+      "ambient": "#5e5878"
     }
+  },
+  "lights": {
+    "fireflies": "#d8f070",
+    "glow-mushroom": "#60e0f0",
+    "ground-lantern": "#ffa848",
+    "lamp-post": "#ffe080",
+    "tree-lantern": "#ff9840",
+    "exit": "#fff0a0",
+    "hero": "#e8e8ff",
+    "glowmoth": "#f8e8a0",
+    "darkness": "#262630"
   }
 }

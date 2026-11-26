@@ -508,6 +508,16 @@ Build in Milestone 3.
 - **Biomes (round 2b):** Meadow (region 1, unchanged), Bog (region 2), Thornwood (region 3); endless regions take them in turn.
 - **Unlocks:** new content enters the pool through blue star unlocks (section 10) and by beating each boss for the first time.
 
+## 16. Light and atmosphere (Milestone 9, round 9L)
+
+**Decided (owner, 2026-11-26):** sheet `docs/plans/milestone-9-light.md`, signed off with option A (light drawn at the game's own 384 x 216) and option B (full-size light) in reserve. Looks only: no light changes a rule, the physics, the generator or the course check.
+
+- **Template, a light** (`src/content/atmosphere.ts`, `LIGHT_LIST`): id, radius in tiles, strength (0 to 1), motion (still, pulse, gentle, strong), lamp height for tall lights, its prop sprite, and how much it glows on top. Its colour is in the asset manifest (`lights`).
+- **Template, a theme's look** (`ATMOSPHERE`): dark or bright, ambient and light-strength multipliers, placed lights per 100 tiles, share of dead trees with a lantern. Its ambient colour is in the manifest (`themes.<theme>.ambient`).
+- **Starter set (built in step L1):** fireflies, glow mushroom, ground lantern, lamp post, tree lantern, the exit, the hero, the Glowmoth. Dark themes: night, underground, spooky, Starfall.
+- **Where lights go:** the course screen places them from the course, the theme and the course's seed, with their own random stream. Not in the generator: the generator doesn't know the theme, and adding to its random draws would change every course.
+- The **Darkness** course modifier is drawn with the light map when lighting is on (the hero's light instead of the old fade).
+
 ---
 
 ## Open questions

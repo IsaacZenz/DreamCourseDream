@@ -1,6 +1,6 @@
 # Milestone 9, round 9L: light and atmosphere — design sheet
 
-**Status: waiting for the owner's review. Nothing on this sheet is built yet.**
+**Status: signed off by the owner, 2026-11-26.** Option A (section 1), with option B kept in reserve: if A doesn't feel right once it's on screen, we pivot to B. The other questions in section 7 take their Defaults. Building starts with step L1.
 
 **Owner request, 2026-11-26:** start Milestone 9 with the dynamic lighting and shadows, and widen it into an "atmosphere engine" with the feel of *Sea of Stars* and *Octopath Traveler*. This sheet replaces section 7.1 of `docs/plans/milestone-9.md` and moves it from round 9c to the first round. The rest of that sheet (name, art, sound, tutorial) is unchanged and still waiting for your review.
 
@@ -32,6 +32,8 @@ DESIGN.md pillar 1 is **Decided**: the game draws at 384 × 216 pixels and scale
 | B: effects at full screen size over pixel art | smooth glows and blur, closer to *Octopath*'s "HD-2D". Bends pillar 1. | a bigger change: the game would draw twice (art small, effects large); every screen and the text need checking. Roughly an extra round. |
 
 I recommend **A**. It keeps a decision you've already made, and the layers below work the same way in either option, so we can still try B later if A doesn't feel like enough. Only you can reopen pillar 1, so I won't change it unless you say so.
+
+**Decided (owner, 2026-11-26): A, with B in reserve.** To keep the pivot cheap, the atmosphere layers draw into their own pictures whose size is one setting (`resolution` in `src/content/atmosphere.ts`). Under A it's 1 (384 × 216). Moving to B means raising that number and drawing those pictures at full screen size; the presets, lights and shadows don't change.
 
 ## 2. The layers, in drawing order
 
@@ -142,6 +144,18 @@ That way you can tune the look by eye, as a tester would, instead of describing 
 
 **About placeholder art.** The main sheet put lighting last because it's easier to judge on final art. Building it first is fine: the layers work with any art, and the presets are numbers you can retune once the art arrives. Expect one short tuning pass after round 9b.
 
+## 5a. Built: step L1 (2026-11-26)
+
+What was built, and where it differs from the plan above:
+
+- **Theme looks, the light map and the light sources** as in sections 2.1 and 2.2: `src/content/atmosphere.ts` (numbers), the manifest (colours), `src/render/atmosphere/` (drawing). The lamp post reuses the town's lamp sprite; the glow mushroom, the ground lantern and the tree lantern are new placeholder props.
+- **Changed: where lights are placed.** Section 2.2 said the generator's detail dial would place them. They're placed by the course screen instead, from the course, the theme and the course's seed, with their own random stream. Why: the generator doesn't know the theme, and adding to its random draws would change every generated course. A bonus: the U panel's theme list now shows lamps straight away, on every course, including hand-built ones. The tests check lights never stand on the start, the exit, a rail, an object or a slope, and keep 3.5 tiles apart.
+- **Added: a faint glow on top.** Multiplying can only darken, and the dark themes are drawn dark already, so a lamp couldn't warm the ground round it. Each light is also added on top, faintly (`glow`, 0.35; the hero's 0.3 of that, so the Darkness modifier doesn't wash the hero out). Tunable in the light lab.
+- **Ambient colours raised** for the dark themes (night `#5c6aa0`, starfall `#7c68a8`, underground `#56565e`, spooky `#5e5878`): their art is already recoloured dark, so the light map darkens it less than the section 2.1 percentages.
+- **Settings:** the Lighting switch is in the U panel for now (and `?lighting=0` in the address); the settings screen comes in round 9a.
+- **Not yet:** the light map is on courses only, not the town or the map screen. Light spills down cliff faces below a lamp; shadows (step L2) will deal with the terrain.
+- **Speed:** in the headless test browser (software drawing, no graphics card) a frame took about 21 ms with lighting off and 22 to 26 ms with it on. On a real graphics card the two extra layers should cost far less; please report any slowdown.
+
 ## 6. What stays the same
 
 - The rules, physics, generator, bot and course check. Light props have no collision.
@@ -151,9 +165,11 @@ That way you can tune the look by eye, as a tester would, instead of describing 
 
 ## 7. Questions for you
 
+**Owner, 2026-11-26:** answered L-Q1; L-Q2 to L-Q6 take their Defaults.
+
 | # | Question | Default |
 |---|---|---|
-| L-Q1 | Option A (keep 384 × 216, chunky stepped light) or B (smooth effects at full size, closer to *Octopath*, bends pillar 1)? (section 1) | **A** |
+| L-Q1 | Option A (keep 384 × 216, chunky stepped light) or B (smooth effects at full size, closer to *Octopath*, bends pillar 1)? (section 1) | **Answered (owner, 2026-11-26): A, with B in reserve** |
 | L-Q2 | Do the presets in section 2.1 sound right for each theme's mood? | as listed |
 | L-Q3 | Tilt-shift: off and available to try, or on from the start? (section 2.6) | off, try it in the light lab |
 | L-Q4 | A day-to-dusk change during a run (each course a little later in the day), or keep one fixed look per theme? | one fixed look per theme (themes already change after each boss) |

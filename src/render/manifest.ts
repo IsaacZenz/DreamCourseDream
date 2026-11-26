@@ -31,9 +31,12 @@ export interface Manifest {
   readonly tints?: Readonly<Record<string, string>>;
   /**
    * Round 2b: visual themes. A sprite "<id>@<theme>" is that sprite in the
-   * theme; without one, "<id>" is used. Each theme also has a background colour.
+   * theme; without one, "<id>" is used. Each theme also has a background colour,
+   * and (round 9L) its ambient light: the colour the light map starts from.
    */
-  readonly themes?: Readonly<Record<string, { readonly sky: string }>>;
+  readonly themes?: Readonly<Record<string, { readonly sky: string; readonly ambient?: string }>>;
+  /** Round 9L: each light's colour by light id (src/content/atmosphere.ts), as "#rrggbb". */
+  readonly lights?: Readonly<Record<string, string>>;
 }
 
 /** The sprite id to draw for `id` in `theme`: its themed version if the manifest has one. */

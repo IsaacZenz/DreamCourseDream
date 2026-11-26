@@ -6,6 +6,7 @@
 import { THEMES } from '../content/biomes';
 import { DEFAULT_TUNING, TUNING_CONTROLS, getTuningValue, setTuningValue, type Tuning } from '../content/tuning';
 import { clearTuning, saveTuning } from '../save/tuningStore';
+import { buildLightLab, defaultLightLab, type LightLabValues } from './lightLab';
 
 const CSS = `
 #tuning-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 300px; overflow-y: auto; z-index: 10;
@@ -105,6 +106,18 @@ export class TuningPanel {
   wallOverhang = true;
   /** Round 3: draw every map node (off: only the path taken and the next choices). */
   wholeMap = false;
+  /** Round 9L (owner, 2026-11-26): the light map. Off: every theme at normal brightness, no lights. */
+  lighting = new URLSearchParams(window.location.search).get('lighting') !== '0';
+  /** Round 9L: the light lab's live numbers, the theme on screen, and how to redraw the light (replace: place the lights again). */
+  readonly lightLab: LightLabValues = defaultLightLab();
+  lightTheme = 'day';
+  onLight: ((replace: boolean) => void) | null = null;
+  private labRefresh: (() => void) | null = null;
+  /** The course screen calls this when a course opens, so the lab shows that theme's numbers. */
+  setLightTheme(theme: string): void {
+    this.lightTheme = theme;
+    this.labRefresh?.();
+  }
   private botButton: HTMLButtonElement | null = null;
   setBotPlays(on: boolean): void {
     this.botPlays = on;
@@ -181,8 +194,16 @@ export class TuningPanel {
       whole.textContent = `Show the whole map: ${this.wholeMap ? 'ON' : 'off'}`;
       this.onMap?.();
     });
-    head.append(copy, reset, scenery, theme, bot, mapScreen, bumps, walls, overhang, whole);
+    const lighting = this.button(`Lighting: ${this.lighting ? 'ON' : 'off'}`, () => {
+      this.lighting = !this.lighting;
+      lighting.textContent = `Lighting: ${this.lighting ? 'ON' : 'off'}`;
+      this.onTheme?.();
+    });
+    head.append(copy, reset, scenery, theme, bot, mapScreen, bumps, walls, overhang, whole, lighting);
     this.root.appendChild(head);
+    const lab = buildLightLab(this.lightLab, () => this.lightTheme, (replace) => (replace ? this.onTheme?.() : this.onLight?.(false)), (text, onClick) => this.button(text, onClick));
+    this.labRefresh = lab.refresh;
+    this.root.appendChild(lab.box);
     this.benchBox = document.createElement('div');
     this.benchBox.className = 'bench';
     this.benchBox.style.display = 'none';
