@@ -955,49 +955,49 @@
     },
     "ball": {
       "file": "sprites/ball.png",
-      "frameWidth": 8,
-      "frameHeight": 8,
+      "frameWidth": 12,
+      "frameHeight": 12,
       "frames": [
         "idle"
       ],
       "anchor": [
-        4,
-        7
+        6,
+        11
       ]
     },
     "ball-thud": {
       "file": "sprites/ball-thud.png",
-      "frameWidth": 8,
-      "frameHeight": 8,
+      "frameWidth": 12,
+      "frameHeight": 12,
       "frames": [
         "idle"
       ],
       "anchor": [
-        4,
-        7
+        6,
+        11
       ]
     },
     "ball-pip": {
       "file": "sprites/ball-pip.png",
-      "frameWidth": 8,
-      "frameHeight": 8,
+      "frameWidth": 12,
+      "frameHeight": 12,
       "frames": [
         "idle"
       ],
       "anchor": [
-        4,
-        7
+        6,
+        11
       ]
     },
     "ball-shadow": {
       "file": "sprites/ball-shadow.png",
-      "frameWidth": 8,
-      "frameHeight": 4,
+      "frameWidth": 12,
+      "frameHeight": 5,
       "frames": [
         "idle"
       ],
       "anchor": [
-        4,
+        6,
         2
       ]
     },

@@ -124,6 +124,9 @@ const DEBUG_INNER = 0xff6040;
 const DEBUG_PATH = 0x80c8ff;
 const DEBUG_ZONE = 0xf8f040;
 
+/** Owner, 2026-11-26: how long the character stays curled up after a hit that does not move it, in ms. */
+const CURL_MS = 600;
+
 /** Keyboard aiming (owner, 2026-11-14: every mechanic works from the keyboard alone). Degrees per second. */
 const AIM_TURN = 90;
 const AIM_TURN_FINE = 20;
@@ -251,6 +254,8 @@ export class CourseScene extends Phaser.Scene {
   private wildUntil = 0;
   private debugDyn!: Phaser.GameObjects.Graphics;
   private ballFrame = '';
+  /** Owner, 2026-11-26: hurt while standing (and not moved), Rollo curls into the ball until this time, then stands. */
+  private curlUntil = 0;
   private chargeStart = 0;
   private dragFrom = { x: 0, y: 0 };
   private aim = 0;
@@ -1274,12 +1279,25 @@ export class CourseScene extends Phaser.Scene {
     const overWater = !!g && !!SURFACES.get(g.tile.surface)?.overlaySprite && !inWater;
     const depth = overWater ? tileDepth(tx, ty, 'overlay') + 0.5 : this.standingDepth(b.x, b.y);
     // Tornado: the ball becomes a small whirlwind. Immune after damage: it blinks.
-    const frame = this.play.tornado ? `t${Math.floor(this.time.now / 60) % 4}` : 'ball';
+    // Owner, 2026-11-26: standing still, the character stands up on two legs facing the aim;
+    // a shot or a knock rolls it into the ball, and so does a hit that does not move it (for a moment).
+    const standing = !this.play.shot && this.time.now >= this.curlUntil;
+    const facing = this.aimFacing();
+    const walk = this.play.character.walkSprite;
+    const frame = this.play.tornado ? `t${Math.floor(this.time.now / 60) % 4}` : standing ? `stand-${facing}` : 'ball';
     if (frame !== this.ballFrame) {
       this.ballFrame = frame;
-      if (frame === 'ball') this.ballImg.setTexture(this.play.character.sprite, 0);
-      else this.ballImg.setTexture('ball-tornado', frameIndex(manifest.sprites['ball-tornado']!, frame.slice(1)));
-      const id = frame === 'ball' ? this.play.character.sprite : 'ball-tornado';
+      let id: string;
+      if (this.play.tornado) {
+        id = 'ball-tornado';
+        this.ballImg.setTexture(id, frameIndex(manifest.sprites[id]!, frame.slice(1)));
+      } else if (standing) {
+        id = facing[1] === 'l' ? `${walk}-left` : walk;
+        this.ballImg.setTexture(id, frameIndex(manifest.sprites[id]!, `${facing}-stand`));
+      } else {
+        id = this.play.character.sprite;
+        this.ballImg.setTexture(id, 0);
+      }
       const e = manifest.sprites[id]!;
       this.ballImg.setOrigin(e.anchor[0] / e.frameWidth, e.anchor[1] / e.frameHeight);
     }
@@ -1295,6 +1313,15 @@ export class CourseScene extends Phaser.Scene {
       this.shadowImg.setVisible(false);
     }
     this.ballScreen = { x: p.x, y: p.y };
+  }
+
+  /** Which way the standing character faces on screen: the aim, turned from the ground to the screen. */
+  private aimFacing(): 'ul' | 'ur' | 'dl' | 'dr' {
+    const gx = Math.cos(this.aim);
+    const gy = Math.sin(this.aim);
+    const sx = gx - gy;
+    const sy = gx + gy;
+    return `${sy < 0 ? 'u' : 'd'}${sx < 0 ? 'l' : 'r'}`;
   }
 
   private setupShotInput(): void {
@@ -1611,6 +1638,8 @@ export class CourseScene extends Phaser.Scene {
           this.queueMessage('+1 SHOT', GOOD);
           break;
         case 'damage': {
+          // Owner, 2026-11-26: hurt while standing still, Rollo is knocked into a ball, then stands up again.
+          if (!this.play.shot) this.curlUntil = this.time.now + CURL_MS;
           const what = { spikes: 'SPIKES', sunk: 'SANK', out: 'OUT OF BOUNDS', enemy: 'OUCH', seed: 'HIT BY A SEED', zap: 'ZAPPED', slam: 'SLAMMED', burn: 'BURNING', blast: 'BLAST', charge: 'CHARGED', bite: 'BITTEN', ring: 'SOLDIER ANTS' }[e.cause];
           this.queueMessage(`${what}! -${e.amount} HEALTH`, BAD);
           break;
