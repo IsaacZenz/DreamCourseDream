@@ -47,17 +47,17 @@ describe('journey generator', () => {
   });
 
   it('writes format 3, every corner from 0 to the limit, every tile a legal shape', () => {
+    // Collected and checked once (found 2026-11-26): one expect per corner was hundreds of thousands of
+    // calls, over 2 s here and past the 5 s limit on GitHub's slower machines. Same checks, same strictness.
+    const bad: string[] = [];
     for (const r of GOOD) {
       expect(r.raw.format).toBe(3);
-      for (const t of r.course.tiles) {
-        if (!t) continue;
-        expect(shapeOf(t.corners)).not.toBeNull();
-        for (const c of t.corners) {
-          expect(c).toBeGreaterThanOrEqual(0);
-          expect(c).toBeLessThanOrEqual(MAX_HEIGHT);
-        }
-      }
+      r.course.tiles.forEach((t, i) => {
+        if (!t) return;
+        if (shapeOf(t.corners) === null || t.corners.some((c) => c < 0 || c > MAX_HEIGHT)) bad.push(`${r.raw.name} tile ${i}: ${t.corners.join(',')}`);
+      });
     }
+    expect(bad).toEqual([]);
   });
 
   it('has the number of areas the budget calls for, and grows with the budget', () => {

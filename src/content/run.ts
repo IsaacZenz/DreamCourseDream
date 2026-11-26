@@ -237,6 +237,19 @@ export const ENDLESS = {
   bossBlueStars: 2,
 } as const;
 
+/**
+ * Owner, 2026-11-23: from the run's second course on, the course check's bot
+ * also has these permanent upgrades at their top level (Vitality: max health,
+ * Stamina: max shots), on top of the region's par kit. It always starts a
+ * course at full health. The run's first course is checked with par only.
+ */
+export const BOT_BOOST = {
+  /** Courses finished in the run before the boost starts. */
+  afterCourses: 1,
+  /** Permanent upgrade ids (src/content/progress.ts), each at its top level. */
+  maxedUpgrades: ['vitality', 'stamina'],
+} as const;
+
 /** The bot's shot limit for a journey of n areas (the Milestone 5b table: 2 areas 20, 3 areas 26, ... ). */
 export const botShotsFor = (areas: number): number => 8 + 6 * areas;
 

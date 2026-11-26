@@ -238,4 +238,27 @@ describe('region three course check (owner, 2026-11-19: options A and C)', () =>
     run.region = 4;
     expect(botLoadoutOf(run).gear).toEqual(lo.gear);
   });
+  it('after the first course, the bot also has Vitality and Stamina at their top level (owner, 2026-11-23)', async () => {
+    const { botLoadoutOf } = await import('../src/sim/run');
+    const run = createRun('C', generateRunMap('C'));
+    const add = (lo: ReturnType<typeof botLoadoutOf>, stat: string) => lo.modifiers!.filter((m) => m.stat === stat).reduce((n, m) => n + m.amount, 0);
+    // The run's first course: region one's par only (nothing).
+    expect(add(botLoadoutOf(run), 'maxHealth')).toBe(0);
+    expect(add(botLoadoutOf(run), 'maxShots')).toBe(0);
+    run.totals.courses = 1;
+    const lo = botLoadoutOf(run);
+    expect(add(lo, 'maxHealth')).toBe(5);
+    expect(add(lo, 'maxShots')).toBe(5);
+    // On top of the region's par: region three adds +3 health and +3 shots of its own.
+    run.region = 3;
+    expect(add(botLoadoutOf(run), 'maxHealth')).toBe(8);
+    expect(add(botLoadoutOf(run), 'maxShots')).toBe(8);
+    expect(add(botLoadoutOf(run), 'hitDamage')).toBe(1);
+    // The bot starts at full health with the boost.
+    run.region = 1;
+    const r = parseCourse(arenaData('queens-mound', 'brood-queen'));
+    if (!r.ok) throw new Error(r.errors.join('; '));
+    const play = createPlay(r.course, DEFAULT_TUNING, { seed: 'x', loadout: lo });
+    expect(play.health).toBe(play.stats.get('maxHealth'));
+  });
 });

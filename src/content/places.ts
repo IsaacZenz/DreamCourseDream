@@ -31,6 +31,20 @@ export const WALK = {
   cameraZoom: 1.25,
 } as const;
 
+/**
+ * Owner, 2026-11-23: a course opens close in on the ball, at the walking
+ * camera's zoom, then zooms out to the normal view; the round begins when
+ * the zoom ends (no shots, no enemy movement until then).
+ */
+export const COURSE_INTRO = {
+  /** Starting zoom: the same as walking, so the change from a place to a course feels continuous. */
+  zoom: WALK.cameraZoom,
+  /** Time held at the close zoom before zooming out (ms). */
+  holdMs: 400,
+  /** Time the zoom out takes (ms). Owner, 2026-11-26: 1200 (was 800, felt too fast). */
+  zoomMs: 1200,
+} as const;
+
 /** Ground the armadillo walks on. Water, spikes and pads block it. */
 export const WALKABLE_SURFACES: ReadonlySet<string> = new Set(['grass', 'rough', 'sand', 'ice', 'bridge', 'path']);
 

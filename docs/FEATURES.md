@@ -325,7 +325,7 @@ The archetype list is in DESIGN.md section 9. Elements: Burner is fire, Frost is
 **Decided:**
 
 - Three categories: **weapon**, **armour**, **bauble** (renamed from accessory by the owner, 2026-11-15).
-- The ball holds one of each. **Owner, 2026-11-22:** a permanent unlock per category (Second Weapon, Armour or Bauble Pocket, **17 blue stars** each) lets it hold two. Both items work. A course pickup with both pockets full replaces the lower rarity (ties: the one held longest); a shop asks which to replace. The Burrow still stores one per category.
+- The ball holds one of each. **Owner, 2026-11-22:** a permanent unlock per category (Second Weapon, Armour or Bauble Pocket, **30 blue stars** each; was 17 until the owner raised it 2026-11-23) lets it hold two. Both items work. A course pickup with both pockets full replaces the lower rarity (ties: the one held longest); a shop asks which to replace. The Burrow still stores one per category.
 - Rolling over gear of a category already held drops the current item and equips the new one automatically.
 - Gear never needs a button. Weapon effects are automatic and trigger only on contact with an enemy.
 - Gear is lost on death, except gear stored in the Burrow (owner, 2026-11-15; section 11).
@@ -491,6 +491,7 @@ Build in Milestone 3.
 - **Owner, 2026-11-19 (Milestone 8 round 1):** region three has 4 to 7 areas; a hard course never has more areas than its region's maximum; from region three on the course check's bot also wears Giant's Knuckle, Bastion Plate and Pocket Watch, and has max shots +1 and max health +1 more (sheet section 15a).
 - **Owner, 2026-11-21: regions two and three step up from region one more gently** (region one unchanged: 2 to 5 areas, +1 every 2 nodes, areas 8 to 14 tiles). Region two: 3 to 5 areas, +1 every 3 nodes, areas 8 to 15 tiles. Region three (and endless): 4 to 6 areas, +1 every 3 nodes, areas 9 to 15 tiles. Hard courses still get one area more, never past the maximum.
 - **Owner, 2026-11-18: the course check is relaxed.** The bot plays with a par kit per region (region 1 a fresh ball; region 2 max shots +1, hit damage +1, shot power +10%; region 3 also max shots +2 in all, shot power +20%, max health +2), needs 1 health left, and has 1.5 times the shot limit.
+- **Owner, 2026-11-23: a stronger bot after the first course.** From the run's second course on, the course check's bot also has Vitality and Stamina at their top level (max health +5, max shots +5), on top of the region's par kit and par gear; it still starts every course at full health. The run's first course is checked with par only. Numbers in `BOT_BOOST` (`src/content/run.ts`).
 - **Tier mix by region:** region 1 is mostly tiers 1–2; region 2 adds tier 3; region 3 adds tier 4.
 - **Owner, 2026-11-15 (Milestone 5 testing, before the run exists):** after winning a generated course, the next one's budget rises by a random 0 to 4 (seeded), capped at 40. The Milestone 5 generator rules are in `docs/plans/milestone-5.md`.
 - **Hard courses:** 150% of the normal budget, a guaranteed tier-up squad leader, better rewards.
