@@ -334,33 +334,42 @@ function drawArrow(dir: Direction): Image {
 // ---------------------------------------------------------------------------
 // Ball, shadow and exit.
 
-function drawBall(color = '#e8e8f0'): Image {
-  const img = new Image(8, 8);
+/**
+ * The rolled-up armadillo, 12x12 (owner, 2026-11-26: was 8x8; now about the
+ * size of the standing armadillo's shell, closer to the enemies). The shell's
+ * bands run across it so it reads as the same character.
+ */
+function drawBall(color = '#e8e8f0', band = '#8888a8'): Image {
+  const img = new Image(12, 12);
   const shades = ramp(color);
   const outline = hex2('#303048');
-  for (let y = 0; y < 8; y++) {
-    for (let x = 0; x < 8; x++) {
-      const dx = x + 0.5 - 4;
-      const dy = y + 0.5 - 4;
+  const bandC = ramp(band);
+  for (let y = 0; y < 12; y++) {
+    for (let x = 0; x < 12; x++) {
+      const dx = x + 0.5 - 6;
+      const dy = y + 0.5 - 6;
       const r = Math.hypot(dx, dy);
-      if (r > 3.7) continue;
-      if (r > 2.9) {
+      if (r > 5.8) continue;
+      if (r > 4.8) {
         img.set(x, y, outline);
         continue;
       }
-      const lit = -dx * 0.5 - dy * 0.7;
-      img.set(x, y, shades[lit > 1.2 ? 4 : lit > -0.4 ? 3 : 2]!);
+      const lit = -dx * 0.45 - dy * 0.6;
+      const level = lit > 1.6 ? 4 : lit > -0.6 ? 3 : 2;
+      // Two curved bands, like the standing shell's.
+      const onBand = Math.abs(dx + dy * 0.35 - 1.8) < 0.6 || Math.abs(dx + dy * 0.35 + 1.6) < 0.6;
+      img.set(x, y, onBand ? bandC[Math.min(3, level)]! : shades[level]!);
     }
   }
   return img;
 }
 
 function drawShadow(): Image {
-  const img = new Image(8, 4);
+  const img = new Image(12, 5);
   const c = c15([10, 10, 30], 110);
-  for (let y = 0; y < 4; y++) {
-    for (let x = 0; x < 8; x++) {
-      if (Math.hypot((x + 0.5 - 4) / 4, (y + 0.5 - 2) / 2) < 1) img.set(x, y, c);
+  for (let y = 0; y < 5; y++) {
+    for (let x = 0; x < 12; x++) {
+      if (Math.hypot((x + 0.5 - 6) / 6, (y + 0.5 - 2.5) / 2.5) < 1) img.set(x, y, c);
     }
   }
   return img;
@@ -1144,10 +1153,11 @@ for (const id of faceIds) {
   emit(`${id}-right`, sheet(FACE_FRAMES.map((f) => drawFace(base, RIGHT_SHAPES[f], 1))), 16, FACE_H, [...FACE_FRAMES], [0, 8]);
 }
 emit('arrow', sheet(DIRECTIONS.map(drawArrow)), 32, 16, [...DIRECTIONS], [16, 8]);
-emit('ball', drawBall(), 8, 8, ['idle'], [4, 7]);
-emit('ball-thud', drawBall('#9098a8'), 8, 8, ['idle'], [4, 7]);
-emit('ball-pip', drawBall('#f0d080'), 8, 8, ['idle'], [4, 7]);
-emit('ball-shadow', drawShadow(), 8, 4, ['idle'], [4, 2]);
+// Owner, 2026-11-26: 12x12, in each character's shell and band colours (as their standing armadillo).
+emit('ball', drawBall('#d0d0e0', '#8888a8'), 12, 12, ['idle'], [6, 11]);
+emit('ball-thud', drawBall('#8890a0', '#505868'), 12, 12, ['idle'], [6, 11]);
+emit('ball-pip', drawBall('#e8c878', '#b08838'), 12, 12, ['idle'], [6, 11]);
+emit('ball-shadow', drawShadow(), 12, 5, ['idle'], [6, 2]);
 emit('exit', sheet([drawExit(false), drawExit(true)]), 16, 10, ['closed', 'open'], [8, 5]);
 emit('star-yellow', drawStar('#f8d030'), 11, 11, ['idle'], [5, 10]);
 emit('heart', drawHeart(), 9, 8, ['idle'], [4, 7]);
