@@ -41,8 +41,8 @@ export const COURSE_INTRO = {
   zoom: WALK.cameraZoom,
   /** Time held at the close zoom before zooming out (ms). */
   holdMs: 400,
-  /** Time the zoom out takes (ms). */
-  zoomMs: 800,
+  /** Time the zoom out takes (ms). Owner, 2026-11-26: 1200 (was 800, felt too fast). */
+  zoomMs: 1200,
 } as const;
 
 /** Ground the armadillo walks on. Water, spikes and pads block it. */
