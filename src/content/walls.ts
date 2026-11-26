@@ -31,8 +31,12 @@ export interface WallStyle {
   readonly overhang: string | null;
 }
 
-/** Share of edges with each kind of rock (owner, 2026-11-26). Each kind's share is split evenly between its textures. */
-export const EARTH_ROCK_SHARES = { plain: 25, sparse: 40, moderate: 25, large: 10 } as const;
+/**
+ * Share of edges with each kind of rock. Each kind's share is split evenly between its textures.
+ * Owner, 2026-11-26: plain 25, sparse 40, moderate 25, large 10. Raised the same day
+ * (owner asked for large above 10%, value left to Claude): large 20, taken from sparse.
+ */
+export const EARTH_ROCK_SHARES = { plain: 25, sparse: 30, moderate: 25, large: 20 } as const;
 
 const split = (share: number, sprites: readonly string[]) => sprites.map((sprite) => ({ sprite, weight: share / sprites.length }));
 
