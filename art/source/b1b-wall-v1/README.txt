@@ -1,0 +1,1 @@
+B1B wall art first production-format pass. Copy art/drawn into project, run npm run art and npm run check. Existing grass and weights unchanged. Preview sheets use supplied preview_wall.py paint function; no full game build executed. Original procedural pixel artwork, review visually before final approval. No optional detail layers.
