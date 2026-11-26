@@ -23,7 +23,7 @@ import { ACORN_LIST, ACORNS, ACORN_SHOP_WEIGHT, FOOD, FOOD_LIST, FOODS, acornWei
 import { BOSSES, BOSS_IDS, bossHealthIn } from '../content/bosses.ts';
 import type { JourneySize } from '../content/gen.ts';
 import { ENDLESS_MIX_STEP, REGION_MIXES, type EnemyMix } from '../content/enemyMods.ts';
-import { BOT_BOOST, ENDLESS, LAST_REGION, REGIONS, botShotsFor, type RegionDef } from '../content/run.ts';
+import { BOT_BOOST, ENDLESS, LAST_REGION, REGIONS, REGION_BOSSES, botShotsFor, type RegionDef } from '../content/run.ts';
 import { RUN, UPGRADE_LIST, UPGRADE_PRICE, UPGRADES, type NodeType } from '../content/run.ts';
 import { BLUE_STARS, PERMANENT_UPGRADES } from '../content/progress.ts';
 import { buyUpgrade, permanentModifiers, type Profile } from './profile.ts';
@@ -529,7 +529,8 @@ export function regionDefFor(region: number): RegionDef {
       { stat: 'health', amount: health + Math.ceil(k / 2) },
       { stat: 'attackDamage', amount: attack + Math.floor(k / 2) },
     ],
-    bosses: BOSS_IDS,
+    // Round 4: region 4 has its own pool (the centipede); endless regions use every boss.
+    bosses: REGION_BOSSES[region] ?? BOSS_IDS,
     par,
   };
 }

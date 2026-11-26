@@ -10,12 +10,12 @@
 import { generateRunMap } from '../gen/runMap';
 import { ARENAS } from '../content/arenas';
 import { BOSSES, BOSS_IDS } from '../content/bosses';
-import { REGIONS } from '../content/run';
+import { LAST_REGION, REGIONS } from '../content/run';
 import type { GenResult } from '../gen/validate';
 import type { Course } from '../sim/course';
 import type { GearSlots } from '../content/gear';
 import type { Profile } from '../sim/profile';
-import { createRun, drainDeposit, enterNode, startRegion, type RunState } from '../sim/run';
+import { createRun, drainDeposit, enterNode, regionDefFor, startRegion, type RunState } from '../sim/run';
 import { restoreRun, snapshotRun, type RunSnapshot } from '../save/saveData';
 import { loadSave, writeSave } from '../save/store';
 
@@ -141,7 +141,8 @@ export function debugBossFight(fight: string, run: RunState = startRun(newRunSee
   const boss = maybeArena ? bossOrArena! : null;
   const arena = maybeArena ?? bossOrArena!;
   if (boss) {
-    const region = REGIONS.findIndex((r) => r.bosses.includes(boss)) + 1;
+    // Round 4: region 4 (the centipede) is not in the table, so ask each region up to the last one.
+    const region = Array.from({ length: Math.max(REGIONS.length, LAST_REGION) }, (_, i) => i + 1).find((r) => regionDefFor(r).bosses.includes(boss)) ?? 0;
     if (region > 0 && region !== run.region) startRegion(run, region, generateRunMap(run.seed, region));
   }
   run.countdown = 0;

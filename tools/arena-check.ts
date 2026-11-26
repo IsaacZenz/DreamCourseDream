@@ -7,7 +7,8 @@
  */
 import { readFileSync } from 'node:fs';
 import { BOSSES, BOSS_IDS, bossHealthIn } from '../src/content/bosses.ts';
-import { REGIONS } from '../src/content/run.ts';
+import { LAST_REGION } from '../src/content/run.ts';
+import { regionDefFor } from '../src/sim/run.ts';
 import { DEFAULT_TUNING } from '../src/content/tuning.ts';
 import { playBot } from '../src/gen/bot.ts';
 import { parseCourse } from '../src/sim/course.ts';
@@ -24,9 +25,15 @@ const only = process.argv[3];
 let allOk = true;
 for (const boss of BOSS_IDS.filter((b) => !only || b === only)) {
   const def = BOSSES.get(boss)!;
-  const region = Math.max(1, REGIONS.findIndex((r) => r.bosses.includes(boss)) + 1);
-  const par: Modifier[] = REGIONS[region - 1]!.par.map((p) => ({ stat: p.stat, op: 'add', amount: p.amount, source: { kind: 'region', id: 'par' }, duration: { kind: 'run' } }));
-  const toughness: Modifier[] = REGIONS[region - 1]!.toughness.map((t) => ({ stat: t.stat, op: 'add', amount: t.amount, source: { kind: 'region', id: 'tough' }, duration: { kind: 'forever' } }));
+  // Round 4 (owner, 2026-11-23): the centipede is checked by hand; the bot cannot lead a moving target yet.
+  if (def.handChecked && only !== boss) {
+    console.log(`${def.name.padEnd(46)} checked by hand (owner, 2026-11-23); name it to run the bot anyway`);
+    continue;
+  }
+  const region = Math.max(1, Array.from({ length: LAST_REGION }, (_, i) => i + 1).find((r) => regionDefFor(r).bosses.includes(boss)) ?? 1);
+  const rd = regionDefFor(region);
+  const par: Modifier[] = rd.par.map((p) => ({ stat: p.stat, op: 'add', amount: p.amount, source: { kind: 'region', id: 'par' }, duration: { kind: 'run' } }));
+  const toughness: Modifier[] = rd.toughness.map((t) => ({ stat: t.stat, op: 'add', amount: t.amount, source: { kind: 'region', id: 'tough' }, duration: { kind: 'forever' } }));
   for (const arena of def.arenas) {
     const parsed = parseCourse(arenaData(arena, boss));
     if (!parsed.ok) {
@@ -38,7 +45,7 @@ for (const boss of BOSS_IDS.filter((b) => !only || b === only)) {
     let shots = 0;
     const t0 = performance.now();
     for (let i = 0; i < seeds; i++) {
-      const r = playBot(parsed.course, DEFAULT_TUNING, `${arena}-${boss}-${i}`, { maxShots: 80, bossHealth: bossHealthIn(def, region), loadout: { modifiers: par, ...(REGIONS[region - 1]!.parGear && { gear: REGIONS[region - 1]!.parGear }) }, enemyModifiers: toughness });
+      const r = playBot(parsed.course, DEFAULT_TUNING, `${arena}-${boss}-${i}`, { maxShots: 80, bossHealth: bossHealthIn(def, region), loadout: { modifiers: par, ...(rd.parGear && { gear: rd.parGear }) }, enemyModifiers: toughness });
       if (r.won) {
         wins++;
         shots += r.shots;

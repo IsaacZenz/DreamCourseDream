@@ -11,6 +11,7 @@ import iceRink from './ice-rink.json';
 import theMoat from './the-moat.json';
 import stormSteps from './storm-steps.json';
 import queensMound from './queens-mound.json';
+import coilPit from './coil-pit.json';
 
 export interface ArenaFile {
   readonly id: string;
@@ -28,6 +29,8 @@ export const ARENA_LIST: readonly ArenaFile[] = [
   { id: 'storm-steps', name: 'Storm Steps', gimmick: 'Terraces under drifting thunder clouds', data: stormSteps },
   // Milestone 8 (sheet section 9.3): the Brood Queen's arena. Springs throw the ball up onto her back.
   { id: 'queens-mound', name: "The Queen's Mound", gimmick: 'Springs round her mound: land on her back', data: queensMound },
+  // Round 4 (owner, 2026-11-23): the centipede's arena, always the same. Its body is the wall.
+  { id: 'coil-pit', name: 'The Coil Pit', gimmick: 'The body is the wall: hit the soft segments', data: coilPit },
 ];
 
 export const ARENAS: ReadonlyMap<string, ArenaFile> = new Map(ARENA_LIST.map((a) => [a.id, a]));

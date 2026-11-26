@@ -125,8 +125,8 @@ function beatBoss(run: RunState): void {
   finishCourse(run, { won: true, lostBy: null, health: run.health, wallet: run.wallet, ability: null, gear: run.gear });
 }
 
-describe('three regions, then endless mode (owner, 2026-11-18)', () => {
-  it('the Stagwarden, then Gloamhorn, then the Brood Queen; beating her wins the run', () => {
+describe('four regions, then endless mode (owner, 2026-11-18; round 4, 2026-11-23)', () => {
+  it('the Stagwarden, Gloamhorn, the Brood Queen, then the centipede; beating the centipede wins the run', () => {
     const run = createRun('E', generateRunMap('E'));
     expect(bossOf(run)).toBe('stagwarden');
     beatBoss(run);
@@ -138,22 +138,31 @@ describe('three regions, then endless mode (owner, 2026-11-18)', () => {
     expect(bossOf(run)).toBe('brood-queen');
     expect(bossHealthFor(run)).toBe(26);
     beatBoss(run);
+    // Round 4: the Brood Queen is no longer the end.
+    expect(run.status).toBe('reward');
+    expect(run.beatFinal).toBe(false);
+    takeBossReward(run, null, generateRunMap('E', 4));
+    expect(run.region).toBe(4);
+    expect(isEndless(run)).toBe(false);
+    expect(bossOf(run)).toBe('centipede');
+    expect(bossHealthFor(run)).toBe(32);
+    beatBoss(run);
     expect(run.status).toBe('won');
     expect(run.beatFinal).toBe(true);
-    expect(run.bossesBeaten).toEqual(['stagwarden', 'gloamhorn', 'brood-queen']);
+    expect(run.bossesBeaten).toEqual(['stagwarden', 'gloamhorn', 'brood-queen', 'centipede']);
   });
-  it('Keep going: the boss reward, then region four, with a boss that is not the one just beaten', () => {
+  it('Keep going: the boss reward, then region five, with a boss that is not the one just beaten', () => {
     const run = createRun('E2', generateRunMap('E2'));
-    startRegion(run, 3, generateRunMap('E2', 3));
+    startRegion(run, 4, generateRunMap('E2', 4));
     beatBoss(run);
     expect(keepGoing(run)).toBe(true);
     expect(run.status).toBe('reward');
-    takeBossReward(run, 0, generateRunMap('E2', 4));
-    expect(run.region).toBe(4);
+    takeBossReward(run, 0, generateRunMap('E2', 5));
+    expect(run.region).toBe(5);
     expect(isEndless(run)).toBe(true);
-    expect(bossOf(run)).not.toBe('brood-queen');
+    expect(bossOf(run)).not.toBe('centipede');
   });
-  it('endless regions grow every dial except course size (owner, 2026-11-18)', () => {
+  it('regions 4 and on grow every dial except course size; the numbers are what they were before round 4', () => {
     const r3 = regionDefFor(3);
     const r4 = regionDefFor(4);
     const r6 = regionDefFor(6);
@@ -166,9 +175,13 @@ describe('three regions, then endless mode (owner, 2026-11-18)', () => {
     expect(r6.toughness).toEqual([{ stat: 'health', amount: 3 }, { stat: 'attackDamage', amount: 2 }]);
     expect(bossHealthIn(BOSSES.get('stagwarden')!, 4)).toBe(30);
     expect(bossHealthIn(BOSSES.get('stagwarden')!, 6)).toBe(42);
+    expect(bossHealthIn(BOSSES.get('centipede')!, 4)).toBe(32);
+    expect(bossHealthIn(BOSSES.get('centipede')!, 5)).toBe(40);
+    expect(bossHealthIn(BOSSES.get('centipede')!, 6)).toBe(48);
     expect(bossBlueStars(4)).toBe(14);
     expect(bossBlueStars(6)).toBe(18);
-    expect(r4.bosses).toEqual(expect.arrayContaining(['stagwarden', 'gloamhorn', 'brood-queen']));
+    expect(r4.bosses).toEqual(['centipede']);
+    expect(regionDefFor(5).bosses).toEqual(expect.arrayContaining(['stagwarden', 'gloamhorn', 'brood-queen', 'centipede']));
   });
 });
 

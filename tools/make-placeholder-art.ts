@@ -394,33 +394,42 @@ function drawArrow(dir: Direction): Image {
 // ---------------------------------------------------------------------------
 // Ball, shadow and exit.
 
-function drawBall(color = '#e8e8f0'): Image {
-  const img = new Image(8, 8);
+/**
+ * The rolled-up armadillo, 12x12 (owner, 2026-11-26: was 8x8; now about the
+ * size of the standing armadillo's shell, closer to the enemies). The shell's
+ * bands run across it so it reads as the same character.
+ */
+function drawBall(color = '#e8e8f0', band = '#8888a8'): Image {
+  const img = new Image(12, 12);
   const shades = ramp(color);
   const outline = hex2('#303048');
-  for (let y = 0; y < 8; y++) {
-    for (let x = 0; x < 8; x++) {
-      const dx = x + 0.5 - 4;
-      const dy = y + 0.5 - 4;
+  const bandC = ramp(band);
+  for (let y = 0; y < 12; y++) {
+    for (let x = 0; x < 12; x++) {
+      const dx = x + 0.5 - 6;
+      const dy = y + 0.5 - 6;
       const r = Math.hypot(dx, dy);
-      if (r > 3.7) continue;
-      if (r > 2.9) {
+      if (r > 5.8) continue;
+      if (r > 4.8) {
         img.set(x, y, outline);
         continue;
       }
-      const lit = -dx * 0.5 - dy * 0.7;
-      img.set(x, y, shades[lit > 1.2 ? 4 : lit > -0.4 ? 3 : 2]!);
+      const lit = -dx * 0.45 - dy * 0.6;
+      const level = lit > 1.6 ? 4 : lit > -0.6 ? 3 : 2;
+      // Two curved bands, like the standing shell's.
+      const onBand = Math.abs(dx + dy * 0.35 - 1.8) < 0.6 || Math.abs(dx + dy * 0.35 + 1.6) < 0.6;
+      img.set(x, y, onBand ? bandC[Math.min(3, level)]! : shades[level]!);
     }
   }
   return img;
 }
 
 function drawShadow(): Image {
-  const img = new Image(8, 4);
+  const img = new Image(12, 5);
   const c = c15([10, 10, 30], 110);
-  for (let y = 0; y < 4; y++) {
-    for (let x = 0; x < 8; x++) {
-      if (Math.hypot((x + 0.5 - 4) / 4, (y + 0.5 - 2) / 2) < 1) img.set(x, y, c);
+  for (let y = 0; y < 5; y++) {
+    for (let x = 0; x < 12; x++) {
+      if (Math.hypot((x + 0.5 - 6) / 6, (y + 0.5 - 2.5) / 2.5) < 1) img.set(x, y, c);
     }
   }
   return img;
@@ -1204,10 +1213,11 @@ for (const id of faceIds) {
   emit(`${id}-right`, sheet(FACE_FRAMES.map((f) => drawFace(base, RIGHT_SHAPES[f]!, 1))), 16, FACE_H, FACE_FRAMES, [0, 8]);
 }
 emit('arrow', sheet(DIRECTIONS.map(drawArrow)), 32, 16, [...DIRECTIONS], [16, 8]);
-emit('ball', drawBall(), 8, 8, ['idle'], [4, 7]);
-emit('ball-thud', drawBall('#9098a8'), 8, 8, ['idle'], [4, 7]);
-emit('ball-pip', drawBall('#f0d080'), 8, 8, ['idle'], [4, 7]);
-emit('ball-shadow', drawShadow(), 8, 4, ['idle'], [4, 2]);
+// Owner, 2026-11-26: 12x12, in each character's shell and band colours (as their standing armadillo).
+emit('ball', drawBall('#d0d0e0', '#8888a8'), 12, 12, ['idle'], [6, 11]);
+emit('ball-thud', drawBall('#8890a0', '#505868'), 12, 12, ['idle'], [6, 11]);
+emit('ball-pip', drawBall('#e8c878', '#b08838'), 12, 12, ['idle'], [6, 11]);
+emit('ball-shadow', drawShadow(), 12, 5, ['idle'], [6, 2]);
 emit('exit', sheet([drawExit(false), drawExit(true)]), 16, 10, ['closed', 'open'], [8, 5]);
 emit('star-yellow', drawStar('#f8d030'), 11, 11, ['idle'], [5, 10]);
 emit('heart', drawHeart(), 9, 8, ['idle'], [4, 7]);
@@ -1658,6 +1668,108 @@ function drawFacingMark(): Image {
   return img;
 }
 
+// Round 4 (owner, 2026-11-23): the centipede, Thousandfoot. Placeholders: a ring of shell domes round the arena,
+// pale soft weak spots, spine-pod shooters, scuttling legs, and a big head for phase 3.
+function drawCoilSegment(kind: 'armour' | 'weak' | 'shooter' | 'scab'): Image {
+  // Owner, 2026-11-24: the body is 3 tiles wide (was 2), so the domes are bigger.
+  const img = new Image(56, 42);
+  // Owner, 2026-11-24: a scab is a weak spot that was just hit, its shell grown back for a while: crusty brown, no bright rim.
+  const base = kind === 'weak' ? '#f0a8b8' : kind === 'scab' ? '#8a5a48' : '#7a2c3c';
+  blob(img, 28, 26, 27, 15, base, kind === 'weak' ? '#f8f0a0' : '#200810');
+  if (kind === 'scab') {
+    for (const [x, y] of [[16, 22], [17, 22], [24, 19], [25, 20], [33, 23], [34, 24], [21, 30], [30, 31], [39, 27], [27, 26]] as P[]) img.set(x, y, hex2('#4a2818'));
+  } else if (kind === 'weak') {
+    // Soft and bare: a few darker spots, a bright rim so it reads from far away.
+    for (const [x, y] of [[18, 23], [28, 20], [38, 24], [23, 30], [34, 31], [29, 27]] as P[]) img.set(x, y, hex2('#c06078'));
+  } else {
+    // Shell bands across the dome.
+    const band = hex2('#401018');
+    for (const bx of [16, 28, 40]) for (let y = 12; y < 40; y++) if (img.get(bx, y)[3] > 0 && Math.abs(y - 26) < 13) img.set(bx, y, band);
+  }
+  if (kind === 'shooter') {
+    // A spine pod on top: bone-coloured spines.
+    blob(img, 28, 13, 9, 6, '#e8d8a8', '#403018');
+    const spine = hex2('#f8f0d0');
+    for (const [x, y] of [[23, 4], [23, 5], [23, 6], [28, 1], [28, 2], [28, 3], [28, 4], [33, 4], [33, 5], [33, 6]] as P[]) img.set(x, y, spine);
+  }
+  return img;
+}
+
+function drawCoilLegs(step: number): Image {
+  const img = new Image(24, 10);
+  const leg = hex2('#5a1c28');
+  const tip = hex2('#e8d8a8');
+  for (let k = 0; k < 4; k++) {
+    const x0 = 3 + k * 6;
+    const up = (k + step) % 2 === 0 ? 0 : 2;
+    for (let i = 0; i < 6; i++) img.set(x0 + (i > 2 ? 1 : 0), 1 + up + i, leg);
+    img.set(x0 + 1, 7 + up > 9 ? 9 : 7 + up, tip);
+  }
+  return img;
+}
+
+function drawCoilHead(phase: number): Image {
+  const img = new Image(48, 44);
+  blob(img, 24, 28, 22, 15, '#7a2c3c', '#200810');
+  // The soft brow: its weak spot (the whole head counts double).
+  blob(img, 24, 21, 10, 6, '#f0a8b8', '#f8f0a0');
+  eyes(img, [[15, 26], [16, 26], [32, 26], [33, 26]], phase === 2 ? '#f84020' : '#f8e050');
+  // Mandibles.
+  const jaw = hex2('#e8d8a8');
+  for (let k = 0; k < 7; k++) {
+    img.set(14 + Math.floor(k / 2), 36 + k - (k > 4 ? (k - 4) * 2 : 0), jaw);
+    img.set(33 - Math.floor(k / 2), 36 + k - (k > 4 ? (k - 4) * 2 : 0), jaw);
+  }
+  // Feelers.
+  const feeler = hex2('#c05060');
+  for (let k = 0; k < 9; k++) {
+    img.set(18 - k, 14 - Math.floor(k / 2) + phase, feeler);
+    img.set(29 + k, 14 - Math.floor(k / 2) + phase, feeler);
+  }
+  return img;
+}
+
+function drawQuill(): Image {
+  const img = new Image(16, 5);
+  rows(img, 0, 0, ['ooooo..........', 'o44444oooo.....', 'o4444444444oooo', 'o44444oooo.....', 'ooooo..........'], '#e8d8a8', {}, '#403018');
+  return img;
+}
+
+function drawStuckQuill(): Image {
+  // Owner, 2026-11-24: a fired spike stuck point-down in the ground.
+  const img = new Image(7, 16);
+  rows(img, 0, 0, ['...o...', '..o4o..', '..o4o..', '..o4o..', '.o444o.', '.o444o.', '.o444o.', '.o444o.', '.o444o.', '..o4o..', '..o4o..', '..o4o..', '...o...', '..ooo..', '.o222o.', 'ooooooo'], '#e8d8a8', {}, '#403018');
+  return img;
+}
+
+function drawPlate(): Image {
+  const img = new Image(12, 8);
+  blob(img, 6, 4, 6, 4, '#7a2c3c', '#200810');
+  return img;
+}
+
+function drawDangerTile(): Image {
+  // A faint red diamond over a tile of the leg ring (where the sweep reaches).
+  const img = new Image(32, 16);
+  const fill = c15(hex('#f83030'), 100);
+  const edge = c15(hex('#ff6050'), 200);
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 32; x++) {
+      const d = Math.abs(x + 0.5 - 16) / 16 + Math.abs(y + 0.5 - 8) / 8;
+      if (d > 1) continue;
+      img.set(x, y, d > 0.9 ? edge : fill);
+    }
+  }
+  return img;
+}
+
+emit('centipede-segment', sheet((['armour', 'weak', 'shooter', 'scab'] as const).map(drawCoilSegment)), 56, 42, ['armour', 'weak', 'shooter', 'scab'], [28, 34]);
+emit('centipede-quill-stuck', drawStuckQuill(), 7, 16, ['idle'], [3, 14]);
+emit('centipede-legs', sheet([0, 1].map(drawCoilLegs)), 24, 10, ['a', 'b'], [12, 8]);
+emit('centipede-head', sheet([0, 1, 2].map(drawCoilHead)), 48, 44, ['phase1', 'phase2', 'phase3'], [24, 38]);
+emit('centipede-quill', drawQuill(), 16, 5, ['idle'], [8, 2]);
+emit('centipede-plate', drawPlate(), 12, 8, ['idle'], [6, 4]);
+emit('danger-tile', drawDangerTile(), 32, 16, ['idle'], [16, 8]);
 emit('skitter-ant', drawSkitterAnt(), 16, 12, ['idle'], [8, 10]);
 emit('bristlecrawler', drawBristlecrawler(), 22, 14, ['idle'], [11, 12]);
 emit('glowmoth', drawGlowmoth(), 20, 14, ['idle'], [10, 12]);
